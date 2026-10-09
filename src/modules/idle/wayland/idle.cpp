@@ -11,7 +11,6 @@
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
-#include "wayland/render/node.h"
 
 #include "service/wayland/idle_service.h"
 
@@ -86,19 +85,17 @@ void idle_overlay_paint(IdleOverlayState &state) {
     }
 
     if (state.ambient_opacity > 0.0f && state.draw_ambient) {
-        state.scene.rebuild();
-        state.draw_ambient(state.scene.root, static_cast<float>(state.width), static_cast<float>(state.height));
-        state.renderer->set_opacity(state.ambient_opacity);
-        state.scene.draw(*state.renderer);
+        state.canvas.begin(state.output_scale.scale);
+        state.canvas.set_opacity(state.ambient_opacity);
+        state.draw_ambient(state.canvas, static_cast<float>(state.width), static_cast<float>(state.height));
+        state.canvas.flush();
     }
 
     if (state.screensaver_opacity > 0.0f) {
-        state.scene.rebuild();
-        astralia::Color black{0.0f, 0.0f, 0.0f, state.screensaver_opacity};
-        node_add_rect(&state.scene.root, 0, 0, static_cast<float>(state.width), static_cast<float>(state.height), astralia::rgba(black));
-        animated_image_draw(state.logo, &state.scene.root, state.logo_x, state.logo_y, kIdleLogoSize, kIdleLogoSize, state.screensaver_opacity);
-        state.renderer->set_opacity(1.0f);
-        state.scene.draw(*state.renderer);
+        state.canvas.begin(state.output_scale.scale);
+        state.canvas.rect({0, 0, static_cast<float>(state.width), static_cast<float>(state.height)}, {0.0f, 0.0f, 0.0f, state.screensaver_opacity});
+        animated_image_draw(state.logo, state.canvas, state.logo_x, state.logo_y, kIdleLogoSize, kIdleLogoSize, state.screensaver_opacity);
+        state.canvas.flush();
     }
 
     eglSwapBuffers(state.egl_display, state.egl_surface);
@@ -134,6 +131,7 @@ bool idle_overlay_init_egl(IdleOverlayState &state, Renderer &renderer, EGLDispl
     state.egl_display = display;
     state.egl_context = context;
     state.renderer = &renderer;
+    state.canvas.bind(renderer);
     int32_t scale = state.output_scale.scale;
     state.egl_window = wl_egl_window_create(state.surface, state.width * scale, state.height * scale);
     state.egl_surface = eglCreateWindowSurface(display, config, reinterpret_cast<EGLNativeWindowType>(state.egl_window), nullptr);
@@ -220,9 +218,9 @@ bool IdlePerMonitorModule::init_egl(WaylandState &app, MonitorOutput &mon) {
         return true;
     if (!idle_overlay_init_egl(state_, app.renderer, app.egl_display, app.egl_config, app.egl_context))
         return true;
-    state_.draw_ambient = [this, &mon](Node &root, float w, float h) {
+    state_.draw_ambient = [this, &mon](GlCanvas &canvas, float w, float h) {
         if (hooks_.draw)
-            hooks_.draw(mon, root, static_cast<int32_t>(w), static_cast<int32_t>(h));
+            hooks_.draw(mon, canvas, static_cast<int32_t>(w), static_cast<int32_t>(h));
     };
     app_detail::rest_egl_current(app);
     return true;

@@ -303,10 +303,9 @@ void bar_paint(MonitorOutput &mon) {
 
     bs.canvas.begin_group({0.0f, content_y_offset, width, height}, {});
     astralia::BarFrame frame = model.frame();
-    Node *content = bs.canvas.group();
-    bar_frame_base(content, style, frame, width, height);
+    bar_frame_base(bs.canvas, style, frame, width, height);
     astralia::paint_bar(bs.canvas, model);
-    bar_frame_overlay(content, bs.decor, style, frame, width, height, bs.output_scale.scale, bar_hug_radius_px(mon), model.layout().left_end.has_value(), model.layout().right_start.has_value());
+    bar_frame_overlay(bs.canvas, bs.decor, style, frame, width, height, bs.output_scale.scale, bar_hug_radius_px(mon), model.layout().left_end.has_value(), model.layout().right_start.has_value());
     bs.canvas.end_group();
     bs.canvas.flush();
     eglSwapBuffers(app.egl_display, bs.egl_surface);

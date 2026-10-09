@@ -32,6 +32,11 @@ void Text::ellipsize(int width) {
     pango_layout_set_ellipsize(layout_.get(), PANGO_ELLIPSIZE_END);
 }
 
+void Text::set_font_options(const cairo_font_options_t *options) {
+    pango_cairo_context_set_font_options(pango_layout_get_context(layout_.get()), options);
+    pango_layout_context_changed(layout_.get());
+}
+
 int Text::width() const {
     int width = 0;
     pango_layout_get_pixel_size(layout_.get(), &width, nullptr);
@@ -47,6 +52,13 @@ int Text::height() const {
 PangoRectangle Text::ink() const {
     PangoRectangle ink{};
     pango_layout_get_pixel_extents(layout_.get(), &ink, nullptr);
+    return ink;
+}
+
+// Ink extents in Pango units, unrounded.
+PangoRectangle Text::ink_exact() const {
+    PangoRectangle ink{};
+    pango_layout_get_extents(layout_.get(), &ink, nullptr);
     return ink;
 }
 

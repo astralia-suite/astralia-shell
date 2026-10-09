@@ -13,7 +13,6 @@ void test_animated_image();
 void test_marquee_scroll();
 void test_palette();
 void test_image_decode();
-void test_text_elide();
 void test_bar_fillet();
 void test_visualizer_fft();
 
@@ -38,7 +37,6 @@ int main() {
         {"marquee_scroll", test_marquee_scroll},
         {"palette", test_palette},
         {"image_decode", test_image_decode},
-        {"text_elide", test_text_elide},
         {"bar_fillet", test_bar_fillet},
         {"visualizer_fft", test_visualizer_fft},
     };

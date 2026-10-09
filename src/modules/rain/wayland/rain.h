@@ -13,7 +13,6 @@
 #include "modules/rain/wayland/stiletto_rain.h"
 
 #include "wayland/render/renderer.h"
-#include "wayland/render/scene.h"
 #include "wayland/render/toplevel_window.h"
 
 #include "service/wayland/input_service.h"
@@ -23,7 +22,6 @@ struct WaylandState;
 struct RainState {
     ToplevelWindowBase base;
     Renderer *renderer = nullptr;
-    Scene scene;
     MatrixRain matrix;
     StilettoRain stiletto;
     RainMode mode = RainMode::Matrix;

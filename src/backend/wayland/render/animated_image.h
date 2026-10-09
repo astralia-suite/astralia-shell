@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "wayland/render/node.h"
+#include "wayland/render/gl_canvas.h"
 
 #include "service/wayland/media_service.h"
 
@@ -26,9 +26,6 @@ struct AnimatedImage {
     int cur_frame = 0;
     std::chrono::steady_clock::time_point started{};
     bool shown = false;
-    float draw_tint[4] = {1, 1, 1, 1};
-    float border_tint[4] = {0, 0, 0, 0};
-    float ring_tint[4] = {0, 0, 0, 0};
 };
 
 void animated_image_set_source(AnimatedImage &img, std::string source_path, const AnimatedImageStyle &style);
@@ -39,6 +36,6 @@ void animated_image_hide(AnimatedImage &img);
 
 void animated_image_tick(AnimatedImage &img, std::chrono::steady_clock::time_point now);
 
-void animated_image_draw(AnimatedImage &img, Node *parent, float x, float y, float w, float h, float alpha);
+void animated_image_draw(AnimatedImage &img, GlCanvas &canvas, float x, float y, float w, float h, float alpha);
 
 bool animated_image_animating(const AnimatedImage &img);

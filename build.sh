@@ -20,9 +20,9 @@ JOBS="${ASTRALIA_SHELL_BUILD_JOBS:-$(nproc)}"
 
 cmd_setup() {
     local backend="${1:-all}"
-    local common=(meson ninja gcc clang pkgconf cairo pango fontconfig freetype2 glib2 stb sdbus-cpp libxkbcommon polkit libpipewire pipewire wireplumber bluez networkmanager upower fd brightnessctl)
-    local wayland=(ffmpeg mesa wayland wayland-protocols nlohmann-json libjpeg-turbo)
-    local x11=(libxcb xcb-util-wm xcb-util-keysyms resvg libjpeg-turbo libxkbcommon-x11 xorg-server-xephyr)
+    local common=(meson ninja gcc clang pkgconf cairo pango fontconfig glib2 stb resvg libjpeg-turbo sdbus-cpp libxkbcommon polkit libpipewire pipewire wireplumber bluez networkmanager upower fd brightnessctl)
+    local wayland=(ffmpeg mesa wayland wayland-protocols nlohmann-json)
+    local x11=(libxcb xcb-util-wm xcb-util-keysyms libxkbcommon-x11 xorg-server-xephyr)
     case "$backend" in
     wayland) sudo pacman -S --needed "${common[@]}" "${wayland[@]}" ;;
     x11) sudo pacman -S --needed "${common[@]}" "${x11[@]}" ;;

@@ -19,7 +19,9 @@ constexpr Color gpu_color = color(kLockResGaugeGpuColorHex);
 struct Pane {
     ui::Canvas &canvas;
     LockModel &model;
+    LockMotion &motion;
     const LockInfo &info;
+    const LockAvatarArt &avatar;
     float origin_x;
     float origin_y;
 };
@@ -104,24 +106,29 @@ void draw_pill(Pane &pane, float x, float y, float w) {
         mid_w = w - 2.0f * kLockPillPad;
     }
     ui::TextStyle normal = text_style(static_cast<int>(kLockFontNormal));
+    LockMotion &motion = pane.motion;
     if (!has_text) {
         const char *message = model.failed() ? kLockFailText : (model.authenticating() ? kLockLoadingText : kLockPlaceholderText);
         const Color &tone = model.failed() ? palette::critical : palette::text_muted;
         ui::TextSize size = canvas.measure(message, normal);
         canvas.text(message, normal, std::round(mid_x + (mid_w - size.w) * 0.5f), std::round(cy - size.h * 0.5f), tone);
+        text_field_row_slide(motion.row, motion.animations, kLockOwnerDotRowX, mid_x + lock_dot_x(0, 0, mid_w));
         return;
     }
     size_t length = utf8_len(model.password());
     size_t capacity = std::max<size_t>(1, static_cast<size_t>(mid_w / kLockDotSize));
     int visible = static_cast<int>(std::min(length, capacity));
-    float row_x = mid_x + lock_dot_x(0, visible, mid_w);
+    float row_x = text_field_row_slide(motion.row, motion.animations, kLockOwnerDotRowX, mid_x + lock_dot_x(0, visible, mid_w));
     ui::ImageId echo = canvas.image(kLockEchoAsset, static_cast<int>(kLockDotSize));
     for (int i = 0; i < visible; ++i) {
-        ui::Box box{std::round(row_x + static_cast<float>(i) * kLockDotSize), std::round(cy - kLockDotSize * 0.5f), kLockDotSize, kLockDotSize};
+        const TextFieldCharAnim *anim = static_cast<size_t>(i) < motion.dots.chars.size() ? &motion.dots.chars[static_cast<size_t>(i)] : nullptr;
+        float size = kLockDotSize * (anim ? anim->scale : 1.0f);
+        float dx = row_x + static_cast<float>(i) * kLockDotSize + (anim ? anim->slide_x : 0.0f);
+        ui::Box box{std::round(dx + (kLockDotSize - size) * 0.5f), std::round(cy - size * 0.5f), size, size};
         if (echo != ui::no_image) {
             canvas.draw_image(echo, box, palette::text);
         } else {
-            canvas.rounded(box, kLockDotSize * 0.5f, palette::text);
+            canvas.rounded(box, size * 0.5f, palette::text);
         }
     }
 }
@@ -447,7 +454,7 @@ void draw_center(Pane &pane, const LockRect &col, float output_h) {
 
     ui::Box avatar{std::round(cx - kLockProfileSize * 0.5f), std::round(y), kLockProfileSize, kLockProfileSize};
     canvas.rounded(avatar, kLockProfileSize * 0.5f, palette::field_bg);
-    ui::ImageId face = canvas.image(kLockProfileAsset, static_cast<int>(kLockProfileSize) * 2);
+    ui::ImageId face = pane.avatar && pane.avatar(canvas, avatar) ? ui::no_image : canvas.image(kLockProfileAsset, static_cast<int>(kLockProfileSize) * 2);
     if (face != ui::no_image) {
         canvas.begin_group(avatar, {1.0f, true, kLockProfileSize * 0.5f});
         canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::text);
@@ -462,23 +469,41 @@ void draw_center(Pane &pane, const LockRect &col, float output_h) {
 
 } // namespace
 
-void paint_lock(ui::Canvas &canvas, LockModel &model, const LockInfo &info, float width, float height) {
+void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info, float width, float height, const LockAvatarArt &avatar) {
     float card_w = lock_card_width(height);
     float card_h = lock_card_height(height);
+    float pw = motion.panel_w > 0.0f ? motion.panel_w : card_w;
+    float ph = motion.panel_h > 0.0f ? motion.panel_h : card_h;
     float px = 0.0f;
     float py = 0.0f;
-    lock_panel_origin(width, height, card_w, card_h, px, py);
+    lock_panel_origin(width, height, pw, ph, px, py);
     px = std::round(px);
     py = std::round(py);
-    canvas.rounded({px, py, card_w, card_h}, kLockCardRadius, palette::overlay, kLockBgBorderWidth, palette::accent);
+
+    model.hits() = {};
+    canvas.begin_group({px, py, pw, ph}, {motion.panel_scale, true, kLockCardRadius, motion.panel_rotation});
+    canvas.rounded({0.0f, 0.0f, pw, ph}, kLockCardRadius, palette::overlay, kLockBgBorderWidth, palette::accent);
+
+    if (motion.icon_alpha > 0.001f) {
+        const char *glyph = motion.unlocking ? icon::lock_open : icon::lock;
+        ui::TextStyle style = icon_style(static_cast<int>(kLockFontIcon));
+        ui::TextSize size = canvas.measure(glyph, style);
+        canvas.text(glyph, style, std::round((pw - size.w) * 0.5f), std::round((ph - size.h) * 0.5f), with_alpha(palette::accent, palette::accent.a * motion.icon_alpha));
+    }
+    if (motion.content_alpha <= 0.001f) {
+        canvas.end_group();
+        return;
+    }
 
     float center_w = kLockCenterWidth * lock_center_scale(height);
     LockRect left, center, right;
     lock_columns(card_w, card_h, center_w, left, center, right);
 
-    model.hits() = {};
-    canvas.begin_group({px, py, card_w, card_h}, {1.0f, true, kLockCardRadius});
-    Pane pane{canvas, model, info, px, py};
+    float cx0 = (pw - card_w) * 0.5f;
+    float cy0 = (ph - card_h) * 0.5f;
+    canvas.set_opacity(motion.content_alpha);
+    canvas.begin_group({cx0, cy0, card_w, card_h}, {motion.content_scale});
+    Pane pane{canvas, model, motion, info, avatar, px + cx0, py + cy0};
 
     float bat_h = draw_battery(pane, left);
     float top = left.y + (bat_h > 0.0f ? bat_h + kLockPanelGap : 0.0f);
@@ -493,6 +518,11 @@ void paint_lock(ui::Canvas &canvas, LockModel &model, const LockInfo &info, floa
 
     draw_center(pane, center, height);
     canvas.end_group();
+    canvas.set_opacity(1.0f);
+    canvas.end_group();
+    if (motion.content_scale < 0.99f) {
+        model.hits() = {};
+    }
 }
 
 } // namespace astralia

@@ -57,45 +57,51 @@ std::vector<uint8_t> fillet_rgba(int size, bool circle_on_right) {
     return mask;
 }
 
-void bar_frame_base(Node *content, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height) {
+void bar_frame_base(GlCanvas &canvas, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height) {
     if (style.continuous) {
-        node_add_rrect(content, 0.0f, 0.0f, width, height, height * style.radius_ratio, style.border_width, astralia::rgba(style.bg), astralia::rgba(style.border));
+        canvas.rounded({0.0f, 0.0f, width, height}, height * style.radius_ratio, style.bg, style.border_width, style.border);
         return;
     }
     if (!style.has_rail())
         return;
     float radius = style.island_radius;
     float bw = style.border_width;
-    node_add_rect(content, 0.0f, 0.0f, width, style.rail_height, astralia::rgba(style.border));
+    canvas.rect({0.0f, 0.0f, width, style.rail_height}, style.border);
     for (const astralia::IslandShape &island : frame.islands)
-        node_add_rrect(content, island.outer_x, -radius, island.outer_width, height + radius, radius, 0.0f, astralia::rgba(style.border), astralia::rgba(style.border));
-    node_add_rect(content, 0.0f, 0.0f, width, style.rail_height - bw, astralia::rgba(style.bg))->punch = true;
-    for (const astralia::IslandShape &island : frame.islands) {
-        Node *inner = node_add_rrect(content, island.inner_x, -radius, island.inner_width, height + radius - bw, radius - bw, 0.0f, astralia::rgba(style.bg), astralia::rgba(style.bg));
-        inner->punch = true;
-    }
+        canvas.rounded({island.outer_x, -radius, island.outer_width, height + radius}, radius, style.border, 0.0f, style.border);
+    canvas.set_erase(true);
+    canvas.rect({0.0f, 0.0f, width, style.rail_height - bw}, style.bg);
+    for (const astralia::IslandShape &island : frame.islands)
+        canvas.rounded({island.inner_x, -radius, island.inner_width, height + radius - bw}, radius - bw, style.bg, 0.0f, style.bg);
+    canvas.set_erase(false);
 }
 
-void bar_frame_overlay(Node *content, BarDecor &decor, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height, int32_t scale, int32_t hug_radius, bool left_flush, bool right_flush) {
+void bar_frame_overlay(GlCanvas &canvas, BarDecor &decor, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height, int32_t scale, int32_t hug_radius, bool left_flush, bool right_flush) {
     if (!style.has_rail())
         return;
     float bw = style.border_width;
     ensure_fillets(decor, style, scale);
     for (const astralia::Fillet &fillet : frame.fillets)
-        node_add_texture(content, fillet.right_of_island ? fillet.edge_x : fillet.edge_x - style.fillet_radius, style.rail_height, fillet.right_of_island ? decor.fillet_right : decor.fillet_left, astralia::rgba(style.border));
+        canvas.texture(fillet.right_of_island ? decor.fillet_right : decor.fillet_left, fillet.right_of_island ? fillet.edge_x : fillet.edge_x - style.fillet_radius, style.rail_height, astralia::rgba(style.border));
+    canvas.set_erase(true);
     for (const astralia::Fillet &fillet : frame.fillets)
-        node_add_texture(content, fillet.right_of_island ? fillet.edge_x - bw : fillet.edge_x - style.fillet_radius, style.rail_height - bw, fillet.right_of_island ? decor.fillet_inner_right : decor.fillet_inner_left, astralia::rgba(style.bg))->punch = true;
+        canvas.texture(fillet.right_of_island ? decor.fillet_inner_right : decor.fillet_inner_left, fillet.right_of_island ? fillet.edge_x - bw : fillet.edge_x - style.fillet_radius, style.rail_height - bw, astralia::rgba(style.bg));
+    canvas.set_erase(false);
 
     if (hug_radius <= 0)
         return;
     ensure_hug(decor, style, hug_radius, scale);
     float hf = static_cast<float>(hug_radius);
     if (left_flush) {
-        node_add_texture(content, 0.0f, height, decor.hug_outer_left, astralia::rgba(style.border));
-        node_add_texture(content, -bw, height - bw, decor.hug_inner_left, astralia::rgba(style.bg))->punch = true;
+        canvas.texture(decor.hug_outer_left, 0.0f, height, astralia::rgba(style.border));
+        canvas.set_erase(true);
+        canvas.texture(decor.hug_inner_left, -bw, height - bw, astralia::rgba(style.bg));
+        canvas.set_erase(false);
     }
     if (right_flush) {
-        node_add_texture(content, width - hf, height, decor.hug_outer_right, astralia::rgba(style.border));
-        node_add_texture(content, width - hf, height - bw, decor.hug_inner_right, astralia::rgba(style.bg))->punch = true;
+        canvas.texture(decor.hug_outer_right, width - hf, height, astralia::rgba(style.border));
+        canvas.set_erase(true);
+        canvas.texture(decor.hug_inner_right, width - hf, height - bw, astralia::rgba(style.bg));
+        canvas.set_erase(false);
     }
 }

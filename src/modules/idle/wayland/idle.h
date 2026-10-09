@@ -16,8 +16,8 @@
 
 #include "core/animation.h"
 #include "wayland/render/animated_image.h"
+#include "wayland/render/gl_canvas.h"
 #include "wayland/render/renderer.h"
-#include "wayland/render/scene.h"
 #include "wayland/render/texture.h"
 
 #include "service/wayland/frame_service.h"
@@ -26,7 +26,6 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 struct MonitorOutput;
-struct Node;
 
 struct IdleOverlayState {
     wl_surface *surface = nullptr;
@@ -41,7 +40,7 @@ struct IdleOverlayState {
     bool configured = false;
     OutputScale output_scale;
     FrameClock frame_clock;
-    Scene scene;
+    GlCanvas canvas;
 
     astralia::AnimationManager animations;
     float ambient_opacity = 0.0f;
@@ -58,7 +57,7 @@ struct IdleOverlayState {
 
     AnimatedImage logo;
 
-    std::function<void(Node &root, float w, float h)> draw_ambient;
+    std::function<void(GlCanvas &canvas, float w, float h)> draw_ambient;
 };
 
 bool idle_overlay_create_surface(IdleOverlayState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output);
@@ -70,7 +69,7 @@ void idle_overlay_request_frame(IdleOverlayState &state);
 void idle_overlay_set_active(IdleOverlayState &state, bool ambient_active, bool screensaver_active);
 
 struct IdleWallpaperHooks {
-    std::function<void(MonitorOutput &mon, Node &root, int32_t w, int32_t h)> draw;
+    std::function<void(MonitorOutput &mon, GlCanvas &canvas, int32_t w, int32_t h)> draw;
     std::function<void(MonitorOutput &mon, bool paused)> set_paused;
 };
 

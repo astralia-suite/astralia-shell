@@ -1,4 +1,6 @@
 #include <GLES3/gl32.h>
+#include <cctype>
+#include <ctime>
 #include <string>
 #include <thread>
 #include <vector>
@@ -16,21 +18,17 @@
 
 #include "modules/lock/layout.h"
 #include "modules/lock/pam_authenticator.h"
-#include "modules/lock/wayland/card.h"
+#include "modules/lock/view.h"
 #include "modules/lock/wayland/lock.h"
 
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
-#include "wayland/render/image.h"
-#include "wayland/render/node.h"
 
 #include "service/telemetry_service.h"
 
 namespace {
 
 void lock_paint(LockState &st, LockOutputSurface &los);
-void start_init_anim(LockState &st, LockOutputSurface &los);
-void start_unlock_anim(LockState &st, LockOutputSurface &los);
 void finish_unlock(LockState &st);
 
 LockOutputSurface *surface_for(LockState &st, wl_surface *s) {
@@ -48,67 +46,31 @@ void request_all(LockState &st) {
         app_detail::rest_egl_current(*st.app);
 }
 
-void start_init_anim(LockState &st, LockOutputSurface &los) {
-    (void)st;
-    klog("lock: init anim start on '%s' box=%.0f target=%.0fx%.0f", los.output_name.c_str(), lock_icon_box_size(), los.panel_w_target, los.panel_h_target);
-    los.anim_started = true;
-    los.panel_scale = kLockScaleHidden;
-    los.panel_rotation = 0.0f;
-    los.icon_alpha = 1.0f;
-    los.content_alpha = 0.0f;
-    los.content_scale = kLockScaleHidden;
-
-    float box = lock_icon_box_size();
-    los.panel_w = box;
-    los.panel_h = box;
-    float target_w = los.panel_w_target > 0 ? los.panel_w_target : box;
-    float target_h = los.panel_h_target > 0 ? los.panel_h_target : box;
-
-    auto &a = los.animations;
-    a.animate(kLockScaleHidden, kLockScaleFull, kLockAnimSpinMs, astralia::Easing::EaseOutBack, [&los](float v) { los.panel_scale = v; }, {}, kLockOwnerPanelScale);
-    a.animate(0.0f, 360.0f, kLockAnimSpinMs, astralia::Easing::EaseInOutCubic, [&los](float v) { los.panel_rotation = v; }, [&los, target_w, target_h] {
-            klog("lock: entrance expand begin on '%s' -> %.0fx%.0f", los.output_name.c_str(), target_w, target_h);
-            los.panel_rotation = 0.0f;
-            auto &a2 = los.animations;
-            a2.animate(los.panel_w, target_w, kLockAnimExpandMs, astralia::Easing::EaseOutCubic, [&los](float v) { los.panel_w = v; }, {}, kLockOwnerPanelWidth);
-            a2.animate(los.panel_h, target_h, kLockAnimExpandMs, astralia::Easing::EaseOutCubic, [&los](float v) { los.panel_h = v; }, {}, kLockOwnerPanelHeight);
-            a2.animate(1.0f, 0.0f, kLockAnimIconFadeOutMs, astralia::Easing::EaseOutCubic, [&los](float v) { los.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
-            a2.animate(0.0f, 1.0f, kLockAnimContentFadeInMs, astralia::Easing::EaseOutCubic, [&los](float v) { los.content_alpha = v; }, {}, kLockOwnerContentAlpha);
-            a2.animate(kLockScaleHidden, kLockScaleFull, kLockAnimContentScaleInMs, astralia::Easing::EaseOutBack, [&los](float v) { los.content_scale = v; }, {}, kLockOwnerContentScale); }, kLockOwnerPanelRotation);
+std::string clock_text(const char *format) {
+    std::time_t now = std::time(nullptr);
+    char buffer[64];
+    size_t n = std::strftime(buffer, sizeof(buffer), format, std::localtime(&now));
+    return std::string(buffer, n);
 }
 
-void sync_panel_size(LockState &st, LockOutputSurface &los) {
-    float oh = static_cast<float>(los.height);
-    float card_w = lock_card_width(oh);
-    float card_h = lock_card_height(oh);
-    los.panel_w_target = card_w;
-    los.panel_h_target = card_h;
-
-    if (!los.anim_started)
-        start_init_anim(st, los);
-    else if (!los.animations.hasActive() && !st.unlocking) {
-        los.panel_w = card_w;
-        los.panel_h = card_h;
-    }
-}
-
-void start_unlock_anim(LockState &st, LockOutputSurface &los) {
-    float box = lock_icon_box_size();
-    auto &a = los.animations;
-    a.animate(los.panel_w, box, kLockAnimShrinkMs, astralia::Easing::EaseInCubic, [&los](float v) { los.panel_w = v; }, {}, kLockOwnerPanelWidth);
-    a.animate(los.panel_h, box, kLockAnimShrinkMs, astralia::Easing::EaseInCubic, [&los](float v) { los.panel_h = v; }, {}, kLockOwnerPanelHeight);
-    a.animate(los.icon_alpha, 1.0f, kLockAnimIconFadeInMs, astralia::Easing::EaseInCubic, [&los](float v) { los.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
-    a.animate(los.content_alpha, 0.0f, kLockAnimContentFadeOutMs, astralia::Easing::EaseInCubic, [&los](float v) { los.content_alpha = v; }, {}, kLockOwnerContentAlpha);
-    a.animate(los.content_scale, kLockScaleHidden, kLockAnimContentScaleOutMs, astralia::Easing::EaseInBack, [&los](float v) { los.content_scale = v; }, {}, kLockOwnerContentScale);
-
-    bool is_primary = !st.surfaces.empty() && st.surfaces.front().get() == &los;
-    a.animate(0.0f, 1.0f, kLockAnimShrinkMs, astralia::Easing::Linear, [](float) {}, [&st, &los, is_primary] {
-            auto &a2 = los.animations;
-            a2.animate(los.panel_scale, kLockScaleHidden, kLockAnimSpinMs, astralia::Easing::EaseInBack, [&los](float v) { los.panel_scale = v; }, {}, kLockOwnerPanelScale);
-            a2.animate(0.0f, -360.0f, kLockAnimSpinMs, astralia::Easing::EaseInOutCubic, [&los](float v) { los.panel_rotation = v; }, [&st, is_primary] {
-                    if (is_primary)
-                        astralia::DeferredCall::call_later([&st] { finish_unlock(st); });
-                }, kLockOwnerPanelRotation); }, kLockOwnerSequence);
+astralia::LockInfo lock_info(const LockState &st) {
+    WaylandState &app = *st.app;
+    std::string date = clock_text("%a %Y-%m-%d");
+    for (char &c : date)
+        c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    return {st.user,
+            user_info::os_pretty_name(),
+            app.desktop->name(),
+            user_info::uptime_string(),
+            clock_text("%H"),
+            clock_text("%M"),
+            date,
+            &app.battery->status(),
+            &app.media->status(),
+            &app.system_stats,
+            &app.cpu_temp,
+            &app.gpu_temp,
+            &app.notifications->list()};
 }
 
 void lock_paint(LockState &st, LockOutputSurface &los) {
@@ -127,6 +89,7 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     };
 
     Renderer &r = st.app->renderer;
+    los.canvas.bind(r);
     step("enter -> eglMakeCurrent");
     if (!gl_make_current(st.app->egl_display, los.egl_surface, st.app->egl_context))
         return;
@@ -137,27 +100,30 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     auto now = clk::now();
-    los.animations.tick(now);
+    los.motion.animations.tick(now);
     animated_image_tick(st.avatar, now);
 
-    los.scene.rebuild();
-    Node &root = los.scene.root;
-
+    los.canvas.begin(los.output_scale.scale);
     step("draw_wallpaper");
     if (st.draw_wallpaper)
-        st.draw_wallpaper(los.output_name, root, los.width, los.height);
+        st.draw_wallpaper(los.output_name, los.canvas, los.width, los.height);
     t_wallpaper = clk::now();
 
-    step("build_panel");
+    step("paint_panel");
+    los.hits = {};
     if (!los.panel_gated) {
-        sync_panel_size(st, los);
-        lock_card_build(st, los, &root);
+        float oh = static_cast<float>(los.height);
+        astralia::lock_motion_fit(los.motion, lock_card_width(oh), lock_card_height(oh));
+        astralia::paint_lock(los.canvas, st.model, los.motion, lock_info(st), static_cast<float>(los.width), oh, [&st, &los](astralia::ui::Canvas &, const astralia::ui::Box &box) {
+            if (st.avatar.frames.empty())
+                return false;
+            animated_image_draw(st.avatar, los.canvas, box.x, box.y, box.w, box.h, 1.0f);
+            return true;
+        });
+        los.hits = st.model.hits();
     }
+    los.canvas.flush();
     t_panel = clk::now();
-
-    step("scene.draw");
-    r.set_opacity(1.0f);
-    los.scene.draw(r);
     gl_check("lock_paint");
     t_draw = clk::now();
     step("eglSwapBuffers");
@@ -176,10 +142,10 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     else if (f % 30 == 0)
         klog("lock: paint #%d '%s' locked=%d unlocking=%d gated=%d "
              "scale=%.2f content=%.2f",
-             f, los.output_name.c_str(), st.locked, st.unlocking, los.panel_gated, los.panel_scale, los.content_alpha);
+             f, los.output_name.c_str(), st.locked, st.unlocking, los.panel_gated, los.motion.panel_scale, los.motion.content_alpha);
 
     bool avatar_running = st.locked && !st.unlocking && !los.panel_gated && animated_image_animating(st.avatar);
-    if (los.animations.hasActive() || avatar_running)
+    if (los.motion.animations.hasActive() || avatar_running)
         request_frame(los.frame_clock);
 }
 
@@ -248,30 +214,25 @@ constexpr ext_session_lock_v1_listener kLockListener = {
 };
 
 void deliver_auth(LockState &st, uint64_t gen, pam_auth::Result res) {
-    if (gen != st.auth_generation || !st.locked)
+    if (!st.locked)
         return;
-    st.authenticating = false;
-    if (res.success) {
+    bool current = gen == st.model.generation();
+    if (st.model.finish_auth(gen, res.success)) {
         lock_begin_unlock(st);
         return;
     }
-    pam_auth::secure_clear(st.password.text);
-    st.pw_anim.chars.clear();
-    st.pw_row_slide = {};
-    st.failed = true;
-    st.fail_clear_at =
-        std::chrono::steady_clock::now() +
-        std::chrono::milliseconds(static_cast<int>(kLockTimerFailMs));
+    if (!current)
+        return;
+    for (auto &up : st.surfaces)
+        astralia::lock_motion_clear_dots(up->motion);
     request_all(st);
 }
 
 void try_authenticate(LockState &st) {
-    if (st.authenticating || st.password.text.empty())
+    if (st.model.authenticating() || st.model.password().empty())
         return;
-    st.authenticating = true;
-    st.failed = false;
-    uint64_t gen = ++st.auth_generation;
-    std::string pw = st.password.text;
+    std::string pw = st.model.begin_auth();
+    uint64_t gen = st.model.generation();
     std::thread([&st, gen, pw = std::move(pw)]() mutable {
         pam_auth::Result res = pam_auth::authenticate(user_info::username(), pw, ASTRALIA_SHELL_PAM_DIR);
         pam_auth::secure_clear(pw);
@@ -359,11 +320,7 @@ bool lock_request(LockState &st, WaylandState &app) {
     st.active = true;
     st.locked = false;
     st.unlocking = false;
-    st.failed = false;
-    st.authenticating = false;
-    st.password.text.clear();
-    st.pw_anim.chars.clear();
-    st.pw_row_slide = {};
+    st.model.reset();
     if (st.user.empty())
         st.user = user_info::username();
 
@@ -393,9 +350,7 @@ void lock_teardown(LockState &st) {
     st.unlocking = false;
     if (st.app)
         st.app->session_locked = false;
-    pam_auth::secure_clear(st.password.text);
-    st.pw_anim.chars.clear();
-    st.pw_row_slide = {};
+    st.model.reset();
     if (st.app) {
         app_detail::rest_egl_current(*st.app);
         for (auto &mon : st.app->outputs)
@@ -409,7 +364,11 @@ void lock_begin_unlock(LockState &st) {
         return;
     st.unlocking = true;
     for (auto &up : st.surfaces) {
-        start_unlock_anim(st, *up);
+        bool primary = up.get() == st.surfaces.front().get();
+        astralia::lock_motion_exit(up->motion, [&st, primary] {
+            if (primary)
+                astralia::DeferredCall::call_later([&st] { finish_unlock(st); });
+        });
         if (up->frame_clock.surface)
             request_frame(up->frame_clock);
     }
@@ -420,25 +379,17 @@ void lock_begin_unlock(LockState &st) {
 void lock_handle_key(LockState &st, const KeyEvent &ev) {
     if (!st.locked || st.unlocking)
         return;
-    TextFieldResult res = text_field_handle_key(st.password, ev);
-    if (res == TextFieldResult::Committed) {
+    switch (st.model.key(to_neutral(ev))) {
+    case astralia::LockKey::submit:
         try_authenticate(st);
         return;
-    }
-    if (res == TextFieldResult::Cancelled)
-        pam_auth::secure_clear(st.password.text);
-    if (res == TextFieldResult::Changed || res == TextFieldResult::Cancelled) {
-        st.failed = false;
-        LockOutputSurface *focus = nullptr;
-        wl_surface *fs = lock_focused_surface(st);
+    case astralia::LockKey::changed:
         for (auto &up : st.surfaces)
-            if (up->surface == fs)
-                focus = up.get();
-        if (focus)
-            text_field_type_anim_sync(st.pw_anim, focus->animations, kLockOwnerDotBase, st.password.text);
-        else
-            st.pw_anim.chars.resize(text_field_utf8_len(st.password.text));
+            astralia::lock_motion_type(up->motion, st.model.password());
         request_all(st);
+        return;
+    case astralia::LockKey::none:
+        return;
     }
 }
 
@@ -456,17 +407,17 @@ void lock_handle_click(LockState &st, wl_surface *surf, double x, double y) {
     auto hit = [x, y](const astralia::ui::Box &r) {
         return r.w > 0.0f && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
     };
-    if (hit(los->pill_button)) {
+    if (hit(los->hits.pill_button)) {
         try_authenticate(st);
         return;
     }
-    if (hit(los->media_prev)) {
+    if (hit(los->hits.media_prev)) {
         st.app->media->previous();
         request_all(st);
-    } else if (hit(los->media_play)) {
+    } else if (hit(los->hits.media_play)) {
         st.app->media->play_pause();
         request_all(st);
-    } else if (hit(los->media_next)) {
+    } else if (hit(los->hits.media_next)) {
         st.app->media->next();
         request_all(st);
     }
@@ -475,9 +426,7 @@ void lock_handle_click(LockState &st, wl_surface *surf, double x, double y) {
 void lock_timer_tick(LockState &st) {
     if (!st.active)
         return;
-    if (st.failed && std::chrono::steady_clock::now() >= st.fail_clear_at) {
-        st.failed = false;
-    }
+    st.model.tick(astralia::LockModel::Clock::now());
     request_all(st);
 }
 
@@ -537,14 +486,13 @@ class LockModule final : public Module {
 
     bool init_egl(WaylandState &app) override {
         state_.app = &app;
-        state_.draw_wallpaper = [this, &app](const std::string &output_name, Node &root, int32_t w, int32_t h) {
+        state_.draw_wallpaper = [this, &app](const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h) {
             if (draw_wallpaper_)
-                draw_wallpaper_(app, output_name, root, w, h);
+                draw_wallpaper_(app, output_name, canvas, w, h);
         };
         state_.panel_gated_for = [&app](const std::string &output_name) {
             return lock_effective_enabled(app.cfg, output_name);
         };
-        state_.echo_glyph = load_image_texture_first_existing({ASTRALIA_SHELL_INPUT_ECHO, "assets/electro.png"});
         return true;
     }
 

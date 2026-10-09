@@ -55,12 +55,13 @@ void check_lock() {
     test::check(model.password().empty() && !model.authenticating(), "reset clears the state");
 
     test::RecordingCanvas canvas;
+    astralia::LockMotion motion;
     astralia::LockInfo info;
     info.user = "user";
     info.hour = "12";
     info.minute = "34";
     info.date = "FRI 2026-10-09";
-    paint_lock(canvas, model, info, 2560.0f, 1440.0f);
+    paint_lock(canvas, model, motion, info, 2560.0f, 1440.0f);
     auto has = [&](const char *value) {
         return std::ranges::any_of(canvas.ops, [&](const test::Op &op) { return op.text == value; });
     };
@@ -70,6 +71,6 @@ void check_lock() {
     model.begin_auth();
     model.finish_auth(model.generation(), false);
     canvas.ops.clear();
-    paint_lock(canvas, model, info, 2560.0f, 1440.0f);
+    paint_lock(canvas, model, motion, info, 2560.0f, 1440.0f);
     test::check(has(kLockFailText), "the view shows the failure text");
 }

@@ -22,6 +22,8 @@ float texture_width(const Texture &tex) { return static_cast<float>(tex.width) /
 
 float texture_height(const Texture &tex) { return static_cast<float>(tex.height) / static_cast<float>(tex.scale > 0 ? tex.scale : 1); }
 
+constexpr float kWhite[4] = {1, 1, 1, 1};
+
 } // namespace
 
 void GlCanvas::begin(int32_t scale) {
@@ -29,27 +31,27 @@ void GlCanvas::begin(int32_t scale) {
         cache_.clear();
         scale_ = scale;
     }
-    scene_.rebuild();
-    stack_.assign(1, &scene_.root);
-    palette_used_ = 0;
-    opacity_ = 1.0f;
-}
-
-void GlCanvas::flush() {
-    renderer_->set_opacity(opacity_);
-    scene_.draw(*renderer_);
+    groups_.clear();
+    erase_ = false;
     renderer_->set_opacity(1.0f);
 }
 
-const float *GlCanvas::color(const astralia::Color &c) {
-    size_t block = palette_used_ / kColorBlock;
-    if (block >= palette_.size()) {
-        palette_.push_back(std::make_unique<std::array<astralia::Color, kColorBlock>>());
+void GlCanvas::flush() {
+    while (!groups_.empty()) {
+        end_group();
     }
-    astralia::Color &slot = (*palette_[block])[palette_used_ % kColorBlock];
-    slot = c;
-    ++palette_used_;
-    return &slot.r;
+    renderer_->set_opacity(1.0f);
+}
+
+// In erase mode each shape first clears what lies under it, then draws normally.
+template <typename Draw>
+void GlCanvas::shape(const Draw &draw) {
+    if (erase_) {
+        renderer_->set_erase_blend(true);
+        draw(true);
+        renderer_->set_erase_blend(false);
+    }
+    draw(false);
 }
 
 const Texture *GlCanvas::glyphs(std::string_view text, const ui::TextStyle &style) {
@@ -69,11 +71,11 @@ const Texture *GlCanvas::glyphs(std::string_view text, const ui::TextStyle &styl
 }
 
 void GlCanvas::rect(const ui::Box &box, const astralia::Color &fill) {
-    node_add_rect(stack_.back(), box.x, box.y, box.w, box.h, color(fill));
+    shape([&](bool erase) { renderer_->draw_rect(ox() + box.x, oy() + box.y, box.w, box.h, erase ? kWhite : astralia::rgba(fill)); });
 }
 
 void GlCanvas::rounded(const ui::Box &box, float radius, const astralia::Color &fill, float border_width, const astralia::Color &border) {
-    node_add_rrect(stack_.back(), box.x, box.y, box.w, box.h, radius, border_width, color(fill), color(border));
+    shape([&](bool erase) { renderer_->draw_rounded_rect(ox() + box.x, oy() + box.y, box.w, box.h, radius, border_width, erase ? kWhite : astralia::rgba(fill), erase ? kWhite : astralia::rgba(border)); });
 }
 
 ui::TextSize GlCanvas::measure(std::string_view text, const ui::TextStyle &style) {
@@ -91,7 +93,7 @@ float GlCanvas::advance(const ui::TextStyle &style) {
 void GlCanvas::text(std::string_view text, const ui::TextStyle &style, float x, float y, const astralia::Color &tint) {
     const Texture *tex = glyphs(text, style);
     if (tex != nullptr) {
-        node_add_texture_rect(stack_.back(), x, y, texture_width(*tex), texture_height(*tex), *tex, color(tint));
+        texture(*tex, {x, y, texture_width(*tex), texture_height(*tex)}, astralia::rgba(tint));
     }
 }
 
@@ -205,23 +207,66 @@ void GlCanvas::draw_image(ui::ImageId id, const ui::Box &box, const astralia::Co
     if (id < 0 || static_cast<size_t>(id) >= images_.size()) {
         return;
     }
-    node_add_texture_rect(stack_.back(), box.x, box.y, box.w, box.h, *images_[static_cast<size_t>(id)], color(tint));
+    texture(*images_[static_cast<size_t>(id)], box, astralia::rgba(tint));
 }
 
 void GlCanvas::gauge(const ui::Box &box, float stroke, float value, const astralia::Color &fill) {
     if (const Texture *tex = cached_arc_gauge(cache_, scale_, box.w, stroke, value, fill)) {
-        node_add_texture(stack_.back(), std::round(box.x), std::round(box.y), *tex, color(astralia::palette::text));
+        texture(*tex, std::round(box.x), std::round(box.y), astralia::rgba(astralia::palette::text));
     }
 }
 
 void GlCanvas::begin_group(const ui::Box &box, const ui::GroupOptions &options) {
-    Node *group = node_add_group(stack_.back(), box.x, box.y, box.w, box.h, options.clip);
-    group->scale = options.scale;
-    stack_.push_back(group);
+    Group group{ox() + box.x, oy() + box.y};
+    group.transformed = options.scale != 1.0f || options.rotation != 0.0f;
+    if (group.transformed) {
+        float cx = group.x + box.w * 0.5f;
+        float cy = group.y + box.h * 0.5f;
+        renderer_->push_model(Affine2D::translation(cx, cy).compose(Affine2D::scaling(options.scale)).compose(Affine2D::rotation_deg(options.rotation)).compose(Affine2D::translation(-cx, -cy)));
+    }
+    // Scissor clips ignore the model transform, so a transformed group never clips.
+    group.clip = options.clip && !group.transformed;
+    if (group.clip) {
+        renderer_->set_clip(group.x, group.y, box.w, box.h);
+    }
+    groups_.push_back(group);
 }
 
 void GlCanvas::end_group() {
-    if (stack_.size() > 1) {
-        stack_.pop_back();
+    if (groups_.empty()) {
+        return;
+    }
+    Group group = groups_.back();
+    groups_.pop_back();
+    if (group.clip) {
+        renderer_->clear_clip();
+    }
+    if (group.transformed) {
+        renderer_->pop_model();
+    }
+}
+
+void GlCanvas::texture(const Texture &tex, const ui::Box &box, const float tint[4], float radius) {
+    if (tex.id == 0) {
+        return;
+    }
+    float x = ox() + box.x;
+    float y = oy() + box.y;
+    shape([&](bool erase) {
+        if (radius > 0.0f) {
+            renderer_->draw_texture_rect_rounded(x, y, box.w, box.h, radius, tex, erase ? kWhite : tint);
+        } else {
+            renderer_->draw_texture_rect(x, y, box.w, box.h, tex, erase ? kWhite : tint);
+        }
+    });
+}
+
+void GlCanvas::texture(const Texture &tex, float x, float y, const float tint[4]) {
+    texture(tex, {x, y, texture_width(tex), texture_height(tex)}, tint);
+}
+
+void GlCanvas::video(const VideoTexture &tex, const ui::Box &box) {
+    if (tex.tex != 0) {
+        renderer_->draw_video_texture_rect(ox() + box.x, oy() + box.y, box.w, box.h, tex);
     }
 }

@@ -42,20 +42,12 @@ void animated_image_tick(AnimatedImage &img, std::chrono::steady_clock::time_poi
     img.cur_frame = animate_frame_index(elapsed, img.style.decode.fps, static_cast<int>(img.frames.size()));
 }
 
-void animated_image_draw(AnimatedImage &img, Node *parent, float x, float y, float w, float h, float alpha) {
+void animated_image_draw(AnimatedImage &img, GlCanvas &canvas, float x, float y, float w, float h, float alpha) {
     const AnimatedImageStyle &s = img.style;
     float radius = s.circular ? w * 0.5f : 0.0f;
     if (s.ring_fill || s.border_color) {
-        const float *ring = s.ring_fill ? s.ring_fill : kNodeTransparent;
-        const float *border =
-            s.border_color ? s.border_color : kNodeTransparent;
-        for (int i = 0; i < 3; ++i) {
-            img.ring_tint[i] = ring[i];
-            img.border_tint[i] = border[i];
-        }
-        img.ring_tint[3] = ring[3] * alpha;
-        img.border_tint[3] = border[3] * alpha;
-        node_add_rrect(parent, x, y, w, h, radius, s.border_width, img.ring_tint, img.border_tint);
+        auto faded = [alpha](const float *c) { return c ? astralia::Color{c[0], c[1], c[2], c[3] * alpha} : astralia::Color{0, 0, 0, 0}; };
+        canvas.rounded({x, y, w, h}, radius, faded(s.ring_fill), s.border_width, faded(s.border_color));
     }
 
     if (img.frames.empty())
@@ -66,7 +58,7 @@ void animated_image_draw(AnimatedImage &img, Node *parent, float x, float y, flo
     if (!ft.id)
         return;
 
-    img.draw_tint[3] = alpha;
+    const float tint[4] = {1, 1, 1, alpha};
     float inset = s.border_width;
     float ix = x + inset, iy = y + inset;
     float iw = w - 2 * inset, ih = h - 2 * inset;
@@ -79,10 +71,7 @@ void animated_image_draw(AnimatedImage &img, Node *parent, float x, float y, flo
         iw = fw;
         ih = fh;
     }
-    if (s.circular)
-        node_add_texture_rect_rounded(parent, ix, iy, iw, ih, iw * 0.5f, ft, img.draw_tint);
-    else
-        node_add_texture_rect(parent, ix, iy, iw, ih, ft, img.draw_tint);
+    canvas.texture(ft, {ix, iy, iw, ih}, tint, s.circular ? iw * 0.5f : 0.0f);
 }
 
 bool animated_image_animating(const AnimatedImage &img) {

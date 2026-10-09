@@ -41,7 +41,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 ## Shared: design
 
 - Draw each module once over `ui::Canvas` and add a hook for backend-only art. Per-backend copies drift apart within a release.
-- Hooks carry backend-only art: `LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`. Shared views then never include a render header.
+- Hooks carry backend-only art: `LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`, `LockAvatarArt`. Shared views then never include a render header.
 - Share a module's logic only where both backends' formulas and constants match. `notification`, `settings` and bar styles differ in design, so they stay per backend.
 - Keep constants only one host draws with in `<module>_style_config.h`. Constants a shared view draws with go in the module's shared config.
 - Move call sites to the shared names instead of keeping alias headers. Aliases hide which service a file uses.
@@ -113,7 +113,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - A `backtrace_symbols_fd` trace maps to source only with `addr2line` against the exact crashed binary. A rebuild invalidates the offsets.
 - The poll loop must `continue` on `EINTR` and log any other `poll()` error. Breaking on `EINTR` exited the whole process.
 - Never size an allocation from an on-disk header without checking the file size. A corrupt cache header made `new[]` throw on a worker.
-- libpng and libjpeg report errors by `longjmp`, skipping destructors. Hold buffers in plain or `volatile` pointers freed in the `setjmp` branch.
+- libjpeg reports errors by `longjmp`, skipping destructors. Hold buffers in plain or `volatile` pointers freed in the `setjmp` branch.
 - libjpeg's default `error_exit` calls `exit()`. Install a handler that jumps back and returns `nullptr`.
 - Every bundled asset needs the installed-path-plus-dev-tree fallback. A bare relative path resolves against the daemon's working directory.
 - Brightness is set through `brightnessctl`, never a direct `sysfs` write. The file is root-only without a `uaccess` rule.
@@ -168,7 +168,9 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - A `Texture`'s size is device pixels (`logical * scale`). Divide by `scale` when laying out, or HiDPI blocks come out 2x.
 - A decode resolution must be device pixels, not logical. Decoding at logical size upscaled the lock avatar blurrily on scale 2.
 - A pre-upload downsample derives its size from the source aspect ratio. Squashing to the box bakes in a stretch no crop undoes.
-- `load_image_decode` renders SVGs into a square viewport only. Aspect-correct sprites need a direct `librsvg` render into a sized surface.
+- Decode images with `stb_image` and `resvg`, not gdk-pixbuf or librsvg. gdk-pixbuf pulls in sandboxed loaders, extra threads and megabytes of libraries.
+- `decode_pixels` fits an SVG inside its box keeping the aspect. Give a height-only fit a huge width bound.
+- `decode_pixels` allocates every buffer with `new[]`, stb included through `STBI_MALLOC`. Each backend then adopts the buffer without a copy.
 - A JPEG decode given a target size uses libjpeg `scale_denom`. Reduced-size decoding skips most pixels and memory.
 - Font hinting differs between icons and text. `HINT_STYLE_NONE` keeps Tabler strokes thick while hinted text stays crisp.
 
@@ -187,19 +189,16 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] A rounded rect placed above the surface edge shows only its bottom corners rounded. `Okinami` islands therefore need no shader.
 - [wayland] `draw_texture_rect` rounds its `x` and `y`, but shapes do not. Round the shared edge first or a texture lands a pixel off.
 - [wayland] Fractional texture positions blur every glyph. `GL_LINEAR` blends edge texels at half-pixel offsets; round before drawing.
-- [wayland] `set_opacity()` is one global value per frame. Per-element alpha means baking it into each element's colour.
-- [wayland] Node colour pointers are read at draw time. A temporary's address renders garbage once the stack slot is reused.
-- [wayland] Variable-count colours come from a frame-scoped `static thread_local std::deque<Color>`. A deque keeps pointers valid across `push_back`.
-- [wayland] `Node` and `Scene` have no `z`; claim order is paint order. Claim an overlay after every node it sits above.
-- [wayland] `node_add_texture` draws at native size. An aspect-preserving decode in a fixed cell spills into neighbours without cropping.
-- [wayland] A rebuilt-every-frame node tree pools its nodes. Reallocating at animation rate grows the heap high-water mark.
+- [wayland] `GlCanvas` draws immediately; call order is paint order. `set_opacity()` applies to the draws after it, so set it before painting.
+- [wayland] Modules draw only through `GlCanvas`; its `texture`, `video`, `set_erase` and `renderer()` extras serve hooks and shader passes.
+- [wayland] A group clips only when it is not itself scaled or rotated. Scissor rects ignore the model transform.
 - [wayland] A narrower anti-aliasing band crisps rounded rect edges. One pixel fixed what a two-pixel `smoothstep` softened.
 - [wayland] `rrect.frag`'s distance needs the interior `min(max(q.x, q.y), 0.0)` term. Otherwise a border wider than the radius fills the rect.
 - [wayland] `draw_rounded_rect` always reads its border colour, even at zero width. Passing `nullptr` is a null read.
 - [wayland] A `border_width` ported 1:1 from QML looks thinner here. Match `metrics::border_thin` (`2.0f`).
 - [wayland] A concave hug corner is the same quarter-circle cutout as a convex fillet. `fillet_rgba` serves both.
 - [wayland] A single shared `Renderer` resets itself in `begin_frame()`. Callers leaked stale opacity into the next paint.
-- [wayland] Two hand-rolled opacity pipelines for one window drift apart. Unify on the shared Renderer and Scene path.
+- [wayland] Two hand-rolled opacity pipelines for one window drift apart. Unify on `GlCanvas`.
 - [wayland] A fresh share context starts with `GL_BLEND` disabled. Raw GL paths enable it once per context.
 - [wayland] `glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)` squares alpha over a transparent-cleared surface. Use `glBlendFuncSeparate` with `GL_ONE` for alpha.
 - [wayland] `smoothstep` needs `edge0 < edge1`. Mesa tolerates reversed edges, NVIDIA may not; invert with `1.0 - smoothstep(lo, hi, x)`.
@@ -214,7 +213,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] Exact texel reads use `texture2D` with `GL_NEAREST`. Add `+0.5` only to integer indices; `gl_FragCoord` already sits at `i + 0.5`.
 - [wayland] Float additive accumulation needs `GL_OES_texture_float`, `GL_EXT_color_buffer_float` and `GL_EXT_float_blend`. Probe the extension string.
 - [wayland] Skip the CPU BGRA swizzle for shm captures. `GL_EXT_texture_format_BGRA8888` uploads them directly.
-- [wayland] A custom multi-pass shader effect bypasses the scene graph. Give it its own programs and FBOs, called from the module's paint.
+- [wayland] A custom multi-pass shader effect bypasses `GlCanvas`. Give it its own programs and FBOs, called from the module's paint.
 - [wayland] A single-pass module shader can ride `Renderer::draw_custom`. Reuse `renderer/quad.vert` and `quad_vbo_` instead of owning FBOs.
 - [wayland] Create a static quad's buffer once with its program. Per-frame `glGenBuffers` is driver churn.
 - [wayland] A per-frame multi-tap fullscreen pass at native resolution stalls the poll loop. Render it to a downsampled FBO.
@@ -375,7 +374,6 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [x11] `AudioService::changed` also fires `AudioKind::nodes` after every volume change. Match each kind explicitly, never with a sink-or-else fallback.
 - [x11] Disable cairo MIT-SHM on a probe surface right after connecting. Surfaces copy the flag at creation, and its pool stays resident.
 - [x11] Disable cairo SHM with version `-1, -1`. Cairo checks for negative versions, so `0, 0` leaves SHM on.
-- [x11] Decode images with `stb_image` and `resvg`, not gdk-pixbuf. gdk-pixbuf pulls in sandboxed loaders, extra threads and megabytes of libraries.
 - [x11] Wrap decoded `stb_image` pixels in the cairo surface in place. Copying doubled the transient peak of large wallpapers.
 - [x11] Decode JPEGs with `libjpeg` scale denominators of 2, 4 or 8. Reduced-size decoding skips most pixels and memory.
 - [x11] Call `malloc_trim(0)` after bursts like decodes or broad searches. glibc keeps freed small chunks, pinning several megabytes otherwise.

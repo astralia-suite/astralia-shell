@@ -15,9 +15,11 @@ class Text {
     bool set(std::string_view text);
     void wrap(int width);
     void ellipsize(int width);
+    void set_font_options(const cairo_font_options_t *options);
     int width() const;
     int height() const;
     PangoRectangle ink() const;
+    PangoRectangle ink_exact() const;
     void draw(cairo_t *cr, double x, double y) const;
     void draw_centered(cairo_t *cr, double x, int top, int height) const;
     void draw_ink_centered(cairo_t *cr, double cx, double cy) const;

@@ -242,10 +242,10 @@ void launcher_paint(LauncherState &state) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     state.canvas.begin(scale);
+    state.canvas.set_opacity(state.opacity);
     state.frame = {};
     if (state.open && state.model)
         state.frame = astralia::paint_launcher(state.canvas, *state.model, static_cast<float>(state.width), static_cast<float>(state.height));
-    state.canvas.set_opacity(state.opacity);
     state.canvas.flush();
     eglSwapBuffers(state.egl_display, state.egl_surface);
 

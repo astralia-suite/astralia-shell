@@ -5,7 +5,7 @@
 
 #include "modules/bar/style.h"
 
-#include "wayland/render/node.h"
+#include "wayland/render/gl_canvas.h"
 #include "wayland/render/texture.h"
 
 struct BarDecor {
@@ -25,5 +25,5 @@ struct BarDecor {
 
 std::vector<uint8_t> fillet_rgba(int size, bool circle_on_right);
 
-void bar_frame_base(Node *content, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height);
-void bar_frame_overlay(Node *content, BarDecor &decor, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height, int32_t scale, int32_t hug_radius, bool left_flush, bool right_flush);
+void bar_frame_base(GlCanvas &canvas, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height);
+void bar_frame_overlay(GlCanvas &canvas, BarDecor &decor, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height, int32_t scale, int32_t hug_radius, bool left_flush, bool right_flush);

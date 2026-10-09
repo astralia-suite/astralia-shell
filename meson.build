@@ -13,6 +13,12 @@ polkit_agent_dep = dependency('polkit-agent-1', include_type: 'system')
 pam_dep = meson.get_compiler('cpp').find_library('pam')
 
 deps = [sdbus_cpp_dep, threads_dep, libpipewire_dep, polkit_agent_dep, pam_dep]
+render_deps = [
+  dependency('resvg', include_type: 'system'),
+  dependency('libjpeg', include_type: 'system'),
+  dependency('cairo', include_type: 'system'),
+  dependency('fontconfig', include_type: 'system'),
+]
 
 inc = include_directories('src')
 
@@ -119,13 +125,15 @@ core_shared = static_library(
     'src/service/settings_service.cpp',
     'src/service/user_service.cpp',
     'src/service/wallpaper_service.cpp',
+    'src/render/app_fonts.cpp',
+    'src/render/decode.cpp',
     'src/render/field_view.cpp',
     'src/render/marquee.cpp',
     'src/render/module_base.cpp',
     'src/render/text_field.cpp',
   ),
   include_directories: inc,
-  dependencies: deps,
+  dependencies: deps + render_deps,
   cpp_args: hidden,
   pic: true,
 )
@@ -273,7 +281,7 @@ unit = executable(
   ),
   include_directories: [inc, include_directories('test')],
   link_with: [core_base, core_shared],
-  dependencies: deps + [dl_dep],
+  dependencies: deps + render_deps + [dl_dep],
 )
 
 test('unit', unit)
@@ -291,7 +299,6 @@ if wayland_enabled
       'test/backend/wayland/render/test_image_decode.cpp',
       'test/backend/wayland/render/test_marquee_scroll.cpp',
       'test/backend/wayland/render/test_palette.cpp',
-      'test/backend/wayland/render/test_text_elide.cpp',
       'test/backend/wayland/service/test_active_output.cpp',
       'test/backend/wayland/service/test_dock.cpp',
       'test/backend/wayland/service/test_input_convert.cpp',

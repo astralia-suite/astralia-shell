@@ -59,30 +59,3 @@ const Texture *cached_arc_gauge(TextureCache &tcache, int32_t scale, float diame
         return result;
     });
 }
-
-float draw_arc_gauge(Node *root, TextureCache &tcache, int32_t scale, float x, float y, float diameter, float stroke, float value01, const astralia::Color &fill_color, const Texture *icon_tex, const float *icon_color, const Texture *value_tex, const float *value_color, const Texture *sub_tex, const float *sub_label_color, float icon_value_gap, float label_spacing) {
-    const Texture *gauge_tex =
-        cached_arc_gauge(tcache, scale, diameter, stroke, value01, fill_color);
-    if (gauge_tex)
-        node_add_texture(root, std::round(x), std::round(y), *gauge_tex, astralia::rgba(astralia::palette::text));
-
-    float icon_h = icon_tex ? icon_tex->height : 0.0f;
-    float value_h = value_tex ? value_tex->height : 0.0f;
-    float gap = icon_tex && value_tex ? icon_value_gap : 0.0f;
-    float stack_y = y + (diameter - icon_h - gap - value_h) / 2.0f;
-
-    if (icon_tex) {
-        node_add_texture(root, std::round(x + (diameter - icon_tex->width) / 2.0f), std::round(stack_y), *icon_tex, icon_color);
-        stack_y += icon_h + gap;
-    }
-    if (value_tex)
-        node_add_texture(root, std::round(x + (diameter - value_tex->width) / 2.0f), std::round(stack_y), *value_tex, value_color);
-
-    float bottom = y + diameter;
-    if (sub_tex) {
-        float sub_y = y + diameter + label_spacing;
-        node_add_texture(root, std::round(x + (diameter - sub_tex->width) / 2.0f), std::round(sub_y), *sub_tex, sub_label_color);
-        bottom = sub_y + sub_tex->height;
-    }
-    return bottom;
-}

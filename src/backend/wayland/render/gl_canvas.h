@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -11,14 +10,13 @@
 #include "render/canvas.h"
 
 #include "wayland/render/renderer.h"
-#include "wayland/render/scene.h"
 #include "wayland/render/texture.h"
 #include "wayland/render/texture_cache.h"
+#include "wayland/render/video_texture.h"
 
 class GlCanvas final : public astralia::ui::Canvas {
   public:
     ~GlCanvas() override { *alive_ = false; }
-    GlCanvas() { stack_.push_back(&scene_.root); }
 
     void bind(Renderer &renderer) { renderer_ = &renderer; }
     void bind_context(std::function<void()> make_current) { make_current_ = std::move(make_current); }
@@ -36,23 +34,32 @@ class GlCanvas final : public astralia::ui::Canvas {
     void draw_image(astralia::ui::ImageId id, const astralia::ui::Box &box, const astralia::Color &tint) override;
     void begin_group(const astralia::ui::Box &box, const astralia::ui::GroupOptions &options) override;
     void end_group() override;
-    void set_opacity(float opacity) override { opacity_ = opacity; }
+    void set_opacity(float opacity) override { renderer_->set_opacity(opacity); }
     void gauge(const astralia::ui::Box &box, float stroke, float value, const astralia::Color &fill) override;
 
-    Node *group() { return stack_.back(); }
+    void texture(const Texture &tex, const astralia::ui::Box &box, const float tint[4], float radius = 0.0f);
+    void texture(const Texture &tex, float x, float y, const float tint[4]);
+    void video(const VideoTexture &tex, const astralia::ui::Box &box);
+    void set_erase(bool on) { erase_ = on; }
+    Renderer &renderer() { return *renderer_; }
 
   private:
-    static constexpr size_t kColorBlock = 64;
+    struct Group {
+        float x = 0;
+        float y = 0;
+        bool clip = false;
+        bool transformed = false;
+    };
 
-    const float *color(const astralia::Color &c);
+    float ox() const { return groups_.empty() ? 0.0f : groups_.back().x; }
+    float oy() const { return groups_.empty() ? 0.0f : groups_.back().y; }
+    template <typename Draw>
+    void shape(const Draw &draw);
     const Texture *glyphs(std::string_view text, const astralia::ui::TextStyle &style);
 
     Renderer *renderer_ = nullptr;
-    Scene scene_;
     TextureCache cache_;
-    std::vector<Node *> stack_;
-    std::vector<std::unique_ptr<std::array<astralia::Color, kColorBlock>>> palette_;
-    size_t palette_used_ = 0;
+    std::vector<Group> groups_;
     std::vector<std::unique_ptr<Texture>> images_;
     std::unordered_map<std::string, astralia::ui::ImageId> image_ids_;
     struct Thumb {
@@ -69,5 +76,5 @@ class GlCanvas final : public astralia::ui::Canvas {
     std::function<void()> make_current_;
     size_t in_flight_ = 0;
     int32_t scale_ = 1;
-    float opacity_ = 1.0f;
+    bool erase_ = false;
 };

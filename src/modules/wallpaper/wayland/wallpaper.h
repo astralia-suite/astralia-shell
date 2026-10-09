@@ -14,7 +14,7 @@
 #include "wayland/app/config.h"
 #include "wayland/app/per_monitor_module.h"
 
-#include "wayland/render/scene.h"
+#include "wayland/render/gl_canvas.h"
 #include "wayland/render/texture.h"
 #include "wayland/render/video_texture.h"
 
@@ -42,7 +42,6 @@ inline constexpr float kWallpaperTransitionDurationMs = 900.0f;
 inline constexpr float kWallpaperTransitionSmoothness = 0.3f;
 
 class Renderer;
-struct Node;
 struct WaylandState;
 
 enum class FillMode { Crop,
@@ -112,7 +111,7 @@ struct WallpaperState {
     int dbg_frame = 0;
     OutputScale output_scale;
     FrameClock frame_clock;
-    Scene scene;
+    GlCanvas canvas;
 
     WallpaperColumnGl gl;
     std::vector<std::unique_ptr<WallpaperColumn>> columns;
@@ -128,7 +127,7 @@ void wallpaper_request_frame(WallpaperState &wp);
 
 void wallpaper_wake(WallpaperState &wp);
 
-void wallpaper_draw_columns(const WallpaperState &wp, Node *parent, int32_t width, int32_t height);
+void wallpaper_draw_columns(const WallpaperState &wp, GlCanvas &canvas, int32_t width, int32_t height);
 
 void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg, const std::string &monitor_name, bool animated);
 

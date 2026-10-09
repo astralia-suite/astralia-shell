@@ -6,7 +6,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include <wayland-client.h>
 #include <wayland-egl.h>
@@ -15,14 +14,10 @@
 
 #include "config/lock_config.h"
 
-#include "core/animation.h"
-#include "render/geometry.h"
+#include "modules/lock/model.h"
+
 #include "wayland/render/animated_image.h"
-#include "wayland/render/renderer.h"
-#include "wayland/render/scene.h"
-#include "wayland/render/text_field.h"
-#include "wayland/render/texture.h"
-#include "wayland/render/texture_cache.h"
+#include "wayland/render/gl_canvas.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/input_service.h"
@@ -47,24 +42,9 @@ struct LockOutputSurface {
     bool panel_gated = false;
     OutputScale output_scale;
     FrameClock frame_clock;
-    Scene scene;
-    astralia::AnimationManager animations;
-
-    float panel_scale = kLockScaleHidden;
-    float panel_rotation = 0.0f;
-    float panel_w = 0.0f;
-    float panel_h = 0.0f;
-    float panel_w_target = 0.0f;
-    float panel_h_target = 0.0f;
-    float icon_alpha = 1.0f;
-    float content_alpha = 0.0f;
-    float content_scale = kLockScaleHidden;
-    bool anim_started = false;
-
-    astralia::ui::Box media_prev{};
-    astralia::ui::Box media_play{};
-    astralia::ui::Box media_next{};
-    astralia::ui::Box pill_button{};
+    GlCanvas canvas;
+    astralia::LockMotion motion;
+    astralia::LockHits hits;
 
     LockOutputSurface() = default;
     LockOutputSurface(const LockOutputSurface &) = delete;
@@ -81,22 +61,11 @@ struct LockState {
 
     std::vector<std::unique_ptr<LockOutputSurface>> surfaces;
 
-    TextFieldState password;
-    bool failed = false;
-    std::chrono::steady_clock::time_point fail_clear_at{};
-    bool authenticating = false;
-    uint64_t auth_generation = 0;
-
+    astralia::LockModel model;
     std::string user;
-    Texture echo_glyph;
-    TextureCache tcache;
-    std::unordered_map<std::string, Texture> art_cache;
-    TextFieldTypeAnim pw_anim;
-    TextFieldRowSlide pw_row_slide;
-
     AnimatedImage avatar;
 
-    std::function<void(const std::string &output_name, Node &root, int32_t w, int32_t h)>
+    std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>
         draw_wallpaper;
     std::function<bool(const std::string &output_name)> panel_gated_for;
 };
@@ -112,7 +81,7 @@ void lock_hotplug_remove(LockState &st, wl_output *output);
 wl_surface *lock_focused_surface(const LockState &st);
 bool lock_owns_surface(const LockState &st, wl_surface *s);
 
-using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::string &output_name, Node &root, int32_t w, int32_t h)>;
+using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>;
 
 std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper);
 void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name);

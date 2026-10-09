@@ -18,7 +18,6 @@
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
-#include "wayland/render/node.h"
 
 void thunder_burst_draw(ThunderBurst &tb, Renderer &renderer, const ThunderParams &p) {
     if (!tb.bolt_tried) {
@@ -247,12 +246,12 @@ void logout_paint(LogoutState &state) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     state.canvas.begin(state.base.output_scale.scale);
+    state.canvas.set_opacity(state.base.opacity);
     if (state.base.open) {
         astralia::paint_logout(state.canvas, state.model, static_cast<float>(state.base.width), static_cast<float>(state.base.height), [&state](astralia::ui::Canvas &, const astralia::ui::Box &area, float alpha) {
-            animated_image_draw(active_logo(state), state.canvas.group(), area.x, area.y, area.w, area.h, alpha);
+            animated_image_draw(active_logo(state), state.canvas, area.x, area.y, area.w, area.h, alpha);
         });
     }
-    state.canvas.set_opacity(state.base.opacity);
     state.canvas.flush();
 
     if (state.base.open) {

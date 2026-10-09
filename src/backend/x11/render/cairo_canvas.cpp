@@ -19,7 +19,7 @@ std::string font_description(const ui::TextStyle &style) {
         return std::format("{} {}px", icon_font_family, style.px);
     }
     if (style.family == ui::FontFamily::glyph) {
-        return std::format("Yuji Mai {}px", style.px);
+        return std::format("{} {}px", glyph_font_family, style.px);
     }
     return std::format("Comic Shanns Mono{} {}px", style.bold ? " Bold" : "", style.px);
 }
@@ -35,6 +35,9 @@ Text &CairoCanvas::face(std::string_view text, const ui::TextStyle &style) {
         }
     }
     auto layout = std::make_unique<Text>(font_description(style).c_str());
+    if (style.family == ui::FontFamily::icon) {
+        layout->set_font_options(icon_font_options());
+    }
     if (style.max_width > 0) {
         if (style.wrap) {
             layout->wrap(style.max_width);
@@ -97,12 +100,12 @@ void CairoCanvas::text(std::string_view text, const ui::TextStyle &style, float 
         return;
     }
     Text &layout = face(text, style);
-    PangoRectangle ink = layout.ink();
     set_source(cr_, color);
     if (style.family != ui::FontFamily::text) {
-        layout.draw(cr_, x - ink.x, y - ink.y);
+        PangoRectangle ink = layout.ink_exact();
+        layout.draw(cr_, x - static_cast<double>(ink.x) / PANGO_SCALE, y - static_cast<double>(ink.y) / PANGO_SCALE);
     } else {
-        layout.draw(cr_, x - ink.x, y);
+        layout.draw(cr_, x - layout.ink().x, y);
     }
 }
 

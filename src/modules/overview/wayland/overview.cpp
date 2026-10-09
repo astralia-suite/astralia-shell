@@ -124,6 +124,7 @@ void overview_paint(OverviewState &state, WaylandState &app) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     state.canvas.begin(state.base.output_scale.scale);
+    state.canvas.set_opacity(state.base.opacity);
     bool animating = false;
     if (state.model) {
         astralia::OverviewModel &model = *state.model;
@@ -136,7 +137,7 @@ void overview_paint(OverviewState &state, WaylandState &app) {
                 if (!tex || !tex->id)
                     return false;
                 static const float white[4] = {1, 1, 1, 1};
-                node_add_texture_rect_rounded(state.canvas.group(), rect.x, rect.y, rect.w, rect.h, radius, *tex, white);
+                state.canvas.texture(*tex, rect, white, radius);
                 return true;
             });
             std::vector<std::string> live_addresses;
@@ -146,7 +147,6 @@ void overview_paint(OverviewState &state, WaylandState &app) {
         }
         animating = model.animating() || model.dragging();
     }
-    state.canvas.set_opacity(state.base.opacity);
     state.canvas.flush();
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
 

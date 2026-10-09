@@ -19,16 +19,16 @@
 
 namespace {
 
-void draw_monitor_wallpaper(MonitorOutput &mon, Node &root, int32_t w, int32_t h) {
+void draw_monitor_wallpaper(MonitorOutput &mon, GlCanvas &canvas, int32_t w, int32_t h) {
     if (auto *wp = mon.module<WallpaperPerMonitorModule>())
-        wallpaper_draw_columns(wp->wallpaper_state(), &root, w, h);
+        wallpaper_draw_columns(wp->wallpaper_state(), canvas, w, h);
 }
 
-void draw_named_wallpaper(WaylandState &app, const std::string &output_name, Node &root, int32_t w, int32_t h) {
+void draw_named_wallpaper(WaylandState &app, const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h) {
     for (auto &mon : app.outputs) {
         if (mon->output.name != output_name)
             continue;
-        draw_monitor_wallpaper(*mon, root, w, h);
+        draw_monitor_wallpaper(*mon, canvas, w, h);
         return;
     }
 }

@@ -1,135 +1,71 @@
-#include <cairo/cairo-ft.h>
 #include <cmath>
-#include <ft2build.h>
+#include <pango/pangocairo.h>
 
-#include "wayland/core/log.h"
+#include "render/app_fonts.h"
 
 #include "wayland/render/icon.h"
 
-#include FT_FREETYPE_H
-
 namespace {
 
-struct IconFont {
-    FT_Face face = nullptr;
-    cairo_font_face_t *cairo_face = nullptr;
-};
-
-IconFont load_face(const char *label, const char *installed, const char *source) {
-    IconFont f;
-    static FT_Library library;
-    static bool library_ready = FT_Init_FreeType(&library) == 0;
-    if (!library_ready) {
-        klog("icon: FT_Init_FreeType failed");
-        return f;
-    }
-    for (const char *path : {installed, source}) {
-        if (FT_New_Face(library, path, 0, &f.face) == 0) {
-            klog("icon: loaded %s from %s", label, path);
-            break;
-        }
-        f.face = nullptr;
-    }
-    if (!f.face) {
-        klog("icon: failed to load %s", label);
-        return f;
-    }
-    f.cairo_face = cairo_ft_font_face_create_for_ft_face(f.face, 0);
-    return f;
-}
-
-IconFont &icon_font() {
-    static IconFont font = load_face("tabler-icons", ASTRALIA_SHELL_FONT_DIR "/tabler-icons.ttf", "assets/fonts/tabler-icons.ttf");
-    return font;
-}
-
-IconFont &display_font() {
-    static IconFont font = load_face("YujiMai", ASTRALIA_SHELL_YUJIMAI_FONT, "assets/fonts/YujiMai.ttf");
-    return font;
-}
-
-uint32_t decode_utf8_codepoint(const std::string &s) {
-    if (s.empty())
-        return 0;
-    unsigned char c0 = static_cast<unsigned char>(s[0]);
-    if (c0 < 0x80)
-        return c0;
-    if ((c0 & 0xE0) == 0xC0 && s.size() >= 2) {
-        return static_cast<uint32_t>((c0 & 0x1F) << 6) | (s[1] & 0x3F);
-    }
-    if ((c0 & 0xF0) == 0xE0 && s.size() >= 3) {
-        return (static_cast<uint32_t>(c0 & 0x0F) << 12) | (static_cast<uint32_t>(s[1] & 0x3F) << 6) | (s[2] & 0x3F);
-    }
-    if ((c0 & 0xF8) == 0xF0 && s.size() >= 4) {
-        return (static_cast<uint32_t>(c0 & 0x07) << 18) | (static_cast<uint32_t>(s[1] & 0x3F) << 12) | (static_cast<uint32_t>(s[2] & 0x3F) << 6) | (s[3] & 0x3F);
-    }
-    return 0;
-}
-
-} // namespace
-
-namespace {
-
-RasterizedText rasterize_face(IconFont &font, const std::string &codepoint_utf8, int32_t scale, int px, cairo_font_options_t *options) {
+// Renders one glyph cropped to its ink box at device pixels, keeping its fractional offset.
+RasterizedText rasterize_glyph(const char *family, const cairo_font_options_t *options, const std::string &codepoint_utf8, int32_t scale, int px) {
     RasterizedText result;
-    if (!font.cairo_face)
-        return result;
-
-    uint32_t codepoint = decode_utf8_codepoint(codepoint_utf8);
-    FT_UInt glyph_index = FT_Get_Char_Index(font.face, codepoint);
-    if (glyph_index == 0) {
-        klog("icon: no glyph for codepoint U+%04X", codepoint);
-        return result;
-    }
-
+    astralia::register_app_fonts();
     scale = scale > 0 ? scale : 1;
-    cairo_matrix_t font_matrix;
-    cairo_matrix_init_scale(&font_matrix, px * scale, px * scale);
-    cairo_matrix_t ctm;
-    cairo_matrix_init_identity(&ctm);
-    cairo_scaled_font_t *scaled_font = cairo_scaled_font_create(font.cairo_face, &font_matrix, &ctm, options);
 
-    cairo_glyph_t measure_glyph = {glyph_index, 0, 0};
-    cairo_text_extents_t extents;
-    cairo_scaled_font_glyph_extents(scaled_font, &measure_glyph, 1, &extents);
+    PangoFontDescription *desc = pango_font_description_from_string(family);
+    pango_font_description_set_absolute_size(desc, static_cast<double>(px) * scale * PANGO_SCALE);
+    // No fallback: a codepoint the font lacks would otherwise draw from another font.
+    PangoAttrList *attrs = pango_attr_list_new();
+    pango_attr_list_insert(attrs, pango_attr_fallback_new(FALSE));
 
-    int width = static_cast<int>(std::ceil(extents.width));
-    int height = static_cast<int>(std::ceil(extents.height));
-    if (width <= 0 || height <= 0) {
-        cairo_scaled_font_destroy(scaled_font);
-        return result;
+    auto layout_on = [&](cairo_t *cr) {
+        cairo_set_font_options(cr, options);
+        PangoLayout *layout = pango_cairo_create_layout(cr);
+        pango_layout_set_font_description(layout, desc);
+        pango_layout_set_attributes(layout, attrs);
+        pango_layout_set_text(layout, codepoint_utf8.c_str(), -1);
+        return layout;
+    };
+
+    cairo_surface_t *probe = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
+    cairo_t *probe_cr = cairo_create(probe);
+    PangoLayout *probe_layout = layout_on(probe_cr);
+    PangoRectangle ink;
+    pango_layout_get_extents(probe_layout, &ink, nullptr);
+    g_object_unref(probe_layout);
+    cairo_destroy(probe_cr);
+    cairo_surface_destroy(probe);
+
+    double ink_x = static_cast<double>(ink.x) / PANGO_SCALE;
+    double ink_y = static_cast<double>(ink.y) / PANGO_SCALE;
+    int width = static_cast<int>(std::ceil(static_cast<double>(ink.width) / PANGO_SCALE));
+    int height = static_cast<int>(std::ceil(static_cast<double>(ink.height) / PANGO_SCALE));
+    if (width > 0 && height > 0) {
+        cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+        cairo_t *cr = cairo_create(surface);
+        PangoLayout *layout = layout_on(cr);
+        cairo_set_source_rgba(cr, 1, 1, 1, 1);
+        cairo_move_to(cr, -ink_x, -ink_y);
+        pango_cairo_show_layout(cr, layout);
+        cairo_surface_flush(surface);
+        result = surface_to_rgba(surface, width, height);
+        result.scale = scale;
+        g_object_unref(layout);
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
     }
-
-    cairo_surface_t *surface =
-        cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
-    cairo_t *cr = cairo_create(surface);
-    cairo_set_scaled_font(cr, scaled_font);
-    cairo_set_source_rgba(cr, 1, 1, 1, 1);
-
-    cairo_glyph_t draw_glyph = {glyph_index, -extents.x_bearing,
-                                -extents.y_bearing};
-    cairo_show_glyphs(cr, &draw_glyph, 1);
-    cairo_surface_flush(surface);
-
-    result = surface_to_rgba(surface, width, height);
-    result.scale = scale;
-
-    cairo_destroy(cr);
-    cairo_surface_destroy(surface);
-    cairo_scaled_font_destroy(scaled_font);
+    pango_attr_list_unref(attrs);
+    pango_font_description_free(desc);
     return result;
 }
 
 } // namespace
 
 RasterizedText rasterize_icon(const std::string &codepoint_utf8, int32_t scale, int px) {
-    return rasterize_face(icon_font(), codepoint_utf8, scale, px, astralia_shell_icon_font_options());
+    return rasterize_glyph(astralia::icon_font_family, astralia::icon_font_options(), codepoint_utf8, scale, px);
 }
 
 RasterizedText rasterize_display_glyph(const std::string &codepoint_utf8, int32_t scale, int px) {
-    return rasterize_face(display_font(), codepoint_utf8, scale, px, astralia_shell_font_options());
-}
-
-Texture make_icon_texture(const std::string &codepoint_utf8, int32_t scale) {
-    return make_texture_from_raster(rasterize_icon(codepoint_utf8, scale));
+    return rasterize_glyph(astralia::glyph_font_family, astralia_shell_font_options(), codepoint_utf8, scale, px);
 }

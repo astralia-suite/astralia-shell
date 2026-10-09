@@ -41,7 +41,7 @@
 - `app/`: `WaylandState`, registry binding, monitor outputs, module and service registries, key dispatch, shell bindings and the config adapter.
 - `core/`: Poll-source types for the run loop and `klog` forwarding to the shared log.
 - `config/`: Wayland configs that more than one module uses: idle, rain and visualizer parameters.
-- `render/`: The GLES2 renderer, scene graph, `GlCanvas`, text, icons, layer-shell windows, toplevel windows and the arc gauge.
+- `render/`: The GLES2 renderer, the immediate-mode `GlCanvas`, text and icon textures, layer-shell and toplevel windows, the arc gauge.
 - `plugin/media_plugin.cpp`: The `ffmpeg` decoder, built as its own plugin and loaded by the media service.
 - `protocols/`: Protocol XML that the system `wayland-protocols` package does not ship.
 
@@ -51,7 +51,7 @@
 - `meson.build`: X11 source list, dependencies, compile arguments and asset installation.
 - `app/services.{h,cpp}`: The services this backend owns, built from the shared services and the compositor.
 - `core/`: `XConnection`, `Keyboard`, pointer conversion and the `EventLoop` that adds X event dispatch to a `PollReactor`.
-- `render/`: `CairoCanvas`, cairo drawing, text, icons, image decoding and X windows shared by the modules.
+- `render/`: `CairoCanvas`, cairo drawing, text, icons, cairo image surfaces over the shared decoder and X windows.
 - `config/bar_config.h`: The bar styles X11 builds and the allocator trim interval.
 
 ## `src/core/`
@@ -88,6 +88,8 @@
 - `text_field.{h,cpp}`: Text field state, key handling, type animation and row slide.
 - `field_view.{h,cpp}`: Draws a text field with its caret and animated characters over a canvas.
 - `marquee.{h,cpp}`: Scrolling text for labels wider than their box.
+- `decode.{h,cpp}`: The one image decoder: `stb_image`, `resvg` and reduced-size `libjpeg` into an RGBA buffer.
+- `app_fonts.{h,cpp}`: Registers the bundled fonts with fontconfig and holds the unhinted icon font options.
 
 ## `src/config/`
 
@@ -123,16 +125,16 @@
 - `panel/panel_set.{h,cpp}`: Owns the panels, keeps one open at a time and routes changes to the host.
 - `panel/widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm dialog the panels share.
 - `panel/*_panel.{h,cpp}`: Content of the battery, bluetooth, brightness, clock, media, network, resource, tray and volume panels.
-- `wayland/`: Per-monitor bar surface, one overlay `PanelSurface`, and the scene-node frame with fillets and hug corners.
+- `wayland/`: Per-monitor bar surface, one overlay `PanelSurface`, and the `GlCanvas` frame with fillets and hug corners.
 - `x11/`: Bar window and struts, `BarSet` per output, one `PanelHost` window, and the cairo frame painter.
 
 ## `src/modules/lock/`
 
-- `model.{h,cpp}`: Password field, authentication generation, failure timeout and button hit boxes.
+- `model.{h,cpp}`: Password field, authentication generation, failure timeout, hit boxes and the per-output `LockMotion`.
 - `view.{h,cpp}`: Paints the battery, system, media, clock, avatar, password, resources and notification cards over the canvas.
 - `layout.{h,cpp}`: Card, column and password dot geometry shared by both hosts.
 - `pam_authenticator.{h,cpp}`: Blocking PAM check for a user and password against a service directory.
-- `wayland/`: `ext-session-lock` host with its own animated scene-graph card, kept for the GL renderer.
+- `wayland/`: `ext-session-lock` host that paints the shared view per output with its entrance, exit and typing motion.
 - `x11/`: Override-redirect window per output, keyboard and pointer grabs, wallpaper backdrop and the PAM thread.
 
 ## `src/modules/launcher/`

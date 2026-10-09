@@ -2,8 +2,10 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <string>
 
+#include "core/animation.h"
 #include "core/input.h"
 
 #include "render/geometry.h"
@@ -49,5 +51,31 @@ class LockModel {
     Clock::time_point fail_clear_at_{};
     LockHits hits_;
 };
+
+// One output's entrance, exit and typing animation. The defaults are the settled card,
+// which is all X11 ever shows.
+struct LockMotion {
+    AnimationManager animations;
+    float panel_scale = 1.0f;
+    float panel_rotation = 0.0f;
+    float panel_w = 0.0f;
+    float panel_h = 0.0f;
+    float icon_alpha = 0.0f;
+    float content_alpha = 1.0f;
+    float content_scale = 1.0f;
+    bool started = false;
+    bool unlocking = false;
+    TextFieldTypeAnim dots;
+    TextFieldRowSlide row;
+
+    LockMotion() = default;
+    LockMotion(const LockMotion &) = delete;
+    LockMotion &operator=(const LockMotion &) = delete;
+};
+
+void lock_motion_fit(LockMotion &motion, float card_w, float card_h);
+void lock_motion_exit(LockMotion &motion, std::function<void()> done);
+void lock_motion_type(LockMotion &motion, const std::string &password);
+void lock_motion_clear_dots(LockMotion &motion);
 
 } // namespace astralia

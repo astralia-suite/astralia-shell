@@ -38,6 +38,7 @@ struct GroupOptions {
     float scale = 1.0f;
     bool clip = false;
     float radius = 0.0f;
+    float rotation = 0.0f;
 };
 
 class Canvas {

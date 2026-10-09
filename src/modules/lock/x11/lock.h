@@ -34,6 +34,7 @@ class Lock {
         CairoCanvas canvas;
         Output output;
         LockHits hits;
+        LockMotion motion;
         SurfacePtr wallpaper;
         std::string wallpaper_key;
     };

@@ -7,7 +7,6 @@
 
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
-#include "wayland/render/node.h"
 #include "wayland/render/overlay_panel.h"
 
 namespace {
@@ -114,12 +113,12 @@ void rain_paint(RainState &state) {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    state.scene.rebuild();
+    state.renderer->set_opacity(state.base.opacity);
 
     float win_w = static_cast<float>(state.base.width);
     float win_h = static_cast<float>(state.base.height);
 
-    node_add_rect(&state.scene.root, 0.0f, 0.0f, win_w, win_h, astralia::rgba(astralia::palette::window_backdrop));
+    state.renderer->draw_rect(0.0f, 0.0f, win_w, win_h, astralia::rgba(astralia::palette::window_backdrop));
 
     if (state.base.width != state.built_width || state.base.height != state.built_height) {
         rain_rebuild_active(state, state.base.width, state.base.height);
@@ -136,17 +135,9 @@ void rain_paint(RainState &state) {
     }
 
     if (rain_active_ready(state)) {
-        Node *tex = state.scene.root.claim_child();
-        tex->kind = NodeKind::Texture;
-        tex->x = 0.0f;
-        tex->y = 0.0f;
-        tex->w = win_w;
-        tex->h = win_h;
-        tex->tex = &rain_active_texture(state);
+        static constexpr float white[4] = {1, 1, 1, 1};
+        state.renderer->draw_texture_rect(0.0f, 0.0f, win_w, win_h, rain_active_texture(state), white);
     }
-
-    state.renderer->set_opacity(state.base.opacity);
-    state.scene.draw(*state.renderer);
     state.renderer->set_opacity(1.0f);
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
 

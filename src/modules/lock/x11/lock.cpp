@@ -324,7 +324,7 @@ void Lock::paint(Surface &surface, bool with_wallpaper) {
             cairo_paint(cr);
         }
         surface.canvas.bind(cr);
-        paint_lock(surface.canvas, model_, info(), area.width, area.height);
+        paint_lock(surface.canvas, model_, surface.motion, info(), area.width, area.height);
         surface.hits = model_.hits();
     }
     surface.window.present();

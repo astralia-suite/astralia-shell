@@ -19,7 +19,6 @@
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
-#include "wayland/render/node.h"
 #include "wayland/render/renderer.h"
 
 #include "service/wallpaper_service.h"
@@ -42,7 +41,7 @@ void column_make_current(const WallpaperColumnGl &gl) {
         klog("wallpaper: column eglMakeCurrent %.1fms", ms);
 }
 
-void wallpaper_column_draw(const WallpaperColumn &col, Node *parent, float x, float column_w, float height) {
+void wallpaper_column_draw(const WallpaperColumn &col, GlCanvas &canvas, float x, float column_w, float height) {
     auto video = col.video_texs.find(col.video_surface);
     const VideoTexture *video_tex = video != col.video_texs.end() ? &video->second : nullptr;
     bool zero_copy = col.zero_copy && video_tex;
@@ -56,19 +55,14 @@ void wallpaper_column_draw(const WallpaperColumn &col, Node *parent, float x, fl
     float draw_w = tex_w * scale;
     float draw_h = tex_h * scale;
 
-    Node *clip = node_add_group(parent, x, 0.0f, column_w, height, true);
-    Node *img = clip->claim_child();
-    img->x = (column_w - draw_w) / 2.0f;
-    img->y = (height - draw_h) / 2.0f;
-    img->w = draw_w;
-    img->h = draw_h;
-    if (zero_copy) {
-        img->kind = NodeKind::VideoTexture;
-        img->video_tex = video_tex;
-    } else {
-        img->kind = NodeKind::Texture;
-        img->tex = tex;
-    }
+    static constexpr float white[4] = {1, 1, 1, 1};
+    astralia::ui::Box box{(column_w - draw_w) / 2.0f, (height - draw_h) / 2.0f, draw_w, draw_h};
+    canvas.begin_group({x, 0.0f, column_w, height}, {.clip = true});
+    if (zero_copy)
+        canvas.video(*video_tex, box);
+    else
+        canvas.texture(*tex, box, white);
+    canvas.end_group();
 }
 
 GLuint g_transition_prog[8] = {0};
@@ -430,9 +424,9 @@ void wallpaper_paint(WallpaperState &wp) {
     glClearColor(astralia::palette::base.r, astralia::palette::base.g, astralia::palette::base.b, astralia::palette::base.a);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    wp.scene.rebuild();
-    wallpaper_draw_columns(wp, &wp.scene.root, wp.width, wp.height);
-    wp.scene.draw(*wp.renderer);
+    wp.canvas.begin(wp.output_scale.scale);
+    wallpaper_draw_columns(wp, wp.canvas, wp.width, wp.height);
+    wp.canvas.flush();
     wallpaper_draw_transitions(wp);
     gl_check("wallpaper_paint");
 
@@ -453,12 +447,12 @@ void wallpaper_paint(WallpaperState &wp) {
 
 } // namespace
 
-void wallpaper_draw_columns(const WallpaperState &wp, Node *parent, int32_t width, int32_t height) {
+void wallpaper_draw_columns(const WallpaperState &wp, GlCanvas &canvas, int32_t width, int32_t height) {
     size_t columns = std::max<size_t>(wp.columns.size(), 1);
     float column_w = static_cast<float>(width) / static_cast<float>(columns);
     for (size_t i = 0; i < wp.columns.size(); ++i)
         if (wp.columns[i])
-            wallpaper_column_draw(*wp.columns[i], parent, static_cast<float>(i) * column_w, column_w, static_cast<float>(height));
+            wallpaper_column_draw(*wp.columns[i], canvas, static_cast<float>(i) * column_w, column_w, static_cast<float>(height));
 }
 
 bool wallpaper_create_surface(WallpaperState &wp, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
@@ -488,6 +482,7 @@ bool wallpaper_init_egl(WallpaperState &wp, Renderer &renderer, EGLDisplay displ
     wp.egl_display = display;
     wp.egl_context = context;
     wp.renderer = &renderer;
+    wp.canvas.bind(renderer);
     int32_t scale = wp.output_scale.scale;
     wp.egl_window =
         wl_egl_window_create(wp.surface, wp.width * scale, wp.height * scale);

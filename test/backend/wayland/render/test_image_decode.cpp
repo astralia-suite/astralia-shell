@@ -43,7 +43,9 @@ static void test_decode_svg() {
     assert(data[0] == 255 && data[1] == 0 && data[2] == 0 && data[3] == 255);
     delete[] data;
 
-    assert(!load_image_decode(path.string(), width, height));
+    data = load_image_decode(path.string(), width, height);
+    assert(data && width == 24 && height == 24);
+    delete[] data;
 
     std::filesystem::remove(path);
 }

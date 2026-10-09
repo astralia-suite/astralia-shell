@@ -7,7 +7,6 @@
 
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
-#include "wayland/render/node.h"
 #include "wayland/render/overlay_panel.h"
 
 void dashboard_request_frame(DashboardState &state) {
@@ -64,11 +63,8 @@ void dashboard_paint(DashboardState &state) {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    state.scene.rebuild();
-    node_add_rect(&state.scene.root, 0.0f, 0.0f, static_cast<float>(state.base.width), static_cast<float>(state.base.height), astralia::rgba(astralia::palette::window_backdrop));
-
     state.renderer->set_opacity(state.base.opacity);
-    state.scene.draw(*state.renderer);
+    state.renderer->draw_rect(0.0f, 0.0f, static_cast<float>(state.base.width), static_cast<float>(state.base.height), astralia::rgba(astralia::palette::window_backdrop));
     state.renderer->set_opacity(1.0f);
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
 

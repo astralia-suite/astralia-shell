@@ -153,6 +153,7 @@ void settings_paint(SettingsState &state) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     state.canvas.begin(scale);
+    state.canvas.set_opacity(state.base.opacity);
     state.frame = {};
     if (state.model && state.base.opacity > 0.0f) {
         state.model->sync();
@@ -162,12 +163,11 @@ void settings_paint(SettingsState &state) {
         art.avatar = [&state](astralia::ui::Canvas &, const astralia::ui::Box &box) {
             if (state.profile_pic.frames.empty())
                 return false;
-            animated_image_draw(state.profile_pic, state.canvas.group(), box.x, box.y, box.w, box.h, 1.0f);
+            animated_image_draw(state.profile_pic, state.canvas, box.x, box.y, box.w, box.h, 1.0f);
             return true;
         };
         state.frame = astralia::paint_settings(state.canvas, *state.model, art, static_cast<float>(state.base.width), static_cast<float>(state.base.height));
     }
-    state.canvas.set_opacity(state.base.opacity);
     state.canvas.flush();
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
 

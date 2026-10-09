@@ -19,7 +19,6 @@ x11_sources = files(
   '../../modules/polkit/x11/polkit.cpp',
   '../../modules/settings/x11/settings.cpp',
   '../../modules/wallpaper/x11/wallpaper.cpp',
-  'render/app_fonts.cpp',
   'render/cairo_canvas.cpp',
   'render/app_icon.cpp',
   'render/cover_cache.cpp',
@@ -51,8 +50,6 @@ x11_data_dir = get_option('prefix') / get_option('datadir') / 'astralia-shell'
 x11_source_assets = meson.project_source_root() / 'assets'
 
 x11_args = [
-  '-DASTRALIA_FONT_DIR="@0@"'.format(x11_data_dir / 'fonts'),
-  '-DASTRALIA_SOURCE_FONT_DIR="@0@"'.format(x11_source_assets / 'fonts'),
   '-DASTRALIA_CONSTELLATION_DIR="@0@"'.format(x11_data_dir / 'constellation'),
   '-DASTRALIA_SOURCE_CONSTELLATION_DIR="@0@"'.format(x11_source_assets / 'constellation'),
   '-DASTRALIA_LOGOUT_DIR="@0@"'.format(x11_data_dir / 'logout'),

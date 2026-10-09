@@ -3,13 +3,13 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
-#include <librsvg/rsvg.h>
 #include <random>
 
 #include "wayland/config/rain_config.h"
 
 #include "modules/rain/wayland/stiletto_rain.h"
 
+#include "render/decode.h"
 #include "render/tokens.h"
 #include "wayland/render/text.h"
 
@@ -38,27 +38,21 @@ cairo_surface_t *stiletto_sprite() {
                 break;
             }
         }
-        GError *error = nullptr;
-        RsvgHandle *handle = rsvg_handle_new_from_file(path, &error);
-        if (!handle) {
-            if (error)
-                g_error_free(error);
-            return nullptr;
-        }
-        double aspect = 1.0;
-        gdouble nat_w = 0.0, nat_h = 0.0;
-        if (rsvg_handle_get_intrinsic_size_in_pixels(handle, &nat_w, &nat_h) && nat_h > 0.0)
-            aspect = nat_w / nat_h;
+        // A height-only fit: the width bound is never the limit.
         int h = static_cast<int>(kStilettoRainHeadHeightPx);
-        int w = std::max(1, static_cast<int>(std::lround(h * aspect)));
-        cairo_surface_t *s =
-            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
-        cairo_t *cr = cairo_create(s);
-        RsvgRectangle viewport = {0.0, 0.0, static_cast<double>(w), static_cast<double>(h)};
-        rsvg_handle_render_document(handle, cr, &viewport, nullptr);
-        cairo_destroy(cr);
-        cairo_surface_flush(s);
-        g_object_unref(handle);
+        auto pixels = astralia::decode_pixels(path, {}, h * 1000, h);
+        if (!pixels)
+            return nullptr;
+        cairo_surface_t *s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, pixels->width, pixels->height);
+        uint8_t *dst = cairo_image_surface_get_data(s);
+        int stride = cairo_image_surface_get_stride(s);
+        const uint8_t *in = pixels->data.get();
+        for (int y = 0; y < pixels->height; ++y) {
+            auto *row = reinterpret_cast<uint32_t *>(dst + static_cast<size_t>(y) * stride);
+            for (int x = 0; x < pixels->width; ++x, in += 4)
+                row[x] = static_cast<uint32_t>(in[3]) << 24 | static_cast<uint32_t>(in[0]) << 16 | static_cast<uint32_t>(in[1]) << 8 | in[2];
+        }
+        cairo_surface_mark_dirty(s);
         return s;
     }();
     return sprite;
