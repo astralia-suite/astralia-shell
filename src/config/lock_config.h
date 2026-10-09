@@ -111,6 +111,15 @@ inline constexpr const char *kLockFailText = "Skill Issue";
 inline constexpr const char *kLockPlaceholderText = "Enter your password";
 inline constexpr const char *kLockLoadingText = "Loading...";
 
+// assets
+inline constexpr const char *kLockEchoAsset = "polkit/electro.png";
+inline constexpr const char *kLockProfileAsset = "gifs/profile.gif";
+
+// x11 tick
+inline constexpr int kLockTickMs = 1000;
+inline constexpr int kLockGrabAttempts = 100;
+inline constexpr int kLockGrabRetryMs = 10;
+
 // avatar fps
 inline constexpr float kLockAvatarFps = 15.0f;
 

@@ -10,12 +10,16 @@
 #include "core/deferred_call.h"
 #include "wayland/core/log.h"
 
-#include "modules/lock/wayland/card.h"
-#include "modules/lock/wayland/layout.h"
-#include "modules/lock/wayland/lock.h"
-#include "modules/lock/wayland/pam_authenticator.h"
+#ifndef ASTRALIA_SHELL_PAM_DIR
+#define ASTRALIA_SHELL_PAM_DIR ""
+#endif
 
-#include "ui/tokens.h"
+#include "modules/lock/layout.h"
+#include "modules/lock/pam_authenticator.h"
+#include "modules/lock/wayland/card.h"
+#include "modules/lock/wayland/lock.h"
+
+#include "render/tokens.h"
 #include "wayland/render/gl.h"
 #include "wayland/render/image.h"
 #include "wayland/render/node.h"
@@ -269,7 +273,7 @@ void try_authenticate(LockState &st) {
     uint64_t gen = ++st.auth_generation;
     std::string pw = st.password.text;
     std::thread([&st, gen, pw = std::move(pw)]() mutable {
-        pam_auth::Result res = pam_auth::authenticate_current_user(pw);
+        pam_auth::Result res = pam_auth::authenticate(user_info::username(), pw, ASTRALIA_SHELL_PAM_DIR);
         pam_auth::secure_clear(pw);
         astralia::DeferredCall::call_later([&st, gen, res] { deliver_auth(st, gen, res); });
     }).detach();

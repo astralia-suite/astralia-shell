@@ -5,7 +5,7 @@
 #include "modules/logout/layout.h"
 #include "modules/logout/view.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 namespace astralia {
 

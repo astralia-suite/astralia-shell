@@ -1,7 +1,7 @@
 #include <algorithm>
 
-#include "config/icons.h"
 #include "config/panel_config.h"
+#include "render/icons.h"
 
 #include "modules/bar/panel/widgets.h"
 

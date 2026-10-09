@@ -66,7 +66,7 @@ A backend registers a module or verb only for the capabilities it reports. `astr
 | `osd` | yes | yes |
 | `polkit` | yes | yes |
 | `wallpaper` | yes | yes |
-| `lock` | yes | no |
+| `lock` | yes | yes |
 | `idle` | yes | no |
 | `dashboard` | yes | no |
 | `rain` | yes | no |
@@ -85,7 +85,7 @@ A backend registers a module or verb only for the capabilities it reports. `astr
 | `dashboard` | toggle the dashboard window | yes | no |
 | `rain` | toggle the rain overlay | yes | no |
 | `visualizer` | toggle the audio visualizer overlay | yes | no |
-| `lock` | lock the session | yes | no |
+| `lock` | lock the session | yes | yes |
 | `panel-tray` | toggle the tray panel | yes | yes |
 | `panel-resource` | toggle the resource panel | yes | no |
 | `panel-network` | toggle the network panel | yes | yes |

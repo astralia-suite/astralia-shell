@@ -3,7 +3,7 @@
 
 #include "modules/bar/wayland/frame.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 namespace {
 

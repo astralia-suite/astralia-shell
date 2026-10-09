@@ -12,7 +12,7 @@
 #include "modules/visualizer/wayland/sphere_visualizer.h"
 #include "modules/visualizer/wayland/visualizer_shaders.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 #include "wayland/render/gl.h"
 
 namespace {

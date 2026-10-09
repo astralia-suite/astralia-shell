@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "check.h"
-#include "ui/recording_canvas.h"
+#include "render/recording_canvas.h"
 
 #include "config/notification_config.h"
 

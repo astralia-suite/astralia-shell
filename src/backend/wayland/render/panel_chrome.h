@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#include "ui/geometry.h"
-#include "ui/glyphs.h"
-#include "ui/tokens.h"
+#include "render/geometry.h"
+#include "render/glyphs.h"
+#include "render/tokens.h"
 #include "wayland/render/icon.h"
 #include "wayland/render/node.h"
 #include "wayland/render/renderer.h"

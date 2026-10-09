@@ -5,9 +5,9 @@
 
 #include "modules/bar/panel/panel.h"
 
-#include "ui/canvas.h"
-#include "ui/marquee.h"
-#include "ui/tokens.h"
+#include "render/canvas.h"
+#include "render/marquee.h"
+#include "render/tokens.h"
 
 namespace astralia::panel_widgets {
 

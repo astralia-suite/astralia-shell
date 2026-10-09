@@ -62,7 +62,9 @@ Capabilities wayland_capabilities() {
 }
 
 Capabilities x11_capabilities() {
-    return {};
+    Capabilities capabilities;
+    capabilities.lock = true;
+    return capabilities;
 }
 
 const ShellVerbSpec &shell_verb_spec(ShellVerb verb) {

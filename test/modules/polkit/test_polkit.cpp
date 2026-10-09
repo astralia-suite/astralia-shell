@@ -1,7 +1,7 @@
 #include <string>
 
 #include "check.h"
-#include "ui/recording_canvas.h"
+#include "render/recording_canvas.h"
 
 #include "config/polkit_config.h"
 

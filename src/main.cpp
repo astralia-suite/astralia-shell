@@ -44,5 +44,5 @@ int main(int argc, char **argv) {
     }
     astralia::log::info("starting the {} backend from {}", loaded->backend->name(), loaded->path);
     astralia::tune_allocator(loaded->backend->malloc_arenas());
-    return loaded->backend->run();
+    return loaded->backend->run(invocation.locked);
 }

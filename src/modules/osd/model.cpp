@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <format>
 
-#include "config/icons.h"
 #include "config/osd_config.h"
+#include "render/icons.h"
 
 #include "modules/osd/model.h"
 
-#include "ui/glyphs.h"
+#include "render/glyphs.h"
 
 namespace astralia {
 

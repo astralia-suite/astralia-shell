@@ -4,7 +4,7 @@
 
 #include "modules/visualizer/wayland/bar_visualizer.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 #include "wayland/render/gl.h"
 
 namespace {

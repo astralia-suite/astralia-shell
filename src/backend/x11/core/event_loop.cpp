@@ -49,6 +49,8 @@ std::optional<xcb_window_t> target_window(const xcb_generic_event_t &event) {
         return reinterpret_cast<const xcb_enter_notify_event_t &>(event).event;
     case XCB_CONFIGURE_NOTIFY:
         return reinterpret_cast<const xcb_configure_notify_event_t &>(event).window;
+    case XCB_VISIBILITY_NOTIFY:
+        return reinterpret_cast<const xcb_visibility_notify_event_t &>(event).window;
     case XCB_PROPERTY_NOTIFY:
         return reinterpret_cast<const xcb_property_notify_event_t &>(event).window;
     default:

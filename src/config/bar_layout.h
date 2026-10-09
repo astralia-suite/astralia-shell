@@ -1,7 +1,10 @@
 #pragma once
 
+#include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <string_view>
 
 namespace astralia::bar_layout {
 
@@ -44,3 +47,19 @@ inline constexpr uint64_t owner_dock = 300;
 inline constexpr const char *clock_format = "%a %Y-%m-%d %H:%M:%S";
 
 } // namespace astralia::bar_layout
+
+namespace astralia {
+
+enum class BarStyle : std::size_t { islands,
+                                    okinami,
+                                    continuous };
+
+namespace bar_style {
+
+inline constexpr std::size_t count = 3;
+inline constexpr std::array<std::string_view, count> names{"islands", "okinami", "continuous"};
+inline constexpr std::array<std::string_view, count> labels{"Islands", "Okinami", "Continuous"};
+
+} // namespace bar_style
+
+} // namespace astralia

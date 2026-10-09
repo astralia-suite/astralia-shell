@@ -65,6 +65,8 @@ void check_logout_layout();
 void check_logout();
 void check_polkit_layout();
 void check_polkit();
+void check_lock_layout();
+void check_lock();
 void check_settings();
 
 int main() {
@@ -132,6 +134,8 @@ int main() {
     check_logout();
     check_polkit_layout();
     check_polkit();
+    check_lock_layout();
+    check_lock();
     check_settings();
     std::filesystem::remove_all(state_dir);
     if (test::failures > 0) {

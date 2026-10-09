@@ -6,8 +6,8 @@
 #include "core/animation.h"
 #include "core/input.h"
 
-#include "ui/marquee.h"
-#include "ui/text_field.h"
+#include "render/marquee.h"
+#include "render/text_field.h"
 
 #include "service/polkit_service.h"
 

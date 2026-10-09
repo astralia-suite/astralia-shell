@@ -13,7 +13,7 @@
 
 #include "modules/notification/wayland/notification_style_config.h"
 
-#include "ui/geometry.h"
+#include "render/geometry.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/renderer.h"
 

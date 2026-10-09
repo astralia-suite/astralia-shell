@@ -7,7 +7,7 @@
 
 #include "check.h"
 #include "core/pump.h"
-#include "ui/recording_canvas.h"
+#include "render/recording_canvas.h"
 
 #include "config/launcher_config.h"
 

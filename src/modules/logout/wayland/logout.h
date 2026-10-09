@@ -12,7 +12,7 @@
 
 #include "modules/logout/wayland/logout_style_config.h"
 
-#include "ui/geometry.h"
+#include "render/geometry.h"
 #include "wayland/render/animated_image.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"

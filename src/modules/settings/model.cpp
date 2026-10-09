@@ -5,10 +5,10 @@
 #include <filesystem>
 #include <thread>
 
-#include "config/icons.h"
 #include "config/rain_config.h"
 #include "config/settings_config.h"
 #include "config/visualizer_config.h"
+#include "render/icons.h"
 
 #include "core/deferred_call.h"
 #include "core/log.h"

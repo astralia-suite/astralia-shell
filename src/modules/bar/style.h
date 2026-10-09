@@ -3,9 +3,9 @@
 #include <optional>
 #include <vector>
 
-#include "config/bar_style.h"
+#include "config/bar_layout.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 namespace astralia {
 

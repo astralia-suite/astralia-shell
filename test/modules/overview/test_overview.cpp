@@ -3,8 +3,8 @@
 #include <string>
 
 #include "check.h"
+#include "render/recording_canvas.h"
 #include "service/fake_compositor.h"
-#include "ui/recording_canvas.h"
 
 #include "config/overview_config.h"
 

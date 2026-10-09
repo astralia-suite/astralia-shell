@@ -8,7 +8,7 @@
 #include "core/animation.h"
 #include "core/input.h"
 
-#include "ui/geometry.h"
+#include "render/geometry.h"
 
 namespace astralia {
 

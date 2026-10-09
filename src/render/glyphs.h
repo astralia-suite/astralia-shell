@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 namespace astralia::icon {
 

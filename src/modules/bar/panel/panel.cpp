@@ -3,9 +3,9 @@
 
 #include "modules/bar/panel/panel.h"
 
-#include "config/icons.h"
+#include "render/icons.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 namespace astralia {
 

@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "modules/bar/panel/media_panel.h"
 #include "modules/bar/panel/widgets.h"

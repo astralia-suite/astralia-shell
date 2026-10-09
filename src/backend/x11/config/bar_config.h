@@ -4,7 +4,7 @@
 #include <chrono>
 #include <cstddef>
 
-#include "config/bar_style.h"
+#include "config/bar_layout.h"
 
 namespace astralia::bar_config {
 

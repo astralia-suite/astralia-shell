@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "ui/canvas.h"
-#include "ui/text_field.h"
+#include "render/canvas.h"
+#include "render/text_field.h"
 
 namespace astralia::ui {
 

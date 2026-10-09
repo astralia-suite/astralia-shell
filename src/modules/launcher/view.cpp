@@ -1,14 +1,14 @@
 #include <algorithm>
 #include <string>
 
-#include "config/icons.h"
 #include "config/launcher_config.h"
+#include "render/icons.h"
 
 #include "modules/launcher/files_provider.h"
 #include "modules/launcher/view.h"
 
-#include "ui/field_view.h"
-#include "ui/tokens.h"
+#include "render/field_view.h"
+#include "render/tokens.h"
 
 namespace astralia {
 

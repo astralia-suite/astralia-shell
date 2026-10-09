@@ -5,7 +5,7 @@
 
 #include "core/poll_reactor.h"
 
-#include "ui/module_base.h"
+#include "render/module_base.h"
 
 namespace {
 

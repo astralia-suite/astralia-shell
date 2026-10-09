@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "modules/bar/panel/bluetooth_panel.h"
 #include "modules/bar/panel/widgets.h"

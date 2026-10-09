@@ -10,7 +10,7 @@
 
 #include "modules/settings/wayland/settings.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 #include "config/settings_config.h"
 

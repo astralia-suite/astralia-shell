@@ -14,8 +14,6 @@
 #include "wayland/app/config.h"
 #include "wayland/app/per_monitor_module.h"
 
-#include "modules/wallpaper/wayland/wallpaper_config.h"
-
 #include "wayland/render/scene.h"
 #include "wayland/render/texture.h"
 #include "wayland/render/video_texture.h"
@@ -25,6 +23,23 @@
 #include "service/wayland/output_service.h"
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+inline constexpr const char *kWallpaperLayerNamespace = "astralia-shell-wallpaper";
+
+enum class WallpaperTransition : uint8_t {
+    None,
+    Fade,
+    Wipe,
+    Disc,
+    Stripes,
+    Zoom,
+    Honeycomb,
+    Random,
+};
+
+// transition timing
+inline constexpr float kWallpaperTransitionDurationMs = 900.0f;
+inline constexpr float kWallpaperTransitionSmoothness = 0.3f;
 
 class Renderer;
 struct Node;

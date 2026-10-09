@@ -13,10 +13,10 @@
 
 #include "wayland/app/module.h"
 
-#include "modules/lock/wayland/lock_config.h"
+#include "config/lock_config.h"
 
 #include "core/animation.h"
-#include "ui/geometry.h"
+#include "render/geometry.h"
 #include "wayland/render/animated_image.h"
 #include "wayland/render/renderer.h"
 #include "wayland/render/scene.h"

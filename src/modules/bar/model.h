@@ -20,7 +20,7 @@
 #include "service/dock_service.h"
 #include "service/network_service.h"
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 namespace astralia {
 

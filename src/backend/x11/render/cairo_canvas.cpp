@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <thread>
 
@@ -225,6 +226,33 @@ void CairoCanvas::draw_image(ui::ImageId id, const ui::Box &box, const Color &) 
     cairo_restore(cr_);
 }
 
+void CairoCanvas::gauge(const ui::Box &box, float stroke, float value, const Color &fill) {
+    constexpr int segments = 10;
+    constexpr double gap = 6.0 * M_PI / 180.0;
+    double step = 2.0 * M_PI / segments;
+    double span = step - gap;
+    double radius = box.w / 2.0 - stroke / 2.0;
+    double lit = std::clamp(value, 0.0f, 1.0f) * segments;
+    cairo_save(cr_);
+    cairo_set_line_width(cr_, stroke);
+    cairo_set_line_cap(cr_, CAIRO_LINE_CAP_BUTT);
+    for (int i = 0; i < segments; ++i) {
+        double start = -M_PI / 2.0 + i * step + gap / 2.0;
+        cairo_set_source_rgba(cr_, fill.r, fill.g, fill.b, 0.15);
+        cairo_new_sub_path(cr_);
+        cairo_arc(cr_, box.x + box.w / 2.0, box.y + box.h / 2.0, radius, start, start + span);
+        cairo_stroke(cr_);
+        double filled = std::clamp(lit - i, 0.0, 1.0);
+        if (filled > 0.0) {
+            set_source(cr_, fill);
+            cairo_new_sub_path(cr_);
+            cairo_arc(cr_, box.x + box.w / 2.0, box.y + box.h / 2.0, radius, start, start + span * filled);
+            cairo_stroke(cr_);
+        }
+    }
+    cairo_restore(cr_);
+}
+
 void CairoCanvas::begin_group(const ui::Box &box, const ui::GroupOptions &options) {
     cairo_save(cr_);
     cairo_translate(cr_, box.x, box.y);
@@ -233,7 +261,10 @@ void CairoCanvas::begin_group(const ui::Box &box, const ui::GroupOptions &option
         cairo_scale(cr_, options.scale, options.scale);
         cairo_translate(cr_, -box.w / 2.0, -box.h / 2.0);
     }
-    if (options.clip) {
+    if (options.clip && options.radius > 0.0f) {
+        rounded_rect(cr_, 0, 0, box.w, box.h, options.radius);
+        cairo_clip(cr_);
+    } else if (options.clip) {
         cairo_rectangle(cr_, 0, 0, box.w, box.h);
         cairo_clip(cr_);
     }

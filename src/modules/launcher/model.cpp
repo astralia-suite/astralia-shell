@@ -15,7 +15,7 @@
 
 #include "service/icon_service.h"
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 namespace astralia {
 

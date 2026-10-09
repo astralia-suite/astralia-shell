@@ -22,6 +22,9 @@ void check_parse_invocation() {
     check(parse({"debug"}).mode == Mode::debug, "debug runs in the foreground");
     astralia::Invocation kill = parse({"kill"});
     check(kill.mode == Mode::client && kill.command == "kill", "other verbs go to the client");
+    astralia::Invocation locked = parse({"start-locked"});
+    check(locked.mode == Mode::daemon && locked.locked, "start-locked starts the daemon locked");
+    check(parse({"debug", "start-locked"}).mode == Mode::debug, "start-locked combines with debug");
     astralia::Invocation joined = parse({"debug", "now"});
     check(joined.mode == Mode::client && joined.command == "debug now",
           "multiple arguments are joined with spaces");

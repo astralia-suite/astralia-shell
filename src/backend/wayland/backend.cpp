@@ -48,12 +48,11 @@ class WaylandBackend final : public astralia::Backend {
   public:
     const char *name() const override { return "wayland"; }
     int malloc_arenas() const override { return 2; }
-    int run() override;
+    int run(bool start_locked) override;
 };
 
-int WaylandBackend::run() {
+int WaylandBackend::run(bool start_locked) {
     mallopt(M_TRIM_THRESHOLD, 256 * 1024);
-    bool want_lock = false;
 
     WaylandState &app = *new WaylandState;
     auto reactor = astralia::PollReactor::create();
@@ -150,7 +149,7 @@ int WaylandBackend::run() {
         if (!s->init(app))
             klog("%s: init failed", s->name());
 
-    if (want_lock && app.capabilities.lock)
+    if (start_locked && app.capabilities.lock)
         start_session_lock(app);
 
     auto rest_egl_current = [&app] { app_detail::rest_egl_current(app); };

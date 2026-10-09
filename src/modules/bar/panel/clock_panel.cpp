@@ -3,7 +3,7 @@
 #include <ctime>
 #include <string>
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "modules/bar/panel/clock_panel.h"
 #include "modules/bar/panel/widgets.h"

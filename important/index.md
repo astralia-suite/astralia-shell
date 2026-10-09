@@ -77,7 +77,7 @@
 - `signal.h`: Typed signal and slot publisher.
 - `unique_fd.h`: Owning file descriptor.
 
-## `src/ui/`
+## `src/render/`
 
 - `canvas.h`: The `Canvas` interface every view draws through: shapes, text, images, groups, opacity and gauges.
 - `tokens.h`: `Color`, the palette, metrics and colour helpers shared by every backend.
@@ -111,8 +111,8 @@
 - `<name>/model.{h,cpp}`: Display-free state, logic and animation targets, driven by neutral events and tested headless.
 - `<name>/view.{h,cpp}`: The one view, painted over `ui::Canvas` for both backends.
 - `<name>/<backend>/`: The backend's host: surfaces, input conversion, timers and the module-only style config.
-- `bar`, `launcher`, `logout`, `notification`, `osd`, `overview`, `polkit`, `settings`, `wallpaper`: Have a host in both backends.
-- `lock`, `idle`, `dashboard`, `rain`, `visualizer`: Have a `wayland/` host only, gated by `Capabilities`.
+- `bar`, `launcher`, `lock`, `logout`, `notification`, `osd`, `overview`, `polkit`, `settings`, `wallpaper`: Have a host in both backends.
+- `idle`, `dashboard`, `rain`, `visualizer`: Have a `wayland/` host only, gated by `Capabilities`.
 
 ## `src/modules/bar/`
 
@@ -125,6 +125,15 @@
 - `panel/*_panel.{h,cpp}`: Content of the battery, bluetooth, brightness, clock, media, network, resource, tray and volume panels.
 - `wayland/`: Per-monitor bar surface, one overlay `PanelSurface`, and the scene-node frame with fillets and hug corners.
 - `x11/`: Bar window and struts, `BarSet` per output, one `PanelHost` window, and the cairo frame painter.
+
+## `src/modules/lock/`
+
+- `model.{h,cpp}`: Password field, authentication generation, failure timeout and button hit boxes.
+- `view.{h,cpp}`: Paints the battery, system, media, clock, avatar, password, resources and notification cards over the canvas.
+- `layout.{h,cpp}`: Card, column and password dot geometry shared by both hosts.
+- `pam_authenticator.{h,cpp}`: Blocking PAM check for a user and password against a service directory.
+- `wayland/`: `ext-session-lock` host with its own animated scene-graph card, kept for the GL renderer.
+- `x11/`: Override-redirect window per output, keyboard and pointer grabs, wallpaper backdrop and the PAM thread.
 
 ## `src/modules/launcher/`
 
@@ -186,7 +195,7 @@
 
 - `main.cpp`: Plain check runner with an isolated `XDG_STATE_HOME`; returns non-zero on failure.
 - `check.h`: `test::check` helper and failure counter.
-- `ui/recording_canvas.h`: A canvas that records draw calls so views are checked headless.
+- `render/recording_canvas.h`: A canvas that records draw calls so views are checked headless.
 - `core/pump.h`: Runs a `PollReactor` until a condition holds or a limit passes.
 - `backend_smoke.sh`: Starts each backend through the real executable and stops it over IPC.
 - `backend/wayland/`: The Wayland unit tests that are not module tests, run as `wayland-unit`.

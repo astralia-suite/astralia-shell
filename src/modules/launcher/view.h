@@ -5,7 +5,7 @@
 
 #include "modules/launcher/model.h"
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 namespace astralia {
 

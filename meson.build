@@ -10,8 +10,9 @@ sdbus_cpp_dep = dependency('sdbus-c++', include_type: 'system')
 threads_dep = dependency('threads')
 libpipewire_dep = dependency('libpipewire-0.3', include_type: 'system')
 polkit_agent_dep = dependency('polkit-agent-1', include_type: 'system')
+pam_dep = meson.get_compiler('cpp').find_library('pam')
 
-deps = [sdbus_cpp_dep, threads_dep, libpipewire_dep, polkit_agent_dep]
+deps = [sdbus_cpp_dep, threads_dep, libpipewire_dep, polkit_agent_dep, pam_dep]
 
 inc = include_directories('src')
 
@@ -81,6 +82,10 @@ core_shared = static_library(
     'src/modules/launcher/submenu.cpp',
     'src/modules/launcher/view.cpp',
     'src/modules/launcher/visit_store.cpp',
+    'src/modules/lock/layout.cpp',
+    'src/modules/lock/model.cpp',
+    'src/modules/lock/pam_authenticator.cpp',
+    'src/modules/lock/view.cpp',
     'src/modules/logout/layout.cpp',
     'src/modules/logout/model.cpp',
     'src/modules/logout/view.cpp',
@@ -114,10 +119,10 @@ core_shared = static_library(
     'src/service/settings_service.cpp',
     'src/service/user_service.cpp',
     'src/service/wallpaper_service.cpp',
-    'src/ui/field_view.cpp',
-    'src/ui/marquee.cpp',
-    'src/ui/module_base.cpp',
-    'src/ui/text_field.cpp',
+    'src/render/field_view.cpp',
+    'src/render/marquee.cpp',
+    'src/render/module_base.cpp',
+    'src/render/text_field.cpp',
   ),
   include_directories: inc,
   dependencies: deps,
@@ -150,6 +155,8 @@ install_data(
 )
 install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
 install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
+install_data('assets/gifs/profile.gif', install_dir: data_dir / 'gifs')
+install_data('assets/pam/astralia-shell', install_dir: data_dir / 'pam')
 install_data(
   'assets/constellation/C1.png',
   'assets/constellation/C2.png',
@@ -239,12 +246,14 @@ unit = executable(
     'test/core/test_path_home.cpp',
     'test/core/test_reactor.cpp',
     'test/core/test_spawn.cpp',
-    'test/ui/test_module_base.cpp',
-    'test/ui/test_tokens.cpp',
+    'test/render/test_module_base.cpp',
+    'test/render/test_tokens.cpp',
     'test/modules/bar/test_bar.cpp',
     'test/modules/bar/test_panel.cpp',
     'test/modules/launcher/test_launcher.cpp',
     'test/modules/launcher/test_model.cpp',
+    'test/modules/lock/test_lock.cpp',
+    'test/modules/lock/test_layout.cpp',
     'test/modules/logout/test_layout.cpp',
     'test/modules/logout/test_logout.cpp',
     'test/modules/notification/test_notification.cpp',
@@ -277,7 +286,6 @@ if wayland_enabled
       'test/backend/wayland/app/test_config.cpp',
       'test/backend/wayland/core/test_poll_source.cpp',
       'test/modules/bar/wayland/test_fillet.cpp',
-      'test/modules/lock/wayland/test_layout.cpp',
       'test/modules/visualizer/wayland/test_fft.cpp',
       'test/backend/wayland/render/test_animated_image.cpp',
       'test/backend/wayland/render/test_image_decode.cpp',

@@ -20,7 +20,7 @@
 - `src/app/`: process-wide shared state and the backend interface; never includes `backend/`.
 - `src/core/`: non-visual infrastructure (logging, processes, IPC, JSON, config file, D-Bus); includes nothing from `render/`, `modules/`, `service/` or `backend/`.
 - `src/config/`: per-module constants and plain data types.
-- `src/ui/`: display-free contracts and widgets every view shares: `Canvas`, tokens, glyphs, geometry, the host contract, `ModuleBase`, text field and marquee.
+- `src/render/`: display-free contracts and widgets every view shares: `Canvas`, tokens, glyphs, geometry, the host contract, `ModuleBase`, text field and marquee.
 - `src/service/`: data providers; those both backends use sit at the top, backend-only ones in `wayland/` and `x11/`; the compositor services sit behind the `Compositor` interface in `compositor_service.h`.
 - `src/modules/`: one directory per shell part, with its shared files at the top and each backend's view in `<name>/wayland/` or `<name>/x11/`.
 - `src/backend/wayland/`: Wayland, EGL and GLES2 infrastructure (`app/`, `config/`, `core/`, `render/`, `protocols/`), built into `libastralia-wayland.so` together with the `wayland/` module and service files; `plugin/` holds the `ffmpeg` decoder, built as its own `shared_module`.
@@ -29,7 +29,7 @@
 
 ## Backend boundary
 
-- The `astralia` executable links `astralia-core-base` (`src/app/`, `src/core/`) whole and exports its symbols; plugins resolve those at run time and link `astralia-core-shared` (services, `ui/`, modules) statically, keeping only what they use.
+- The `astralia` executable links `astralia-core-base` (`src/app/`, `src/core/`) whole and exports its symbols; plugins resolve those at run time and link `astralia-core-shared` (services, `render/`, modules) statically, keeping only what they use.
 - Plugin code is built with hidden visibility and `--gc-sections`; the only exported plugin symbol is `astralia_backend_create`.
 - The `astralia` executable links no display library; `xcb`, `wayland`, `EGL`, `GLES` and `ffmpeg` are linked only by the backend that needs them.
 - A backend is selected at startup from the environment and loaded with `dlopen`; the core never names a backend type.
@@ -40,7 +40,7 @@
 
 - A module is `src/modules/<name>/`: display-independent files at the top, and each backend's view and module-only config under `<name>/wayland/` and `<name>/x11/`. A backend's meson list compiles only its own subdirectory.
 - A module's `wayland/` and `x11/` files never include each other.
-- A module is not allowed to include files from another module, its private components included, except `bar` panels, which use `service/` and `ui/` only.
+- A module is not allowed to include files from another module, its private components included, except `bar` panels, which use `service/` and `render/` only.
 - A module is a model (state, logic and animation targets, no display include), one view over `ui::Canvas`, and a thin host per backend.
 - A view never includes a backend header; backend-only drawing goes through a hook the host supplies (`LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`).
 - Only Wayland animates: models call `AnimationManager` freely and X11 sets `animation_set_instant(true)`, so nothing in a model checks the backend.

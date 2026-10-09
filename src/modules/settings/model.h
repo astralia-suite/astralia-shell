@@ -9,15 +9,15 @@
 #include <string>
 #include <vector>
 
-#include "config/bar_style.h"
+#include "config/bar_layout.h"
 
 #include "core/animation.h"
 #include "core/input.h"
 
 #include "service/settings_service.h"
 
-#include "ui/geometry.h"
-#include "ui/text_field.h"
+#include "render/geometry.h"
+#include "render/text_field.h"
 
 namespace astralia {
 

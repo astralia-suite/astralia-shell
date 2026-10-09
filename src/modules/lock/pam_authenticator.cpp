@@ -3,15 +3,9 @@
 #include <security/pam_appl.h>
 #include <unistd.h>
 
-#include "wayland/app/user_info.h"
+#include "core/log.h"
 
-#include "wayland/core/log.h"
-
-#include "modules/lock/wayland/pam_authenticator.h"
-
-#ifndef ASTRALIA_SHELL_PAM_DIR
-#define ASTRALIA_SHELL_PAM_DIR ""
-#endif
+#include "modules/lock/pam_authenticator.h"
 
 namespace pam_auth {
 
@@ -61,8 +55,8 @@ int conversation(int num_msg, const pam_message **msg, pam_response **resp, void
     return PAM_SUCCESS;
 }
 
-bool pam_config_present() {
-    return ASTRALIA_SHELL_PAM_DIR[0] != '\0' && ::access(ASTRALIA_SHELL_PAM_DIR "/astralia-shell", R_OK) == 0;
+bool pam_config_present(const std::string &pam_dir) {
+    return !pam_dir.empty() && ::access((pam_dir + "/astralia-shell").c_str(), R_OK) == 0;
 }
 
 } // namespace
@@ -74,8 +68,9 @@ void secure_clear(std::string &value) {
     value.clear();
 }
 
-Result authenticate_current_user(std::string_view password) {
-    std::string user = user_info::username();
+Result authenticate(std::string_view user_name, std::string_view password, std::string_view pam_dir_view) {
+    std::string user(user_name);
+    std::string pam_dir(pam_dir_view);
     if (user.empty() || user == "unknown")
         return {false, "could not determine current user"};
 
@@ -85,13 +80,13 @@ Result authenticate_current_user(std::string_view password) {
 
     pam_handle_t *pamh = nullptr;
     int rc;
-    if (pam_config_present())
-        rc = pam_start_confdir("astralia-shell", user.c_str(), &conv, ASTRALIA_SHELL_PAM_DIR, &pamh);
+    if (pam_config_present(pam_dir))
+        rc = pam_start_confdir("astralia-shell", user.c_str(), &conv, pam_dir.c_str(), &pamh);
     else
         rc = pam_start("login", user.c_str(), &conv, &pamh);
 
     if (rc != PAM_SUCCESS || !pamh) {
-        klog("lock: pam_start failed rc=%d", rc);
+        astralia::log::error("lock: pam_start failed rc={}", rc);
         secure_clear(pw);
         return {false, "authentication unavailable"};
     }

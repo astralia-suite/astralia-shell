@@ -8,7 +8,7 @@ class Backend {
 
     virtual const char *name() const = 0;
     virtual int malloc_arenas() const = 0;
-    virtual int run() = 0;
+    virtual int run(bool start_locked) = 0;
 };
 
 inline constexpr const char *backend_factory_symbol = "astralia_backend_create";

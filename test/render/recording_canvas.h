@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 namespace test {
 

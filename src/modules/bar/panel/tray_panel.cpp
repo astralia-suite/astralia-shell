@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "modules/bar/panel/tray_panel.h"
 #include "modules/bar/panel/widgets.h"

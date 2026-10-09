@@ -3,13 +3,13 @@
 #include <unordered_set>
 
 #include "config/bar_layout.h"
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "modules/bar/model.h"
 
 #include "service/icon_service.h"
 
-#include "ui/glyphs.h"
+#include "render/glyphs.h"
 
 namespace astralia {
 

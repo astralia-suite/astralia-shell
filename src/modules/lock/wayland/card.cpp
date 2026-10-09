@@ -9,11 +9,11 @@
 #include "wayland/app/user_info.h"
 #include "wayland/app/wayland_state.h"
 
+#include "modules/lock/layout.h"
 #include "modules/lock/wayland/card.h"
-#include "modules/lock/wayland/layout.h"
 
-#include "ui/glyphs.h"
-#include "ui/tokens.h"
+#include "render/glyphs.h"
+#include "render/tokens.h"
 #include "wayland/render/arc_gauge.h"
 #include "wayland/render/icon.h"
 #include "wayland/render/image.h"
@@ -288,9 +288,13 @@ void draw_media(LockState &st, LockOutputSurface &los, Node *content, const Lock
         if (it->second.id)
             art_tex = &it->second;
     }
-    if (art_tex)
-        node_add_texture_rect(content, cx - art * 0.5f, ay, art, art, *art_tex, cmod(astralia::palette::text, ca));
-    else {
+    if (art_tex) {
+        float fit = std::max(art / static_cast<float>(art_tex->width), art / static_cast<float>(art_tex->height));
+        float w = static_cast<float>(art_tex->width) * fit;
+        float h = static_cast<float>(art_tex->height) * fit;
+        Node *clip = node_add_group(content, cx - art * 0.5f, ay, art, art, true);
+        node_add_texture_rect(clip, (art - w) * 0.5f, (art - h) * 0.5f, w, h, *art_tex, cmod(astralia::palette::text, ca));
+    } else {
         const Texture *note =
             tc_icon(st, astralia::icon::music_note, static_cast<int>(art * 0.4f), scale);
         if (note)

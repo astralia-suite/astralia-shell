@@ -8,7 +8,7 @@
 
 #include "modules/idle/wayland/idle.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
 #include "wayland/render/node.h"

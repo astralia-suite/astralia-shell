@@ -15,7 +15,6 @@ void test_palette();
 void test_image_decode();
 void test_text_elide();
 void test_bar_fillet();
-void test_lock_layout();
 void test_visualizer_fft();
 
 int main() {
@@ -41,7 +40,6 @@ int main() {
         {"image_decode", test_image_decode},
         {"text_elide", test_text_elide},
         {"bar_fillet", test_bar_fillet},
-        {"lock_layout", test_lock_layout},
         {"visualizer_fft", test_visualizer_fft},
     };
     for (auto &c : cases) {

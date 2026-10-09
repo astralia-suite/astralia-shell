@@ -10,7 +10,7 @@ struct Result {
     std::string message;
 };
 
-Result authenticate_current_user(std::string_view password);
+Result authenticate(std::string_view user, std::string_view password, std::string_view pam_dir);
 
 void secure_clear(std::string &value);
 

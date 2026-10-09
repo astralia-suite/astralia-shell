@@ -19,8 +19,6 @@ wayland_sources = files(
   '../../modules/launcher/wayland/launcher.cpp',
   '../../modules/lock/wayland/lock.cpp',
   '../../modules/lock/wayland/card.cpp',
-  '../../modules/lock/wayland/layout.cpp',
-  '../../modules/lock/wayland/pam_authenticator.cpp',
   '../../modules/logout/wayland/logout.cpp',
   '../../modules/notification/wayland/notification.cpp',
   '../../modules/osd/wayland/osd.cpp',
@@ -143,9 +141,7 @@ wayland_media_deps = [
   dependency('libdrm'),
 ]
 
-install_data('../../../assets/gifs/profile.gif', install_dir: wayland_data_dir / 'gifs')
 install_data('../../../assets/logout/logo.gif', install_dir: wayland_data_dir / 'logout')
-install_data('../../../assets/pam/astralia-shell', install_dir: wayland_data_dir / 'pam')
 install_data(
   '../../../assets/stellar-restoration.png',
   '../../../assets/stellar-restoration.svg',

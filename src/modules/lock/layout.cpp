@@ -1,8 +1,8 @@
 #include <algorithm>
 
-#include "modules/lock/wayland/lock_config.h"
+#include "config/lock_config.h"
 
-#include "modules/lock/wayland/layout.h"
+#include "modules/lock/layout.h"
 
 float lock_icon_box_size() {
     return kLockFontIcon + kLockIconBoxMargin * 4.0f;

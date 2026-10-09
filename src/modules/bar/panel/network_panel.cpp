@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <cstring>
 
-#include "config/icons.h"
 #include "config/polkit_config.h"
+#include "render/icons.h"
 
 #include "modules/bar/panel/network_panel.h"
 #include "modules/bar/panel/widgets.h"

@@ -30,8 +30,8 @@
 #include "service/wallpaper_service.h"
 
 #include "render/app_icon.h"
-#include "ui/glyphs.h"
-#include "ui/tokens.h"
+#include "render/glyphs.h"
+#include "render/tokens.h"
 
 #include "service/audio_service.h"
 #include "service/bluetooth_service.h"

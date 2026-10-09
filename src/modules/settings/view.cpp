@@ -4,11 +4,11 @@
 #include <string>
 #include <vector>
 
-#include "config/bar_style.h"
-#include "config/icons.h"
+#include "config/bar_layout.h"
 #include "config/rain_config.h"
 #include "config/settings_config.h"
 #include "config/visualizer_config.h"
+#include "render/icons.h"
 
 #include "core/path_home.h"
 
@@ -16,8 +16,8 @@
 
 #include "service/wallpaper_service.h"
 
-#include "ui/field_view.h"
-#include "ui/tokens.h"
+#include "render/field_view.h"
+#include "render/tokens.h"
 
 namespace astralia {
 

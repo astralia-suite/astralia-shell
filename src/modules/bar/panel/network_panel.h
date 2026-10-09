@@ -8,8 +8,8 @@
 
 #include "service/network_service.h"
 
-#include "ui/marquee.h"
-#include "ui/text_field.h"
+#include "render/marquee.h"
+#include "render/text_field.h"
 
 namespace astralia {
 

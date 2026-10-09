@@ -1,10 +1,10 @@
 #include <chrono>
 
 #include "check.h"
-#include "ui/recording_canvas.h"
+#include "render/recording_canvas.h"
 
 #include "config/bar_layout.h"
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "core/animation.h"
 

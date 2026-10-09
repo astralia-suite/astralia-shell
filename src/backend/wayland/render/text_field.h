@@ -4,10 +4,10 @@
 #include <cstdint>
 #include <string>
 
-#include "ui/text_field.h"
+#include "render/text_field.h"
 
 #include "core/animation.h"
-#include "ui/geometry.h"
+#include "render/geometry.h"
 #include "wayland/render/node.h"
 #include "wayland/render/texture_cache.h"
 

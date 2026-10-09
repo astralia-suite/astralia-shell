@@ -8,7 +8,7 @@
 #include "service/wayland/frame_service.h"
 #include "service/wayland/output_service.h"
 
-#include "ui/geometry.h"
+#include "render/geometry.h"
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"

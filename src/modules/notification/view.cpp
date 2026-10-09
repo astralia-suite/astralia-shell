@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <cmath>
 
-#include "config/icons.h"
 #include "config/notification_config.h"
+#include "render/icons.h"
 
 #include "modules/notification/view.h"
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 namespace astralia {
 

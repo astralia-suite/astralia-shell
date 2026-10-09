@@ -363,7 +363,9 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [x11] Let one `OutputService` own the RandR notify. `EventLoop::on_event` keeps a single handler per type, so a second owner replaces it.
 - [x11] Drain the xcb queue before each `poll`, never inside a poll source's `prepare`. A handler may add a source and invalidate iteration.
 - [x11] Take window geometry from `CompositorClient` positions minus the monitor's work area. `reserved` is `{left, top, right, bottom}`.
-- [x11] Overlays take input focus, never an active keyboard grab. A grab blocks the window manager's hotkeys, so toggles never arrive.
+- [x11] Overlays take input focus, never an active keyboard grab. A grab blocks the window manager's hotkeys, so toggles never arrive. The lock is the one exception: it must hold input.
+- [x11] The lock grabs with `owner_events` off on its first window and shows only that window with focus. Events then reach one handler, and hiding restores the previous focus.
+- [x11] The lock refuses to show when the keyboard grab fails. A lock screen that does not hold input is worse than none.
 - [x11] Read xkb modifiers from each key press's `state` field. Overlays opened by a Shift hotkey miss its release.
 - [x11] Map a popup beside a panel with `show(false)`, never focus. Taking focus fires the panel's focus-out close; its `owner_events` grab still routes clicks.
 - [x11] Hide bars for unplugged or disabled outputs, never destroy them. `EventLoop` cannot remove windows or timers, so they would dangle.

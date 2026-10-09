@@ -4,8 +4,8 @@
 #include <functional>
 #include <string_view>
 
-#include "ui/geometry.h"
-#include "ui/tokens.h"
+#include "render/geometry.h"
+#include "render/tokens.h"
 
 namespace astralia::ui {
 
@@ -37,6 +37,7 @@ inline constexpr ImageId no_image = -1;
 struct GroupOptions {
     float scale = 1.0f;
     bool clip = false;
+    float radius = 0.0f;
 };
 
 class Canvas {

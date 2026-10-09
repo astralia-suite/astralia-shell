@@ -2,8 +2,8 @@
 
 #include "check.h"
 
-#include "ui/glyphs.h"
-#include "ui/tokens.h"
+#include "render/glyphs.h"
+#include "render/tokens.h"
 
 namespace {
 

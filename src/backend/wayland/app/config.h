@@ -4,7 +4,7 @@
 
 #include "service/settings_service.h"
 
-#include "config/bar_style.h"
+#include "config/bar_layout.h"
 #include "wayland/config/rain_config.h"
 #include "wayland/config/visualizer_config.h"
 

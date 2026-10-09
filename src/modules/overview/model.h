@@ -13,7 +13,7 @@
 
 #include "service/compositor_service.h"
 
-#include "ui/geometry.h"
+#include "render/geometry.h"
 
 namespace astralia {
 

@@ -45,7 +45,7 @@ void check_shell() {
     check(shell.any_open() && shell.open_modules() == std::vector<std::string>{"launcher"}, "open modules are listed");
     open = true;
     check(shell.open_modules().size() == 2, "a module that opens is listed too");
-    check(shell.status() == "backend: x11\ncapabilities: none\nopen: overview launcher\n", "the status lists the backend, the capabilities and the open modules");
+    check(shell.status() == "backend: x11\ncapabilities: lock\nopen: overview launcher\n", "the status lists the backend, the capabilities and the open modules");
     Shell wayland_shell("wayland", wayland);
     check(wayland_shell.status().find("capabilities: lock idle dashboard rain visualizer animated_wallpaper resource_panel animations") != std::string::npos && wayland_shell.status().ends_with("open: none\n"), "a Wayland shell reports every capability");
     check(wayland_shell.handlers().front().verb == "status", "the status verb is always offered");

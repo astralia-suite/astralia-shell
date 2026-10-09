@@ -12,7 +12,7 @@
 
 #include "service/notification_service.h"
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 namespace astralia {
 

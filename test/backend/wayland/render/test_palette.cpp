@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cmath>
 
-#include "ui/tokens.h"
+#include "render/tokens.h"
 
 void test_palette() {
     astralia::Color a{0.0f, 0.2f, 0.4f, 1.0f};

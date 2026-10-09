@@ -2,9 +2,9 @@
 #include <cmath>
 
 #include "check.h"
-#include "ui/recording_canvas.h"
+#include "render/recording_canvas.h"
 
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "core/animation.h"
 

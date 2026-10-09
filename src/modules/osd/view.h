@@ -2,7 +2,7 @@
 
 #include "modules/osd/model.h"
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 namespace astralia {
 

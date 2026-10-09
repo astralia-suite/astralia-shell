@@ -11,6 +11,7 @@ x11_sources = files(
   '../../modules/bar/x11/panel_host.cpp',
   '../../modules/bar/x11/bar_set.cpp',
   '../../modules/launcher/x11/launcher.cpp',
+  '../../modules/lock/x11/lock.cpp',
   '../../modules/logout/x11/logout.cpp',
   '../../modules/notification/x11/notification.cpp',
   '../../modules/osd/x11/osd.cpp',
@@ -56,6 +57,7 @@ x11_args = [
   '-DASTRALIA_SOURCE_CONSTELLATION_DIR="@0@"'.format(x11_source_assets / 'constellation'),
   '-DASTRALIA_LOGOUT_DIR="@0@"'.format(x11_data_dir / 'logout'),
   '-DASTRALIA_SOURCE_LOGOUT_DIR="@0@"'.format(x11_source_assets / 'logout'),
+  '-DASTRALIA_PAM_DIR="@0@"'.format(x11_data_dir / 'pam'),
   '-DASTRALIA_POLKIT_DIR="@0@"'.format(x11_data_dir / 'polkit'),
   '-DASTRALIA_SOURCE_POLKIT_DIR="@0@"'.format(x11_source_assets / 'polkit'),
 ]

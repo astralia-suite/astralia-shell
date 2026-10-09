@@ -14,6 +14,7 @@
 
 #include "modules/bar/x11/bar_set.h"
 #include "modules/launcher/x11/launcher.h"
+#include "modules/lock/x11/lock.h"
 #include "modules/logout/x11/logout.h"
 #include "modules/notification/x11/notification.h"
 #include "modules/osd/x11/osd.h"
@@ -31,7 +32,7 @@ class X11Backend final : public Backend {
     const char *name() const override { return "x11"; }
     int malloc_arenas() const override { return 1; }
 
-    int run() override {
+    int run(bool start_locked) override {
         animation_set_instant(true);
         auto x = XConnection::connect();
         if (!x) {
@@ -54,6 +55,7 @@ class X11Backend final : public Backend {
         Wallpaper wallpaper(*x, services);
         BarSet bars(*x, *loop, shell, services);
         Launcher launcher(*x, *loop, shell);
+        Lock lock(*x, *loop, shell, services);
         Logout logout(*x, *loop, shell);
         Overview overview(*x, *loop, shell, services);
         Polkit polkit(*x, *loop, services);
@@ -61,6 +63,9 @@ class X11Backend final : public Backend {
         Osd osd(*x, *loop, services);
         Settings settings(*x, *loop, shell, services);
         shell.attach(**ipc);
+        if (start_locked) {
+            shell.run(ShellVerb::lock);
+        }
         return loop->run();
     }
 };

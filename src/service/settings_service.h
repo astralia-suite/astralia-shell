@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-#include "config/bar_style.h"
+#include "config/bar_layout.h"
 #include "config/rain_config.h"
 #include "config/visualizer_config.h"
 

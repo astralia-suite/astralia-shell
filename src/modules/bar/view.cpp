@@ -2,7 +2,7 @@
 #include <cmath>
 
 #include "config/bar_layout.h"
-#include "config/icons.h"
+#include "render/icons.h"
 
 #include "modules/bar/view.h"
 

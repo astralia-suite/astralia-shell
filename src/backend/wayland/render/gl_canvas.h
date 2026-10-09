@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 #include "wayland/render/renderer.h"
 #include "wayland/render/scene.h"

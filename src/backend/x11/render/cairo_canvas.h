@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ui/canvas.h"
+#include "render/canvas.h"
 
 #include "render/image_decode.h"
 #include "render/text.h"
@@ -29,6 +29,7 @@ class CairoCanvas final : public ui::Canvas {
     ui::ImageId thumbnail(std::string_view path, int px) override;
     ui::TextSize image_size(ui::ImageId id) override;
     void draw_image(ui::ImageId id, const ui::Box &box, const Color &tint) override;
+    void gauge(const ui::Box &box, float stroke, float value, const Color &fill) override;
     void begin_group(const ui::Box &box, const ui::GroupOptions &options) override;
     void end_group() override;
     void set_opacity(float) override {}
