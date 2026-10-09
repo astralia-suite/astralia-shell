@@ -16,14 +16,16 @@ enum Action { item = 1,
               back,
               entry };
 
-constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::small_px + 1};
-constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
-constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px - 4};
+constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
+constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 
 float rows_height(const std::vector<TrayMenuRow> &rows) {
     float height = 0.0f;
     for (const TrayMenuRow &row : rows) {
         height += row.height;
+    }
+    if (!rows.empty()) {
+        height += static_cast<float>(rows.size() - 1) * cfg::tray_menu_gap;
     }
     return height;
 }
@@ -79,7 +81,9 @@ void TrayPanel::closed() {
 void TrayPanel::close_menu() {
     menu_key_.clear();
     path_.clear();
-    menu_scroll_ = 0.0f;
+    menu_anchor_ = {};
+    hover_id_ = -1;
+    hover_a_ = -1;
 }
 
 const std::vector<TrayMenuEntry> *TrayPanel::level() const {
@@ -92,7 +96,7 @@ const std::vector<TrayMenuEntry> *TrayPanel::level() const {
 float TrayPanel::content_height(ui::Canvas &) {
     const std::vector<TrayItem> &items = tray_.items();
     if (items.empty()) {
-        return cfg::empty_height;
+        return cfg::tray_empty_height;
     }
     int columns = tray_columns(width());
     float rows = static_cast<float>((static_cast<int>(items.size()) + columns - 1) / columns);
@@ -100,9 +104,13 @@ float TrayPanel::content_height(ui::Canvas &) {
 }
 
 void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) {
+    if (!menu_key_.empty() && tray_.find(menu_key_) == nullptr) {
+        close_menu();
+    }
     const std::vector<TrayItem> &items = tray_.items();
     if (items.empty()) {
-        panel_widgets::centered_text(canvas, "No tray icons", ui::TextStyle{ui::FontFamily::text, cfg::text_px}, {view.x, view.y - scroll, view.w, cfg::empty_height}, palette::text_dim);
+        ui::TextSize size = canvas.measure("No tray icons", text_style);
+        canvas.text("No tray icons", text_style, view.x + (view.w - size.w) / 2.0f, view.y - scroll, palette::text_dim);
         return;
     }
     int columns = tray_columns(width());
@@ -111,8 +119,7 @@ void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, Pan
         if (cell.y + cell.h < view.y || cell.y > view.y + view.h) {
             continue;
         }
-        bool selected = !menu_key_.empty() && menu_key_ == items[i].key();
-        canvas.rounded(cell, metrics::radius_md, selected ? palette::accent_alpha25 : palette::text_alpha06);
+        canvas.rounded(cell, metrics::radius_md, palette::text_alpha06);
         std::string path = tray_item_icon_path(items[i]);
         ui::ImageId image = path.empty() ? ui::no_image : canvas.image(path, static_cast<int>(cfg::tray_icon));
         ui::Box target{cell.x + (cell.w - cfg::tray_icon) / 2.0f, cell.y + (cell.h - cfg::tray_icon) / 2.0f, cfg::tray_icon, cfg::tray_icon};
@@ -127,90 +134,74 @@ void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, Pan
     }
 }
 
-float TrayPanel::dialog_height() {
-    if (menu_key_.empty()) {
+float TrayPanel::popup_height() const {
+    if (menu_key_.empty() || tray_.find(menu_key_) == nullptr) {
         return 0.0f;
     }
-    if (tray_.find(menu_key_) == nullptr) {
-        close_menu();
-        return 0.0f;
-    }
-    float inner = rows_height(tray_menu_rows(level(), !path_.empty()));
-    return std::min(cfg::tray_menu_max, inner + 2.0f * cfg::tray_menu_pad);
+    return rows_height(tray_menu_rows(level(), !path_.empty())) + 2.0f * cfg::tray_menu_pad;
 }
 
-void TrayPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPaint &paint) {
+void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &paint) {
     std::vector<TrayMenuRow> rows = tray_menu_rows(level(), !path_.empty());
-    canvas.rounded(box, metrics::radius_md, palette::overlay, metrics::border_thin, palette::accent);
-    float view_h = box.h - 2.0f * cfg::tray_menu_pad;
-    float total = rows_height(rows);
-    menu_scroll_ = std::clamp(menu_scroll_, 0.0f, std::max(0.0f, total - view_h));
-    ui::Box clip{box.x + cfg::tray_menu_pad, box.y + cfg::tray_menu_pad, box.w - 2.0f * cfg::tray_menu_pad, view_h};
-    canvas.begin_group(clip, {1.0f, true});
-    float y = -menu_scroll_;
-    std::vector<ui::Box> hits;
-    std::vector<int> ids;
-    std::vector<int> args;
+    canvas.rounded(box, cfg::tray_menu_radius, palette::overlay, cfg::tray_menu_border, palette::accent);
+    float x = box.x + cfg::tray_menu_pad;
+    float width = box.w - 2.0f * cfg::tray_menu_pad;
+    float y = box.y + cfg::tray_menu_pad;
     for (const TrayMenuRow &row : rows) {
-        ui::Box r{0.0f, y, clip.w, row.height};
-        y += row.height;
-        if (r.y + r.h < 0.0f || r.y > view_h) {
-            continue;
-        }
-        float mid = r.y + r.h / 2.0f;
+        ui::Box r{x, y, width, row.height};
+        y += row.height + cfg::tray_menu_gap;
         switch (row.kind) {
         case TrayMenuRow::Kind::separator:
-            canvas.rect({cfg::tray_menu_row_pad, mid, r.w - 2.0f * cfg::tray_menu_row_pad, 1.0f}, palette::text_alpha08);
+            canvas.rect({r.x + cfg::tray_menu_separator_inset, r.y + r.h / 2.0f, r.w - 2.0f * cfg::tray_menu_separator_inset, 1.0f}, palette::text_alpha06);
             break;
         case TrayMenuRow::Kind::loading:
-            panel_widgets::text_in_row(canvas, "Loading", small_style, cfg::tray_menu_row_pad, r, palette::text_dim);
+            panel_widgets::text_in_row(canvas, "Loading\xE2\x80\xA6", text_style, r.x + cfg::tray_menu_row_pad, r, palette::text_dim);
             break;
         case TrayMenuRow::Kind::back: {
-            ui::TextSize glyph = canvas.measure(icon::chevron_left, icon_style);
-            canvas.text(icon::chevron_left, icon_style, cfg::tray_menu_row_pad, mid - glyph.h / 2.0f, palette::text);
-            panel_widgets::text_in_row(canvas, "Back", text_style, cfg::tray_menu_row_pad * 2.0f + glyph.w, r, palette::text);
-            hits.push_back(r);
-            ids.push_back(back);
-            args.push_back(0);
+            if (hover_id_ == back) {
+                canvas.rounded(r, metrics::radius_sm, palette::text_alpha08);
+            }
+            panel_widgets::centered_text(canvas, icon::chevron_left, icon_style, {r.x, r.y, cfg::tray_menu_row, r.h}, palette::text);
+            paint.region(r, back);
             break;
         }
         case TrayMenuRow::Kind::entry: {
             const TrayMenuEntry &e = *row.entry;
             const Color &color = e.enabled ? palette::text : palette::text_dim;
-            float x = cfg::tray_menu_row_pad;
-            if (e.checkbox) {
-                if (e.checked) {
-                    ui::TextSize glyph = canvas.measure(icon::check, icon_style);
-                    canvas.text(icon::check, icon_style, x, mid - glyph.h / 2.0f, color);
-                }
-                x += 12.0f + cfg::tray_menu_row_pad;
+            if (e.enabled && hover_id_ == entry && hover_a_ == e.id) {
+                canvas.rounded(r, metrics::radius_sm, palette::text_alpha08);
             }
-            float chevron = e.children.empty() ? 0.0f : 12.0f + cfg::tray_menu_row_pad;
+            float text_x = r.x + cfg::tray_menu_row_pad;
+            if (e.checkbox) {
+                ui::TextSize glyph = canvas.measure(icon::check, icon_style);
+                if (e.checked) {
+                    canvas.text(icon::check, icon_style, text_x, r.y + (r.h - glyph.h) / 2.0f, color);
+                }
+                text_x += glyph.w + cfg::tray_menu_row_pad;
+            }
             ui::TextStyle label = text_style;
-            label.max_width = std::max(20, static_cast<int>(r.w - cfg::tray_menu_row_pad - chevron - x));
-            panel_widgets::text_in_row(canvas, tray_strip_mnemonic(e.label), label, x, r, color);
+            label.max_width = std::max(0, static_cast<int>(r.x + r.w - text_x - cfg::tray_menu_label_offset));
+            panel_widgets::text_in_row(canvas, tray_strip_mnemonic(e.label), label, text_x, r, color);
             if (!e.children.empty()) {
                 ui::TextSize glyph = canvas.measure(icon::chevron_right, icon_style);
-                canvas.text(icon::chevron_right, icon_style, r.w - cfg::tray_menu_row_pad - glyph.w, mid - glyph.h / 2.0f, palette::text_dim);
+                canvas.text(icon::chevron_right, icon_style, r.x + r.w - cfg::tray_menu_row_pad - glyph.w, r.y + (r.h - glyph.h) / 2.0f, palette::text_dim);
             }
             if (e.enabled) {
-                hits.push_back(r);
-                ids.push_back(entry);
-                args.push_back(e.id);
+                paint.region(r, entry, e.id);
             }
             break;
         }
         }
     }
-    canvas.end_group();
-    for (size_t i = 0; i < hits.size(); ++i) {
-        ui::Box h{clip.x + hits[i].x, std::max(clip.y, clip.y + hits[i].y), hits[i].w, hits[i].h};
-        float bottom = std::min(clip.y + hits[i].y + hits[i].h, clip.y + clip.h);
-        h.h = bottom - h.y;
-        if (h.h > 0.0f) {
-            paint.region(h, ids[i], args[i]);
-        }
+}
+
+bool TrayPanel::popup_hover(int id, int a) {
+    if (id == hover_id_ && a == hover_a_) {
+        return false;
     }
+    hover_id_ = id;
+    hover_a_ = a;
+    return true;
 }
 
 bool TrayPanel::dismiss_dialog() {
@@ -235,8 +226,8 @@ bool TrayPanel::activate(const PanelRegion &region, double, double) {
                 return true;
             }
             menu_key_ = target.key();
+            menu_anchor_ = region.box;
             path_.clear();
-            menu_scroll_ = 0.0f;
             tray_.request_menu(menu_key_);
             return true;
         }
@@ -247,7 +238,6 @@ bool TrayPanel::activate(const PanelRegion &region, double, double) {
     case back:
         if (!path_.empty()) {
             path_.pop_back();
-            menu_scroll_ = 0.0f;
         } else {
             close_menu();
         }
@@ -263,7 +253,6 @@ bool TrayPanel::activate(const PanelRegion &region, double, double) {
         }
         if (!it->children.empty()) {
             path_.push_back(region.a);
-            menu_scroll_ = 0.0f;
             return true;
         }
         std::string key = menu_key_;
@@ -276,22 +265,12 @@ bool TrayPanel::activate(const PanelRegion &region, double, double) {
     }
 }
 
-bool TrayPanel::wheel(double, double, double dy) {
-    if (menu_key_.empty()) {
-        return false;
-    }
-    float before = menu_scroll_;
-    menu_scroll_ = std::max(0.0f, menu_scroll_ + static_cast<float>(dy));
-    return menu_scroll_ != before;
-}
-
 bool TrayPanel::key(const input::KeyEvent &event) {
     if (event.kind != input::KeyKind::Escape || menu_key_.empty()) {
         return false;
     }
     if (!path_.empty()) {
         path_.pop_back();
-        menu_scroll_ = 0.0f;
     } else {
         close_menu();
     }

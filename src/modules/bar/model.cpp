@@ -455,7 +455,7 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         }
     }
 
-    constexpr BarItem right_items[] = {BarItem::resource, BarItem::tray, BarItem::network, BarItem::bluetooth, BarItem::volume, BarItem::brightness, BarItem::battery};
+    constexpr BarItem right_items[] = {BarItem::tray, BarItem::resource, BarItem::network, BarItem::bluetooth, BarItem::volume, BarItem::brightness, BarItem::battery};
     float right_w = 0.0f;
     first = true;
     for (BarItem id : right_items) {
@@ -466,7 +466,7 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     }
     if (right_w > 0.0f) {
         float right_x = width - island_pad - right_w;
-        run({BarItem::resource, BarItem::tray, BarItem::network, BarItem::bluetooth, BarItem::volume, BarItem::brightness, BarItem::battery}, right_x, layout_.dividers);
+        run({BarItem::tray, BarItem::resource, BarItem::network, BarItem::bluetooth, BarItem::volume, BarItem::brightness, BarItem::battery}, right_x, layout_.dividers);
         if (rail) {
             layout_.right_start = std::round(right_x - island_pad);
         }

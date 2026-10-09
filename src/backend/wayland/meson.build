@@ -48,6 +48,7 @@ wayland_sources = files(
   'render/node.cpp',
   'render/overlay_panel.cpp',
   'render/panel_chrome.cpp',
+  'render/popup_window.cpp',
   'render/renderer.cpp',
   'render/text.cpp',
   'render/text_elide.cpp',

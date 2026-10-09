@@ -67,6 +67,7 @@ bool PanelSurface::init_egl() {
 }
 
 void PanelSurface::destroy() {
+    destroy_popup();
     if (text_focused_) {
         app_.text_input.clear_focused_client(this);
         text_focused_ = false;
@@ -98,6 +99,94 @@ void PanelSurface::state_changed(PanelId, bool open) {
         base_.open = true;
         request_frame();
     }
+    if (!open) {
+        sync_popup();
+    }
+}
+
+void PanelSurface::destroy_popup() {
+    if (popup_.surface == nullptr) {
+        return;
+    }
+    if (app_.pointer.focused_surface == popup_.surface) {
+        app_.pointer.focused_surface = nullptr;
+    }
+    popup_window_destroy(popup_);
+    popup_anchor_ = {};
+    popup_width_ = 0.0f;
+    popup_height_ = 0.0f;
+}
+
+void PanelSurface::popup_dismissed() {
+    if (astralia::Panel *panel = set_.active()) {
+        panel->dismiss_popup();
+    }
+    request_frame();
+}
+
+void PanelSurface::sync_popup() {
+    astralia::Panel *panel = set_.active();
+    if (!base_.layer_surface || panel == nullptr || !panel->popup_wanted() || popup_.done) {
+        destroy_popup();
+        return;
+    }
+    float width = panel->popup_width();
+    float height = panel->popup_height();
+    astralia::ui::Box anchor = panel->popup_anchor();
+    if (popup_.surface == nullptr) {
+        if (!popup_window_create(popup_, app_.compositor, app_.wm_base, base_.layer_surface, anchor, static_cast<int32_t>(width), static_cast<int32_t>(height), app_.seat, press_serial_)) {
+            return;
+        }
+        if (!popup_window_init_egl(popup_, app_.display, app_.egl_display, app_.egl_config, app_.egl_context)) {
+            popup_window_destroy(popup_);
+            return;
+        }
+        popup_canvas_.bind(app_.renderer);
+        popup_.frame_clock.draw = [this] { paint_popup(); };
+        popup_.on_done = [this] { popup_dismissed(); };
+        popup_.on_configured = [this] { paint_popup(); };
+        popup_anchor_ = anchor;
+        popup_width_ = width;
+        popup_height_ = height;
+        popup_window_request_frame(popup_);
+        app_detail::rest_egl_current(app_);
+        return;
+    }
+    if (anchor != popup_anchor_ || width != popup_width_ || height != popup_height_) {
+        popup_window_reposition(popup_, app_.wm_base, anchor, static_cast<int32_t>(width), static_cast<int32_t>(height));
+        popup_anchor_ = anchor;
+        popup_width_ = width;
+        popup_height_ = height;
+    }
+    popup_window_request_frame(popup_);
+}
+
+void PanelSurface::paint_popup() {
+    astralia::Panel *panel = set_.active();
+    if (popup_.egl_surface == EGL_NO_SURFACE || popup_.done || panel == nullptr || !panel->popup_wanted()) {
+        return;
+    }
+    if (!popup_.configured) {
+        return;
+    }
+    gl_make_current(popup_.egl_display, popup_.egl_surface, popup_.egl_context);
+    int32_t scale = popup_.output_scale.scale;
+    app_.renderer.begin_frame(popup_.width, popup_.height, scale);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    popup_canvas_.begin(scale);
+    panel->paint_popup(popup_canvas_);
+    popup_canvas_.flush();
+    eglSwapBuffers(popup_.egl_display, popup_.egl_surface);
+    app_detail::rest_egl_current(app_);
+}
+
+bool PanelSurface::wants_hand(wl_surface *surface, double x, double y) const {
+    const astralia::Panel *panel = set_.find(set_.active_id());
+    if (surface != nullptr && surface == popup_.surface) {
+        return panel != nullptr && panel->popup_clickable(x, y);
+    }
+    return set_.clickable(x, y);
 }
 
 void PanelSurface::sync_text_input() {
@@ -131,23 +220,37 @@ void PanelSurface::paint() {
     canvas_.flush();
     eglSwapBuffers(base_.egl_display, base_.egl_surface);
     sync_text_input();
+    sync_popup();
     if (set_.animating()) {
         request_frame();
     }
 }
 
-void PanelSurface::press(int button, double x, double y) {
+void PanelSurface::press(wl_surface *surface, int button, double x, double y, uint32_t serial) {
     astralia::input::Button mapped = button == 0x110 ? astralia::input::Button::Left : button == 0x111 ? astralia::input::Button::Right
                                                                                                        : astralia::input::Button::Other;
-    if (astralia::Panel *panel = set_.active()) {
+    press_serial_ = serial;
+    astralia::Panel *panel = set_.active();
+    if (popup_.surface != nullptr && surface == popup_.surface) {
+        if (panel != nullptr) {
+            panel->press_popup(x, y, mapped);
+        }
+        request_frame();
+        return;
+    }
+    if (panel != nullptr) {
         panel->press(x, y, mapped);
     } else {
         set_.close_all();
     }
+    sync_popup();
     request_frame();
 }
 
-void PanelSurface::wheel(double x, double y, double dy) {
+void PanelSurface::wheel(wl_surface *surface, double x, double y, double dy) {
+    if (surface == popup_.surface) {
+        return;
+    }
     if (astralia::Panel *panel = set_.active()) {
         panel->wheel(x, y, dy);
     }
@@ -165,9 +268,20 @@ void PanelSurface::key(const KeyEvent &event) {
     send_key(to_neutral(event));
 }
 
-void PanelSurface::move(double x, double y) {
-    if (astralia::Panel *panel = set_.active()) {
-        panel->move(x, y);
+void PanelSurface::move(wl_surface *surface, double x, double y) {
+    astralia::Panel *panel = set_.active();
+    if (panel == nullptr) {
+        return;
+    }
+    if (popup_.surface != nullptr && surface == popup_.surface) {
+        panel->hover_popup(x, y);
+        return;
+    }
+    if (popup_.surface != nullptr) {
+        panel->hover_popup(-1, -1);
+    }
+    if (!panel->move(x, y)) {
+        panel->hover(x, y);
     }
 }
 

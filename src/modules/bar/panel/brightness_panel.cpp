@@ -39,6 +39,7 @@ void BrightnessPanel::sync() {
 
 void BrightnessPanel::opened() {
     dragging_ = false;
+    hovered_ = false;
     sync();
 }
 
@@ -65,10 +66,19 @@ void BrightnessPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, Pane
     float slider_x = row.x + icon_size.w + cfg::brightness_icon_gap;
     float slider_right = pct_right - cfg::brightness_pct_width - cfg::brightness_slider_gap;
     ui::Box track{slider_x, row.y, std::max(0.0f, slider_right - slider_x), row.h};
-    panel_widgets::slider(canvas, track, enabled_ ? static_cast<float>(percent_) / 100.0f : 0.0f, false);
+    panel_widgets::slider(canvas, track, enabled_ ? static_cast<float>(percent_) / 100.0f : 0.0f, false, enabled_ && (dragging_ || hovered_));
     if (enabled_) {
         paint.region(track, slider_id, 0, 0, true);
     }
+}
+
+bool BrightnessPanel::hover(int id, int) {
+    bool next = id == slider_id;
+    if (next == hovered_) {
+        return false;
+    }
+    hovered_ = next;
+    return true;
 }
 
 bool BrightnessPanel::activate(const PanelRegion &region, double x, double) {

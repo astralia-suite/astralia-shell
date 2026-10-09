@@ -11,6 +11,7 @@
 #include "modules/bar/panel/clock_panel.h"
 #include "modules/bar/panel/network_panel.h"
 #include "modules/bar/panel/panel.h"
+#include "modules/bar/panel/panel_set.h"
 #include "modules/bar/panel/tray_panel.h"
 
 namespace {
@@ -36,8 +37,29 @@ class FakeContent final : public PanelContent {
     int opened_count = 0;
     int closed_count = 0;
     int dismissed = 0;
+    bool header = true;
+    float popup = 0.0f;
+    int hover_id = -1;
+    int body_hover = -2;
+    int hover_a = -1;
 
     std::string_view title() const override { return "Fake"; }
+    bool has_header() const override { return header; }
+    astralia::ui::Box popup_anchor() const override { return {10, 20, 40, 40}; }
+    float popup_width() const override { return popup > 0.0f ? 220.0f : 0.0f; }
+    float popup_height() const override { return popup; }
+    bool hover(int id, int) override {
+        bool changed = id != body_hover;
+        body_hover = id;
+        return changed;
+    }
+    bool popup_hover(int id, int a) override {
+        bool changed = id != hover_id || a != hover_a;
+        hover_id = id;
+        hover_a = a;
+        return changed;
+    }
+    void paint_popup(astralia::ui::Canvas &, const astralia::ui::Box &box, PanelPaint &paint) override { paint.region({box.x + 4, box.y + 4, 100, 28}, 9, 1); }
     void opened() override { ++opened_count; }
     void closed() override { ++closed_count; }
     float content_height(astralia::ui::Canvas &) override { return height; }
@@ -101,6 +123,9 @@ void check_panel_framework() {
     test::check(h.panel->clickable(bx, by) && !h.panel->clickable(card.x + 1, card.y + 1), "clickable follows regions");
     test::check(h.panel->press(bx, by) && h.content->activated == 1 && h.content->last_id == 7, "press activates the region under the pointer");
 
+    test::check(h.panel->hover(bx, by) && h.content->body_hover == 7, "hovering a card region reports its id");
+    test::check(!h.panel->hover(bx + 1, by + 1), "hovering the same region changes nothing");
+    test::check(h.panel->hover(card.x + 1, card.y + 1) && h.content->body_hover == -1, "hovering empty card space clears the hover");
     double dx = card.x + 20 + 5;
     double dy = by + 30;
     h.panel->press(dx, dy);
@@ -131,6 +156,56 @@ void check_panel_framework() {
     card = h.panel->paint(h.canvas, 1000, 50);
     h.panel->press(card.x + card.w - 20 - 11, card.y + 20 + 16);
     test::check(!h.panel->is_open(), "the close button closes");
+}
+
+void check_panel_headerless() {
+    Instant instant;
+    Harness h;
+    h.content->header = false;
+    h.panel->open();
+    astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
+    test::check(card.h == 20 + 100 + 20, "a headerless card is the content between two paddings");
+    double bx = card.x + 20 + 5;
+    double by = card.y + 20 + 5;
+    test::check(h.panel->press(bx, by) && h.content->last_id == 7, "headerless content starts at the top padding");
+    astralia::input::KeyEvent escape;
+    escape.kind = astralia::input::KeyKind::Escape;
+    test::check(h.panel->key(escape) && !h.panel->is_open(), "escape closes a headerless card");
+}
+
+void check_panel_popup() {
+    Instant instant;
+    Harness h;
+    h.panel->open();
+    test::check(!h.panel->popup_wanted(), "no popup without content for it");
+    astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
+    h.content->popup = 90.0f;
+    test::check(h.panel->popup_wanted() && h.panel->popup_width() == 220 && h.panel->popup_height() == 90, "the popup follows the content");
+    astralia::ui::Box anchor = h.panel->popup_anchor();
+    test::check(anchor.x == card.x + 10 && anchor.y == card.y + 20 && anchor.w == 40, "the anchor is moved to surface coordinates");
+    h.panel->paint_popup(h.canvas);
+    test::check(h.panel->popup_clickable(10, 10) && !h.panel->popup_clickable(150, 10), "popup regions are clickable");
+    test::check(h.panel->press_popup(10, 10) && h.content->activated == 1 && h.content->last_id == 9, "a popup press activates its region");
+    test::check(h.panel->hover_popup(10, 10) && h.content->hover_id == 9 && h.content->hover_a == 1, "hovering a popup region reports its id");
+    test::check(!h.panel->hover_popup(11, 11), "hovering the same region changes nothing");
+    test::check(h.panel->hover_popup(200, 80) && h.content->hover_id == -1, "leaving the regions clears the hover");
+    int before = h.content->activated;
+    test::check(h.panel->press_popup(200, 80) && h.content->activated == before, "a popup press outside any region does nothing");
+    h.panel->close();
+    test::check(!h.panel->popup_wanted(), "a closing panel has no popup");
+}
+
+void check_panel_set_lookup() {
+    Harness h;
+    astralia::PanelSet set(h.reactor);
+    test::check(set.find(astralia::PanelId::count) == nullptr && set.find(set.active_id()) == nullptr, "an empty set has no active panel to find");
+    set.add(astralia::PanelId::clock, std::make_unique<FakeContent>());
+    test::check(set.find(astralia::PanelId::clock) != nullptr && set.find(astralia::PanelId::tray) == nullptr, "find returns only the panels that were added");
+}
+
+void check_dialog_heights() {
+    test::check(astralia::panel_config::confirm_dialog_height == 114.0f, "the confirm dialog is 114 high");
+    test::check(astralia::panel_config::field_dialog_height == 122.0f, "the password dialog is 122 high");
 }
 
 void check_panel_scroll() {
@@ -268,6 +343,10 @@ void check_network_rows() {
 
 void check_panel() {
     check_panel_framework();
+    check_panel_headerless();
+    check_panel_popup();
+    check_panel_set_lookup();
+    check_dialog_heights();
     check_panel_scroll();
     check_panel_animation();
     check_calendar();

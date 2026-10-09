@@ -27,6 +27,7 @@ constexpr float left_height = cfg::clock_weekday_line + cfg::clock_line_gap + cf
 constexpr float grid_height = cfg::clock_grid_header + cfg::clock_grid_header_gap + cfg::clock_weekday_row + cfg::clock_grid_top_gap + 6.0f * cell_size;
 constexpr float total_height = left_height > grid_height ? left_height : grid_height;
 
+constexpr Color today_text{1.0f, 1.0f, 1.0f, 1.0f};
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 constexpr ui::TextStyle weekday_style{ui::FontFamily::text, cfg::clock_weekday_px};
 constexpr ui::TextStyle big_style{ui::FontFamily::text, cfg::clock_big_day_px};
@@ -39,7 +40,7 @@ std::chrono::year_month_day to_ymd(int year, int month, int day) {
 void nav_button(ui::Canvas &canvas, PanelPaint &paint, float x, float y, const char *glyph, int action) {
     float size = cfg::clock_nav_button;
     ui::Box box{x, y, size, size};
-    canvas.rounded(box, size / 2.0f, palette::text_alpha08);
+    canvas.rounded(box, size / 2.0f, palette::overlay);
     if (glyph == nullptr) {
         float dot = cfg::clock_today_dot;
         canvas.rounded({x + (size - dot) / 2.0f, y + (size - dot) / 2.0f, dot, dot}, dot / 2.0f, palette::accent);
@@ -81,7 +82,7 @@ int clock_panel_iso_week(int year, int month, int day) {
 }
 
 float ClockPanel::content_height(ui::Canvas &) {
-    return total_height + 1.0f;
+    return total_height;
 }
 
 void ClockPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPaint &paint) {
@@ -141,7 +142,8 @@ void ClockPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
             float radius = cell_size / 2.0f - cfg::clock_cell_padding;
             canvas.rounded({cx + cell_size / 2.0f - radius, cy + cell_size / 2.0f - radius, 2.0f * radius, 2.0f * radius}, radius, palette::accent);
         }
-        panel_widgets::centered_text(canvas, std::to_string(entry.day), text_style, {cx, cy, cell_size, cell_size}, is_today || entry.in_month ? palette::text : palette::text_dim);
+        panel_widgets::centered_text(canvas, std::to_string(entry.day), text_style, {cx, cy, cell_size, cell_size}, is_today ? today_text : entry.in_month ? palette::text
+                                                                                                                                                           : palette::text_dim);
     }
 }
 

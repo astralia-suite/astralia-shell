@@ -16,12 +16,11 @@ enum Action { previous = 1,
               next };
 
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
-constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 
 void button(ui::Canvas &canvas, PanelPaint &paint, float x, float y, float size, const char *glyph, int action) {
     ui::Box box{x, y, size, size};
-    canvas.rounded(box, size / 2.0f, palette::text_alpha08);
+    canvas.rounded(box, size / 2.0f, palette::overlay);
     ui::TextSize extent = canvas.measure(glyph, icon_style);
     canvas.text(glyph, icon_style, x + (size - extent.w) / 2.0f, y + (size - extent.h) / 2.0f, palette::text);
     paint.region(box, action);
@@ -41,7 +40,7 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     const MediaStatus &status = media_.status();
     float thumb = cfg::media_thumb;
     ui::Box art{view.x, view.y, thumb, thumb};
-    canvas.rounded(art, cfg::media_thumb_radius, palette::text_alpha08);
+    canvas.rounded(art, cfg::media_thumb_radius, palette::overlay);
     ui::ImageId image = status.has_player && media_is_local_art_url(status.track.art_url) ? canvas.image(status.track.art_url.substr(7), static_cast<int>(thumb)) : ui::no_image;
     if (image != ui::no_image) {
         ui::TextSize size = canvas.image_size(image);
@@ -65,12 +64,12 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     float middle = view.y + thumb / 2.0f;
     ui::TextSize title_size = canvas.measure(title, text_style);
     draw_marquee_text(canvas, animations(), title_marquee_, title, text_style, text_x, middle - title_size.h - cfg::media_title_spacing / 2.0f, text_w, palette::text);
-    draw_marquee_text(canvas, animations(), artist_marquee_, artist, small_style, text_x, middle + cfg::media_title_spacing / 2.0f, text_w, palette::text_dim);
+    draw_marquee_text(canvas, animations(), artist_marquee_, artist, text_style, text_x, middle + cfg::media_title_spacing / 2.0f, text_w, palette::text_dim);
 
     float progress_y = view.y + thumb + cfg::media_progress_top;
     if (status.has_player) {
         std::string label = media_format_position(status.track.position_us) + " / " + media_format_position(status.track.length_us);
-        panel_widgets::centered_text(canvas, label, small_style, {view.x, progress_y, view.w, cfg::media_progress_row}, palette::text_dim);
+        panel_widgets::centered_text(canvas, label, text_style, {view.x, progress_y, view.w, cfg::media_progress_row}, palette::text_dim);
     }
 
     float controls_y = progress_y + cfg::media_progress_row + cfg::media_controls_top;

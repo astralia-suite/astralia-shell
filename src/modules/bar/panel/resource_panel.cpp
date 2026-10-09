@@ -15,7 +15,7 @@ constexpr Color gauge_gpu = color("#a855f7");
 constexpr Color gauge_ram = color("#3b82f6");
 constexpr Color gauge_disk = color("#22c55e");
 constexpr Color temp_warn_color = color("#f97316");
-constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::small_px + 1};
+constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::text_px};
 
 const Color &temp_color(float celsius, const Color &base) {

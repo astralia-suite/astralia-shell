@@ -20,12 +20,12 @@
 - `src/app/`: process-wide shared state and the backend interface; never includes `backend/`.
 - `src/core/`: non-visual infrastructure (logging, processes, IPC, JSON, config file, D-Bus); includes nothing from `render/`, `modules/`, `service/` or `backend/`.
 - `src/config/`: per-module constants and plain data types.
+- `src/ui/`: display-free contracts and widgets every view shares: `Canvas`, tokens, glyphs, geometry, the host contract, `ModuleBase`, text field and marquee.
 - `src/service/`: data providers; those both backends use sit at the top, backend-only ones in `wayland/` and `x11/`; the compositor services sit behind the `Compositor` interface in `compositor_service.h`.
 - `src/modules/`: one directory per shell part, with its shared files at the top and each backend's view in `<name>/wayland/` or `<name>/x11/`.
-- `src/backend/wayland/`: Wayland, EGL and GLES2 infrastructure (`app/`, `core/`, `render/`, `protocols/`), built into `libastralia-wayland.so` together with the `wayland/` module and service files.
-- `src/backend/x11/`: `xcb` and `cairo-xcb` infrastructure (`app/`, `core/`, `render/`), built into `libastralia-x11.so` together with the `x11/` module and service files.
-- `src/plugin/`: optional `dlopen`-loaded code owned by a service.
-- `test/`: tests for `src/` code, built as `astralia-test`; module tests sit in `test/modules/<name>/` and `test/modules/<name>/<backend>/`.
+- `src/backend/wayland/`: Wayland, EGL and GLES2 infrastructure (`app/`, `config/`, `core/`, `render/`, `protocols/`), built into `libastralia-wayland.so` together with the `wayland/` module and service files; `plugin/` holds the `ffmpeg` decoder, built as its own `shared_module`.
+- `src/backend/x11/`: `xcb` and `cairo-xcb` infrastructure (`app/`, `config/`, `core/`, `render/`), built into `libastralia-x11.so` together with the `x11/` module and service files.
+- `test/`: tests for `src/` code, built as `astralia-test`; module tests sit in `test/modules/<name>/` and `test/modules/<name>/<backend>/`, backend-only checks in `test/backend/<backend>/`.
 
 ## Backend boundary
 
@@ -45,6 +45,7 @@
 - A view never includes a backend header; backend-only drawing goes through a hook the host supplies (`LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`).
 - Only Wayland animates: models call `AnimationManager` freely and X11 sets `animation_set_instant(true)`, so nothing in a model checks the backend.
 - A feature one backend lacks is a `Capabilities` flag in `app/shell.h`; hosts and verbs register only for flags the backend reports.
+- Bar panel content is shared and window-free; the tray popup and the panel surface are backend hosts (`PanelSurface` with `popup_window` on Wayland, `PanelHost` on X11).
 - A module shall manage its internal works, without bleeding into `main.cpp`.
 - `main.cpp` shall not include specific components belonging to a module.
 
@@ -57,7 +58,7 @@
 ## Service structure
 
 - `src/service/` holds as many services as needed, but limited to one pair of `**_service.{h,cpp}` per service.
-- `src/plugin/` holds `dlopen`-loaded `shared_module`s, one `**_plugin.{h,cpp}` pair each, loaded by their owning service.
+- A `dlopen`-loaded `shared_module` lives in the backend that needs it (`src/backend/wayland/plugin/`), one `**_plugin.{h,cpp}` pair each, loaded by its owning service.
 
 ## Build targets
 

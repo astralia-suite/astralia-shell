@@ -35,12 +35,17 @@ class PanelHost {
     void paint();
     void grab();
     void ungrab();
+    void sync_popup();
+    void hide_popup();
+    void handle_popup(const xcb_generic_event_t &event);
 
     XConnection &x_;
     Keyboard keyboard_;
     PanelSet set_;
     XWindow window_;
     CairoCanvas canvas_;
+    XWindow popup_;
+    CairoCanvas popup_canvas_;
     OutputGeometry output_;
     int top_ = 0;
     bool grabbed_ = false;

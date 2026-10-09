@@ -20,6 +20,7 @@ class BrightnessPanel final : public PanelContent {
         dragging_ = false;
         sync();
     }
+    bool hover(int id, int a) override;
     bool key(const input::KeyEvent &event) override;
     bool wheel(double x, double y, double dy) override;
     bool scrollable() const override { return false; }
@@ -35,6 +36,7 @@ class BrightnessPanel final : public PanelContent {
     int percent_ = 0;
     bool enabled_ = false;
     bool dragging_ = false;
+    bool hovered_ = false;
 };
 
 } // namespace astralia

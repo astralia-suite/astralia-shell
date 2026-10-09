@@ -45,6 +45,7 @@ class PanelContent {
 
     virtual std::string_view title() const = 0;
     virtual PanelAnchor anchor() const { return PanelAnchor::right; }
+    virtual bool has_header() const { return true; }
     virtual float width() const { return panel_config::width; }
     virtual float max_height() const { return panel_config::max_height; }
     virtual void opened() {}
@@ -54,6 +55,7 @@ class PanelContent {
     virtual bool activate(const PanelRegion &, double, double) { return false; }
     virtual bool drag(const PanelRegion &, double, double) { return false; }
     virtual void drop(const PanelRegion &) {}
+    virtual bool hover(int, int) { return false; }
     virtual bool key(const input::KeyEvent &) { return false; }
     virtual bool wheel(double, double, double) { return false; }
     virtual bool scrollable() const { return true; }
@@ -63,6 +65,11 @@ class PanelContent {
     virtual float dialog_height() { return 0.0f; }
     virtual void paint_dialog(ui::Canvas &, const ui::Box &, PanelPaint &) {}
     virtual bool dismiss_dialog() { return false; }
+    virtual ui::Box popup_anchor() const { return {}; }
+    virtual float popup_width() const { return 0.0f; }
+    virtual float popup_height() const { return 0.0f; }
+    virtual void paint_popup(ui::Canvas &, const ui::Box &, PanelPaint &) {}
+    virtual bool popup_hover(int, int) { return false; }
     virtual std::chrono::milliseconds refresh_interval() const { return std::chrono::milliseconds(0); }
     virtual void refresh() {}
 
@@ -104,6 +111,7 @@ class Panel {
 
     bool press(double x, double y, input::Button button = input::Button::Left);
     bool move(double x, double y);
+    bool hover(double x, double y);
     bool release();
     bool wheel(double x, double y, double dy);
     bool key(const input::KeyEvent &event);
@@ -118,6 +126,16 @@ class Panel {
     PanelContent &content() { return *content_; }
     const PanelContent &content() const { return *content_; }
     const ui::Box &card() const { return card_; }
+
+    bool popup_wanted() const { return open_ && !closing_ && content_->popup_height() > 0.0f; }
+    float popup_width() const { return content_->popup_width(); }
+    float popup_height() const { return content_->popup_height(); }
+    ui::Box popup_anchor() const;
+    void paint_popup(ui::Canvas &canvas);
+    bool press_popup(double x, double y, input::Button button = input::Button::Left);
+    bool popup_clickable(double x, double y) const;
+    bool hover_popup(double x, double y);
+    void dismiss_popup();
 
     float card_x(float surface_width) const;
     ui::Box paint(ui::Canvas &canvas, float surface_width, float top) { return paint_at(canvas, card_x(surface_width), top); }
@@ -137,6 +155,7 @@ class Panel {
     int timer_ = -1;
     Reactor *reactor_ = nullptr;
     std::vector<PanelRegion> regions_;
+    std::vector<PanelRegion> popup_regions_;
     bool open_ = false;
     bool closing_ = false;
     float reveal_ = -1.0f;

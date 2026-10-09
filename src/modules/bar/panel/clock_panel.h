@@ -27,6 +27,7 @@ class ClockPanel final : public PanelContent {
   public:
     std::string_view title() const override { return "Clock"; }
     PanelAnchor anchor() const override { return PanelAnchor::center; }
+    bool has_header() const override { return false; }
     float width() const override { return panel_config::clock_width; }
     void closed() override { offset_ = 0; }
     float content_height(ui::Canvas &canvas) override;

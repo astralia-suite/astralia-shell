@@ -17,12 +17,12 @@
 - `readme.md`: Requirements, install, build options, running, backend selection and the module and verb tables.
 - `.clang-format`: Project code style.
 
-## `important/plan/`
+## `important/`
 
-- `progress.md`: Hand-off status for the merge: decisions, what exists, how to resume and what comes next.
-- `merge-plan.md`: The plan for fully merging `astralia-shell-hl` and `astralia-shell-i3` into one implementation per module.
-- `audit.md`: Baseline numbers, parser comparison and the module, service and core comparison between the two projects.
-- `tasks.md`: The checklist of merge tasks per phase.
+- `convention.md`: Commenting, formatting, source layout, backend and module boundaries, config, build and include rules.
+- `knowledge.md`: Hard-won development rules, one statement and one explanation each, tagged by backend where they differ.
+- `handoff.md`: Merge status, architecture in brief, budgets, open items, rendering position and how to resume.
+- `index.md`: This map of the code base.
 
 ## `src/`
 

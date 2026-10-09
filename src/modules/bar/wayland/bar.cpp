@@ -441,9 +441,9 @@ bool BarPerMonitorModule::is_open() const {
     return state.panels && state.panels->is_open();
 }
 
-void BarPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t) {
+void BarPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t serial) {
     if (state.panels && state.panels->owns(surface)) {
-        state.panels->press(button, x, y);
+        state.panels->press(surface, button, x, y, serial);
         app_detail::rest_egl_current(app);
         return;
     }
@@ -459,7 +459,7 @@ void BarPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl
 
 void BarPerMonitorModule::handle_scroll(WaylandState &app, MonitorOutput &mon, wl_surface *surface, double dy) {
     if (state.panels && state.panels->owns(surface)) {
-        state.panels->wheel(pointer_x_, pointer_y_, dy);
+        state.panels->wheel(surface, pointer_x_, pointer_y_, dy);
         return;
     }
     if (surface != state.surface || !state.model)
@@ -481,11 +481,11 @@ void BarPerMonitorModule::handle_key_event(WaylandState &app, MonitorOutput &, c
     }
 }
 
-void BarPerMonitorModule::handle_pointer_move(WaylandState &, MonitorOutput &, double x, double y) {
+void BarPerMonitorModule::handle_pointer_move(WaylandState &app, MonitorOutput &, double x, double y) {
     pointer_x_ = x;
     pointer_y_ = y;
     if (state.panels)
-        state.panels->move(x, y);
+        state.panels->move(app.pointer.focused_surface, x, y);
 }
 
 void BarPerMonitorModule::handle_pointer_release() {
@@ -498,7 +498,7 @@ bool BarPerMonitorModule::wants_pointing_hand_cursor() const {
         return false;
     wl_surface *focused = mon_->app->pointer.focused_surface;
     if (state.panels && state.panels->owns(focused))
-        return state.panels->wants_hand(pointer_x_, pointer_y_);
+        return state.panels->wants_hand(focused, pointer_x_, pointer_y_);
     if (focused != state.surface || !state.model)
         return false;
     double y = pointer_y_ - (state.autohide.enabled ? bar_style_of(*mon_).top_margin : 0);

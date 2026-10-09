@@ -11,6 +11,7 @@
 
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
+#include "wayland/render/popup_window.h"
 
 #include "service/wayland/text_input_service.h"
 
@@ -23,19 +24,19 @@ class PanelSurface final : public TextInputClient {
     bool configured() const { return !base_.layer_surface || base_.configured; }
     bool init_egl();
     void destroy();
-    bool owns(wl_surface *surface) const { return surface != nullptr && surface == base_.surface; }
+    bool owns(wl_surface *surface) const { return surface != nullptr && (surface == base_.surface || surface == popup_.surface); }
     void request_frame();
 
     astralia::PanelSet &panels() { return set_; }
     const astralia::PanelSet &panels() const { return set_; }
     bool is_open() const { return set_.any_open(); }
 
-    void press(int button, double x, double y);
-    void wheel(double x, double y, double dy);
+    void press(wl_surface *surface, int button, double x, double y, uint32_t serial);
+    void wheel(wl_surface *surface, double x, double y, double dy);
     void key(const KeyEvent &event);
-    void move(double x, double y);
+    void move(wl_surface *surface, double x, double y);
     void release();
-    bool wants_hand(double x, double y) const { return set_.clickable(x, y); }
+    bool wants_hand(wl_surface *surface, double x, double y) const;
 
     TextInputState text_input_state() const override;
     void text_input_apply_edit(const TextInputEdit &edit) override;
@@ -49,6 +50,10 @@ class PanelSurface final : public TextInputClient {
     void sync_text_input();
     float card_top() const;
     void send_key(const astralia::input::KeyEvent &event);
+    void sync_popup();
+    void paint_popup();
+    void destroy_popup();
+    void popup_dismissed();
 
     WaylandState &app_;
     MonitorOutput &mon_;
@@ -56,4 +61,10 @@ class PanelSurface final : public TextInputClient {
     OverlayPanelBase base_;
     GlCanvas canvas_;
     bool text_focused_ = false;
+    PopupWindowBase popup_;
+    GlCanvas popup_canvas_;
+    astralia::ui::Box popup_anchor_;
+    float popup_width_ = 0.0f;
+    float popup_height_ = 0.0f;
+    uint32_t press_serial_ = 0;
 };

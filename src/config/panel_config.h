@@ -21,11 +21,25 @@ inline constexpr float row_icon_gap = 8.0f;
 inline constexpr float device_row_height = 50.0f;
 inline constexpr float trailing_spacer = 4.0f;
 inline constexpr float empty_height = 72.0f;
+inline constexpr float action_gap = 4.0f;
+inline constexpr float row_text_left = 38.0f;
 inline constexpr float section_height = 22.0f;
+
+// Dialog
+inline constexpr float dialog_spacer = 14.0f;
+inline constexpr float dialog_label = 20.0f;
+inline constexpr float dialog_top_margin = 6.0f;
+inline constexpr float dialog_button = 28.0f;
+inline constexpr float dialog_button_pad = 16.0f;
+inline constexpr float dialog_button_radius = 6.0f;
+inline constexpr float dialog_label_chars = 32.0f;
+inline constexpr float confirm_dialog_height = dialog_spacer + dialog_label + row_gap + dialog_button + row_gap + 2.0f * padding;
+inline constexpr float field_dialog_height = dialog_spacer + dialog_button + row_gap + dialog_button + row_gap + 2.0f * padding;
 
 // Slider
 inline constexpr float slider_track = 6.0f;
 inline constexpr float slider_knob = 12.0f;
+inline constexpr float slider_focus_ring = 2.0f;
 
 // Animation
 inline constexpr float reveal_ms = 220.0f;
@@ -89,25 +103,42 @@ inline constexpr int clock_weekday_px = 22;
 inline constexpr float volume_label_row = 20.0f;
 inline constexpr float volume_slider_row = 24.0f;
 inline constexpr float volume_section_row = 24.0f;
-inline constexpr float volume_device_row = 28.0f;
-inline constexpr float volume_percent_width = 52.0f;
+inline constexpr float volume_text_row = 18.0f;
+inline constexpr float volume_app_gap = 4.0f;
+inline constexpr float volume_app_slider = 16.0f;
+inline constexpr float volume_app_track = 5.0f;
+inline constexpr float volume_app_pad = 8.0f;
+inline constexpr float volume_app_row = volume_text_row + volume_app_gap + volume_app_slider + volume_app_pad;
+inline constexpr float volume_device_row = volume_text_row + 6.0f;
+inline constexpr float volume_percent_width = 40.0f;
+inline constexpr float volume_slider_gap = 8.0f;
+inline constexpr float volume_label_cap = 180.0f;
 inline constexpr float volume_button = 22.0f;
 inline constexpr float volume_indicator = 14.0f;
+inline constexpr float volume_indicator_dot = 6.0f;
 inline constexpr int volume_wheel_step = 5;
 
 // Tray
 inline constexpr float tray_cell = 40.0f;
 inline constexpr float tray_icon = 20.0f;
-inline constexpr float tray_gap = 4.0f;
+inline constexpr float tray_gap = 5.0f;
+inline constexpr float tray_menu_width = 220.0f;
 inline constexpr float tray_menu_row = 28.0f;
 inline constexpr float tray_menu_separator = 8.0f;
-inline constexpr float tray_menu_pad = 8.0f;
-inline constexpr float tray_menu_max = 360.0f;
+inline constexpr float tray_menu_separator_inset = 6.0f;
+inline constexpr float tray_menu_pad = 4.0f;
+inline constexpr float tray_menu_gap = 5.0f;
+inline constexpr float tray_menu_border = 1.0f;
+inline constexpr float tray_menu_radius = 8.0f;
 inline constexpr float tray_menu_row_pad = 8.0f;
-inline constexpr int tray_menu_wheel_step = 28;
+inline constexpr float tray_menu_label_offset = 24.0f;
+inline constexpr float tray_empty_height = 40.0f;
 
 // Network
 inline constexpr float network_banner = 48.0f;
+inline constexpr float network_banner_close = 18.0f;
+inline constexpr float toggle_width = 36.0f;
+inline constexpr float toggle_height = 20.0f;
 inline constexpr float network_ethernet = 40.0f;
 inline constexpr float network_state = 72.0f;
 inline constexpr float network_scanning = 48.0f;

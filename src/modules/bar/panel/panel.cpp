@@ -145,6 +145,18 @@ bool Panel::move(double x, double y) {
     return true;
 }
 
+bool Panel::hover(double x, double y) {
+    if (!open_ || closing_ || dragging_) {
+        return false;
+    }
+    const PanelRegion *region = region_at(x, y);
+    if (!content_->hover(region != nullptr ? region->id : -1, region != nullptr ? region->a : -1)) {
+        return false;
+    }
+    changed();
+    return true;
+}
+
 bool Panel::release() {
     if (!dragging_) {
         return false;
@@ -212,13 +224,69 @@ ui::Box Panel::extent() const {
     return {card_.x, card_.y, right - card_.x, bottom - card_.y};
 }
 
+ui::Box Panel::popup_anchor() const {
+    ui::Box anchor = content_->popup_anchor();
+    return {card_.x + anchor.x, card_.y + anchor.y, anchor.w, anchor.h};
+}
+
+void Panel::paint_popup(ui::Canvas &canvas) {
+    popup_regions_.clear();
+    PanelPaint paint(popup_regions_);
+    content_->paint_popup(canvas, {0.0f, 0.0f, content_->popup_width(), content_->popup_height()}, paint);
+}
+
+bool Panel::popup_clickable(double x, double y) const {
+    return std::ranges::any_of(popup_regions_, [&](const PanelRegion &r) { return inside(r.box, x, y); });
+}
+
+bool Panel::hover_popup(double x, double y) {
+    int id = -1;
+    int a = -1;
+    for (const PanelRegion &region : popup_regions_) {
+        if (inside(region.box, x, y)) {
+            id = region.id;
+            a = region.a;
+            break;
+        }
+    }
+    if (!content_->popup_hover(id, a)) {
+        return false;
+    }
+    changed();
+    return true;
+}
+
+bool Panel::press_popup(double x, double y, input::Button button) {
+    if (button != input::Button::Left && button != input::Button::Right) {
+        return false;
+    }
+    for (const PanelRegion &region : popup_regions_) {
+        if (inside(region.box, x, y)) {
+            PanelRegion hit = region;
+            content_->pressed = button;
+            if (content_->activate(hit, x, y)) {
+                changed();
+            }
+            return true;
+        }
+    }
+    return true;
+}
+
+void Panel::dismiss_popup() {
+    if (content_->dismiss_dialog()) {
+        changed();
+    }
+}
+
 ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top) {
     if (!open_) {
         return {};
     }
     float width = content_->width();
     content_h_ = content_->content_height(canvas);
-    float chrome = cfg::padding + cfg::header_height + cfg::header_divider_gap + 1.0f + cfg::content_gap + cfg::padding;
+    bool header = content_->has_header();
+    float chrome = header ? cfg::padding + cfg::header_height + cfg::header_divider_gap + 1.0f + cfg::content_gap + cfg::padding : 2.0f * cfg::padding;
     float height = std::min(content_->max_height(), chrome + content_h_);
     if (!closing_) {
         if (reveal_ < 0.0f) {
@@ -240,17 +308,19 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top) {
     float visible = std::max(0.0f, reveal_);
     canvas.begin_group({x, top, width, std::min(visible, full)}, {1.0f, visible + 0.5f < full});
     canvas.rounded({0, 0, width, full}, metrics::radius_md, palette::overlay, metrics::border_thin, palette::accent);
-    ui::TextSize title = canvas.measure(content_->title(), title_style);
-    canvas.text(content_->title(), title_style, cfg::padding, cfg::padding + (cfg::header_height - title.h) / 2.0f, palette::text);
-    ui::Box close{width - cfg::padding - cfg::close_button, cfg::padding + (cfg::header_height - cfg::close_button) / 2.0f, cfg::close_button, cfg::close_button};
-    ui::TextSize glyph = canvas.measure(icon::close, icon_style);
-    canvas.text(icon::close, icon_style, close.x + (close.w - glyph.w) / 2.0f, close.y + (close.h - glyph.h) / 2.0f, palette::text);
-    chrome_paint.region(close, close_id);
-    content_->paint_header(canvas, {cfg::padding, cfg::padding, close.x - cfg::row_gap - cfg::padding, cfg::header_height}, chrome_paint);
-    float divider_y = cfg::padding + cfg::header_height + cfg::header_divider_gap;
-    canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f}, palette::text_alpha06);
-
-    float view_top = divider_y + 1.0f + cfg::content_gap;
+    float view_top = cfg::padding;
+    if (header) {
+        ui::TextSize title = canvas.measure(content_->title(), title_style);
+        canvas.text(content_->title(), title_style, cfg::padding, cfg::padding + (cfg::header_height - title.h) / 2.0f, palette::text);
+        ui::Box close{width - cfg::padding - cfg::close_button, cfg::padding + (cfg::header_height - cfg::close_button) / 2.0f, cfg::close_button, cfg::close_button};
+        ui::TextSize glyph = canvas.measure(icon::close, icon_style);
+        canvas.text(icon::close, icon_style, close.x + (close.w - glyph.w) / 2.0f, close.y + (close.h - glyph.h) / 2.0f, palette::text);
+        chrome_paint.region(close, close_id);
+        content_->paint_header(canvas, {cfg::padding, cfg::padding, close.x - cfg::row_gap - cfg::padding, cfg::header_height}, chrome_paint);
+        float divider_y = cfg::padding + cfg::header_height + cfg::header_divider_gap;
+        canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f}, palette::text_alpha06);
+        view_top = divider_y + 1.0f + cfg::content_gap;
+    }
     view_h_ = std::max(0.0f, full - cfg::padding - view_top);
     scroll_ = std::clamp(scroll_, 0.0f, std::max(0.0f, content_h_ - view_h_));
     canvas.begin_group({cfg::padding, view_top, width - 2.0f * cfg::padding, view_h_}, {1.0f, true});

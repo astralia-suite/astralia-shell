@@ -26,11 +26,13 @@ void PanelSet::add(PanelId id, std::unique_ptr<PanelContent> content) {
 }
 
 Panel *PanelSet::find(PanelId id) {
-    return panels_[static_cast<size_t>(id)].get();
+    auto index = static_cast<size_t>(id);
+    return index < slots ? panels_[index].get() : nullptr;
 }
 
 const Panel *PanelSet::find(PanelId id) const {
-    return panels_[static_cast<size_t>(id)].get();
+    auto index = static_cast<size_t>(id);
+    return index < slots ? panels_[index].get() : nullptr;
 }
 
 PanelId PanelSet::active_id() const {

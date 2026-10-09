@@ -26,7 +26,8 @@ constexpr double wheel_step = 40.0;
 PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), keyboard_(x.conn()), set_(loop),
       window_(x, "astralia-panel",
-              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE) {
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
+      popup_(x, "astralia-panel-popup", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW) {
     output_ = x.primary_output();
     set_.add(PanelId::tray, std::make_unique<TrayPanel>(services.tray));
     set_.add(PanelId::network, std::make_unique<NetworkPanel>(services.network));
@@ -43,6 +44,7 @@ PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
     };
     set_.on_state = [this](PanelId id, bool open) { state_changed(id, open); };
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
+    loop.on_window(popup_.id(), [this](const xcb_generic_event_t &event) { handle_popup(event); });
 }
 
 void PanelHost::set_output(const OutputGeometry &output, int top) {
@@ -58,6 +60,7 @@ void PanelHost::state_changed(PanelId, bool open) {
         window_.present();
         grab();
     } else if (!open && !set_.any_open()) {
+        hide_popup();
         ungrab();
         window_.hide();
         window_.release();
@@ -104,6 +107,72 @@ void PanelHost::paint() {
         canvas_.bind(window_.cr());
     }
     window_.present();
+    sync_popup();
+}
+
+void PanelHost::hide_popup() {
+    if (popup_.mapped()) {
+        popup_.hide();
+    }
+    popup_.release();
+}
+
+void PanelHost::sync_popup() {
+    Panel *panel = set_.active();
+    if (panel == nullptr || !panel->popup_wanted()) {
+        hide_popup();
+        return;
+    }
+    auto width = static_cast<int>(panel->popup_width());
+    int height = std::clamp(static_cast<int>(panel->popup_height()), 1, static_cast<int>(output_.height));
+    ui::Box anchor = panel->popup_anchor();
+    const OutputGeometry &parent = window_.geometry();
+    int x = std::clamp(static_cast<int>(parent.x + anchor.x), static_cast<int>(output_.x), std::max(static_cast<int>(output_.x), static_cast<int>(output_.x + output_.width) - width));
+    int y = static_cast<int>(parent.y + anchor.y + anchor.h);
+    if (y + height > output_.y + output_.height) {
+        y = std::max(static_cast<int>(output_.y), static_cast<int>(parent.y + anchor.y) - height);
+    }
+    OutputGeometry geometry{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<uint16_t>(width), static_cast<uint16_t>(height)};
+    popup_.place(geometry, geometry.width, geometry.height);
+    popup_canvas_.bind(popup_.cr());
+    popup_.clear();
+    panel->paint_popup(popup_canvas_);
+    popup_.show(false);
+    popup_.present();
+}
+
+void PanelHost::handle_popup(const xcb_generic_event_t &event) {
+    Panel *panel = set_.active();
+    switch (event.response_type & ~0x80) {
+    case XCB_EXPOSE:
+        if (popup_.mapped()) {
+            popup_.present();
+        }
+        break;
+    case XCB_BUTTON_PRESS: {
+        const auto &press = reinterpret_cast<const xcb_button_press_event_t &>(event);
+        if (panel == nullptr || scroll_event(press.detail)) {
+            break;
+        }
+        input::PointerEvent pointer = pointer_event(press.event_x, press.event_y, press.detail, true);
+        panel->press_popup(pointer.x, pointer.y, pointer.button);
+        break;
+    }
+    case XCB_MOTION_NOTIFY: {
+        const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
+        if (panel != nullptr) {
+            panel->hover_popup(motion.event_x, motion.event_y);
+        }
+        break;
+    }
+    case XCB_LEAVE_NOTIFY:
+        if (panel != nullptr) {
+            panel->hover_popup(-1, -1);
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 void PanelHost::handle(const xcb_generic_event_t &event) {
@@ -135,8 +204,8 @@ void PanelHost::handle(const xcb_generic_event_t &event) {
         break;
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
-        if (panel != nullptr) {
-            panel->move(motion.event_x, motion.event_y);
+        if (panel != nullptr && !panel->move(motion.event_x, motion.event_y)) {
+            panel->hover(motion.event_x, motion.event_y);
         }
         break;
     }

@@ -14,6 +14,7 @@ struct VolumeRow {
                       slider,
                       section,
                       divider,
+                      app,
                       device } kind;
     float height;
     std::string text{};
@@ -36,6 +37,7 @@ class VolumePanel final : public PanelContent {
     bool activate(const PanelRegion &region, double x, double y) override;
     bool drag(const PanelRegion &region, double x, double y) override;
     void drop(const PanelRegion &) override { dragging_ = 0; }
+    bool hover(int id, int a) override;
     bool key(const input::KeyEvent &event) override;
     bool wheel(double x, double y, double dy) override;
 
@@ -48,6 +50,7 @@ class VolumePanel final : public PanelContent {
     AudioService &audio_;
     uint32_t selected_ = 0;
     uint32_t dragging_ = 0;
+    uint32_t hovered_ = 0;
 };
 
 } // namespace astralia

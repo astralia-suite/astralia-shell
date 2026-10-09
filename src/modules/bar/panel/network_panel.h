@@ -1,12 +1,14 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "modules/bar/panel/panel.h"
 
 #include "service/network_service.h"
 
+#include "ui/marquee.h"
 #include "ui/text_field.h"
 
 namespace astralia {
@@ -70,6 +72,7 @@ class NetworkPanel final : public PanelContent {
     std::string ssid_;
     TextFieldState password_;
     TextFieldTypeAnim password_anim_;
+    std::unordered_map<std::string, MarqueeTextState> marquees_;
 };
 
 } // namespace astralia

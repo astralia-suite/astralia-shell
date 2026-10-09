@@ -18,7 +18,7 @@ enum Action { power = 1,
               cancel,
               confirm };
 
-constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
+constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
 } // namespace
 
@@ -86,7 +86,7 @@ void BluetoothPanel::paint_header(ui::Canvas &canvas, const ui::Box &area, Panel
     if (!bluetooth_.status().present) {
         return;
     }
-    ui::Box toggle{area.x + area.w - 36.0f, area.y + (area.h - 20.0f) / 2.0f, 36.0f, 20.0f};
+    ui::Box toggle{area.x + area.w - cfg::toggle_width, area.y + (area.h - cfg::toggle_height) / 2.0f, cfg::toggle_width, cfg::toggle_height};
     panel_widgets::toggle(canvas, toggle, bluetooth_.status().powered);
     paint.region(toggle, power);
 }
@@ -106,34 +106,32 @@ void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll
         }
         if (row.kind == BluetoothRow::Kind::message) {
             if (!row.text.empty()) {
-                panel_widgets::centered_text(canvas, row.text, ui::TextStyle{ui::FontFamily::text, cfg::text_px}, box, palette::text_dim);
+                panel_widgets::centered_text(canvas, row.text, text_style, box, palette::text_dim);
             }
             continue;
         }
         if (row.kind == BluetoothRow::Kind::section) {
-            ui::TextSize size = canvas.measure(row.text, small_style);
-            canvas.text(row.text, small_style, box.x, box.y + box.h - size.h, palette::text_dim);
+            ui::TextSize size = canvas.measure(row.text, text_style);
+            canvas.text(row.text, text_style, box.x, box.y + box.h - size.h, palette::text_dim);
             continue;
         }
         const BluetoothDevice &d = *row.device;
-        bool can_forget = (d.paired || d.trusted) && !d.connected && !d.connecting;
         std::string subtitle = d.connecting ? "Connecting\xE2\x80\xA6" : d.battery >= 0 ? std::to_string(d.battery) + "%"
                                                                                         : std::string();
         panel_widgets::DeviceRow device_row;
-        device_row.glyph = d.connected ? icon::bluetooth_connected : bluetooth_kind_glyph(d.kind);
+        device_row.glyph = icon::bluetooth_device;
         device_row.title = d.name;
         device_row.subtitle = subtitle;
         device_row.background = d.connected ? palette::accent_alpha25 : d.connecting ? palette::accent_alpha12
                                                                                      : palette::text_alpha06;
-        device_row.foreground = d.connected ? palette::accent : palette::text;
-        device_row.reserve_right = can_forget ? cfg::close_button + cfg::row_icon_gap : 0.0f;
-        panel_widgets::device_row(canvas, box, device_row);
-        if (can_forget) {
-            ui::Box button{box.x + box.w - cfg::close_button - cfg::row_icon_gap, box.y + (box.h - cfg::close_button) / 2.0f, cfg::close_button, cfg::close_button};
-            panel_widgets::centered_text(canvas, icon::close, ui::TextStyle{ui::FontFamily::icon, cfg::icon_px}, button, palette::text_muted);
-            paint.region(button, forget, static_cast<int>(std::ranges::find(bluetooth_.devices(), d.path, &BluetoothDevice::path) - bluetooth_.devices().begin()));
-        }
-        paint.region(box, device, static_cast<int>(std::ranges::find(bluetooth_.devices(), d.path, &BluetoothDevice::path) - bluetooth_.devices().begin()));
+        device_row.glyph_color = d.connected ? palette::text : palette::text_dim;
+        device_row.title_color = d.connected ? palette::accent : palette::text;
+        device_row.subtitle_color = palette::text_dim;
+        device_row.connected = d.connected;
+        device_row.busy = d.connecting;
+        device_row.can_forget = (d.paired || d.trusted) && !d.connected && !d.connecting;
+        int index = static_cast<int>(std::ranges::find(bluetooth_.devices(), d.path, &BluetoothDevice::path) - bluetooth_.devices().begin());
+        panel_widgets::device_row(canvas, box, device_row, paint, device, forget, index);
     }
 }
 
@@ -149,7 +147,7 @@ float BluetoothPanel::dialog_height() {
     if (!dialog_path_.empty() && dialog_device() == nullptr) {
         dialog_path_.clear();
     }
-    return dialog_path_.empty() ? 0.0f : panel_widgets::confirm_height();
+    return dialog_path_.empty() ? 0.0f : cfg::confirm_dialog_height;
 }
 
 void BluetoothPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPaint &paint) {
