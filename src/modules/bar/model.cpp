@@ -328,6 +328,9 @@ std::chrono::milliseconds BarModel::until_idle(Clock::time_point now) const {
     if (linger_ && now < linger_until_) {
         consider(linger_until_);
     }
+    if (animations_.hasActive()) {
+        consider(now + std::chrono::milliseconds(16));
+    }
     return wait;
 }
 

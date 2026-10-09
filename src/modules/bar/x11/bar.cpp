@@ -336,7 +336,8 @@ void Bar::start_linger() {
 
 void Bar::sync_hover() {
     auto now = BarModel::Clock::now();
-    bool changed = model_.tick(now);
+    bool animated = model_.animating();
+    bool changed = model_.tick(now) || animated;
     xcb_query_pointer_reply_t *reply =
         xcb_query_pointer_reply(x_.conn(), xcb_query_pointer(x_.conn(), window_.id()), nullptr);
     if (reply == nullptr) {
