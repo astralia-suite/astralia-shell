@@ -1,0 +1,2 @@
+option('backends', type: 'array', choices: ['wayland', 'x11'], value: ['wayland', 'x11'], description: 'Backend plugins to build')
+option('native_cpu', type: 'boolean', value: false, description: 'Tune the x11 backend for the ThinkPad X201 (-march=westmere)')
