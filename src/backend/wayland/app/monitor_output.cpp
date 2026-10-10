@@ -12,6 +12,7 @@
 void monitor_output_destroy(MonitorOutput &mon) {
     for (auto &m : mon.modules)
         m->destroy(*mon.app, mon);
+    app_detail::rest_egl_current(*mon.app);
     if (mon.output.wl)
         wl_output_release(mon.output.wl);
 }

@@ -581,7 +581,7 @@ void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg, const std
             continue;
         }
         if (animated) {
-            if (col.decode.stop_flag && col.path == path && col.mode == mode)
+            if (col.decode.stop_flag && col.path == path && col.mode == mode && col.target_w == sz.w && col.target_h == sz.h)
                 continue;
             wallpaper_column_set_animated(col, wp.gl, path, sz.w, sz.h, mode);
         } else {
@@ -619,7 +619,6 @@ bool WallpaperPerMonitorModule::init_egl(WaylandState &app, MonitorOutput &mon) 
     state_.on_resize = [&app, &mon, this] {
         if (!app.cfg.wallpaper_animated_enabled)
             return;
-        wallpaper_columns_stop_all(state_);
         wallpaper_sync_from_config(state_, app.cfg, mon.output.name, true);
     };
     wallpaper_request_frame(state_);
