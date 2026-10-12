@@ -1,6 +1,7 @@
 x11_backend_source = files('backend.cpp')
 
 x11_sources = files(
+  'app/active_target.cpp',
   'app/services.cpp',
   'core/event_loop.cpp',
   'core/keyboard.cpp',
@@ -10,6 +11,8 @@ x11_sources = files(
   '../../modules/bar/x11/frame.cpp',
   '../../modules/bar/x11/panel_host.cpp',
   '../../modules/bar/x11/bar_set.cpp',
+  '../../modules/dashboard/x11/dashboard.cpp',
+  '../../modules/idle/x11/idle.cpp',
   '../../modules/launcher/x11/launcher.cpp',
   '../../modules/lock/x11/lock.cpp',
   '../../modules/logout/x11/logout.cpp',
@@ -17,7 +20,9 @@ x11_sources = files(
   '../../modules/osd/x11/osd.cpp',
   '../../modules/overview/x11/overview.cpp',
   '../../modules/polkit/x11/polkit.cpp',
+  '../../modules/rain/x11/rain.cpp',
   '../../modules/settings/x11/settings.cpp',
+  '../../modules/visualizer/x11/visualizer.cpp',
   '../../modules/wallpaper/x11/wallpaper.cpp',
   'render/cairo_canvas.cpp',
   'render/app_icon.cpp',
@@ -25,6 +30,7 @@ x11_sources = files(
   'render/draw.cpp',
   'render/image_decode.cpp',
   'render/text.cpp',
+  'render/wallpaper_paint.cpp',
   'render/x_window.cpp',
   '../../service/x11/output_service.cpp',
 )
@@ -35,6 +41,8 @@ x11_deps = [
   dependency('xcb-icccm', include_type: 'system'),
   dependency('xcb-randr', include_type: 'system'),
   dependency('xcb-shape', include_type: 'system'),
+  dependency('xcb-cursor', include_type: 'system'),
+  dependency('xcb-screensaver', include_type: 'system'),
   dependency('xcb-keysyms', include_type: 'system'),
   dependency('cairo', include_type: 'system'),
   dependency('cairo-xcb', include_type: 'system'),

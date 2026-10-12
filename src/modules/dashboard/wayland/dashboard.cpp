@@ -17,7 +17,7 @@ void dashboard_toggle(DashboardState &state, WaylandState &app) {
     bool opening = !state.base.open;
     if (opening) {
         if (state.base.egl_surface == EGL_NO_SURFACE) {
-            if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, kDashboardTitle, kDashboardAppId, kDashboardDefaultWidth, kDashboardDefaultHeight))
+            if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, astralia::kDashboardTitle, astralia::kDashboardAppId, astralia::kDashboardDefaultWidth, astralia::kDashboardDefaultHeight))
                 return;
             while (!state.base.configured)
                 wl_display_dispatch(app.display);

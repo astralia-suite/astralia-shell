@@ -11,7 +11,6 @@
 
 namespace {
 
-// stb allocates through `new[]` so its buffers share `Pixels`' ownership.
 void *stb_malloc(size_t size) { return new uint8_t[size]; }
 
 void stb_free(void *data) { delete[] static_cast<uint8_t *>(data); }
@@ -76,7 +75,6 @@ std::expected<Pixels, std::string> decode_jpeg(std::FILE *file, const std::funct
     decoder.err = jpeg_std_error(&error.manager);
     error.manager.error_exit = [](j_common_ptr info) { std::longjmp(reinterpret_cast<JpegError *>(info->err)->jump, 1); };
     error.manager.output_message = [](j_common_ptr) {};
-    // A raw pointer, since longjmp skips destructors.
     uint8_t *volatile data = nullptr;
     if (setjmp(error.jump) != 0) {
         jpeg_destroy_decompress(&decoder);
@@ -132,6 +130,11 @@ std::expected<Pixels, std::string> decode_svg(const std::string &path, int fit_w
 
 Placement cover(int image_width, int image_height, int area_width, int area_height) {
     double scale = std::max(static_cast<double>(area_width) / image_width, static_cast<double>(area_height) / image_height);
+    return {scale, (area_width - image_width * scale) / 2.0, (area_height - image_height * scale) / 2.0};
+}
+
+Placement contain(int image_width, int image_height, int area_width, int area_height) {
+    double scale = std::min(static_cast<double>(area_width) / image_width, static_cast<double>(area_height) / image_height);
     return {scale, (area_width - image_width * scale) / 2.0, (area_height - image_height * scale) / 2.0};
 }
 

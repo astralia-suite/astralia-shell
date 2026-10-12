@@ -174,9 +174,6 @@ void displays_tab(Pane &pane, float x, float y, float w) {
         first = false;
         y += toggle_row(pane, x, y, w, label, on, act, 0, 0, true);
     };
-    if (pane.model.caps().bar_toggle) {
-        row("Bar", value(config.default_bar_enabled, &MonitorOverride::bar), SettingsAct::toggle_bar);
-    }
     row("OSD", value(config.default_osd_enabled, &MonitorOverride::osd), SettingsAct::toggle_osd);
     row("Notifications", value(config.default_notifications_enabled, &MonitorOverride::notifications), SettingsAct::toggle_notifications);
     if (pane.model.caps().autohide) {

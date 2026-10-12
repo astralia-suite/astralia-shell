@@ -34,7 +34,6 @@ void check_gpu_temp();
 void check_system_stats();
 void check_config_parse();
 void check_monitor_overrides();
-void check_legacy_config();
 void check_settings_service();
 void check_wallpaper_resolve();
 void check_wallpaper_images();
@@ -68,6 +67,10 @@ void check_polkit();
 void check_lock_layout();
 void check_lock();
 void check_settings();
+void check_rain_buffer();
+void check_idle();
+void check_visualizer_fft();
+void check_visualizer_cpu_stages();
 
 int main() {
     char state_dir[] = "/tmp/astralia-test-XXXXXX";
@@ -104,7 +107,6 @@ int main() {
     check_system_stats();
     check_config_parse();
     check_monitor_overrides();
-    check_legacy_config();
     check_settings_service();
     check_wallpaper_resolve();
     check_wallpaper_images();
@@ -137,6 +139,10 @@ int main() {
     check_lock_layout();
     check_lock();
     check_settings();
+    check_rain_buffer();
+    check_idle();
+    check_visualizer_fft();
+    check_visualizer_cpu_stages();
     std::filesystem::remove_all(state_dir);
     if (test::failures > 0) {
         std::println(stderr, "{} check(s) failed", test::failures);

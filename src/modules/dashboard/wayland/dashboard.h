@@ -6,7 +6,7 @@
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
 
-#include "modules/dashboard/wayland/dashboard_config.h"
+#include "config/dashboard_config.h"
 
 #include "wayland/render/renderer.h"
 #include "wayland/render/toplevel_window.h"

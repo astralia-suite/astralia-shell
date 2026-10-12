@@ -2,7 +2,9 @@
 
 #include <xcb/xcb.h>
 
+#include "app/active_target.h"
 #include "app/services.h"
+#include "app/shell.h"
 
 #include "core/event_loop.h"
 #include "core/keyboard.h"
@@ -17,7 +19,7 @@ namespace astralia {
 
 class Polkit {
   public:
-    Polkit(XConnection &x, EventLoop &loop, Services &services);
+    Polkit(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void sync();
@@ -26,6 +28,7 @@ class Polkit {
     void paint();
 
     XConnection &x_;
+    Services &services_;
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;

@@ -13,6 +13,8 @@
 #include "core/x_connection.h"
 
 #include "modules/bar/x11/bar_set.h"
+#include "modules/dashboard/x11/dashboard.h"
+#include "modules/idle/x11/idle.h"
 #include "modules/launcher/x11/launcher.h"
 #include "modules/lock/x11/lock.h"
 #include "modules/logout/x11/logout.h"
@@ -20,7 +22,9 @@
 #include "modules/osd/x11/osd.h"
 #include "modules/overview/x11/overview.h"
 #include "modules/polkit/x11/polkit.h"
+#include "modules/rain/x11/rain.h"
 #include "modules/settings/x11/settings.h"
+#include "modules/visualizer/x11/visualizer.h"
 #include "modules/wallpaper/x11/wallpaper.h"
 
 namespace astralia {
@@ -54,14 +58,18 @@ class X11Backend final : public Backend {
         Services services(*x, *loop);
         Wallpaper wallpaper(*x, services);
         BarSet bars(*x, *loop, shell, services);
-        Launcher launcher(*x, *loop, shell);
+        Launcher launcher(*x, *loop, shell, services);
         Lock lock(*x, *loop, shell, services);
-        Logout logout(*x, *loop, shell);
+        Logout logout(*x, *loop, shell, services);
         Overview overview(*x, *loop, shell, services);
-        Polkit polkit(*x, *loop, services);
+        Polkit polkit(*x, *loop, shell, services);
         Notifications notifications(*x, *loop, services);
         Osd osd(*x, *loop, services);
         Settings settings(*x, *loop, shell, services);
+        Dashboard dashboard(*x, *loop, shell, services);
+        Rain rain(*x, *loop, shell, services);
+        Idle idle(*x, *loop, services);
+        Visualizer visualizer(*x, *loop, shell, services);
         shell.attach(**ipc);
         if (start_locked) {
             shell.run(ShellVerb::lock);

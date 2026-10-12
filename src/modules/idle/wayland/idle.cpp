@@ -42,26 +42,7 @@ constexpr zwlr_layer_surface_v1_listener idle_overlay_layer_surface_listener =
 void idle_overlay_bounce(IdleOverlayState &state, float dt) {
     if (dt <= 0.0f || dt > 0.5f || state.logo.frames.empty())
         return;
-    float logo_w = kIdleLogoSize;
-    float logo_h = kIdleLogoSize;
-    state.logo_x += state.logo_vel_x * dt;
-    state.logo_y += state.logo_vel_y * dt;
-    float max_x = static_cast<float>(state.width) - logo_w;
-    float max_y = static_cast<float>(state.height) - logo_h;
-    if (state.logo_x < 0.0f) {
-        state.logo_x = 0.0f;
-        state.logo_vel_x = -state.logo_vel_x;
-    } else if (state.logo_x > max_x) {
-        state.logo_x = max_x;
-        state.logo_vel_x = -state.logo_vel_x;
-    }
-    if (state.logo_y < 0.0f) {
-        state.logo_y = 0.0f;
-        state.logo_vel_y = -state.logo_vel_y;
-    } else if (state.logo_y > max_y) {
-        state.logo_y = max_y;
-        state.logo_vel_y = -state.logo_vel_y;
-    }
+    astralia::bounce_step(state.bounce, dt, static_cast<float>(state.width), static_cast<float>(state.height), astralia::kIdleLogoSize);
 }
 
 void idle_overlay_paint(IdleOverlayState &state) {
@@ -94,7 +75,7 @@ void idle_overlay_paint(IdleOverlayState &state) {
     if (state.screensaver_opacity > 0.0f) {
         state.canvas.begin(state.output_scale.scale);
         state.canvas.rect({0, 0, static_cast<float>(state.width), static_cast<float>(state.height)}, {0.0f, 0.0f, 0.0f, state.screensaver_opacity});
-        animated_image_draw(state.logo, state.canvas, state.logo_x, state.logo_y, kIdleLogoSize, kIdleLogoSize, state.screensaver_opacity);
+        animated_image_draw(state.logo, state.canvas, state.bounce.x, state.bounce.y, astralia::kIdleLogoSize, astralia::kIdleLogoSize, state.screensaver_opacity);
         state.canvas.flush();
     }
 
@@ -151,8 +132,8 @@ bool idle_overlay_init_egl(IdleOverlayState &state, Renderer &renderer, EGLDispl
         }
     }
     AnimatedImageStyle logo_style;
-    logo_style.size = kIdleLogoSize;
-    logo_style.decode = {30, static_cast<int>(kIdleLogoSize), AnimateFit::Fit};
+    logo_style.size = astralia::kIdleLogoSize;
+    logo_style.decode = {30, static_cast<int>(astralia::kIdleLogoSize), AnimateFit::Fit};
     animated_image_set_source(state.logo, logo_path, logo_style);
     return true;
 }

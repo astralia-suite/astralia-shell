@@ -1,4 +1,4 @@
-#include "wayland/config/idle_config.h"
+#include "config/idle_config.h"
 
 #include "wayland/core/log.h"
 
@@ -27,7 +27,7 @@ bool idle_init(IdleState &state, wl_seat *seat) {
              "skipping");
         return false;
     }
-    state.recent_activity_notification = ext_idle_notifier_v1_get_idle_notification(state.notifier, kIdleRecentActivityPulseSeconds * 1000, seat);
+    state.recent_activity_notification = ext_idle_notifier_v1_get_idle_notification(state.notifier, astralia::kIdleRecentActivityPulseSeconds * 1000, seat);
     if (state.recent_activity_notification)
         ext_idle_notification_v1_add_listener(state.recent_activity_notification, &idle_recent_activity_listener, &state);
     else

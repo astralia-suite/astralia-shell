@@ -3,17 +3,17 @@
 #include <cstdint>
 #include <vector>
 
-#include "wayland/config/rain_config.h"
+#include "config/rain_config.h"
+#include "modules/rain/rain_frame.h"
 
-#include "wayland/render/texture.h"
+namespace astralia {
 
 class StilettoRain {
   public:
     void rebuild(int width, int height, bool async_speed);
     void tick();
 
-    const Texture &texture() const { return texture_; }
-    bool ready() const { return texture_.id != 0; }
+    RainFrame frame() const { return frame_.empty() ? RainFrame{} : RainFrame{frame_.data(), width_, height_, stride_}; }
 
   private:
     struct Comet {
@@ -38,5 +38,6 @@ class StilettoRain {
     std::vector<uint8_t> frame_;
     int stride_ = 0;
     std::vector<Comet> comets_;
-    Texture texture_;
 };
+
+} // namespace astralia

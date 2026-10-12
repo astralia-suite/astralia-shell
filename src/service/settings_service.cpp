@@ -20,9 +20,6 @@ namespace astralia {
 namespace {
 
 constexpr const char *config_relative_path = "astralia/config.json";
-constexpr const char *legacy_settings_relative_path = "astralia-shell/settings.conf";
-constexpr const char *legacy_wallpaper_relative_path = "astralia-shell/wallpaper.conf";
-constexpr const char *legacy_any_output = "*";
 
 std::string home_subdir(const char *name) {
     const char *home = std::getenv("HOME");
@@ -142,16 +139,6 @@ Json counts_json(const std::map<std::string, int> &counts) {
     return object;
 }
 
-std::optional<bool> on_off(std::string_view value) {
-    if (value == "on") {
-        return true;
-    }
-    if (value == "off") {
-        return false;
-    }
-    return std::nullopt;
-}
-
 std::optional<BarStyle> style_from(std::string_view value) {
     for (std::size_t i = 0; i < bar_style::count; ++i) {
         if (bar_style::names[i] == value) {
@@ -165,18 +152,7 @@ Config load_initial(const std::string &path) {
     if (std::optional<std::string> existing = read_text_file(path)) {
         return parse_config(*existing);
     }
-    Config config;
-    std::optional<std::string> settings = read_text_file(user_config_path(legacy_settings_relative_path));
-    std::optional<std::string> wallpaper = read_text_file(user_config_path(legacy_wallpaper_relative_path));
-    if (settings || wallpaper) {
-        const char *home = std::getenv("HOME");
-        config = config_from_legacy(settings.value_or(""), wallpaper.value_or(""), home ? home : "");
-        log::info("settings: imported the legacy settings.conf and wallpaper.conf into {}", path);
-    } else {
-        log::info("settings: writing defaults to {}", path);
-    }
-    write_text_file(path, serialize_config(config));
-    return config;
+    return Config();
 }
 
 } // namespace
@@ -193,11 +169,6 @@ const MonitorOverride *active_override(const Config &cfg, const std::string &mon
 }
 
 } // namespace
-
-bool bar_effective_enabled(const Config &cfg, const std::string &monitor_name) {
-    const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->bar : cfg.default_bar_enabled;
-}
 
 bool osd_effective_enabled(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
@@ -275,7 +246,6 @@ Config parse_config(std::string_view source) {
     if (displays != nullptr && displays->type != Json::Type::object) {
         displays = nullptr;
     }
-    cfg.default_bar_enabled = flag(displays, "defaultBar", cfg.default_bar_enabled);
     cfg.default_osd_enabled = flag(displays, "defaultOsd", "defaultSpark", cfg.default_osd_enabled);
     cfg.default_notifications_enabled = flag(displays, "defaultNotifications", "defaultHeralds", cfg.default_notifications_enabled);
     cfg.default_wallpaper_enabled = flag(displays, "defaultWallpaper", "defaultExpanse", cfg.default_wallpaper_enabled);
@@ -288,7 +258,6 @@ Config parse_config(std::string_view source) {
             const Json *value = &member.value;
             MonitorOverride mo;
             mo.enabled = flag(value, "_enabled", mo.enabled);
-            mo.bar = flag(value, "bar", mo.bar);
             mo.osd = flag(value, "osd", "spark", mo.osd);
             mo.notifications = flag(value, "notifications", "heralds", mo.notifications);
             mo.autohide = flag(value, "autohide", mo.autohide);
@@ -346,7 +315,6 @@ std::string serialize_config(const Config &cfg) {
     wallpaper.set("animatedFillModes", columns_json(cfg.wallpaper_animated_fill_modes, false));
 
     Json displays = Json::make_object();
-    displays.set("defaultBar", Json::from_bool(cfg.default_bar_enabled));
     displays.set("defaultOsd", Json::from_bool(cfg.default_osd_enabled));
     displays.set("defaultNotifications", Json::from_bool(cfg.default_notifications_enabled));
     displays.set("defaultWallpaper", Json::from_bool(cfg.default_wallpaper_enabled));
@@ -354,7 +322,6 @@ std::string serialize_config(const Config &cfg) {
     for (const auto &[name, ov] : cfg.monitor_overrides) {
         Json mo = Json::make_object();
         mo.set("_enabled", Json::from_bool(ov.enabled));
-        mo.set("bar", Json::from_bool(ov.bar));
         mo.set("osd", Json::from_bool(ov.osd));
         mo.set("notifications", Json::from_bool(ov.notifications));
         mo.set("autohide", Json::from_bool(ov.autohide));
@@ -407,57 +374,6 @@ std::string serialize_config(const Config &cfg) {
     return write_json(root, true) + "\n";
 }
 
-Config config_from_legacy(std::string_view settings_text, std::string_view wallpaper_text, std::string_view home) {
-    Config cfg;
-    std::map<std::string, std::map<std::string, bool>> overrides;
-    for (const ConfigEntry &entry : parse_config_lines(settings_text).entries) {
-        if (entry.key == "wallpaper_dir") {
-            cfg.wallpaper_dir = expand_home(entry.value, home);
-            continue;
-        }
-        if (entry.key == "bar_style") {
-            if (std::optional<BarStyle> style = style_from(entry.value)) {
-                cfg.bar_style = *style;
-            }
-            continue;
-        }
-        std::size_t dot = entry.key.rfind('.');
-        std::string output = dot == std::string::npos ? "" : entry.key.substr(0, dot);
-        std::string feature = dot == std::string::npos ? entry.key : entry.key.substr(dot + 1);
-        std::optional<bool> value = on_off(entry.value);
-        if (!value || (feature != "bar" && feature != "osd" && feature != "notifications")) {
-            continue;
-        }
-        if (output.empty()) {
-            (feature == "bar" ? cfg.default_bar_enabled : feature == "osd" ? cfg.default_osd_enabled
-                                                                           : cfg.default_notifications_enabled) = *value;
-        } else {
-            overrides[output][feature] = *value;
-        }
-    }
-    for (const auto &[output, features] : overrides) {
-        MonitorOverride mo;
-        mo.enabled = true;
-        mo.bar = cfg.default_bar_enabled;
-        mo.osd = cfg.default_osd_enabled;
-        mo.notifications = cfg.default_notifications_enabled;
-        for (const auto &[feature, value] : features) {
-            (feature == "bar" ? mo.bar : feature == "osd" ? mo.osd
-                                                          : mo.notifications) = value;
-        }
-        cfg.monitor_overrides[output] = mo;
-    }
-    for (const ConfigEntry &entry : parse_config_lines(wallpaper_text).entries) {
-        std::string image = expand_home(entry.value, home);
-        if (entry.key == legacy_any_output) {
-            cfg.wallpaper_path = image;
-        } else {
-            cfg.wallpaper_columns[entry.key] = {image};
-        }
-    }
-    return cfg;
-}
-
 SettingsService::SettingsService(Reactor &loop)
     : path_(user_config_path(config_relative_path)), config_(load_initial(path_)),
       watch_(loop, path_, [this] { reload(); }) {}
@@ -482,8 +398,12 @@ void SettingsService::store(Config next) {
 void SettingsService::reload() {
     std::optional<std::string> source = read_text_file(path_);
     if (!source) {
-        log::info("settings: config removed, writing defaults to {}", path_);
-        store(Config());
+        log::info("settings: config removed, using defaults");
+        if (config_ == Config()) {
+            return;
+        }
+        config_ = Config();
+        changed.emit();
         return;
     }
     Config next = parse_config(*source);

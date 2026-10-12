@@ -2,7 +2,7 @@
 #include <map>
 #include <vector>
 
-#include "core/log.h"
+#include "app/active_target.h"
 
 #include "modules/bar/panel/panel_set.h"
 #include "modules/bar/x11/bar.h"
@@ -10,16 +10,21 @@
 
 namespace astralia {
 
+namespace {
+
+constexpr int32_t status_message_timeout_ms = 6000;
+
+}
+
 BarSet::BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), shell_(shell), services_(services) {
-    notifier_ =
-        services_.session.proxy("org.freedesktop.Notifications", "/org/freedesktop/Notifications");
     services_.bluetooth.messages.connect(
-        [this](const StatusMessage &message) { notify("Bluetooth", message); });
+        [this](const StatusMessage &message) { services_.notifications.post("Bluetooth", message.summary, message.body, status_message_timeout_ms); });
     services_.network.messages.connect(
-        [this](const StatusMessage &message) { notify("Network", message); });
+        [this](const StatusMessage &message) { services_.notifications.post("Network", message.summary, message.body, status_message_timeout_ms); });
     constexpr std::pair<ShellVerb, PanelId> verbs[] = {
         {ShellVerb::panel_tray, PanelId::tray},
+        {ShellVerb::panel_resource, PanelId::resource},
         {ShellVerb::panel_network, PanelId::network},
         {ShellVerb::panel_bluetooth, PanelId::bluetooth},
         {ShellVerb::panel_volume, PanelId::volume},
@@ -30,7 +35,7 @@ BarSet::BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services
     };
     for (const auto &[verb, panel] : verbs) {
         shell_.bind(verb, [this, panel] {
-            const std::string &target = services_.outputs.at_pointer().name;
+            const std::string &target = active_target_output(services_).name;
             auto it = std::ranges::find(bars_, target, &Entry::output);
             if (it != bars_.end()) {
                 it->bar->toggle_panel(panel);
@@ -50,9 +55,6 @@ BarSet::~BarSet() = default;
 void BarSet::sync() {
     std::vector<std::string> shown;
     for (const Output &output : services_.outputs.outputs()) {
-        if (!bar_effective_enabled(services_.settings.config(), output.name)) {
-            continue;
-        }
         shown.push_back(output.name);
         auto it = std::ranges::find(bars_, output.name, &Entry::output);
         if (it == bars_.end()) {
@@ -65,22 +67,6 @@ void BarSet::sync() {
         if (std::ranges::find(shown, entry.output) == shown.end()) {
             entry.bar->hide();
         }
-    }
-}
-
-void BarSet::notify(const std::string &app, const StatusMessage &message) {
-    if (!notifier_) {
-        return;
-    }
-    try {
-        notifier_->callMethod("Notify")
-            .onInterface("org.freedesktop.Notifications")
-            .withArguments(app, uint32_t{0}, std::string(), message.summary, message.body,
-                           std::vector<std::string>{}, std::map<std::string, sdbus::Variant>{},
-                           int32_t{-1})
-            .dontExpectReply();
-    } catch (const sdbus::Error &error) {
-        log::error("bar: cannot send notification: {}", error.what());
     }
 }
 

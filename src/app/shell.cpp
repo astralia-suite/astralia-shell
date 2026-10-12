@@ -64,6 +64,11 @@ Capabilities wayland_capabilities() {
 Capabilities x11_capabilities() {
     Capabilities capabilities;
     capabilities.lock = true;
+    capabilities.idle = true;
+    capabilities.dashboard = true;
+    capabilities.rain = true;
+    capabilities.visualizer = true;
+    capabilities.resource_panel = true;
     return capabilities;
 }
 

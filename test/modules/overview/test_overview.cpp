@@ -129,9 +129,7 @@ void check_input() {
     compositor.state_.clients = {client("0x1", 1, 100, 100, 400, 300)};
     OverviewModel model(compositor);
     int close_requests = 0;
-    int actions = 0;
     model.on_close_requested = [&] { ++close_requests; };
-    model.on_compositor_action = [&] { ++actions; };
     test::check(!model.key(key(KeyKind::Right)), "a closed overview ignores keys");
     model.open("A", 1366, 768);
     model.sync(1366, 768);
@@ -144,7 +142,6 @@ void check_input() {
     test::check(model.key(key(KeyKind::Text, "3", '3')) && compositor.calls.back() == "focus 3", "digits pick a workspace on the page");
     test::check(model.key(key(KeyKind::Text, "0", '0')) && compositor.calls.back() == "focus 10", "zero is the tenth");
     test::check(model.key(key(KeyKind::Text, "#", '3', true)) && compositor.calls.back() == "swap 3", "shift digit uses the base symbol");
-    test::check(actions >= 8, "every compositor command is announced first");
     test::check(model.key(key(KeyKind::Text, "d", 'd')) && compositor.calls.back() == "close-windows workspace 3", "d closes the workspace");
     test::check(model.key(key(KeyKind::Text, "D", 'd', true)) && compositor.calls.back() == "close-windows monitor 1", "shift d closes the monitor");
     test::check(model.key(key(KeyKind::Text, "d", 'd', false, false, true)) && compositor.calls.back() == "close-windows all -1", "ctrl d closes everything");

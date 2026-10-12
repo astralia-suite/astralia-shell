@@ -9,6 +9,7 @@
 #include "modules/bar/panel/clock_panel.h"
 #include "modules/bar/panel/media_panel.h"
 #include "modules/bar/panel/network_panel.h"
+#include "modules/bar/panel/resource_panel.h"
 #include "modules/bar/panel/tray_panel.h"
 #include "modules/bar/panel/volume_panel.h"
 #include "modules/bar/x11/panel_host.h"
@@ -30,6 +31,7 @@ PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
       popup_(x, "astralia-panel-popup", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW) {
     output_ = x.primary_output();
     set_.add(PanelId::tray, std::make_unique<TrayPanel>(services.tray));
+    set_.add(PanelId::resource, std::make_unique<ResourcePanel>(services.cpu_temp, services.gpu_temp, services.system_stats));
     set_.add(PanelId::network, std::make_unique<NetworkPanel>(services.network));
     set_.add(PanelId::bluetooth, std::make_unique<BluetoothPanel>(services.bluetooth));
     set_.add(PanelId::volume, std::make_unique<VolumePanel>(services.audio));

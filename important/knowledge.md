@@ -41,6 +41,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 ## Shared: design
 
 - Draw each module once over `ui::Canvas` and add a hook for backend-only art. Per-backend copies drift apart within a release.
+- Rain simulates on the CPU into an ARGB buffer. Each host only uploads or blits that buffer, so both draw identical frames.
 - Hooks carry backend-only art: `LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`, `LockAvatarArt`. Shared views then never include a render header.
 - Share a module's logic only where both backends' formulas and constants match. `notification`, `settings` and bar styles differ in design, so they stay per backend.
 - Keep constants only one host draws with in `<module>_style_config.h`. Constants a shared view draws with go in the module's shared config.
@@ -48,12 +49,11 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Only Wayland animates; X11 calls `animation_set_instant(true)`. Models then animate unconditionally and snap to the end value on X11.
 - Submenu icons are the `SubmenuIcon` enum in the shared model. Each backend maps it to its glyph.
 - A canvas draws images at their natural size. Scale to the slot yourself, or a PNG icon covers the whole bar.
-- `Canvas::gauge` is a no-op on cairo. The resource panel is Wayland-only, so the X11 canvas never needs an arc.
+- `Canvas::gauge` is implemented on cairo. The resource panel is portable to X11.
 - Guard a service-signal slot with the content's alive flag. `Signal` has no disconnect, so a destroyed panel would be called.
 - One overlay surface per monitor hosts whichever bar panel is open. Nine surfaces cost memory and input regions for panels shown one at a time.
 - A panel's tray menu is a real popup: `xdg_popup` on Wayland, an override-redirect window on X11. Both need the parent's grab and position.
 - The bar's `top_margin` and `side_margin` come from `BarStyleSpec`, never from a global constant. Each style attaches differently.
-- `bar_style_resolve` maps `islands` to `continuous` on X11 only. `islands` is not built there, so the fallback stays out of shared code.
 - A bar style needs its row in every `BarStyleSpec` table. A too-short table silently zero-fills.
 - Panel fills follow `hl`, except the `i3` rows for network, Bluetooth, tray cells and the hovered tray entry. The `text_alpha06` and `text_alpha08` fills are deliberate.
 - Removing a UI feature's draw code leaves its click kinds, state and handlers reading as live. Delete them in the same change.
@@ -171,6 +171,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Decode images with `stb_image` and `resvg`, not gdk-pixbuf or librsvg. gdk-pixbuf pulls in sandboxed loaders, extra threads and megabytes of libraries.
 - `decode_pixels` fits an SVG inside its box keeping the aspect. Give a height-only fit a huge width bound.
 - `decode_pixels` allocates every buffer with `new[]`, stb included through `STBI_MALLOC`. Each backend then adopts the buffer without a copy.
+- `decode_pixels` returns SVG renders premultiplied and every other format straight. Check `Pixels::premultiplied` before converting to cairo's ARGB32.
 - A JPEG decode given a target size uses libjpeg `scale_denom`. Reduced-size decoding skips most pixels and memory.
 - Font hinting differs between icons and text. `HINT_STYLE_NONE` keeps Tabler strokes thick while hinted text stays crisp.
 
@@ -388,3 +389,13 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [x11] Paint overlapping translucent shapes with outer borders, then `CAIRO_OPERATOR_SOURCE` inner fills. `OVER` double-darkens the overlap.
 - [x11] A nested `Xephyr` shows no cursor and ignores XTest clicks for the shell. Click inside its window by hand.
 - [x11] A test that opens an X server nests in `Xephyr`. It skips cleanly when no server is available.
+- [x11] Dashboard, rain and visualizer are managed windows with a default size and `WM_DELETE_WINDOW`. i3 tiles them; without the protocol its close kills the connection.
+- [x11] A managed window's size comes from `ConfigureNotify`, not the request. Rebuild its backing store from that event before painting.
+- [x11] Idle time is the server's `MIT-SCREEN-SAVER` clock. Keep a local reset time, or enabling idle management fires the screensaver instantly.
+- [x11] Idle activity marks both the focused and the pointer's output. A screensaver window cannot receive the input that would clear it.
+- [x11] Click-through overlays use an empty `SHAPE` input region. Notifications keep only their close boxes, so the rest of the stack passes clicks.
+- [x11] An autohidden bar shrinks to a 1 px dock window. i3 reserves a dock's height, so revealing it shifts tiled windows.
+- [x11] The lock lays out its windows again on RandR changes and grabs again. A new output otherwise shows the desktop unlocked.
+- [x11] Compose each lock output's wallpaper once and blit it. Decoding the cached cover every tick costs a full image decode.
+- [x11] A bar passes its output through `Services::overlay_hint` while it runs a verb. Logout and overview then open on the bar's output.
+- [x11] Open overlays close on a click outside their box, never on focus loss. A window-manager hotkey would otherwise close them mid-action.

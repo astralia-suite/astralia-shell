@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <sdbus-c++/sdbus-c++.h>
 #include <string>
 #include <vector>
 
@@ -29,13 +28,11 @@ class BarSet {
     };
 
     void sync();
-    void notify(const std::string &app, const StatusMessage &message);
 
     XConnection &x_;
     EventLoop &loop_;
     Shell &shell_;
     Services &services_;
-    std::unique_ptr<sdbus::IProxy> notifier_;
     std::vector<Entry> bars_;
 };
 

@@ -55,7 +55,7 @@ void check_config_parse() {
 
     Config cfg = parse_config(sample_config());
     check(cfg.autohide && cfg.bar_style == BarStyle::continuous, "bar section");
-    check(!cfg.default_osd_enabled && !cfg.default_wallpaper_enabled && cfg.default_lock_panel_enabled && cfg.default_bar_enabled, "display defaults, with defaultBar absent");
+    check(!cfg.default_osd_enabled && !cfg.default_wallpaper_enabled && cfg.default_lock_panel_enabled, "display defaults");
     check(cfg.monitor_overrides.contains("eDP-1") && cfg.monitor_overrides["eDP-1"].enabled && cfg.monitor_overrides["eDP-1"].osd && !cfg.monitor_overrides["eDP-1"].lock, "monitor override fields");
     check(cfg.monitor_overrides["eDP-1"].ambient_timeout_seconds == 90 && cfg.monitor_overrides["eDP-1"].screensaver_timeout_seconds == 300, "override seconds keep defaults when absent");
     check(!cfg.idle_management_enabled, "idle disabled");
@@ -95,25 +95,11 @@ void check_monitor_overrides() {
     check(lock_effective_enabled(cfg, "HDMI-1") == cfg.default_lock_panel_enabled, "default lock");
     cfg.monitor_overrides["DP-1"].lock = false;
     check(!lock_effective_enabled(cfg, "DP-1"), "lock override");
-    cfg.monitor_overrides["DP-1"].bar = false;
-    check(!bar_effective_enabled(cfg, "DP-1") && bar_effective_enabled(cfg, "HDMI-1"), "bar override");
     cfg.idle_management_enabled = false;
     check(!ambient_effective_enabled(cfg, "HDMI-1") && !screensaver_effective_enabled(cfg, "DP-1"), "idle management off disables ambient and screensaver everywhere");
     cfg.idle_management_enabled = true;
     cfg.monitor_overrides["DP-1"].ambient_timeout_seconds = 42;
     check(ambient_effective_timeout_seconds(cfg, "DP-1") == 42 && ambient_effective_timeout_seconds(cfg, "HDMI-1") == cfg.ambient_timeout_seconds, "ambient timeout override");
-}
-
-void check_legacy_config() {
-    using namespace astralia;
-    using test::check;
-    Config cfg = config_from_legacy("# c\nbar = on\nosd = off\nnotifications = on\nbar_style = okinami\nwallpaper_dir = ~/Pics\nHDMI-1.osd = on\nHDMI-1.bar = off\nbad line\n", "eDP-1 = ~/a.png\n* = /g.png\n", "/home/u");
-    check(cfg.default_bar_enabled && !cfg.default_osd_enabled && cfg.default_notifications_enabled, "legacy defaults");
-    check(cfg.bar_style == BarStyle::okinami && cfg.wallpaper_dir == "/home/u/Pics", "legacy style and directory");
-    const MonitorOverride &mo = cfg.monitor_overrides["HDMI-1"];
-    check(mo.enabled && mo.osd && !mo.bar && mo.notifications, "an override takes unspecified features from the defaults");
-    check(cfg.wallpaper_columns["eDP-1"] == std::vector<std::string>{"/home/u/a.png"} && cfg.wallpaper_path == "/g.png", "legacy images become columns, and * the global image");
-    check(config_from_legacy("", "", "/home/u") == Config(), "no legacy text gives the defaults");
 }
 
 void check_settings_service() {
@@ -128,11 +114,6 @@ void check_settings_service() {
     setenv("HOME", dir, 1);
     setenv("XDG_CONFIG_HOME", (std::string(dir) + "/.config").c_str(), 1);
     std::string config_path = std::string(dir) + "/.config/astralia/config.json";
-    {
-        std::filesystem::create_directories(std::string(dir) + "/.config/astralia-shell");
-        std::ofstream(std::string(dir) + "/.config/astralia-shell/settings.conf") << "osd = off\nbar_style = continuous\n";
-        std::ofstream(std::string(dir) + "/.config/astralia-shell/wallpaper.conf") << "eDP-1 = ~/w.png\n";
-    }
     auto created = PollReactor::create();
     check(created.has_value(), "reactor");
     if (!created) {
@@ -141,14 +122,13 @@ void check_settings_service() {
     PollReactor reactor = std::move(*created);
     {
         SettingsService service(reactor);
-        check(std::filesystem::exists(config_path), "the migrated config is written");
-        check(!service.config().default_osd_enabled && service.config().bar_style == BarStyle::continuous, "the legacy files are imported");
-        check(service.config().wallpaper_columns.at("eDP-1") == std::vector<std::string>{std::string(dir) + "/w.png"}, "the legacy wallpaper is imported");
+        check(!std::filesystem::exists(config_path), "a missing config is not written");
+        check(service.config() == Config(), "a missing config yields the defaults");
 
         int emitted = 0;
         service.changed.connect([&] { ++emitted; });
         service.update([](Config &cfg) { cfg.autohide = true; });
-        check(emitted == 1 && service.config().autohide, "update stores and emits");
+        check(emitted == 1 && service.config().autohide && std::filesystem::exists(config_path), "update stores, writes and emits");
         service.update([](Config &cfg) { cfg.autohide = true; });
         check(emitted == 1, "an unchanged update emits nothing");
         reactor.run_once(50);
@@ -163,7 +143,8 @@ void check_settings_service() {
         check(service.config().rain.mode == RainMode::Stiletto, "the external value is applied");
 
         std::filesystem::remove(config_path);
-        check(test::pump_until(reactor, [&] { return std::filesystem::exists(config_path); }), "a removed config is rewritten with defaults");
+        check(test::pump_until(reactor, [&] { return emitted == 3; }), "a removed config reverts to the defaults");
+        check(service.config() == Config() && !std::filesystem::exists(config_path), "and is not rewritten");
     }
     std::filesystem::remove_all(dir);
 }

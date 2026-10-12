@@ -1,11 +1,12 @@
-#include <cassert>
 #include <cmath>
 #include <numbers>
 #include <vector>
 
-#include "wayland/config/visualizer_config.h"
+#include "config/visualizer_config.h"
 
-#include "modules/visualizer/wayland/fft.h"
+#include "modules/visualizer/fft.h"
+
+#include "check.h"
 
 namespace {
 
@@ -24,14 +25,15 @@ int peak_bin(const std::vector<float> &data, int complex_points) {
 
 } // namespace
 
-void test_visualizer_fft() {
+void check_visualizer_fft() {
+    using namespace astralia;
     const int n = kVisualizerFragmentSize;
     const int complex_points = n / 2;
 
     std::vector<float> silence(static_cast<size_t>(n), 0.0f);
     visualizer_fft(silence.data(), n, kVisualizerFftScale, kVisualizerFftCutOff);
     for (float v : silence)
-        assert(v == 0.0f);
+        test::check(v == 0.0f, "silence stays silent");
 
     const int tone_bin = 64;
     std::vector<float> tone(static_cast<size_t>(n), 0.0f);
@@ -41,9 +43,9 @@ void test_visualizer_fft() {
     visualizer_fft(tone.data(), n, kVisualizerFftScale, kVisualizerFftCutOff);
 
     int p = peak_bin(tone, complex_points);
-    assert(std::abs(p - tone_bin) <= 2);
+    test::check(std::abs(p - tone_bin) <= 2, "a tone peaks at its bin");
 
     float at_tone = tone[static_cast<size_t>(2 * tone_bin)];
     float far = tone[static_cast<size_t>(2 * (complex_points / 2 - 4))];
-    assert(at_tone > far * 4.0f);
+    test::check(at_tone > far * 4.0f, "the tone stands out from the far bins");
 }

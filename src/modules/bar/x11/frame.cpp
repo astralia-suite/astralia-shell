@@ -87,10 +87,10 @@ void paint_okinami(cairo_t *cr, const BarStyleSpec &spec, const BarFrame &frame,
 } // namespace
 
 void paint_bar_frame(cairo_t *cr, const BarStyleSpec &spec, const BarFrame &frame, double width, double height) {
-    if (spec.has_rail()) {
-        paint_okinami(cr, spec, frame, width, height);
-    } else {
+    if (spec.continuous) {
         paint_continuous(cr, spec, width, height);
+    } else if (spec.has_rail()) {
+        paint_okinami(cr, spec, frame, width, height);
     }
 }
 

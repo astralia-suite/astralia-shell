@@ -2,22 +2,16 @@
 #include <cairo/cairo.h>
 #include <cmath>
 #include <cstdint>
-#include <random>
 #include <string>
 
-#include "wayland/config/rain_config.h"
-
-#include "modules/rain/wayland/matrix_rain.h"
+#include "modules/rain/matrix_rain.h"
+#include "modules/rain/rain_random.h"
 
 #include "render/tokens.h"
-#include "wayland/render/text.h"
+
+namespace astralia {
 
 namespace {
-
-std::mt19937 &rng() {
-    static std::mt19937 gen{std::random_device{}()};
-    return gen;
-}
 
 const std::u32string &matrix_rain_glyph_pool() {
     static const std::u32string pool = [] {
@@ -32,13 +26,6 @@ const std::u32string &matrix_rain_glyph_pool() {
     }();
     return pool;
 }
-
-float random01() {
-    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(rng());
-}
-
-float random_range(float lo, float hi) { return lo + (hi - lo) * random01(); }
 
 std::string utf8_encode(char32_t cp) {
     std::string s;
@@ -65,7 +52,7 @@ void matrix_rain_font(cairo_t *cr, bool bold) {
     cairo_set_font_size(cr, kMatrixRainFontPx);
 }
 
-void draw_glyph_centered(cairo_t *cr, char32_t glyph, float cell_x, float cell_y, bool bold, const astralia::Color &color) {
+void draw_glyph_centered(cairo_t *cr, char32_t glyph, float cell_x, float cell_y, bool bold, const Color &color) {
     matrix_rain_font(cr, bold);
     std::string utf8 = utf8_encode(glyph);
     cairo_text_extents_t extents;
@@ -84,7 +71,7 @@ char32_t MatrixRain::random_glyph() const {
     if (pool.empty())
         return U' ';
     size_t idx =
-        static_cast<size_t>(random01() * static_cast<float>(pool.size()));
+        static_cast<size_t>(rain_random01() * static_cast<float>(pool.size()));
     if (idx >= pool.size())
         idx = pool.size() - 1;
     return pool[idx];
@@ -101,7 +88,7 @@ void MatrixRain::rebuild(int width, int height, bool async_speed) {
     columns_.assign(static_cast<size_t>(column_count_), Column{});
     for (Column &c : columns_) {
         c.drop = start_drop();
-        c.speed = async_speed ? random_range(kRainAsyncSpeedMin, kRainAsyncSpeedMax) : 1.0f;
+        c.speed = async_speed ? rain_random_range(kRainAsyncSpeedMin, kRainAsyncSpeedMax) : 1.0f;
     }
 
     float content_width =
@@ -114,7 +101,6 @@ void MatrixRain::rebuild(int width, int height, bool async_speed) {
 
     stride_ = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width_);
     buffer_.assign(static_cast<size_t>(stride_) * static_cast<size_t>(height_), 0);
-    texture_ = Texture{};
 }
 
 void MatrixRain::decay() {
@@ -160,15 +146,15 @@ void MatrixRain::tick() {
         if (col.last_head_valid) {
             float last_y =
                 offset_y_ + col.last_head_drop * kMatrixRainCellHeight;
-            draw_glyph_centered(cr, col.last_glyph, x, last_y, false, astralia::palette::accent);
+            draw_glyph_centered(cr, col.last_glyph, x, last_y, false, palette::accent);
         }
 
         float head = sweeping_ ? sweep_drop_ : col.drop;
         if (head >= 0.0f) {
             float y = offset_y_ + head * kMatrixRainCellHeight;
-            bool bold = random01() < kMatrixRainBoldChance;
+            bool bold = rain_random01() < kMatrixRainBoldChance;
             char32_t glyph = random_glyph();
-            draw_glyph_centered(cr, glyph, x, y, bold, astralia::palette::text);
+            draw_glyph_centered(cr, glyph, x, y, bold, palette::text);
             col.last_glyph = glyph;
             col.last_head_drop = head;
             col.last_head_valid = true;
@@ -182,7 +168,7 @@ void MatrixRain::tick() {
         if (sweep_drop_ * kMatrixRainCellHeight > static_cast<float>(height_) + kMatrixRainCellHeight) {
             sweeping_ = false;
             for (Column &col : columns_) {
-                col.drop = -(random01() * static_cast<float>(row_count_));
+                col.drop = -(rain_random01() * static_cast<float>(row_count_));
                 col.ever_reset = true;
                 col.last_head_valid = false;
             }
@@ -194,8 +180,8 @@ void MatrixRain::tick() {
                 continue;
             col.accum -= 1.0f;
             col.drop += 1.0f;
-            if (col.drop * kMatrixRainCellHeight > static_cast<float>(height_) && random01() < kRainResetChance) {
-                col.drop = col.ever_reset ? -(random01() * static_cast<float>(row_count_)) : start_drop();
+            if (col.drop * kMatrixRainCellHeight > static_cast<float>(height_) && rain_random01() < kRainResetChance) {
+                col.drop = col.ever_reset ? -(rain_random01() * static_cast<float>(row_count_)) : start_drop();
                 col.ever_reset = true;
                 col.last_head_valid = false;
             }
@@ -204,10 +190,7 @@ void MatrixRain::tick() {
 
     cairo_destroy(cr);
     cairo_surface_flush(surface);
-
-    RasterizedText raster = surface_to_rgba(surface, width_, height_);
     cairo_surface_destroy(surface);
-
-    texture_ =
-        make_texture_rgba(raster.width, raster.height, raster.rgba.data());
 }
+
+} // namespace astralia

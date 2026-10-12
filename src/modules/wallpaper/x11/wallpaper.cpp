@@ -10,10 +10,8 @@
 
 #include "modules/wallpaper/x11/wallpaper.h"
 
-#include "service/wallpaper_service.h"
-
-#include "render/cover_cache.h"
 #include "render/tokens.h"
+#include "render/wallpaper_paint.h"
 
 namespace astralia {
 
@@ -35,36 +33,10 @@ void set_root_pixmap(XConnection &x, std::string_view atom, xcb_pixmap_t pixmap)
                         32, 1, &pixmap);
 }
 
-void paint_output(cairo_t *cr, const Output &output, const Config &config) {
-    std::string configured = wallpaper_image_for(config, output.name);
-    std::optional<std::string> path;
-    if (!configured.empty()) {
-        path = std::move(configured);
-    }
-    if (!path) {
-        log::info("no wallpaper for output {}", output.name);
-        return;
-    }
-    const OutputGeometry &area = output.geometry;
-    auto start = std::chrono::steady_clock::now();
-    auto image = load_cover(*path, area.width, area.height);
-    if (!image) {
-        log::error("wallpaper {} for {}: {}", *path, output.name, image.error());
-        return;
-    }
-    auto loaded = std::chrono::steady_clock::now();
-    cairo_set_source_surface(cr, image->get(), area.x, area.y);
-    cairo_paint(cr);
-    auto painted = std::chrono::steady_clock::now();
-    log::info("wallpaper {} for {}: load {} ms, paint {} ms", *path, output.name,
-              std::chrono::duration_cast<std::chrono::milliseconds>(loaded - start).count(),
-              std::chrono::duration_cast<std::chrono::milliseconds>(painted - loaded).count());
-}
-
 std::string image_signature(const Config &config, const std::vector<Output> &outputs) {
     std::string signature;
     for (const Output &output : outputs) {
-        signature += output.name + "=" + wallpaper_image_for(config, output.name) + "\n";
+        signature += wallpaper_signature(config, output.name) + "\n";
     }
     return signature;
 }
@@ -77,7 +49,9 @@ void draw(XConnection &x, xcb_pixmap_t pixmap, const std::vector<Output> &output
     cairo_set_source_rgb(cr, palette::base.r, palette::base.g, palette::base.b);
     cairo_paint(cr);
     for (const Output &output : outputs) {
-        paint_output(cr, output, config);
+        auto start = std::chrono::steady_clock::now();
+        paint_wallpaper(cr, config, output.name, output.geometry.x, output.geometry.y, output.geometry.width, output.geometry.height);
+        log::info("wallpaper for {}: {} ms", output.name, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count());
     }
     cairo_destroy(cr);
     cairo_surface_finish(surface);

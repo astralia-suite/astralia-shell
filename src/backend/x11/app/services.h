@@ -14,6 +14,7 @@
 #include "service/notification_service.h"
 #include "service/polkit_service.h"
 #include "service/settings_service.h"
+#include "service/telemetry_service.h"
 #include "service/tray_service.h"
 #include "service/user_service.h"
 
@@ -43,6 +44,10 @@ struct Services {
     OutputService outputs;
     SettingsService settings;
     UserService user;
+    CpuTempState cpu_temp;
+    GpuTempState gpu_temp;
+    SystemStatsState system_stats;
+    std::string overlay_hint;
 };
 
 } // namespace astralia

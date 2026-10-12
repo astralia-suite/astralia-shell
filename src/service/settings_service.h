@@ -19,7 +19,6 @@ namespace astralia {
 
 struct MonitorOverride {
     bool enabled = false;
-    bool bar = true;
     bool osd = true;
     bool notifications = true;
     bool autohide = false;
@@ -48,7 +47,6 @@ struct Config {
 
     bool autohide = false;
     BarStyle bar_style = BarStyle::islands;
-    bool default_bar_enabled = true;
     bool default_osd_enabled = true;
     bool default_notifications_enabled = true;
     bool default_wallpaper_enabled = true;
@@ -71,7 +69,6 @@ struct Config {
     bool operator==(const Config &) const = default;
 };
 
-bool bar_effective_enabled(const Config &cfg, const std::string &monitor_name);
 bool osd_effective_enabled(const Config &cfg, const std::string &monitor_name);
 bool notifications_effective_enabled(const Config &cfg, const std::string &monitor_name);
 bool autohide_effective_enabled(const Config &cfg, const std::string &monitor_name);
@@ -83,7 +80,6 @@ bool lock_effective_enabled(const Config &cfg, const std::string &monitor_name);
 
 Config parse_config(std::string_view text);
 std::string serialize_config(const Config &cfg);
-Config config_from_legacy(std::string_view settings_text, std::string_view wallpaper_text, std::string_view home);
 
 class SettingsService {
   public:

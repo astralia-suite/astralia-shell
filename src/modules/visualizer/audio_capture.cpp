@@ -6,11 +6,13 @@
 #include <spa/param/format-utils.h>
 #include <spa/pod/builder.h>
 
-#include "wayland/config/visualizer_config.h"
+#include "config/visualizer_config.h"
 
-#include "wayland/core/log.h"
+#include "core/log.h"
 
-#include "modules/visualizer/wayland/audio_capture.h"
+#include "modules/visualizer/audio_capture.h"
+
+namespace astralia {
 
 namespace {
 
@@ -39,13 +41,13 @@ bool VisualizerAudioCapture::start() {
     pw_init(nullptr, nullptr);
     loop_ = pw_thread_loop_new("astralia-shell-visualizer-audio", nullptr);
     if (!loop_) {
-        klog("visualizer_audio: failed to create pw_thread_loop");
+        log::error("visualizer_audio: failed to create pw_thread_loop");
         return false;
     }
     context_ = pw_context_new(pw_thread_loop_get_loop(loop_), nullptr, 0);
     core_ = pw_context_connect(context_, nullptr, 0);
     if (!core_) {
-        klog("visualizer_audio: failed to connect pipewire core");
+        log::error("visualizer_audio: failed to connect pipewire core");
         return false;
     }
 
@@ -104,7 +106,7 @@ void VisualizerAudioCapture::stop() {
 
 void VisualizerAudioCapture::on_state_changed(void *, pw_stream_state, pw_stream_state state, const char *error) {
     if (state == PW_STREAM_STATE_ERROR)
-        klog("visualizer_audio: stream error: %s", error ? error : "unknown");
+        log::error("visualizer_audio: stream error: {}", error ? error : "unknown");
 }
 
 void VisualizerAudioCapture::on_param_changed(void *data, uint32_t id, const spa_pod *param) {
@@ -203,3 +205,5 @@ bool VisualizerAudioCapture::take(std::vector<float> &l, std::vector<float> &r, 
     }
     return true;
 }
+
+} // namespace astralia

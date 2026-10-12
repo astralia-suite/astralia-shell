@@ -1,13 +1,13 @@
 #pragma once
 
-#include "app/shell.h"
-
 #include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "app/shell.h"
 
 #include "config/bar_layout.h"
 
@@ -45,9 +45,7 @@ struct SettingsCaps {
     bool animated_wallpaper = false;
     bool wallpaper_columns = false;
     bool default_wallpaper = false;
-    bool bar_toggle = true;
     bool autohide = false;
-    bool remember_tab = false;
     std::vector<BarStyle> bar_styles{BarStyle::islands, BarStyle::okinami, BarStyle::continuous};
 };
 
@@ -71,7 +69,6 @@ enum class SettingsAct : uint8_t {
     displays_monitor,
     idle_monitor,
     toggle_override,
-    toggle_bar,
     toggle_osd,
     toggle_notifications,
     toggle_autohide,

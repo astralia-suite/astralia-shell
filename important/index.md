@@ -40,7 +40,7 @@
 - `meson.build`: Wayland source list, protocol generation, dependencies, compile arguments, media plugin sources and asset installation.
 - `app/`: `WaylandState`, registry binding, monitor outputs, module and service registries, key dispatch, shell bindings and the config adapter.
 - `core/`: Poll-source types for the run loop and `klog` forwarding to the shared log.
-- `config/`: Wayland configs that more than one module uses: idle, rain and visualizer parameters.
+- `config/`: Wayland configs that more than one module uses: idle and visualizer parameters.
 - `render/`: The GLES2 renderer, the immediate-mode `GlCanvas`, text and icon textures, layer-shell and toplevel windows, the arc gauge.
 - `plugin/media_plugin.cpp`: The `ffmpeg` decoder, built as its own plugin and loaded by the media service.
 - `protocols/`: Protocol XML that the system `wayland-protocols` package does not ship.
@@ -49,9 +49,10 @@
 
 - `backend.cpp`: X11 backend plugin: connects to X, builds the services and every module, binds the verbs and runs the loop.
 - `meson.build`: X11 source list, dependencies, compile arguments and asset installation.
-- `app/services.{h,cpp}`: The services this backend owns, built from the shared services and the compositor.
-- `core/`: `XConnection`, `Keyboard`, pointer conversion and the `EventLoop` that adds X event dispatch to a `PollReactor`.
-- `render/`: `CairoCanvas`, cairo drawing, text, icons, cairo image surfaces over the shared decoder and X windows.
+- `app/services.{h,cpp}`: The services this backend owns, built from the shared services, the compositor and the telemetry state.
+- `app/active_target.{h,cpp}`: The output an overlay opens on: the widget's output, else the focused monitor, else the pointer's.
+- `core/`: `XConnection` with atoms and cursors, `Keyboard`, pointer conversion and the `EventLoop` that adds X event dispatch to a `PollReactor`.
+- `render/`: `CairoCanvas`, cairo drawing, text, icons, cairo image surfaces over the shared decoder, the per-output wallpaper painter and X windows.
 - `config/bar_config.h`: The bar styles X11 builds and the allocator trim interval.
 
 ## `src/core/`
@@ -98,6 +99,8 @@
 - `panel_config.h`: Panel card, row, slider, typography and per-panel constants.
 - `visualizer_config.h`: Visualizer constants and the `VisualizerParams` stored in the config.
 - `rain_config.h`: Rain constants and the `RainParams` stored in the config.
+- `idle_config.h`: Idle activity pulse and screensaver logo constants both hosts use.
+- `dashboard_config.h`: Dashboard window title, id and default size.
 - `launcher_config.h`: Launcher commands, search URLs and limits, row and animation geometry.
 - `notification_config.h`: Notification card geometry, timing and urgency colours.
 - `polkit_config.h`: Polkit card geometry, line heights, dot size and texts.
@@ -114,7 +117,7 @@
 - `<name>/view.{h,cpp}`: The one view, painted over `ui::Canvas` for both backends.
 - `<name>/<backend>/`: The backend's host: surfaces, input conversion, timers and the module-only style config.
 - `bar`, `launcher`, `lock`, `logout`, `notification`, `osd`, `overview`, `polkit`, `settings`, `wallpaper`: Have a host in both backends.
-- `idle`, `dashboard`, `rain`, `visualizer`: Have a `wayland/` host only, gated by `Capabilities`.
+- `idle`, `dashboard`, `rain`, `visualizer`: Have a host in both backends, gated by `Capabilities`.
 
 ## `src/modules/bar/`
 
@@ -126,16 +129,28 @@
 - `panel/widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm dialog the panels share.
 - `panel/*_panel.{h,cpp}`: Content of the battery, bluetooth, brightness, clock, media, network, resource, tray and volume panels.
 - `wayland/`: Per-monitor bar surface, one overlay `PanelSurface`, and the `GlCanvas` frame with fillets and hug corners.
-- `x11/`: Bar window and struts, `BarSet` per output, one `PanelHost` window, and the cairo frame painter.
+- `x11/`: Bar window, struts and autohide strip, `BarSet` per output, one `PanelHost` window, and the cairo frame painter.
 
 ## `src/modules/lock/`
 
 - `model.{h,cpp}`: Password field, authentication generation, failure timeout, hit boxes and the per-output `LockMotion`.
 - `view.{h,cpp}`: Paints the battery, system, media, clock, avatar, password, resources and notification cards over the canvas.
-- `layout.{h,cpp}`: Card, column and password dot geometry shared by both hosts.
+- `layout.{h,cpp}`: Card, column and password dot geometry and the development unlock corner shared by both hosts.
 - `pam_authenticator.{h,cpp}`: Blocking PAM check for a user and password against a service directory.
 - `wayland/`: `ext-session-lock` host that paints the shared view per output with its entrance, exit and typing motion.
-- `x11/`: Override-redirect window per output, keyboard and pointer grabs, wallpaper backdrop and the PAM thread.
+- `x11/`: Override-redirect window per output, keyboard and pointer grabs, hotplug, cached wallpaper backdrop and the PAM thread.
+
+## `src/modules/idle/`, `rain/`, `visualizer/`
+
+- `idle/bounce.{h,cpp}`: Bouncing screensaver logo step shared by both hosts.
+- `idle/idle_clock.{h,cpp}`: Per-output activity clock, ambient and screensaver verdicts and the policy-change test.
+- `idle/x11/idle.{h,cpp}`: Polls `MIT-SCREEN-SAVER` idle time and shows a click-through overlay per output.
+- `rain/matrix_rain.{h,cpp}`, `rain/stiletto_rain.{h,cpp}`: CPU rain simulations into an ARGB buffer; `rain_random` seeds them and `rain_frame.h` views the buffer.
+- `visualizer/audio_capture.{h,cpp}`: PipeWire capture of the sink into overlapping left and right fragments.
+- `visualizer/fft.{h,cpp}`: The windowed radix-2 FFT that turns a fragment into spectrum bins.
+- `visualizer/cpu_stages.{h,cpp}`: CPU peak hold, gravity, averaging and smoothing of the spectrum, as the X11 host runs it.
+- `visualizer/bars.{h,cpp}`: Bar count, spectrum texel and height for the bar shape.
+- `*/x11/`: Managed dashboard, rain and visualizer windows drawn with cairo.
 
 ## `src/modules/launcher/`
 
@@ -172,7 +187,7 @@
 
 ## `src/service/`
 
-- `settings_service.{h,cpp}`: The unified `Config`, its JSON load and save, per-output override accessors, legacy import and hot reload.
+- `settings_service.{h,cpp}`: The unified `Config`, its JSON load and save, per-output override accessors and hot reload.
 - `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output from `Config`.
 - `battery_service.{h,cpp}`: UPower display-device status, device list and `on_battery`, read asynchronously.
 - `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds and `rfkill` control.
@@ -201,7 +216,7 @@
 - `core/pump.h`: Runs a `PollReactor` until a condition holds or a limit passes.
 - `backend_smoke.sh`: Starts each backend through the real executable and stops it over IPC.
 - `backend/wayland/`: The Wayland unit tests that are not module tests, run as `wayland-unit`.
-- `backend/x11/test_x11.cpp`: Checks for the X11 pure logic: colours, the cairo frame, image cover decoding and input conversion.
+- `backend/x11/test_x11.cpp`: Checks for the X11 pure logic: colours, the cairo frame, image placement and decoding and input conversion.
 - `modules/<name>/`: Checks for each module's model, view and layout; `<backend>/` holds host-level checks.
 - `app/`: Checks for session detection, library names, search directories, the Sway session and the shell.
 - `core/test_*.cpp`: Checks for the `src/core/` files.

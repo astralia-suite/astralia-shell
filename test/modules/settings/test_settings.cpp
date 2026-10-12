@@ -104,19 +104,15 @@ void check_tabs() {
     minimal.model.open();
     test::check(minimal.model.active_tab() == SettingsTab::wallpaper, "reopening starts over");
 
-    SettingsCaps remembering;
-    remembering.remember_tab = true;
-    Env keeper(remembering);
+    Env keeper{SettingsCaps{}};
     keeper.model.open();
-    test::check(keeper.model.active_tab() == SettingsTab::displays, "a remembering backend starts on displays");
+    test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "the overlay starts on wallpaper");
+    keeper.model.key(key(KeyKind::Down));
+    test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "down stops at the last tab");
+    keeper.model.key(key(KeyKind::Up));
+    test::check(keeper.model.active_tab() == SettingsTab::displays, "up moves to the previous tab");
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "down moves to the next tab");
-    keeper.model.key(key(KeyKind::Down));
-    test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "and stops at the last");
-    keeper.model.key(key(KeyKind::Up));
-    keeper.model.close();
-    keeper.model.open();
-    test::check(keeper.model.active_tab() == SettingsTab::displays, "the tab is remembered");
 
     int closes = 0;
     keeper.model.on_close_requested = [&] { ++closes; };
@@ -255,7 +251,6 @@ void check_view() {
     using Kind = test::Op::Kind;
     Instant instant;
     SettingsCaps caps;
-    caps.remember_tab = true;
     Env env(caps);
     env.model.open();
     test::RecordingCanvas canvas;

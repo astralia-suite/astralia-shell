@@ -66,7 +66,6 @@ class OverviewModel {
 
     std::function<void()> on_close_requested;
     std::function<void()> on_closed;
-    std::function<void()> on_compositor_action;
 
   private:
     void select(int workspace, bool shift, bool alt);
@@ -77,7 +76,6 @@ class OverviewModel {
     const OverviewCell *cell_at(double x, double y) const;
     int active_workspace(const std::string &monitor_name) const;
     const CompositorMonitor *bound_monitor() const;
-    void compositor_action();
 
     Compositor &compositor_;
     AnimationManager animations_;

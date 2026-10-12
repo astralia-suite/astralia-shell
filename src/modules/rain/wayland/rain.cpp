@@ -8,29 +8,34 @@
 #include "render/tokens.h"
 #include "wayland/render/gl.h"
 #include "wayland/render/overlay_panel.h"
+#include "wayland/render/text.h"
 
 namespace {
 
 void rain_rebuild_active(RainState &state, int width, int height) {
-    if (state.mode == RainMode::Matrix)
+    state.texture = Texture{};
+    if (state.mode == astralia::RainMode::Matrix)
         state.matrix.rebuild(width, height, state.async_speed);
     else
         state.stiletto.rebuild(width, height, state.async_speed);
 }
 
+void rain_upload(RainState &state) {
+    astralia::RainFrame frame = state.mode == astralia::RainMode::Matrix ? state.matrix.frame() : state.stiletto.frame();
+    if (!frame.ready())
+        return;
+    cairo_surface_t *surface = cairo_image_surface_create_for_data(const_cast<uint8_t *>(frame.pixels), CAIRO_FORMAT_ARGB32, frame.width, frame.height, frame.stride);
+    RasterizedText raster = surface_to_rgba(surface, frame.width, frame.height);
+    cairo_surface_destroy(surface);
+    state.texture = make_texture_rgba(raster.width, raster.height, raster.rgba.data());
+}
+
 void rain_tick_active(RainState &state) {
-    if (state.mode == RainMode::Matrix)
+    if (state.mode == astralia::RainMode::Matrix)
         state.matrix.tick();
     else
         state.stiletto.tick();
-}
-
-bool rain_active_ready(const RainState &state) {
-    return state.mode == RainMode::Matrix ? state.matrix.ready() : state.stiletto.ready();
-}
-
-const Texture &rain_active_texture(const RainState &state) {
-    return state.mode == RainMode::Matrix ? state.matrix.texture() : state.stiletto.texture();
+    rain_upload(state);
 }
 
 } // namespace
@@ -43,7 +48,7 @@ void rain_toggle(RainState &state, WaylandState &app) {
     bool opening = !state.base.open;
     if (opening) {
         if (state.base.egl_surface == EGL_NO_SURFACE) {
-            if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, "Rain", "astralia-shell-rain", kRainDefaultWindowWidth, kRainDefaultWindowHeight))
+            if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, "Rain", "astralia-shell-rain", astralia::kRainDefaultWindowWidth, astralia::kRainDefaultWindowHeight))
                 return;
             while (!state.base.configured)
                 wl_display_dispatch(app.display);
@@ -80,7 +85,7 @@ void rain_handle_key_event(RainState &state, WaylandState &app, const KeyEvent &
         rain_toggle(state, app);
 }
 
-void rain_apply_params(RainState &state, const RainParams &params) {
+void rain_apply_params(RainState &state, const astralia::RainParams &params) {
     bool changed =
         params.mode != state.mode || params.async_speed != state.async_speed;
     state.mode = params.mode;
@@ -129,14 +134,14 @@ void rain_paint(RainState &state) {
 
     float elapsed_ms =
         std::chrono::duration<float, std::milli>(now - state.last_tick).count();
-    if (elapsed_ms >= kRainFallIntervalMs) {
+    if (elapsed_ms >= astralia::kRainFallIntervalMs) {
         rain_tick_active(state);
         state.last_tick = now;
     }
 
-    if (rain_active_ready(state)) {
+    if (state.texture.id != 0) {
         static constexpr float white[4] = {1, 1, 1, 1};
-        state.renderer->draw_texture_rect(0.0f, 0.0f, win_w, win_h, rain_active_texture(state), white);
+        state.renderer->draw_texture_rect(0.0f, 0.0f, win_w, win_h, state.texture, white);
     }
     state.renderer->set_opacity(1.0f);
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);

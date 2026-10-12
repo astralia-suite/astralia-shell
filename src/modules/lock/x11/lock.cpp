@@ -15,10 +15,10 @@
 #include "modules/lock/pam_authenticator.h"
 #include "modules/lock/x11/lock.h"
 
-#include "service/wallpaper_service.h"
+#include "modules/lock/layout.h"
 
-#include "render/cover_cache.h"
 #include "render/draw.h"
+#include "render/wallpaper_paint.h"
 
 #ifndef ASTRALIA_PAM_DIR
 #define ASTRALIA_PAM_DIR ""
@@ -56,8 +56,6 @@ Lock::Surface::Surface(XConnection &x, size_t index)
 
 Lock::Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services), keyboard_(x.conn()), user_(services.user.name()) {
-    cpu_temp_init(cpu_temp_);
-    gpu_temp_init(gpu_temp_, loop);
     timer_ = loop.add_timer([this] { return next_tick(); }, [this] { poll(); });
     shell.track("lock", [this] { return locked_; });
     shell.bind(ShellVerb::lock, [this] { lock(); });
@@ -66,6 +64,7 @@ Lock::Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
             paint_all(true);
         }
     };
+    services.outputs.changed.connect([this] { outputs_changed(); });
     services.media.changed.connect(repaint);
     services.battery.changed.connect(repaint);
     services.notifications.changed.connect(repaint);
@@ -80,10 +79,7 @@ std::chrono::milliseconds Lock::next_tick() const {
     return model_.failed() ? std::min(tick, std::max(fail, std::chrono::milliseconds(1))) : tick;
 }
 
-void Lock::lock() {
-    if (locked_) {
-        return;
-    }
+size_t Lock::layout_surfaces() {
     std::vector<Output> outputs = services_.outputs.outputs();
     if (outputs.empty()) {
         outputs.push_back({"", x_.primary_output()});
@@ -98,18 +94,43 @@ void Lock::lock() {
         };
         loop_.on_window(surfaces_.back()->window.id(), [this, index](const xcb_generic_event_t &event) { handle(index, event); });
     }
-    keyboard_.reload();
     for (size_t i = 0; i < outputs.size(); ++i) {
         surfaces_[i]->output = outputs[i];
         surfaces_[i]->window.place(outputs[i].geometry);
     }
     for (size_t i = outputs.size(); i < surfaces_.size(); ++i) {
         surfaces_[i]->window.hide();
+        surfaces_[i]->canvas.release_images();
+        surfaces_[i]->window.release();
+        surfaces_[i]->wallpaper.reset();
+        surfaces_[i]->wallpaper_key.clear();
     }
-    for (size_t i = 0; i < outputs.size(); ++i) {
+    return outputs.size();
+}
+
+size_t Lock::pointer_surface(size_t count) const {
+    auto [x, y] = x_.pointer_position();
+    for (size_t i = 0; i < count; ++i) {
+        const OutputGeometry &area = surfaces_[i]->output.geometry;
+        if (x >= area.x && y >= area.y && x < area.x + area.width && y < area.y + area.height) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+void Lock::lock() {
+    if (locked_) {
+        return;
+    }
+    keyboard_.reload();
+    size_t count = layout_surfaces();
+    size_t focus = pointer_surface(count);
+    for (size_t i = 0; i < count; ++i) {
         paint(*surfaces_[i], false);
-        surfaces_[i]->window.show(i == 0);
+        surfaces_[i]->window.show(i == focus);
     }
+    grab_index_ = focus;
     if (!grab()) {
         log::error("lock: could not grab the keyboard, not locking");
         release_grabs();
@@ -120,17 +141,36 @@ void Lock::lock() {
     }
     locked_ = true;
     model_.reset();
-    cpu_temp_poll(cpu_temp_);
-    gpu_temp_poll(gpu_temp_);
-    system_stats_poll(stats_);
+    cpu_temp_poll(services_.cpu_temp);
+    gpu_temp_poll(services_.gpu_temp);
+    system_stats_poll(services_.system_stats);
     paint_all(true);
     loop_.reschedule(timer_);
-    log::info("lock: locked {} output(s)", outputs.size());
+    log::info("lock: locked {} output(s)", count);
+}
+
+void Lock::outputs_changed() {
+    if (!locked_) {
+        return;
+    }
+    size_t count = layout_surfaces();
+    for (size_t i = 0; i < count; ++i) {
+        if (!surfaces_[i]->window.mapped()) {
+            paint(*surfaces_[i], false);
+            surfaces_[i]->window.show(false);
+        }
+    }
+    grab_index_ = std::min(grab_index_, count - 1);
+    surfaces_[grab_index_]->window.show(true);
+    if (!grab()) {
+        log::error("lock: could not re-grab the input after an output change");
+    }
+    paint_all(true);
 }
 
 bool Lock::grab() {
     xcb_connection_t *conn = x_.conn();
-    xcb_window_t window = surfaces_.front()->window.id();
+    xcb_window_t window = surfaces_[grab_index_]->window.id();
     bool keyboard = false;
     bool pointer = false;
     for (int attempt = 0; attempt < kLockGrabAttempts && !(keyboard && pointer); ++attempt) {
@@ -225,7 +265,9 @@ void Lock::click(const xcb_button_press_event_t &event) {
         }
         double x = event.root_x - area.x;
         double y = event.root_y - area.y;
-        if (contains(surface->hits.pill_button, x, y)) {
+        if (lock_dev_unlock_hit(x, y, area.height)) {
+            unlock();
+        } else if (contains(surface->hits.pill_button, x, y)) {
             if (!model_.password().empty() && !model_.authenticating()) {
                 submit();
             }
@@ -268,9 +310,9 @@ void Lock::poll() {
         return;
     }
     model_.tick(LockModel::Clock::now());
-    cpu_temp_poll(cpu_temp_);
-    gpu_temp_poll(gpu_temp_);
-    system_stats_poll(stats_);
+    cpu_temp_poll(services_.cpu_temp);
+    gpu_temp_poll(services_.gpu_temp);
+    system_stats_poll(services_.system_stats);
     paint_all(true);
 }
 
@@ -284,9 +326,9 @@ LockInfo Lock::info() const {
             date_text(),
             &services_.battery.status(),
             &services_.media.status(),
-            &stats_,
-            &cpu_temp_,
-            &gpu_temp_,
+            &services_.system_stats,
+            &services_.cpu_temp,
+            &services_.gpu_temp,
             &services_.notifications.list()};
 }
 
@@ -307,25 +349,23 @@ void Lock::paint(Surface &surface, bool with_wallpaper) {
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     if (with_wallpaper) {
-        std::string path = wallpaper_image_for(services_.settings.config(), surface.output.name);
-        std::string key = path + ":" + std::to_string(area.width) + "x" + std::to_string(area.height);
-        if (!path.empty() && key != surface.wallpaper_key) {
-            auto image = load_cover(path, area.width, area.height);
-            surface.wallpaper.reset();
-            if (image) {
-                surface.wallpaper = std::move(*image);
-            } else {
-                log::error("lock: wallpaper {}: {}", path, image.error());
-            }
+        const Config &config = services_.settings.config();
+        std::string key = wallpaper_signature(config, surface.output.name) + ":" + std::to_string(area.width) + "x" + std::to_string(area.height);
+        if (key != surface.wallpaper_key) {
+            surface.wallpaper.reset(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, area.width, area.height));
+            cairo_t *wallpaper_cr = cairo_create(surface.wallpaper.get());
+            paint_wallpaper(wallpaper_cr, config, surface.output.name, 0, 0, area.width, area.height);
+            cairo_destroy(wallpaper_cr);
             surface.wallpaper_key = key;
         }
-        if (surface.wallpaper) {
-            cairo_set_source_surface(cr, surface.wallpaper.get(), 0, 0);
-            cairo_paint(cr);
+        cairo_set_source_surface(cr, surface.wallpaper.get(), 0, 0);
+        cairo_paint(cr);
+        surface.hits = {};
+        if (lock_effective_enabled(config, surface.output.name)) {
+            surface.canvas.bind(cr);
+            paint_lock(surface.canvas, model_, surface.motion, info(), area.width, area.height);
+            surface.hits = model_.hits();
         }
-        surface.canvas.bind(cr);
-        paint_lock(surface.canvas, model_, surface.motion, info(), area.width, area.height);
-        surface.hits = model_.hits();
     }
     surface.window.present();
 }

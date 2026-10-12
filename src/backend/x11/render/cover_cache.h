@@ -33,7 +33,8 @@ struct CoverCacheEntry {
 };
 
 std::vector<std::string> cover_cache_expired(std::vector<CoverCacheEntry> entries, int64_t now);
-std::string cover_cache_name(std::string_view path, uintmax_t size, int64_t modified, int width, int height);
+std::string cover_cache_name(std::string_view path, uintmax_t size, int64_t modified, int width, int height, bool contained = false);
 std::expected<SurfacePtr, std::string> load_cover(const std::string &path, int width, int height);
+std::expected<SurfacePtr, std::string> load_contained(const std::string &path, int width, int height);
 
 } // namespace astralia

@@ -3,6 +3,7 @@
 #include <format>
 #include <utility>
 #include <xcb/randr.h>
+#include <xcb/xcb_cursor.h>
 
 #include "core/x_connection.h"
 
@@ -75,6 +76,8 @@ void XConnection::WipeEwmh::operator()(xcb_ewmh_connection_t *ewmh) const {
     delete ewmh;
 }
 
+void XConnection::FreeCursorContext::operator()(xcb_cursor_context_t *context) const { xcb_cursor_context_free(context); }
+
 XConnection::XConnection(ConnPtr conn, EwmhPtr ewmh, xcb_screen_t *screen, xcb_visualtype_t *visual)
     : conn_(std::move(conn)), ewmh_(std::move(ewmh)), screen_(screen), visual_(visual),
       argb_visual_(find_argb_visual(screen)) {}
@@ -114,6 +117,31 @@ xcb_atom_t XConnection::atom(std::string_view name) {
     }
     atoms_.emplace(std::move(key), reply->atom);
     return reply->atom;
+}
+
+xcb_cursor_t XConnection::cursor(CursorShape shape) {
+    auto index = static_cast<std::size_t>(shape);
+    if (cursors_[index] != XCB_CURSOR_NONE) {
+        return cursors_[index];
+    }
+    if (!cursor_context_) {
+        xcb_cursor_context_t *context = nullptr;
+        if (xcb_cursor_context_new(conn(), screen_, &context) < 0) {
+            return XCB_CURSOR_NONE;
+        }
+        cursor_context_.reset(context);
+    }
+    xcb_cursor_t loaded = XCB_CURSOR_NONE;
+    if (shape == CursorShape::hand) {
+        loaded = xcb_cursor_load_cursor(cursor_context_.get(), "pointer");
+        if (loaded == XCB_CURSOR_NONE) {
+            loaded = xcb_cursor_load_cursor(cursor_context_.get(), "hand2");
+        }
+    } else {
+        loaded = xcb_cursor_load_cursor(cursor_context_.get(), "left_ptr");
+    }
+    cursors_[index] = loaded;
+    return loaded;
 }
 
 bool XConnection::has_randr() const {

@@ -2,6 +2,7 @@
 #include <cairo-xcb.h>
 #include <cstdlib>
 #include <string>
+#include <xcb/shape.h>
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_icccm.h>
 
@@ -43,6 +44,53 @@ XWindow::~XWindow() {
     xcb_destroy_window(conn, window_);
     xcb_free_colormap(conn, colormap_);
     xcb_flush(conn);
+}
+
+void XWindow::make_managed(uint16_t width, uint16_t height) {
+    xcb_connection_t *conn = x_.conn();
+    xcb_size_hints_t hints{};
+    xcb_icccm_size_hints_set_size(&hints, 0, width, height);
+    xcb_icccm_set_wm_normal_hints(conn, window_, &hints);
+    xcb_atom_t protocols[] = {x_.atom("WM_DELETE_WINDOW")};
+    xcb_icccm_set_wm_protocols(conn, window_, x_.atom("WM_PROTOCOLS"), 1, protocols);
+    xcb_flush(conn);
+}
+
+bool XWindow::is_delete_message(const xcb_generic_event_t &event) {
+    if ((event.response_type & ~0x80) != XCB_CLIENT_MESSAGE) {
+        return false;
+    }
+    const auto &message = reinterpret_cast<const xcb_client_message_event_t &>(event);
+    return message.window == window_ && message.type == x_.atom("WM_PROTOCOLS") &&
+           message.data.data32[0] == x_.atom("WM_DELETE_WINDOW");
+}
+
+void XWindow::make_click_through() {
+    xcb_shape_rectangles(x_.conn(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, XCB_CLIP_ORDERING_UNSORTED, window_, 0, 0, 0, nullptr);
+    xcb_flush(x_.conn());
+}
+
+void XWindow::set_cursor(CursorShape shape) {
+    if (shape == cursor_) {
+        return;
+    }
+    cursor_ = shape;
+    xcb_cursor_t cursor = x_.cursor(shape);
+    xcb_change_window_attributes(x_.conn(), window_, XCB_CW_CURSOR, &cursor);
+    xcb_flush(x_.conn());
+}
+
+bool XWindow::apply_configure(const xcb_configure_notify_event_t &event) {
+    OutputGeometry reported{event.x, event.y, event.width, event.height};
+    if (reported == geometry_) {
+        return false;
+    }
+    bool resized = reported.width != geometry_.width || reported.height != geometry_.height;
+    geometry_ = reported;
+    if (resized && cr_ != nullptr) {
+        place(reported);
+    }
+    return resized;
 }
 
 void XWindow::place(const OutputGeometry &geometry, uint16_t backing_width, uint16_t backing_height) {

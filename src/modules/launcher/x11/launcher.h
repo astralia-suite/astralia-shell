@@ -2,6 +2,8 @@
 
 #include <xcb/xcb.h>
 
+#include "app/active_target.h"
+#include "app/services.h"
 #include "app/shell.h"
 #include "core/event_loop.h"
 #include "core/keyboard.h"
@@ -17,7 +19,7 @@ namespace astralia {
 
 class Launcher {
   public:
-    Launcher(XConnection &x, EventLoop &loop, Shell &shell);
+    Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle(bool global);
@@ -28,11 +30,15 @@ class Launcher {
     void paint();
 
     XConnection &x_;
+    EventLoop &loop_;
+    Services &services_;
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
     LauncherModel model_;
     LauncherFrame frame_;
+    std::string bound_output_;
+    int caret_timer_ = 0;
 };
 
 } // namespace astralia

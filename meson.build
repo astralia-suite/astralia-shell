@@ -79,6 +79,8 @@ core_shared = static_library(
     'src/modules/bar/panel/widgets.cpp',
     'src/modules/bar/style.cpp',
     'src/modules/bar/view.cpp',
+    'src/modules/idle/bounce.cpp',
+    'src/modules/idle/idle_clock.cpp',
     'src/modules/launcher/apps_provider.cpp',
     'src/modules/launcher/desktop_entry.cpp',
     'src/modules/launcher/files_provider.cpp',
@@ -102,6 +104,13 @@ core_shared = static_library(
     'src/modules/overview/model.cpp',
     'src/modules/overview/paging.cpp',
     'src/modules/overview/view.cpp',
+    'src/modules/visualizer/audio_capture.cpp',
+    'src/modules/visualizer/bars.cpp',
+    'src/modules/visualizer/cpu_stages.cpp',
+    'src/modules/visualizer/fft.cpp',
+    'src/modules/rain/matrix_rain.cpp',
+    'src/modules/rain/rain_random.cpp',
+    'src/modules/rain/stiletto_rain.cpp',
     'src/modules/settings/model.cpp',
     'src/modules/settings/view.cpp',
     'src/modules/polkit/layout.cpp',
@@ -161,6 +170,7 @@ install_data(
   'assets/fonts/YujiMai.ttf',
   install_dir: data_dir / 'fonts',
 )
+install_data('assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
 install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
 install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
 install_data('assets/gifs/profile.gif', install_dir: data_dir / 'gifs')
@@ -271,6 +281,10 @@ unit = executable(
     'test/modules/overview/test_paging.cpp',
     'test/modules/polkit/test_layout.cpp',
     'test/modules/polkit/test_polkit.cpp',
+    'test/modules/idle/test_idle.cpp',
+    'test/modules/rain/test_rain_buffer.cpp',
+    'test/modules/visualizer/test_cpu_stages.cpp',
+    'test/modules/visualizer/test_fft.cpp',
     'test/app/test_session.cpp',
     'test/app/test_shell.cpp',
     'test/service/test_compositor.cpp',
@@ -294,7 +308,6 @@ if wayland_enabled
       'test/backend/wayland/app/test_config.cpp',
       'test/backend/wayland/core/test_poll_source.cpp',
       'test/modules/bar/wayland/test_fillet.cpp',
-      'test/modules/visualizer/wayland/test_fft.cpp',
       'test/backend/wayland/render/test_animated_image.cpp',
       'test/backend/wayland/render/test_image_decode.cpp',
       'test/backend/wayland/render/test_marquee_scroll.cpp',

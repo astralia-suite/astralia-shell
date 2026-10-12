@@ -24,4 +24,6 @@ int lock_fetch_colour_count(float available_w, int max_count);
 float lock_dot_row_width(int count);
 float lock_dot_x(int index, int count, float field_width);
 
+bool lock_dev_unlock_hit(double x, double y, double output_h);
+
 void lock_panel_origin(float output_w, float output_h, float panel_w, float panel_h, float &out_x, float &out_y);

@@ -26,9 +26,7 @@ astralia::SettingsCaps wayland_caps() {
     caps.logout = true;
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;
-    caps.bar_toggle = false;
     caps.autohide = true;
-    caps.remember_tab = false;
     return caps;
 }
 

@@ -397,7 +397,7 @@ void lock_handle_click(LockState &st, wl_surface *surf, double x, double y) {
     LockOutputSurface *los = surface_for(st, surf);
     if (!los)
         return;
-    if (x <= 140.0 && y >= static_cast<double>(los->height) - 48.0) {
+    if (lock_dev_unlock_hit(x, y, static_cast<double>(los->height))) {
         lock_begin_unlock(st);
         return;
     }

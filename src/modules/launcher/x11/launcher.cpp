@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <chrono>
 #include <malloc.h>
 
 #include "core/pointer.h"
@@ -6,11 +8,31 @@
 
 namespace astralia {
 
-Launcher::Launcher(XConnection &x, EventLoop &loop, Shell &shell)
-    : x_(x), window_(x, "astralia-launcher", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
+namespace {
+
+constexpr std::chrono::milliseconds caret_interval{1000};
+
+}
+
+Launcher::Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+    : x_(x), loop_(loop), services_(services), window_(x, "astralia-launcher", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
       keyboard_(x.conn()), model_(loop) {
     model_.on_changed = [this] { paint(); };
     model_.on_close_requested = [this] { close(); };
+    caret_timer_ = loop.add_timer([this] { return model_.is_open() ? caret_interval : std::chrono::milliseconds(std::chrono::hours(1)); }, [this] {
+        if (model_.is_open()) {
+            model_.toggle_caret();
+            paint();
+        } });
+    services.outputs.changed.connect([this] {
+        if (!model_.is_open()) {
+            return;
+        }
+        const std::vector<Output> &outputs = services_.outputs.outputs();
+        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+            close();
+        }
+    });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     shell.track("launcher", [this] { return window_.mapped(); });
     shell.bind(ShellVerb::launcher, [this] { toggle(false); });
@@ -26,11 +48,14 @@ void Launcher::toggle(bool global) {
 }
 
 void Launcher::open(bool global) {
-    window_.place(x_.pointer_output());
+    const Output &target = active_target_output(services_);
+    bound_output_ = target.name;
+    window_.place(target.geometry);
     keyboard_.reload();
     model_.open(global);
     paint();
     window_.show(true);
+    loop_.reschedule(caret_timer_);
 }
 
 void Launcher::close() {
@@ -38,6 +63,7 @@ void Launcher::close() {
         return;
     }
     model_.close();
+    window_.set_cursor(CursorShape::arrow);
     window_.hide();
     frame_ = {};
     malloc_trim(0);
@@ -80,23 +106,17 @@ void Launcher::handle(const xcb_generic_event_t &event) {
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
         if (model_.hover(row_at(motion.event_x, motion.event_y)) && model_.is_open()) {
+            window_.set_cursor(model_.hovered() >= 0 ? CursorShape::hand : CursorShape::arrow);
             paint();
         }
         break;
     }
     case XCB_LEAVE_NOTIFY:
         if (model_.hover(-1) && model_.is_open()) {
+            window_.set_cursor(CursorShape::arrow);
             paint();
         }
         break;
-    case XCB_FOCUS_OUT: {
-        const auto &focus = reinterpret_cast<const xcb_focus_out_event_t &>(event);
-        if (model_.is_open() && focus.mode == XCB_NOTIFY_MODE_NORMAL &&
-            focus.detail != XCB_NOTIFY_DETAIL_POINTER) {
-            close();
-        }
-        break;
-    }
     default:
         break;
     }

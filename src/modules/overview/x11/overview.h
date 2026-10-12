@@ -5,6 +5,8 @@
 
 #include "app/services.h"
 
+#include "app/active_target.h"
+#include "app/services.h"
 #include "app/shell.h"
 #include "core/event_loop.h"
 #include "core/keyboard.h"
@@ -26,8 +28,8 @@ class Overview {
     void open();
     void closed();
     void handle(const xcb_generic_event_t &event);
-    void expect_focus_loss();
     void paint();
+    void expect_focus_loss();
 
     XConnection &x_;
     Services &services_;
@@ -35,6 +37,7 @@ class Overview {
     Keyboard keyboard_;
     CairoCanvas canvas_;
     OverviewModel model_;
+    std::string bound_output_;
     std::chrono::steady_clock::time_point focus_grace_until_{};
 };
 

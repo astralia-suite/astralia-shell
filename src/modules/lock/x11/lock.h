@@ -41,6 +41,9 @@ class Lock {
 
     void lock();
     void unlock();
+    size_t layout_surfaces();
+    size_t pointer_surface(size_t count) const;
+    void outputs_changed();
     bool grab();
     void release_grabs();
     void handle(size_t index, const xcb_generic_event_t &event);
@@ -60,11 +63,9 @@ class Lock {
     Keyboard keyboard_;
     LockModel model_;
     std::vector<std::unique_ptr<Surface>> surfaces_;
-    CpuTempState cpu_temp_;
-    GpuTempState gpu_temp_;
-    SystemStatsState stats_;
     std::string user_;
     int timer_ = -1;
+    size_t grab_index_ = 0;
     bool locked_ = false;
 };
 

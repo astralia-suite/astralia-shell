@@ -12,6 +12,9 @@
 
 #include "wayland/app/per_monitor_module.h"
 
+#include "config/idle_config.h"
+#include "modules/idle/bounce.h"
+
 #include "wayland/config/idle_config.h"
 
 #include "core/animation.h"
@@ -48,10 +51,7 @@ struct IdleOverlayState {
     bool ambient_active = false;
     bool screensaver_active = false;
 
-    float logo_x = 40.0f;
-    float logo_y = 40.0f;
-    float logo_vel_x = kIdleLogoSpeed;
-    float logo_vel_y = kIdleLogoSpeed * 0.75f;
+    astralia::Bounce bounce{40.0f, 40.0f, astralia::kIdleLogoSpeed, astralia::kIdleLogoSpeed * 0.75f};
     std::chrono::steady_clock::time_point last_tick =
         std::chrono::steady_clock::now();
 

@@ -12,7 +12,7 @@
 
 #include "wayland/config/visualizer_config.h"
 
-#include "modules/visualizer/wayland/audio_capture.h"
+#include "modules/visualizer/audio_capture.h"
 
 #include "wayland/render/toplevel_window.h"
 
@@ -29,7 +29,7 @@ struct VisualizerRenderThreadState {
 
 struct VisualizerState {
     ToplevelWindowBase base;
-    VisualizerAudioCapture capture;
+    astralia::VisualizerAudioCapture capture;
 
     EGLConfig egl_config = nullptr;
     EGLContext render_context = EGL_NO_CONTEXT;

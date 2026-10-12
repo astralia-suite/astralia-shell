@@ -69,6 +69,10 @@ void check_cover() {
           "a taller image scales up and crops top and bottom");
     astralia::Placement exact = cover(640, 360, 1280, 720);
     check(exact.scale == 2.0 && exact.x == 0.0 && exact.y == 0.0, "same aspect fills exactly");
+    astralia::Placement inside = astralia::contain(200, 100, 100, 100);
+    check(inside.scale == 0.5 && inside.x == 0.0 && inside.y == 25.0, "a wider image fits inside and centers vertically");
+    astralia::Placement upright = astralia::contain(100, 400, 200, 200);
+    check(upright.scale == 0.5 && upright.x == 75.0 && upright.y == 0.0, "a taller image fits inside and centers horizontally");
 }
 
 void check_cover_cache() {
@@ -96,6 +100,7 @@ void check_cover_cache() {
     check(name != cover_cache_name("/w/a.jpg", 101, 5, 1920, 1200), "a different size changes the name");
     check(name != cover_cache_name("/w/a.jpg", 100, 6, 1920, 1200), "a new mtime changes the name");
     check(name != cover_cache_name("/w/a.jpg", 100, 5, 1920, 1080), "a different target changes the name");
+    check(name != cover_cache_name("/w/a.jpg", 100, 5, 1920, 1200, true), "a contained decode caches apart from a cover");
 
     astralia::SurfacePtr opaque(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 4, 4));
     astralia::SurfacePtr clear(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 4, 4));

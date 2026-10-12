@@ -8,10 +8,11 @@
 
 namespace astralia {
 
-Polkit::Polkit(XConnection &x, EventLoop &loop, Services &services)
-    : x_(x), window_(x, "astralia-polkit", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_KEY_PRESS),
+Polkit::Polkit(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+    : x_(x), services_(services), window_(x, "astralia-polkit", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_KEY_PRESS),
       keyboard_(x.conn()), service_(services.polkit) {
     model_.on_closed = [this] { window_.hide(); };
+    shell.track("polkit", [this] { return model_.open(); });
     service_.changed.connect([this] { sync(); });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
 }
@@ -32,7 +33,7 @@ void Polkit::sync() {
 }
 
 void Polkit::open() {
-    window_.place(x_.pointer_output());
+    window_.place(active_target_output(services_).geometry);
     keyboard_.reload();
     model_.sync(true);
     paint();

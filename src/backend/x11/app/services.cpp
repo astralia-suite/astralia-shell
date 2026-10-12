@@ -22,6 +22,9 @@ std::string i3_socket_from_root(XConnection &x) {
 Services::Services(XConnection &x, EventLoop &loop)
     : system(loop), session(loop, BusKind::session), compositor(make_compositor(loop, i3_socket_from_root(x))),
       network(system, loop), bluetooth(system), battery(system), brightness(loop), notifications(loop),
-      polkit(loop), audio(loop), media(session), tray(loop), outputs(x, loop), settings(loop) {}
+      polkit(loop), audio(loop), media(session), tray(loop), outputs(x, loop), settings(loop) {
+    cpu_temp_init(cpu_temp);
+    gpu_temp_init(gpu_temp, loop);
+}
 
 } // namespace astralia

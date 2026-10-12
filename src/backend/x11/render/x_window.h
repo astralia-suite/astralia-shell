@@ -21,6 +21,11 @@ class XWindow {
     const OutputGeometry &geometry() const { return geometry_; }
     bool mapped() const { return mapped_; }
 
+    void make_managed(uint16_t width, uint16_t height);
+    bool is_delete_message(const xcb_generic_event_t &event);
+    void set_cursor(CursorShape shape);
+    void make_click_through();
+    bool apply_configure(const xcb_configure_notify_event_t &event);
     void place(const OutputGeometry &geometry, uint16_t backing_width = 0, uint16_t backing_height = 0);
     void release();
     void show(bool focus);
@@ -48,6 +53,7 @@ class XWindow {
     OutputGeometry geometry_{0, 0, 1, 1};
     bool mapped_ = false;
     bool focused_ = false;
+    CursorShape cursor_ = CursorShape::arrow;
     xcb_window_t previous_focus_ = XCB_NONE;
 };
 

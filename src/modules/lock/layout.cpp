@@ -58,6 +58,10 @@ float lock_dot_x(int index, int count, float field_width) {
     return (field_width - row) * 0.5f + static_cast<float>(index) * kLockDotSize;
 }
 
+bool lock_dev_unlock_hit(double x, double y, double output_h) {
+    return x <= kLockDevUnlockWidth && y >= output_h - kLockDevUnlockHeight;
+}
+
 void lock_panel_origin(float output_w, float output_h, float panel_w, float panel_h, float &out_x, float &out_y) {
     out_x = (output_w - panel_w) * 0.5f;
     out_y = (output_h - panel_h) * 0.5f;

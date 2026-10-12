@@ -4,10 +4,13 @@
 #include <cmath>
 #include <ctime>
 #include <malloc.h>
+#include <vector>
 #include <xcb/xcb_ewmh.h>
 
 #include "config/bar_config.h"
 #include "config/bar_layout.h"
+
+#include "core/pointer.h"
 
 #include "modules/bar/panel/panel_set.h"
 #include "modules/bar/view.h"
@@ -43,8 +46,9 @@ std::optional<PanelId> panel_for(BarItem item) {
         return PanelId::media;
     case BarItem::clock:
         return PanelId::clock;
-    case BarItem::logout:
     case BarItem::resource:
+        return PanelId::resource;
+    case BarItem::logout:
     case BarItem::count:
         break;
     }
@@ -69,6 +73,7 @@ BarSources make_sources(Services &services, const std::string &output) {
     sources.brightness = &services.brightness;
     sources.compositor = [&services]() -> const CompositorState & { return services.compositor->state(); };
     sources.output = output;
+    sources.resource = true;
     sources.workspace_slots = bar_workspace_slots;
     return sources;
 }
@@ -77,10 +82,11 @@ BarSources make_sources(Services &services, const std::string &output) {
 
 Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, const Output &output)
     : x_(x), loop_(loop), shell_(shell), services_(services), output_name_(output.name),
-      window_(x, "astralia-shell", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW, false),
+      window_(x, "astralia-shell", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW, false),
       model_(make_sources(services, output.name), BarModel::Clock::now()) {
     register_app_fonts();
     refresh_style();
+    refresh_autohide();
     panels_ = std::make_unique<PanelHost>(x_, loop, services_);
     panels_->changed.connect([this] { sync_panels(); });
     apply_output(output.geometry);
@@ -115,9 +121,13 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
             hover(motion.event_x, motion.event_y);
             break;
         }
+        case XCB_ENTER_NOTIFY:
+            set_collapsed(false);
+            break;
         case XCB_LEAVE_NOTIFY:
             if (reinterpret_cast<const xcb_leave_notify_event_t &>(event).mode == XCB_NOTIFY_MODE_NORMAL) {
                 hover(std::nullopt, std::nullopt);
+                update_autohide();
             }
             break;
         default:
@@ -134,27 +144,67 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
 Bar::~Bar() = default;
 
 bool Bar::refresh_style() {
-    BarStyle next = bar_style_resolve(services_.settings.config().bar_style, false);
+    BarStyle next = bar_style_resolve(services_.settings.config().bar_style, true);
     if (spec_ != nullptr && next == style_) {
         return false;
     }
     style_ = next;
-    spec_ = &bar_style_spec(next, false);
+    spec_ = &bar_style_spec(next, true);
     model_.set_style(*spec_);
-    height_ = static_cast<uint16_t>(spec_->top_margin + bar_layout::height);
+    full_height_ = static_cast<uint16_t>(spec_->top_margin + bar_layout::height);
+    height_ = collapsed_ ? collapsed_height() : full_height_;
     return true;
 }
 
+bool Bar::refresh_autohide() {
+    bool enabled = autohide_effective_enabled(services_.settings.config(), output_name_);
+    if (enabled == autohide_) {
+        return false;
+    }
+    autohide_ = enabled;
+    collapsed_ = enabled;
+    height_ = collapsed_ ? collapsed_height() : full_height_;
+    return true;
+}
+
+uint16_t Bar::collapsed_height() const {
+    return static_cast<uint16_t>(bar_autohide_geometry(true, true, bar_layout::height, spec_->top_margin, 0).height);
+}
+
+void Bar::set_collapsed(bool collapsed) {
+    if (!autohide_ || collapsed == collapsed_) {
+        return;
+    }
+    collapsed_ = collapsed;
+    height_ = collapsed_ ? collapsed_height() : full_height_;
+    apply_output(output_);
+    draw();
+}
+
+void Bar::update_autohide() {
+    if (!autohide_ || collapsed_ || panels_->is_open()) {
+        return;
+    }
+    xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(x_.conn(), xcb_query_pointer(x_.conn(), window_.id()), nullptr);
+    bool inside = reply != nullptr && reply->same_screen && reply->win_x >= 0 && reply->win_y >= 0 && reply->win_x < width_ && reply->win_y < height_;
+    free(reply);
+    if (!inside) {
+        set_collapsed(true);
+    }
+}
+
 void Bar::apply_output(const OutputGeometry &output) {
+    output_ = output;
     width_ = output.width;
     window_.place({output.x, output.y, width_, height_});
-    panels_->set_output(output, height_ + bar_layout::panel_gap);
+    panels_->set_output(output, full_height_ + bar_layout::panel_gap);
     set_hints(output);
 }
 
 void Bar::place(const Output &output) {
     bool restyled = refresh_style();
-    if (!restyled && window_.mapped() && window_.geometry() == OutputGeometry{output.geometry.x, output.geometry.y, output.geometry.width, height_}) {
+    bool autohide_changed = refresh_autohide();
+    if (!restyled && !autohide_changed && window_.mapped() && window_.geometry() == OutputGeometry{output.geometry.x, output.geometry.y, output.geometry.width, height_}) {
         return;
     }
     panels_->panels().close_all();
@@ -176,7 +226,7 @@ void Bar::set_hints(const OutputGeometry &output) {
     xcb_ewmh_set_wm_state(ewmh, window_.id(), states.size(), states.data());
     xcb_ewmh_set_wm_desktop(ewmh, window_.id(), 0xFFFFFFFF);
 
-    uint32_t top = output.y + height_;
+    uint32_t top = autohide_ ? 0 : output.y + height_;
     xcb_ewmh_wm_strut_partial_t strut{};
     strut.top = top;
     strut.top_start_x = output.x;
@@ -205,6 +255,11 @@ void Bar::prepare() {
 
 void Bar::draw(const ui::Box *dirty) {
     cairo_t *cr = window_.cr();
+    if (collapsed_) {
+        window_.clear();
+        window_.present();
+        return;
+    }
     canvas_.bind(cr);
     prepare();
     float width = static_cast<float>(width_) - 2.0f * static_cast<float>(spec_->side_margin);
@@ -265,7 +320,55 @@ void Bar::redraw_clock() {
     draw(&dirty);
 }
 
+void Bar::toggle_panel(PanelId id) {
+    set_collapsed(false);
+    if (std::optional<BarItem> item = item_for(id)) {
+        close_other_overlays(*item);
+    }
+    panels_->panels().toggle(id);
+}
+
+void Bar::close_other_overlays(BarItem keep) {
+    if (keep != BarItem::logout) {
+        std::vector<std::string> open = shell_.open_modules();
+        if (std::ranges::find(open, "logout") != open.end()) {
+            shell_.run(ShellVerb::logout);
+        }
+    }
+    if (std::optional<PanelId> panel = panel_for(keep)) {
+        panels_->panels().close_except(*panel);
+    } else {
+        panels_->panels().close_all();
+    }
+}
+
+void Bar::scroll(const xcb_button_press_event_t &event) {
+    std::optional<input::ScrollEvent> wheel = scroll_event(event.detail);
+    if (!wheel || collapsed_) {
+        return;
+    }
+    BarAction hit = model_.press(event.event_x - spec_->side_margin, event.event_y - spec_->top_margin);
+    if (hit.kind != BarActionKind::toggle) {
+        return;
+    }
+    if (hit.item == BarItem::volume) {
+        AudioService &audio = services_.audio;
+        if (audio.sink_id() != 0) {
+            audio.set_volume(audio.sink_id(), std::clamp(audio.sink().percent + (wheel->dy < 0 ? 5 : -5), 0, 150));
+        }
+    } else if (hit.item == BarItem::brightness) {
+        BrightnessService &brightness = services_.brightness;
+        if (brightness.available()) {
+            brightness.set(std::clamp(brightness.percent() + (wheel->dy < 0 ? 1 : -1), 0, 100));
+        }
+    }
+}
+
 void Bar::click(const xcb_button_press_event_t &event) {
+    if (event.detail == XCB_BUTTON_INDEX_4 || event.detail == XCB_BUTTON_INDEX_5) {
+        scroll(event);
+        return;
+    }
     if (event.detail != XCB_BUTTON_INDEX_1) {
         return;
     }
@@ -275,20 +378,24 @@ void Bar::click(const xcb_button_press_event_t &event) {
     BarAction action = model_.press(x, y);
     switch (action.kind) {
     case BarActionKind::toggle:
+        close_other_overlays(action.item);
         if (std::optional<PanelId> panel = panel_for(action.item)) {
             panels_->panels().toggle(*panel);
         } else if (action.item == BarItem::logout) {
-            panels_->panels().close_all();
+            services_.overlay_hint = output_name_;
             shell_.run(ShellVerb::logout);
+            services_.overlay_hint.clear();
         }
         break;
     case BarActionKind::overview:
         panels_->panels().close_all();
+        services_.overlay_hint = output_name_;
         shell_.run(ShellVerb::overview);
+        services_.overlay_hint.clear();
         break;
     case BarActionKind::workspace:
         panels_->panels().close_all();
-        services_.compositor->focus_workspace(action.workspace);
+        services_.compositor->focus_workspace(action.workspace, true);
         break;
     case BarActionKind::none:
         panels_->panels().close_all();
@@ -328,6 +435,9 @@ void Bar::sync_panels() {
         start_linger();
     }
     draw();
+    if (!open) {
+        update_autohide();
+    }
 }
 
 void Bar::start_linger() {

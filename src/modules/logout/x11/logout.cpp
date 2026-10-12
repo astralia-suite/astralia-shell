@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <malloc.h>
 #include <string>
 
@@ -10,11 +11,20 @@
 
 namespace astralia {
 
-Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell)
-    : x_(x), window_(x, "astralia-logout", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
-      keyboard_(x.conn()), model_(logout_commands(false)) {
+Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+    : x_(x), services_(services), window_(x, "astralia-logout", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
+      keyboard_(x.conn()), model_(logout_commands(true)) {
     model_.on_execute = [](const std::string &command) { spawn_detached(command); };
     model_.on_closed = [this] { closed(); };
+    services.outputs.changed.connect([this] {
+        if (!model_.open_state()) {
+            return;
+        }
+        const std::vector<Output> &outputs = services_.outputs.outputs();
+        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+            model_.toggle();
+        }
+    });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     shell.track("logout", [this] { return window_.mapped(); });
     shell.bind(ShellVerb::logout, [this] {
@@ -27,7 +37,9 @@ Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell)
 }
 
 void Logout::open() {
-    window_.place(x_.pointer_output());
+    const Output &target = active_target_output(services_);
+    bound_output_ = target.name;
+    window_.place(target.geometry);
     keyboard_.reload();
     model_.open();
     paint();
@@ -36,6 +48,7 @@ void Logout::open() {
 }
 
 void Logout::closed() {
+    window_.set_cursor(CursorShape::arrow);
     window_.hide();
     canvas_.release_images();
     window_.release();
@@ -68,23 +81,17 @@ void Logout::handle(const xcb_generic_event_t &event) {
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
         if (model_.hover(motion.event_x, motion.event_y, geometry.width, geometry.height)) {
+            window_.set_cursor(model_.hovered() >= 0 ? CursorShape::hand : CursorShape::arrow);
             paint();
         }
         break;
     }
     case XCB_LEAVE_NOTIFY:
         if (model_.clear_hover()) {
+            window_.set_cursor(CursorShape::arrow);
             paint();
         }
         break;
-    case XCB_FOCUS_OUT: {
-        const auto &focus = reinterpret_cast<const xcb_focus_out_event_t &>(event);
-        if (model_.open_state() && focus.mode == XCB_NOTIFY_MODE_NORMAL &&
-            focus.detail != XCB_NOTIFY_DETAIL_POINTER) {
-            model_.toggle();
-        }
-        break;
-    }
     default:
         break;
     }

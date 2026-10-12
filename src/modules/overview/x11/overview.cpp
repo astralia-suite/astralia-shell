@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <malloc.h>
 
 #include "config/overview_config.h"
@@ -18,10 +19,18 @@ Overview::Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
       keyboard_(x.conn()), model_(*services.compositor) {
     model_.on_close_requested = [this] { toggle(); };
     model_.on_closed = [this] { closed(); };
-    model_.on_compositor_action = [this] { expect_focus_loss(); };
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     services_.compositor->structure_changed.connect([this] { paint(); });
     services_.compositor->active_changed.connect([this] { paint(); });
+    services.outputs.changed.connect([this] {
+        if (!model_.is_open()) {
+            return;
+        }
+        const std::vector<Output> &outputs = services_.outputs.outputs();
+        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+            model_.close();
+        }
+    });
     shell.track("overview", [this] { return window_.mapped(); });
     shell.bind(ShellVerb::overview, [this] { toggle(); });
 }
@@ -35,7 +44,8 @@ void Overview::toggle() {
 }
 
 void Overview::open() {
-    const Output &target = services_.outputs.at_pointer();
+    const Output &target = active_target_output(services_);
+    bound_output_ = target.name;
     window_.place(target.geometry);
     keyboard_.reload();
     services_.compositor->refresh();
@@ -46,6 +56,7 @@ void Overview::open() {
 }
 
 void Overview::closed() {
+    window_.set_cursor(CursorShape::arrow);
     window_.hide();
     canvas_.release_images();
     window_.release();
@@ -67,6 +78,7 @@ void Overview::handle(const xcb_generic_event_t &event) {
     case XCB_KEY_PRESS:
         if (open) {
             const auto &pressed = reinterpret_cast<const xcb_key_press_event_t &>(event);
+            expect_focus_loss();
             if (model_.key(to_neutral(keyboard_.press(pressed.detail, pressed.state)))) {
                 paint();
             }
@@ -75,6 +87,7 @@ void Overview::handle(const xcb_generic_event_t &event) {
     case XCB_BUTTON_PRESS: {
         const auto &pressed = reinterpret_cast<const xcb_button_press_event_t &>(event);
         if (open && pressed.detail == XCB_BUTTON_INDEX_1) {
+            expect_focus_loss();
             model_.press(pressed.event_x, pressed.event_y);
             paint();
         }
@@ -83,6 +96,7 @@ void Overview::handle(const xcb_generic_event_t &event) {
     case XCB_BUTTON_RELEASE: {
         const auto &released = reinterpret_cast<const xcb_button_release_event_t &>(event);
         if (open && released.detail == XCB_BUTTON_INDEX_1) {
+            expect_focus_loss();
             model_.release();
             paint();
         }
@@ -94,17 +108,15 @@ void Overview::handle(const xcb_generic_event_t &event) {
             model_.move(motion.event_x, motion.event_y);
             paint();
         }
+        if (open) {
+            window_.set_cursor(model_.clickable(motion.event_x, motion.event_y) ? CursorShape::hand : CursorShape::arrow);
+        }
         break;
     }
     case XCB_FOCUS_OUT: {
         const auto &focus = reinterpret_cast<const xcb_focus_out_event_t &>(event);
-        if (!open || focus.mode != XCB_NOTIFY_MODE_NORMAL || focus.detail == XCB_NOTIFY_DETAIL_POINTER) {
-            break;
-        }
-        if (std::chrono::steady_clock::now() < focus_grace_until_) {
+        if (open && focus.mode == XCB_NOTIFY_MODE_NORMAL && focus.detail != XCB_NOTIFY_DETAIL_POINTER && std::chrono::steady_clock::now() < focus_grace_until_) {
             window_.focus();
-        } else {
-            model_.close();
         }
         break;
     }

@@ -63,12 +63,6 @@ uint64_t tile_owner(const std::string &address, int component) {
 
 OverviewModel::OverviewModel(Compositor &compositor) : compositor_(compositor) {}
 
-void OverviewModel::compositor_action() {
-    if (on_compositor_action) {
-        on_compositor_action();
-    }
-}
-
 int OverviewModel::active_workspace(const std::string &monitor_name) const {
     const CompositorState &state = compositor_.state();
     auto it = state.by_monitor.find(monitor_name);
@@ -346,7 +340,6 @@ ui::Box OverviewModel::tile_rect(const OverviewTile &tile) const {
 void OverviewModel::select(int workspace, bool shift, bool alt) {
     selected_ = workspace;
     group_ = overview_page_of(grid, workspace);
-    compositor_action();
     if (shift) {
         compositor_.swap_workspace(workspace, global_mode_);
     } else if (alt) {
@@ -400,7 +393,6 @@ bool OverviewModel::key(const input::KeyEvent &event) {
             return true;
         }
         if (sym == 'd') {
-            compositor_action();
             if (event.ctrl) {
                 compositor_.close_windows(CloseScope::all, -1);
             } else if (event.shift) {
@@ -473,7 +465,6 @@ void OverviewModel::release() {
     if (cell == nullptr) {
         return;
     }
-    compositor_action();
     if (cell->workspace != drag_from_) {
         compositor_.move_window(drag_address_, cell->workspace, global_mode_);
     } else {

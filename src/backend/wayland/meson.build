@@ -24,14 +24,10 @@ wayland_sources = files(
   '../../modules/overview/wayland/overview.cpp',
   '../../modules/polkit/wayland/polkit.cpp',
   '../../modules/rain/wayland/rain.cpp',
-  '../../modules/rain/wayland/matrix_rain.cpp',
-  '../../modules/rain/wayland/stiletto_rain.cpp',
   '../../modules/settings/wayland/settings.cpp',
   '../../modules/visualizer/wayland/visualizer.cpp',
-  '../../modules/visualizer/wayland/audio_capture.cpp',
   '../../modules/visualizer/wayland/audio_stages.cpp',
   '../../modules/visualizer/wayland/bar_visualizer.cpp',
-  '../../modules/visualizer/wayland/fft.cpp',
   '../../modules/visualizer/wayland/sphere_visualizer.cpp',
   '../../modules/visualizer/wayland/visualizer_shaders.cpp',
   '../../modules/wallpaper/wayland/wallpaper.cpp',
@@ -89,7 +85,6 @@ wayland_args = [
   '-DASTRALIA_SHELL_LOGOUT_LOGO="@0@"'.format(wayland_data_dir / 'logout' / 'logo.gif'),
   '-DASTRALIA_SHELL_LOGOUT_LOGO_STATIC="@0@"'.format(wayland_data_dir / 'logout' / 'logo.png'),
   '-DASTRALIA_SHELL_IDLE_LOGO="@0@"'.format(wayland_data_dir / 'stellar-restoration.svg'),
-  '-DASTRALIA_SHELL_STILETTO_SPRITE="@0@"'.format(wayland_data_dir / 'stiletto.svg'),
   '-DASTRALIA_SHELL_INPUT_ECHO="@0@"'.format(wayland_data_dir / 'polkit' / 'electro.png'),
   '-DASTRALIA_SHELL_PAM_DIR="@0@"'.format(wayland_data_dir / 'pam'),
   '-DASTRALIA_SHELL_PROFILE_MEDIA="@0@"'.format(wayland_data_dir / 'gifs' / 'profile.gif'),
@@ -135,8 +130,6 @@ wayland_media_deps = [
 install_data('../../../assets/logout/logo.gif', install_dir: wayland_data_dir / 'logout')
 install_data(
   '../../../assets/stellar-restoration.png',
-  '../../../assets/stellar-restoration.svg',
-  '../../../assets/stiletto.svg',
   install_dir: wayland_data_dir,
 )
 install_subdir('../../../assets/shaders', install_dir: wayland_data_dir)

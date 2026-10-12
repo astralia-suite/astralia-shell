@@ -2,6 +2,8 @@
 
 #include <xcb/xcb.h>
 
+#include "app/active_target.h"
+#include "app/services.h"
 #include "app/shell.h"
 #include "core/event_loop.h"
 #include "core/keyboard.h"
@@ -16,7 +18,7 @@ namespace astralia {
 
 class Logout {
   public:
-    Logout(XConnection &x, EventLoop &loop, Shell &shell);
+    Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void open();
@@ -25,10 +27,12 @@ class Logout {
     void closed();
 
     XConnection &x_;
+    Services &services_;
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
     LogoutModel model_;
+    std::string bound_output_;
 };
 
 } // namespace astralia

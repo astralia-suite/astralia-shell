@@ -2,6 +2,10 @@
 
 #include <cstdint>
 
+// development unlock corner
+inline constexpr float kLockDevUnlockWidth = 140.0f;
+inline constexpr float kLockDevUnlockHeight = 48.0f;
+
 // layer namespace
 inline constexpr const char *kLockLayerNamespace = "astralia-shell-lock";
 

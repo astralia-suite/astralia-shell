@@ -3,34 +3,21 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
-#include <random>
+#include <string>
 
-#include "wayland/config/rain_config.h"
-
-#include "modules/rain/wayland/stiletto_rain.h"
+#include "modules/rain/rain_random.h"
+#include "modules/rain/stiletto_rain.h"
 
 #include "render/decode.h"
 #include "render/tokens.h"
-#include "wayland/render/text.h"
+
+namespace astralia {
 
 namespace {
 
-std::mt19937 &rng() {
-    static std::mt19937 gen{std::random_device{}()};
-    return gen;
-}
-
-float random01() {
-    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(rng());
-}
-
-float random_range(float lo, float hi) { return lo + (hi - lo) * random01(); }
-
 cairo_surface_t *stiletto_sprite() {
     static cairo_surface_t *sprite = []() -> cairo_surface_t * {
-        const char *candidates[] = {ASTRALIA_SHELL_STILETTO_SPRITE,
-                                    "assets/stiletto.svg"};
+        const char *candidates[] = {ASTRALIA_ASSET_DIR "/stiletto.svg", ASTRALIA_SOURCE_ASSET_DIR "/stiletto.svg"};
         const char *path = candidates[1];
         for (const char *c : candidates) {
             if (std::filesystem::exists(c)) {
@@ -38,9 +25,8 @@ cairo_surface_t *stiletto_sprite() {
                 break;
             }
         }
-        // A height-only fit: the width bound is never the limit.
         int h = static_cast<int>(kStilettoRainHeadHeightPx);
-        auto pixels = astralia::decode_pixels(path, {}, h * 1000, h);
+        auto pixels = decode_pixels(path, {}, h * 1000, h);
         if (!pixels)
             return nullptr;
         cairo_surface_t *s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, pixels->width, pixels->height);
@@ -58,7 +44,7 @@ cairo_surface_t *stiletto_sprite() {
     return sprite;
 }
 
-void draw_sprite_centered(cairo_t *cr, cairo_surface_t *sprite, float cx, float y, const astralia::Color &color) {
+void draw_sprite_centered(cairo_t *cr, cairo_surface_t *sprite, float cx, float y, const Color &color) {
     if (!sprite)
         return;
     float sw = static_cast<float>(cairo_image_surface_get_width(sprite));
@@ -70,7 +56,7 @@ void draw_sprite_centered(cairo_t *cr, cairo_surface_t *sprite, float cx, float 
 }
 
 void draw_trail_segment(cairo_t *cr, float x, float y0, float y1) {
-    const astralia::Color &a = astralia::palette::accent;
+    const Color &a = palette::accent;
     cairo_set_source_rgba(cr, a.r, a.g, a.b, a.a);
     cairo_set_line_width(cr, kStilettoRainTrailWidthPx);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
@@ -93,7 +79,7 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
     comets_.assign(static_cast<size_t>(column_count_), Comet{});
     for (Comet &c : comets_) {
         c.drop = start_drop();
-        c.speed = async_speed ? random_range(kRainAsyncSpeedMin, kRainAsyncSpeedMax) : 1.0f;
+        c.speed = async_speed ? rain_random_range(kRainAsyncSpeedMin, kRainAsyncSpeedMax) : 1.0f;
     }
 
     sweeping_ = true;
@@ -102,7 +88,6 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
     stride_ = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width_);
     buffer_.assign(static_cast<size_t>(stride_) * static_cast<size_t>(height_), 0);
     frame_.assign(buffer_.size(), 0);
-    texture_ = Texture{};
 }
 
 void StilettoRain::decay() {
@@ -164,7 +149,7 @@ void StilettoRain::tick() {
         float x = origin_x_ + i * kStilettoRainColumnSpacingPx;
         float head = sweeping_ ? sweep_drop_ : c.drop;
         if (head >= 0.0f)
-            draw_sprite_centered(cr, sprite, x, head, astralia::palette::text);
+            draw_sprite_centered(cr, sprite, x, head, palette::text);
     }
 
     if (sweeping_) {
@@ -172,7 +157,7 @@ void StilettoRain::tick() {
         if (sweep_drop_ > static_cast<float>(height_) + kStilettoRainStepPx) {
             sweeping_ = false;
             for (Comet &c : comets_) {
-                c.drop = -(random01() * static_cast<float>(height_));
+                c.drop = -(rain_random01() * static_cast<float>(height_));
                 c.ever_reset = true;
                 c.last_valid = false;
             }
@@ -180,8 +165,8 @@ void StilettoRain::tick() {
     } else {
         for (Comet &c : comets_) {
             c.drop += kStilettoRainStepPx * c.speed;
-            if (c.drop > static_cast<float>(height_) && random01() < kRainResetChance) {
-                c.drop = c.ever_reset ? -(random01() * static_cast<float>(height_)) : start_drop();
+            if (c.drop > static_cast<float>(height_) && rain_random01() < kRainResetChance) {
+                c.drop = c.ever_reset ? -(rain_random01() * static_cast<float>(height_)) : start_drop();
                 c.ever_reset = true;
                 c.last_valid = false;
             }
@@ -190,10 +175,7 @@ void StilettoRain::tick() {
 
     cairo_destroy(cr);
     cairo_surface_flush(surface);
-
-    RasterizedText raster = surface_to_rgba(surface, width_, height_);
     cairo_surface_destroy(surface);
-
-    texture_ =
-        make_texture_rgba(raster.width, raster.height, raster.rgba.data());
 }
+
+} // namespace astralia

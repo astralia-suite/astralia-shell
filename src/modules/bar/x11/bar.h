@@ -33,10 +33,16 @@ class Bar {
     void hide();
     const std::string &output_name() const { return output_name_; }
     bool panels_open() const { return panels_->is_open(); }
-    void toggle_panel(PanelId id) { panels_->panels().toggle(id); }
+    void toggle_panel(PanelId id);
 
   private:
     bool refresh_style();
+    bool refresh_autohide();
+    uint16_t collapsed_height() const;
+    void set_collapsed(bool collapsed);
+    void update_autohide();
+    void close_other_overlays(BarItem keep);
+    void scroll(const xcb_button_press_event_t &event);
     void apply_output(const OutputGeometry &output);
     void set_hints(const OutputGeometry &output);
     void draw(const ui::Box *dirty = nullptr);
@@ -56,6 +62,10 @@ class Bar {
     Services &services_;
     uint16_t width_ = 0;
     uint16_t height_ = 0;
+    uint16_t full_height_ = 0;
+    OutputGeometry output_{0, 0, 1, 1};
+    bool autohide_ = false;
+    bool collapsed_ = false;
     std::string output_name_;
     BarStyle style_ = BarStyle::continuous;
     const BarStyleSpec *spec_ = nullptr;

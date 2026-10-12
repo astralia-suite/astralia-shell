@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <memory>
+#include <string>
 #include <xcb/xcb.h>
 
 #include "app/services.h"
@@ -19,17 +22,24 @@ class Osd {
     Osd(XConnection &x, EventLoop &loop, Services &services);
 
   private:
+    struct Surface {
+        explicit Surface(XConnection &x) : window(x, "astralia-osd", XCB_EVENT_MASK_EXPOSURE) {}
+
+        XWindow window;
+        CairoCanvas canvas;
+    };
+
     void show(OsdKind kind, int percent, bool muted);
     void hide();
     std::chrono::milliseconds until_hide() const;
-    void paint();
+    void paint(Surface &surface);
+    Surface &surface_for(const std::string &output);
 
     XConnection &x_;
     EventLoop &loop_;
     Services &services_;
-    XWindow window_;
-    CairoCanvas canvas_;
     OsdModel model_;
+    std::map<std::string, std::unique_ptr<Surface>> surfaces_;
     int timer_;
 };
 

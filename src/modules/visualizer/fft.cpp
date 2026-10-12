@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cmath>
 
-#include "modules/visualizer/wayland/fft.h"
+#include "modules/visualizer/fft.h"
+
+namespace astralia {
 
 namespace {
 
@@ -79,3 +81,5 @@ void visualizer_fft(float *samples, int n_samples, float fft_scale, float fft_cu
         data[n + 1] = data[n];
     }
 }
+
+} // namespace astralia

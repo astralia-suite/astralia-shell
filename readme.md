@@ -67,12 +67,12 @@ A backend registers a module or verb only for the capabilities it reports. `astr
 | `polkit` | yes | yes |
 | `wallpaper` | yes | yes |
 | `lock` | yes | yes |
-| `idle` | yes | no |
-| `dashboard` | yes | no |
-| `rain` | yes | no |
-| `visualizer` | yes | no |
+| `idle` | yes | yes |
+| `dashboard` | yes | yes |
+| `rain` | yes | yes |
+| `visualizer` | yes | yes |
 | `animated_wallpaper` | yes | no |
-| `resource_panel` | yes | no |
+| `resource_panel` | yes | yes |
 | `animations` | yes | no |
 
 | Verb | Description | Wayland | X11 |
@@ -82,12 +82,12 @@ A backend registers a module or verb only for the capabilities it reports. `astr
 | `logout` | toggle the logout overlay | yes | yes |
 | `overview` | toggle the overview | yes | yes |
 | `settings` | toggle the settings overlay | yes | yes |
-| `dashboard` | toggle the dashboard window | yes | no |
-| `rain` | toggle the rain overlay | yes | no |
-| `visualizer` | toggle the audio visualizer overlay | yes | no |
+| `dashboard` | toggle the dashboard window | yes | yes |
+| `rain` | toggle the rain overlay | yes | yes |
+| `visualizer` | toggle the audio visualizer overlay | yes | yes |
 | `lock` | lock the session | yes | yes |
 | `panel-tray` | toggle the tray panel | yes | yes |
-| `panel-resource` | toggle the resource panel | yes | no |
+| `panel-resource` | toggle the resource panel | yes | yes |
 | `panel-network` | toggle the network panel | yes | yes |
 | `panel-bluetooth` | toggle the bluetooth panel | yes | yes |
 | `panel-volume` | toggle the volume panel | yes | yes |
@@ -98,4 +98,4 @@ A backend registers a module or verb only for the capabilities it reports. `astr
 
 ## Configuration
 
-The config is `~/.config/astralia/config.json`. When it does not exist, the old X11 files `~/.config/astralia-shell/settings.conf` and `wallpaper.conf` are imported once.
+The config is `~/.config/astralia/config.json`. When it does not exist, the defaults apply and the file is written on the first change.

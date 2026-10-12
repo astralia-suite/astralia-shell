@@ -9,9 +9,9 @@
 
 #include "wayland/core/log.h"
 
+#include "modules/visualizer/fft.h"
 #include "modules/visualizer/wayland/audio_stages.h"
 #include "modules/visualizer/wayland/bar_visualizer.h"
-#include "modules/visualizer/wayland/fft.h"
 #include "modules/visualizer/wayland/sphere_visualizer.h"
 #include "modules/visualizer/wayland/visualizer.h"
 
@@ -100,8 +100,8 @@ void render_thread_main(VisualizerState *state) {
         if (modified && static_cast<int>(audio_l.size()) >= kVisualizerFragmentSize && static_cast<int>(audio_r.size()) >= kVisualizerFragmentSize) {
             fft_l = audio_l;
             fft_r = audio_r;
-            visualizer_fft(fft_l.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
-            visualizer_fft(fft_r.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
+            astralia::visualizer_fft(fft_l.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
+            astralia::visualizer_fft(fft_r.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
             if (audio_size == 0)
                 klog("visualizer: first audio at frame %d", tick);
             audio_size = kVisualizerFragmentSize;

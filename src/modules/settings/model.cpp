@@ -53,7 +53,6 @@ std::string trim_float(float value) {
 }
 
 MonitorOverride &enable_defaults(MonitorOverride &override, const Config &config) {
-    override.bar = config.default_bar_enabled;
     override.osd = config.default_osd_enabled;
     override.notifications = config.default_notifications_enabled;
     override.autohide = config.autohide;
@@ -201,7 +200,7 @@ SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
             tabs_.push_back(info);
         }
     }
-    active_ = pending_ = caps_.remember_tab ? SettingsTab::displays : SettingsTab::wallpaper;
+    active_ = pending_ = SettingsTab::wallpaper;
 }
 
 SettingsModel::~SettingsModel() {
@@ -216,11 +215,9 @@ void SettingsModel::changed() {
 
 void SettingsModel::open() {
     open_ = true;
-    if (!caps_.remember_tab) {
-        active_ = pending_ = SettingsTab::wallpaper;
-        animations_.cancelForOwner(owner_tab_fade);
-        tab_alpha_ = 1.0f;
-    }
+    active_ = pending_ = SettingsTab::wallpaper;
+    animations_.cancelForOwner(owner_tab_fade);
+    tab_alpha_ = 1.0f;
     sync();
 }
 
@@ -519,7 +516,6 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
             override.enabled = !override.enabled;
         });
         return;
-    case SettingsAct::toggle_bar:
     case SettingsAct::toggle_osd:
     case SettingsAct::toggle_notifications:
     case SettingsAct::toggle_autohide:
@@ -533,9 +529,6 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
                 value = !value;
             };
             switch (act) {
-            case SettingsAct::toggle_bar:
-                flip(config.default_bar_enabled, &MonitorOverride::bar);
-                break;
             case SettingsAct::toggle_osd:
                 flip(config.default_osd_enabled, &MonitorOverride::osd);
                 break;

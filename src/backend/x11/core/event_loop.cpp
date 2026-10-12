@@ -53,6 +53,8 @@ std::optional<xcb_window_t> target_window(const xcb_generic_event_t &event) {
         return reinterpret_cast<const xcb_visibility_notify_event_t &>(event).window;
     case XCB_PROPERTY_NOTIFY:
         return reinterpret_cast<const xcb_property_notify_event_t &>(event).window;
+    case XCB_CLIENT_MESSAGE:
+        return reinterpret_cast<const xcb_client_message_event_t &>(event).window;
     default:
         return std::nullopt;
     }

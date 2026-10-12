@@ -96,19 +96,30 @@ std::vector<std::string> cover_cache_expired(std::vector<CoverCacheEntry> entrie
     return expired;
 }
 
-std::string cover_cache_name(std::string_view path, uintmax_t size, int64_t modified, int width, int height) {
-    std::size_t key = std::hash<std::string>{}(std::format("{}|{}|{}|{}x{}", path, size, modified, width, height));
+std::string cover_cache_name(std::string_view path, uintmax_t size, int64_t modified, int width, int height, bool contained) {
+    std::size_t key = std::hash<std::string>{}(std::format("{}|{}|{}|{}x{}{}", path, size, modified, width, height, contained ? "|contain" : ""));
     return std::format("{:016x}", key);
 }
 
-std::expected<SurfacePtr, std::string> load_cover(const std::string &path, int width, int height) {
+namespace {
+
+bool cached_size_matches(cairo_surface_t *surface, int width, int height, bool contained) {
+    int cached_width = cairo_image_surface_get_width(surface);
+    int cached_height = cairo_image_surface_get_height(surface);
+    if (!contained) {
+        return cached_width == width && cached_height == height;
+    }
+    return cached_width <= width && cached_height <= height && (cached_width == width || cached_height == height);
+}
+
+std::expected<SurfacePtr, std::string> load(const std::string &path, int width, int height, bool contained) {
     std::error_code error;
     uintmax_t size = std::filesystem::file_size(path, error);
     if (error) {
         return std::unexpected(error.message());
     }
     int64_t modified = std::filesystem::last_write_time(path, error).time_since_epoch().count();
-    std::filesystem::path stem = std::filesystem::path(cache_directory()) / cover_cache_name(path, size, modified, width, height);
+    std::filesystem::path stem = std::filesystem::path(cache_directory()) / cover_cache_name(path, size, modified, width, height, contained);
     for (const char *extension : {".jpg", ".png"}) {
         std::filesystem::path cached = stem;
         cached += extension;
@@ -116,18 +127,23 @@ std::expected<SurfacePtr, std::string> load_cover(const std::string &path, int w
             continue;
         }
         if (auto stored = decode_image(cached.string())) {
-            cairo_surface_t *surface = stored->get();
-            if (cairo_image_surface_get_width(surface) == width && cairo_image_surface_get_height(surface) == height) {
+            if (cached_size_matches(stored->get(), width, height, contained)) {
                 std::filesystem::last_write_time(cached, std::filesystem::file_time_type::clock::now(), error);
                 return stored;
             }
         }
     }
-    auto image = decode_cover(path, width, height);
+    auto image = contained ? decode_contain(path, width, height) : decode_cover(path, width, height);
     if (image) {
         store(image->get(), stem);
     }
     return image;
 }
+
+} // namespace
+
+std::expected<SurfacePtr, std::string> load_cover(const std::string &path, int width, int height) { return load(path, width, height, false); }
+
+std::expected<SurfacePtr, std::string> load_contained(const std::string &path, int width, int height) { return load(path, width, height, true); }
 
 } // namespace astralia

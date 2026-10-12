@@ -22,7 +22,6 @@ struct JpegError {
 
 uint32_t premultiply(uint8_t channel, uint8_t alpha) { return (channel * alpha + 127) / 255; }
 
-// Rewrites the RGBA buffer in place as cairo's premultiplied ARGB32 and hands it to the surface.
 SurfacePtr adopt(Pixels pixels) {
     auto *words = reinterpret_cast<uint32_t *>(pixels.data.get());
     const uint8_t *in = pixels.data.get();
@@ -88,6 +87,28 @@ std::expected<SurfacePtr, std::string> decode_cover(const std::string &path, int
     cairo_t *cr = cairo_create(target.get());
     cairo_translate(cr, placement.x, placement.y);
     cairo_scale(cr, placement.scale, placement.scale);
+    cairo_set_source_surface(cr, image, 0, 0);
+    cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+    return target;
+}
+
+std::expected<SurfacePtr, std::string> decode_contain(const std::string &path, int width, int height) {
+    auto pixels = decode_pixels(path, [width, height](int image_width, int image_height) { return contain(image_width, image_height, width, height).scale; }, width, height);
+    if (!pixels) {
+        return std::unexpected(pixels.error());
+    }
+    SurfacePtr source = adopt(std::move(*pixels));
+    cairo_surface_t *image = source.get();
+    int image_width = cairo_image_surface_get_width(image);
+    int image_height = cairo_image_surface_get_height(image);
+    Placement placement = contain(image_width, image_height, width, height);
+    int target_width = std::clamp(static_cast<int>(std::lround(image_width * placement.scale)), 1, width);
+    int target_height = std::clamp(static_cast<int>(std::lround(image_height * placement.scale)), 1, height);
+    SurfacePtr target(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, target_width, target_height));
+    cairo_t *cr = cairo_create(target.get());
+    cairo_scale(cr, static_cast<double>(target_width) / image_width, static_cast<double>(target_height) / image_height);
     cairo_set_source_surface(cr, image, 0, 0);
     cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
     cairo_paint(cr);
