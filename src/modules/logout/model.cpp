@@ -14,6 +14,7 @@ constexpr uint64_t owner_close_chain = 3;
 constexpr uint64_t owner_exit = 4;
 constexpr uint64_t owner_burst = 5;
 constexpr uint64_t owner_hold = 6;
+constexpr uint64_t owner_charge = 7;
 
 uint64_t owner_scale(int i) { return 30 + static_cast<uint64_t>(i); }
 uint64_t owner_border(int i) { return 40 + static_cast<uint64_t>(i); }
@@ -67,6 +68,7 @@ void LogoutModel::cancel_sequence() {
     animations_.cancelForOwner(owner_exit);
     animations_.cancelForOwner(owner_burst);
     animations_.cancelForOwner(owner_hold);
+    animations_.cancelForOwner(owner_charge);
     for (int i = 0; i < count; ++i) {
         animations_.cancelForOwner(owner_slash(i));
         animations_.cancelForOwner(owner_push(i));
@@ -104,6 +106,9 @@ void LogoutModel::start_exit_burst() {
 }
 
 void LogoutModel::start_slashes() {
+    if (!exiting_) {
+        animations_.animate(0.0f, 1.0f, cfg::charge_ms, astralia::Easing::Linear, [this](float v) { charge_ = v; }, {}, owner_charge);
+    }
     float step = cfg::slash_ms * cfg::slash_advance_frac;
     for (int e = 0; e < count; ++e) {
         auto idx = static_cast<size_t>(e);
@@ -128,6 +133,7 @@ void LogoutModel::start_open() {
     logo_scale_ = 0.0f;
     exit_fade_ = 0.0f;
     burst_ = 0.0f;
+    charge_ = 0.0f;
     burst_started_ = std::chrono::steady_clock::now();
     slash_.fill(0.0f);
     travel_.fill(0.0f);
@@ -138,6 +144,7 @@ void LogoutModel::start_close() {
     cancel_sequence();
     input_ready_ = false;
     exiting_ = true;
+    charge_ = 0.0f;
     burst_ = 0.0f;
     exit_fade_ = 1.0f;
     burst_started_ = std::chrono::steady_clock::now();
@@ -164,6 +171,7 @@ void LogoutModel::fast_hide() {
     logo_scale_ = 0.0f;
     exit_fade_ = 0.0f;
     burst_ = 0.0f;
+    charge_ = 0.0f;
     exiting_ = false;
     input_ready_ = false;
     finish_close();

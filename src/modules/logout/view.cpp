@@ -26,6 +26,10 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
     float cy = static_cast<float>(center.y);
     constexpr float size = cfg::button_size;
 
+    if (model.scrim() > 0.0f) {
+        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(Color{0.0f, 0.0f, 0.0f, 1.0f}, model.scrim()));
+    }
+
     for (int i = 0; i < LogoutModel::count; ++i) {
         auto idx = static_cast<size_t>(i);
         float t = model.travel()[idx];
@@ -58,6 +62,10 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
         logo(canvas, {0.0f, 0.0f, logo_size, logo_size}, model.exiting() ? model.exit_fade() : 1.0f);
     }
     canvas.end_group();
+
+    if (model.flash() > 0.0f) {
+        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(color("#E4D2FF"), model.flash()));
+    }
 }
 
 } // namespace astralia
