@@ -6,6 +6,7 @@ x11_sources = files(
   'core/event_loop.cpp',
   'core/keyboard.cpp',
   'core/pointer.cpp',
+  'core/x_clipboard.cpp',
   'core/x_connection.cpp',
   '../../modules/bar/x11/bar.cpp',
   '../../modules/bar/x11/frame.cpp',

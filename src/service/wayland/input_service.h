@@ -24,7 +24,10 @@ enum class KeyKind {
     Enter,
     Escape,
     Backspace,
-    Tab
+    Tab,
+    Home,
+    End,
+    Delete
 };
 
 struct KeyEvent {
@@ -52,6 +55,7 @@ struct KeyboardState {
     int32_t repeat_delay_ms = 400;
     uint32_t repeat_keycode = 0;
     bool repeat_active = false;
+    uint32_t last_key_serial = 0;
 };
 
 struct PointerClick {

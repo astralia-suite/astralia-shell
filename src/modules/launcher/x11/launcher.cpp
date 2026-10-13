@@ -15,8 +15,9 @@ constexpr std::chrono::milliseconds caret_interval{1000};
 }
 
 Launcher::Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
-    : x_(x), loop_(loop), services_(services), window_(x, "astralia-launcher", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
-      keyboard_(x.conn()), model_(loop) {
+    : x_(x), loop_(loop), services_(services), window_(x, "astralia-launcher", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
+      keyboard_(x.conn()), clipboard_(x, window_.id()), model_(loop) {
+    model_.set_clipboard(&clipboard_);
     model_.on_changed = [this] { paint(); };
     model_.on_close_requested = [this] { close(); };
     caret_timer_ = loop.add_timer([this] { return model_.is_open() ? caret_interval : std::chrono::milliseconds(std::chrono::hours(1)); }, [this] {
@@ -98,13 +99,26 @@ void Launcher::handle(const xcb_generic_event_t &event) {
         }
         if (int row = row_at(press.event_x, press.event_y); row >= 0) {
             model_.click_row(row);
+        } else if (launcher_field_hit(frame_, press.event_x, press.event_y)) {
+            model_.pointer_down(launcher_field_column(frame_, press.event_x), std::chrono::steady_clock::now());
         } else if (const ui::Box &box = frame_.box; !(press.event_x >= box.x && press.event_x < box.x + box.w && press.event_y >= box.y && press.event_y < box.y + box.h)) {
             close();
         }
         break;
     }
+    case XCB_BUTTON_RELEASE:
+        if (reinterpret_cast<const xcb_button_release_event_t &>(event).detail == XCB_BUTTON_INDEX_1) {
+            model_.pointer_up();
+        }
+        break;
+    case XCB_SELECTION_REQUEST:
+    case XCB_SELECTION_CLEAR:
+    case XCB_SELECTION_NOTIFY:
+        clipboard_.handle(event);
+        break;
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
+        model_.pointer_drag(launcher_field_column(frame_, motion.event_x));
         if (model_.hover(row_at(motion.event_x, motion.event_y)) && model_.is_open()) {
             window_.set_cursor(model_.hovered() >= 0 ? CursorShape::hand : CursorShape::arrow);
             paint();

@@ -16,6 +16,7 @@
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/renderer.h"
+#include "wayland/render/thunder.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/input_service.h"
@@ -39,6 +40,11 @@ struct LauncherState {
     bool open = false;
     astralia::AnimationManager animations;
     float opacity = 0.0f;
+    bool lightning = false;
+    float entrance_t = 1.0f;
+    float entrance_seed = 0.0f;
+    bool entrance_active = false;
+    ThunderBurst thunder;
     std::unique_ptr<astralia::LauncherModel> model;
     astralia::LauncherFrame frame;
     std::function<void(bool)> sync_text_input_focus;
@@ -64,6 +70,8 @@ void launcher_handle_key_event(LauncherState &state, const KeyEvent &event);
 void launcher_handle_click(LauncherState &state, double px, double py);
 
 void launcher_handle_pointer_move(LauncherState &state, wl_surface *focused_surface, double px, double py);
+
+void launcher_handle_pointer_release(LauncherState &state);
 
 void launcher_paint(LauncherState &state);
 

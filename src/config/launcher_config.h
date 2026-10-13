@@ -24,6 +24,7 @@ inline constexpr const char *youtube_url = "https://www.youtube.com/results?sear
 
 // Search
 inline constexpr int debounce_ms = 120;
+inline constexpr int double_click_ms = 400;
 inline constexpr int max_results = 20;
 inline constexpr int listing_max_results = 50;
 
@@ -59,6 +60,8 @@ inline constexpr int small_px = 12;
 // Animation
 inline constexpr float height_anim_ms = 200.0f;
 inline constexpr float highlight_anim_ms = 140.0f;
+inline constexpr float entrance_ms = 790.0f;
+inline constexpr float blast_reach = 200.0f;
 
 // Bullets
 inline constexpr const char *bullet_asset_prefix = "constellation/C";

@@ -98,6 +98,10 @@ void LauncherModel::close() {
     open_ = false;
     field_.text.clear();
     field_.preedit.clear();
+    cursor_ = {};
+    field_first_ = 0;
+    dragging_ = false;
+    have_click_ = false;
     text_field_type_anim_clear(query_anim_, animations_, owner_query);
     mode_ = LauncherMode::drun;
     effective_query_.clear();
@@ -130,8 +134,136 @@ void LauncherModel::query_changed() {
     mode_ = mq.mode;
     effective_query_ = mq.query;
     field_.cursor_idle_visible = true;
-    text_field_type_anim_sync(query_anim_, animations_, owner_query, field_.text);
+    text_cursor_clamp(field_.text, cursor_);
+    if (cursor_.pos == field_.text.size()) {
+        text_field_type_anim_sync(query_anim_, animations_, owner_query, field_.text);
+    } else {
+        text_field_type_anim_settle(query_anim_, animations_, owner_query, field_.text);
+    }
     arm_debounce();
+}
+
+void LauncherModel::text_edited() {
+    if (submenu_.screen != SubmenuScreen::search) {
+        submenu_close(submenu_);
+    }
+    field_.preedit.clear();
+    query_changed();
+}
+
+void LauncherModel::paste(const std::string &text) {
+    std::string line;
+    for (char c : text) {
+        if (c == '\n' || c == '\r' || c == '\t') {
+            c = ' ';
+        }
+        if (static_cast<unsigned char>(c) >= 0x20 && c != 0x7F) {
+            line += c;
+        }
+    }
+    if (line.empty()) {
+        return;
+    }
+    hovered_ = -1;
+    text_cursor_insert(field_.text, cursor_, line);
+    text_edited();
+    changed();
+}
+
+void LauncherModel::key_text(const input::KeyEvent &event) {
+    if (event.alt) {
+        return;
+    }
+    if (!event.ctrl) {
+        if (event.text.empty()) {
+            return;
+        }
+        text_cursor_insert(field_.text, cursor_, event.text);
+        text_edited();
+        return;
+    }
+    constexpr uint32_t key_a = 0x61, key_c = 0x63, key_v = 0x76, key_x = 0x78;
+    uint32_t sym = event.base_sym >= 'A' && event.base_sym <= 'Z' ? event.base_sym + ('a' - 'A') : event.base_sym;
+    switch (sym) {
+    case key_a:
+        text_cursor_select_all(field_.text, cursor_);
+        field_.cursor_idle_visible = true;
+        break;
+    case key_c:
+    case key_x:
+        if (cursor_.has_selection() && clipboard_ != nullptr) {
+            clipboard_->set(text_cursor_selected_text(field_.text, cursor_));
+        }
+        if (sym == key_x && text_cursor_delete_selection(field_.text, cursor_)) {
+            text_edited();
+        }
+        break;
+    case key_v:
+        if (clipboard_ != nullptr) {
+            std::weak_ptr<bool> alive = alive_;
+            clipboard_->request([this, alive](std::string text) {
+                if (alive.lock() && open_) {
+                    paste(text);
+                }
+            });
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+size_t LauncherModel::byte_at_column(float column) const {
+    return text_field_byte_offset(field_.text, static_cast<size_t>(std::max(column, 0.0f) + 0.5f));
+}
+
+size_t LauncherModel::field_window(size_t width) {
+    size_t total = text_field_utf8_len(field_.text);
+    if (total <= width) {
+        return field_first_ = 0;
+    }
+    size_t column = text_field_char_index(field_.text, cursor_.pos);
+    if (column < field_first_) {
+        field_first_ = column;
+    } else if (column > field_first_ + width) {
+        field_first_ = column - width;
+    }
+    return field_first_ = std::min(field_first_, total - width);
+}
+
+void LauncherModel::pointer_down(float column, Clock::time_point now) {
+    if (!open_) {
+        return;
+    }
+    size_t byte = byte_at_column(column);
+    bool double_click = have_click_ && byte == last_click_byte_ && now - last_click_ <= std::chrono::milliseconds(cfg::double_click_ms);
+    field_.cursor_idle_visible = true;
+    hovered_ = -1;
+    if (double_click) {
+        text_cursor_select_word(field_.text, cursor_, text_field_byte_offset(field_.text, static_cast<size_t>(std::max(column, 0.0f))));
+        have_click_ = false;
+        dragging_ = false;
+    } else {
+        text_cursor_set(field_.text, cursor_, byte, false);
+        have_click_ = true;
+        last_click_ = now;
+        last_click_byte_ = byte;
+        dragging_ = true;
+    }
+    changed();
+}
+
+void LauncherModel::pointer_drag(float column) {
+    if (!open_ || !dragging_) {
+        return;
+    }
+    text_cursor_set(field_.text, cursor_, byte_at_column(column), true);
+    field_.cursor_idle_visible = true;
+    changed();
+}
+
+void LauncherModel::pointer_up() {
+    dragging_ = false;
 }
 
 void LauncherModel::arm_debounce() {
@@ -269,24 +401,39 @@ void LauncherModel::key(const input::KeyEvent &event) {
     hovered_ = -1;
     switch (event.kind) {
     case input::KeyKind::Text:
-        if (submenu_.screen != SubmenuScreen::search) {
-            submenu_close(submenu_);
-        }
-        field_.text += event.text;
-        field_.preedit.clear();
-        query_changed();
+        key_text(event);
         break;
     case input::KeyKind::Preedit:
         field_.preedit = event.text;
         field_.cursor_idle_visible = true;
         break;
     case input::KeyKind::Backspace:
-        if (submenu_.screen != SubmenuScreen::search) {
-            submenu_close(submenu_);
+        text_cursor_backspace(field_.text, cursor_);
+        text_edited();
+        break;
+    case input::KeyKind::Delete:
+        if (text_cursor_delete(field_.text, cursor_)) {
+            text_edited();
         }
-        text_field_backspace(field_.text);
-        field_.preedit.clear();
-        query_changed();
+        break;
+    case input::KeyKind::Left:
+    case input::KeyKind::Right: {
+        CursorDir dir = event.kind == input::KeyKind::Left ? CursorDir::Left : CursorDir::Right;
+        if (event.ctrl) {
+            text_cursor_move_word(field_.text, cursor_, dir, event.shift);
+        } else {
+            text_cursor_move(field_.text, cursor_, dir, event.shift);
+        }
+        field_.cursor_idle_visible = true;
+        break;
+    }
+    case input::KeyKind::Home:
+        text_cursor_home(cursor_, event.shift);
+        field_.cursor_idle_visible = true;
+        break;
+    case input::KeyKind::End:
+        text_cursor_end(field_.text, cursor_, event.shift);
+        field_.cursor_idle_visible = true;
         break;
     case input::KeyKind::Up:
     case input::KeyKind::Down: {
@@ -308,23 +455,23 @@ void LauncherModel::key(const input::KeyEvent &event) {
         launch_selected();
         break;
     case input::KeyKind::Tab:
-    case input::KeyKind::Left:
-    case input::KeyKind::Right:
         break;
     }
     changed();
 }
 
 void LauncherModel::commit_text(const std::string &text) {
-    field_.text += text;
+    text_cursor_insert(field_.text, cursor_, text);
     field_.preedit.clear();
     query_changed();
     changed();
 }
 
 void LauncherModel::delete_before(uint32_t count) {
+    text_cursor_clamp(field_.text, cursor_);
+    cursor_.anchor = cursor_.pos;
     for (uint32_t i = 0; i < count; ++i) {
-        text_field_backspace(field_.text);
+        text_cursor_backspace(field_.text, cursor_);
     }
     query_changed();
     changed();

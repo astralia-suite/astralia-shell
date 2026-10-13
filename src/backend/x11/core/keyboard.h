@@ -16,7 +16,10 @@ enum class KeyKind { none,
                      right,
                      enter,
                      escape,
-                     tab };
+                     tab,
+                     home,
+                     end,
+                     del };
 
 struct KeyEvent {
     KeyKind kind = KeyKind::none;

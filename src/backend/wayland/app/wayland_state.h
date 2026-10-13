@@ -20,6 +20,7 @@
 #include "service/bluetooth_service.h"
 #include "service/brightness_service.h"
 #include "service/compositor_service.h"
+#include "service/wayland/clipboard_service.h"
 #include "service/wayland/idle_service.h"
 #include "service/wayland/input_service.h"
 
@@ -52,7 +53,9 @@ struct WaylandState {
     hyprland_toplevel_export_manager_v1 *toplevel_export_manager = nullptr;
     zwp_text_input_manager_v3 *text_input_manager = nullptr;
     ext_session_lock_manager_v1 *session_lock_manager = nullptr;
+    wl_data_device_manager *data_device_manager = nullptr;
     TextInputService text_input;
+    ClipboardService clipboard;
     EGLDisplay egl_display = EGL_NO_DISPLAY;
     EGLConfig egl_config = nullptr;
     EGLContext egl_context = EGL_NO_CONTEXT;

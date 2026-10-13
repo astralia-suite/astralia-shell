@@ -244,6 +244,8 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] `AnimationManager` has no delay primitive. Chain a no-op tween whose `on_complete` starts the real one.
 - [wayland] A render-side tween must not own a dismiss a service sweep already owns. A tween-owned dismiss fired on add under instant mode.
 - [wayland] A module with its own entrance animation skips the generic overlay fade. Layering both produces a visible double fade.
+- [wayland] Drive an entrance from one linear progress value and a pure sampling function. `AnimationManager` has no delay primitive, and the function is testable.
+- [wayland] Thunder shaders live in `backend/wayland/render/thunder.cpp`. Modules cannot include each other, so `logout` and `launcher` both draw through it.
 - [wayland] A per-element opacity tween must not run during a container fade. Two alpha ramps multiply into an unintended curve.
 - [wayland] A fading, resizing surface tweens opacity only and snaps geometry at the endpoints. One tween for both rescaled the content.
 - [wayland] A panel's geometry locks at open. Recomputing height every frame desynced the close animation's start value.
@@ -350,6 +352,8 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 
 ## X11 backend
 
+- [x11] Never name a backend file like a shared one, such as `core/clipboard.h`. The backend's `core/` include root shadows `src/core/`.
+- [x11] Answer `SelectionRequest` from the owner window even while it is unmapped. Selection events are not maskable and ownership outlives the map state.
 - [x11] Wall-clock timers use a `CLOCK_BOOTTIME` `timerfd`. Monotonic clocks pause in suspend, leaving the clock stale after resume.
 - [x11] Never wipe the EWMH connection after `xcb_ewmh_init_atoms_replies` fails. Its failure path already frees everything, so wiping double-frees.
 - [x11] Strings with embedded NULs, such as `WM_CLASS`, need the `sv` literal. A `std::string_view` from `const char*` stops at the first NUL.

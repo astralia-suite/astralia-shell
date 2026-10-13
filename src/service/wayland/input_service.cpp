@@ -44,6 +44,15 @@ astralia::input::KeyEvent to_neutral(const KeyEvent &event) {
     case ::KeyKind::Tab:
         out.kind = KeyKind::Tab;
         break;
+    case ::KeyKind::Home:
+        out.kind = KeyKind::Home;
+        break;
+    case ::KeyKind::End:
+        out.kind = KeyKind::End;
+        break;
+    case ::KeyKind::Delete:
+        out.kind = KeyKind::Delete;
+        break;
     }
     out.text = event.text;
     out.shift = event.shift;
@@ -130,6 +139,15 @@ std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode, xkb_co
         return KeyEvent{KeyKind::Backspace, ""};
     case XKB_KEY_Tab:
         return KeyEvent{KeyKind::Tab, ""};
+    case XKB_KEY_Home:
+    case XKB_KEY_KP_Home:
+        return KeyEvent{KeyKind::Home, "", shift, alt, ctrl};
+    case XKB_KEY_End:
+    case XKB_KEY_KP_End:
+        return KeyEvent{KeyKind::End, "", shift, alt, ctrl};
+    case XKB_KEY_Delete:
+    case XKB_KEY_KP_Delete:
+        return KeyEvent{KeyKind::Delete, ""};
     default:
         break;
     }
@@ -209,10 +227,11 @@ void leave_cb(void *data, wl_keyboard *, uint32_t, wl_surface *surface) {
         state->on_focus_surface(surface, false);
 }
 
-void key_cb(void *data, wl_keyboard *, uint32_t, uint32_t, uint32_t key, uint32_t key_state) {
+void key_cb(void *data, wl_keyboard *, uint32_t serial, uint32_t, uint32_t key, uint32_t key_state) {
     auto *state = static_cast<KeyboardState *>(data);
     if (!state->xkb)
         return;
+    state->last_key_serial = serial;
     xkb_keycode_t xkb_code = key + 8;
 
     if (key_state == WL_KEYBOARD_KEY_STATE_RELEASED) {

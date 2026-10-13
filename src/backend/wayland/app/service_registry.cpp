@@ -217,6 +217,41 @@ class TextInputProtocolService final : public Service {
     }
 };
 
+class ClipboardProtocolService final : public Service {
+  public:
+    const char *name() const override { return "clipboard"; }
+
+    bool init(WaylandState &app) override {
+        if (!app.clipboard.bind(app.data_device_manager, app.seat, app.display, &app.keyboard))
+            klog("clipboard: wl_data_device_manager unavailable - copy and paste unavailable");
+        return true;
+    }
+
+    std::vector<PollSource *> raw_poll_sources(WaylandState &app) override {
+        read_source_.clipboard = &app.clipboard;
+        return {&read_source_};
+    }
+
+  private:
+    struct ReadSource final : PollSource {
+        ClipboardService *clipboard = nullptr;
+
+        std::size_t add_poll_fds(std::vector<pollfd> &fds) override {
+            if (!clipboard || clipboard->read_fd() < 0)
+                return 0;
+            fds.push_back({.fd = clipboard->read_fd(), .events = POLLIN, .revents = 0});
+            return 1;
+        }
+
+        void dispatch(const std::vector<pollfd> &fds, std::size_t start) override {
+            if (fds[start].revents & (POLLIN | POLLHUP | POLLERR))
+                clipboard->read_ready();
+        }
+    };
+
+    ReadSource read_source_;
+};
+
 class IdleService final : public Service {
   public:
     const char *name() const override { return "idle"; }
@@ -245,6 +280,7 @@ std::vector<std::unique_ptr<Service>> build_services() {
     services.push_back(std::make_unique<PolkitBusService>());
     services.push_back(std::make_unique<CompositorWorkspaceService>());
     services.push_back(std::make_unique<TextInputProtocolService>());
+    services.push_back(std::make_unique<ClipboardProtocolService>());
     services.push_back(std::make_unique<IdleService>());
     return services;
 }

@@ -16,6 +16,9 @@ enum class KeyKind : uint8_t {
     Escape,
     Backspace,
     Tab,
+    Home,
+    End,
+    Delete,
 };
 
 struct KeyEvent {

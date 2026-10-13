@@ -25,6 +25,7 @@ std::string sample_config() {
     "eDP-1": {"_enabled": true, "osd": true, "lock": false, "ambientTimeoutSeconds": 90}
   },
   "idle": {"ambientEnabled": true, "ambientTimeoutSeconds": 150, "enabled": false, "screensaverEnabled": true, "screensaverTimeoutSeconds": 300},
+  "launcher": {"lightning": false},
   "logout": {"animatedLogo": true},
   "rain": {"asyncSpeed": true, "mode": "stiletto"},
   "visualizer": {"fps": 30, "fractalComplexity": 3, "glowDirections": 16.0, "glowQuality": 6.0, "particleSize": 8, "particleThin": 0.11999999731779099, "visualizerShape": "sphere"},
@@ -59,6 +60,7 @@ void check_config_parse() {
     check(cfg.monitor_overrides.contains("eDP-1") && cfg.monitor_overrides["eDP-1"].enabled && cfg.monitor_overrides["eDP-1"].osd && !cfg.monitor_overrides["eDP-1"].lock, "monitor override fields");
     check(cfg.monitor_overrides["eDP-1"].ambient_timeout_seconds == 90 && cfg.monitor_overrides["eDP-1"].screensaver_timeout_seconds == 300, "override seconds keep defaults when absent");
     check(!cfg.idle_management_enabled, "idle disabled");
+    check(!cfg.launcher_lightning && Config().launcher_lightning, "launcher lightning");
     check(cfg.rain.mode == RainMode::Stiletto && cfg.rain.async_speed, "rain");
     check(cfg.visualizer.visualizer_shape == VisualizerShape::Sphere && cfg.visualizer.fps == 30, "visualizer");
     check(cfg.wallpaper_columns["eDP-1"] == std::vector<std::string>{"/home/tester/Pictures/a.jpg", "/abs/b.png"}, "home is expanded in columns");
@@ -74,6 +76,7 @@ void check_config_parse() {
     check(text.find("\"particleThin\": 0.12") != std::string::npos, "floats are written in their shortest form");
 
     check(parse_config(R"({"bar": {"style": "classic"}})").bar_style == BarStyle::islands, "an unknown style falls back");
+    check(parse_config(R"({"launcher": {"lightning": "yes"}})").launcher_lightning, "a wrongly typed lightning value keeps the default");
     check(parse_config(R"({"qixing": {"autohideEnabled": true}})").autohide, "legacy section names still load");
     check(parse_config(R"({"displays": {"defaultSpark": false}})").default_osd_enabled == false, "legacy display keys still load");
     check(parse_config(R"({"visualizer": {"fps": 9999, "glowQuality": 100}})").visualizer.fps == kVisualizerFpsMax, "visualizer values are clamped");

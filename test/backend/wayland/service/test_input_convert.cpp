@@ -13,6 +13,9 @@ void test_input_convert() {
     assert(to_neutral(text).kind == in::KeyKind::Text && to_neutral(text).text == "ñ");
     assert(to_neutral(KeyEvent{KeyKind::Preedit, "a"}).kind == in::KeyKind::Preedit);
     assert(to_neutral(KeyEvent{KeyKind::Backspace, ""}).kind == in::KeyKind::Backspace);
+    assert(to_neutral(KeyEvent{KeyKind::Home, "", true}).kind == in::KeyKind::Home && to_neutral(KeyEvent{KeyKind::Home, "", true}).shift);
+    assert(to_neutral(KeyEvent{KeyKind::End, ""}).kind == in::KeyKind::End);
+    assert(to_neutral(KeyEvent{KeyKind::Delete, ""}).kind == in::KeyKind::Delete);
 
     PointerClick right{nullptr, true, BTN_RIGHT, 3.5, 4.5, 9};
     in::PointerEvent pointer = to_neutral(right);

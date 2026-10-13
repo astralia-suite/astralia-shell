@@ -55,6 +55,12 @@ std::optional<xcb_window_t> target_window(const xcb_generic_event_t &event) {
         return reinterpret_cast<const xcb_property_notify_event_t &>(event).window;
     case XCB_CLIENT_MESSAGE:
         return reinterpret_cast<const xcb_client_message_event_t &>(event).window;
+    case XCB_SELECTION_REQUEST:
+        return reinterpret_cast<const xcb_selection_request_event_t &>(event).owner;
+    case XCB_SELECTION_CLEAR:
+        return reinterpret_cast<const xcb_selection_clear_event_t &>(event).owner;
+    case XCB_SELECTION_NOTIFY:
+        return reinterpret_cast<const xcb_selection_notify_event_t &>(event).requestor;
     default:
         return std::nullopt;
     }

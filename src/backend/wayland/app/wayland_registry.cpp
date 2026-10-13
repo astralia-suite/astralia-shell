@@ -107,6 +107,8 @@ void registry_global(void *data, wl_registry *registry, uint32_t name, const cha
         state->seat_caps.keyboard = &state->keyboard;
         state->seat_caps.pointer = &state->pointer;
         keyboard_attach_seat(state->seat_caps, state->seat);
+    } else if (strcmp(interface, wl_data_device_manager_interface.name) == 0) {
+        state->data_device_manager = static_cast<wl_data_device_manager *>(wl_registry_bind(registry, name, &wl_data_device_manager_interface, std::min(version, 3u)));
     } else if (strcmp(interface, ext_idle_notifier_v1_interface.name) == 0) {
         state->idle.notifier =
             static_cast<ext_idle_notifier_v1 *>(wl_registry_bind(registry, name, &ext_idle_notifier_v1_interface, 1));

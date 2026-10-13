@@ -41,7 +41,7 @@
 - `app/`: `WaylandState`, registry binding, monitor outputs, module and service registries, key dispatch, shell bindings and the config adapter.
 - `core/`: Poll-source types for the run loop and `klog` forwarding to the shared log.
 - `config/`: Wayland configs that more than one module uses: idle and visualizer parameters.
-- `render/`: The GLES2 renderer, the immediate-mode `GlCanvas`, text and icon textures, layer-shell and toplevel windows, the arc gauge.
+- `render/`: The GLES2 renderer, the immediate-mode `GlCanvas`, text and icon textures, layer-shell and toplevel windows, the arc gauge, the thunder bolt, ring and rectangular burst shaders.
 - `plugin/media_plugin.cpp`: The `ffmpeg` decoder, built as its own plugin and loaded by the media service.
 - `protocols/`: Protocol XML that the system `wayland-protocols` package does not ship.
 
@@ -51,7 +51,7 @@
 - `meson.build`: X11 source list, dependencies, compile arguments and asset installation.
 - `app/services.{h,cpp}`: The services this backend owns, built from the shared services, the compositor and the telemetry state.
 - `app/active_target.{h,cpp}`: The output an overlay opens on: the widget's output, else the focused monitor, else the pointer's.
-- `core/`: `XConnection` with atoms and cursors, `Keyboard`, pointer conversion and the `EventLoop` that adds X event dispatch to a `PollReactor`.
+- `core/`: `XConnection` with atoms and cursors, `Keyboard`, pointer conversion, the `CLIPBOARD` selection owner and the `EventLoop` that adds X event dispatch to a `PollReactor`.
 - `render/`: `CairoCanvas`, cairo drawing, text, icons, cairo image surfaces over the shared decoder, the per-output wallpaper painter and X windows.
 - `config/bar_config.h`: The bar styles X11 builds and the allocator trim interval.
 
@@ -61,6 +61,7 @@
 - `poll_reactor.{h,cpp}`: `poll()` and `timerfd` reactor with `SIGINT` and `SIGTERM` handling; backends extend it through poll sources.
 - `animation.{h,cpp}`: `AnimationManager`, easings and the instant flag that makes X11 snap to end values.
 - `input.h`: Neutral key, pointer and scroll events every backend converts into.
+- `clipboard.h`: The backend-neutral `Clipboard` interface: publish text and fetch the clipboard text asynchronously.
 - `log.{h,cpp}`: Timestamped logging to stderr and `~/.local/state/astralia/astralia.log`, plus crash and terminate handlers.
 - `json.{h,cpp}`: Minimal JSON value, parser and writer.
 - `config_file.{h,cpp}`: `key = value` file parsing, atomic write, home expansion and a directory `FileWatch`.
@@ -86,8 +87,8 @@
 - `geometry.h`: `Box`, the one rectangle type.
 - `host.h`: The surface and host contract a backend gives a module.
 - `module_base.{h,cpp}`: Module base class with config fan-out and IPC registration over a host.
-- `text_field.{h,cpp}`: Text field state, key handling, type animation and row slide.
-- `field_view.{h,cpp}`: Draws a text field with its caret and animated characters over a canvas.
+- `text_field.{h,cpp}`: Text field state, key handling, UTF-8 cursor and selection editing, type animation and row slide.
+- `field_view.{h,cpp}`: Draws a text field with its caret, selection and animated characters over a canvas.
 - `marquee.{h,cpp}`: Scrolling text for labels wider than their box.
 - `decode.{h,cpp}`: The one image decoder: `stb_image`, `resvg` and reduced-size `libjpeg` into an RGBA buffer.
 - `app_fonts.{h,cpp}`: Registers the bundled fonts with fontconfig and holds the unhinted icon font options.
@@ -101,7 +102,7 @@
 - `rain_config.h`: Rain constants and the `RainParams` stored in the config.
 - `idle_config.h`: Idle activity pulse and screensaver logo constants both hosts use.
 - `dashboard_config.h`: Dashboard window title, id and default size.
-- `launcher_config.h`: Launcher commands, search URLs and limits, row and animation geometry.
+- `launcher_config.h`: Launcher commands, search URLs and limits, row and animation geometry, entrance duration.
 - `notification_config.h`: Notification card geometry, timing and urgency colours.
 - `polkit_config.h`: Polkit card geometry, line heights, dot size and texts.
 - `logout_config.h`: Logout button ring geometry, angles and the action table.
@@ -154,8 +155,9 @@
 
 ## `src/modules/launcher/`
 
-- `model.{h,cpp}`: Query, mode, debounce, async search, results, selection, scroll, submenu and input method edits.
-- `view.{h,cpp}`: Paints the search field, mode bullets, result rows and highlight.
+- `model.{h,cpp}`: Query with caret, selection and clipboard keys, mouse selection, mode, debounce, async search, results, submenu and input method edits.
+- `view.{h,cpp}`: Paints the search field, caret and selection, mode bullets, result rows and highlight, with an optional entrance frame that fades the card in; maps pointer positions to field columns.
+- `entrance.{h,cpp}`: Pure lightning entrance: outline trace, sky bolt strike with flash, card snap-in, one rectangular burst and a backdrop dim.
 - `search.{h,cpp}`: Mode detection, query parsing and URL building.
 - `apps_provider.{h,cpp}`: Scores installed apps against a query.
 - `files_provider.{h,cpp}`: Walks and scores files below a search root.
@@ -172,7 +174,7 @@
 
 ## `src/modules/settings/`
 
-- `model.{h,cpp}`: Tabs by capability, monitor selections, fields, wallpaper pickers and every settings action.
+- `model.{h,cpp}`: Tabs by capability (animation, bar, displays, idle, launcher, logout, rain, visualizer, wallpaper), monitor selections, fields, pickers and actions.
 - `view.{h,cpp}`: Paints each tab, fields, pickers and thumbnails over the canvas.
 
 ## `src/modules/logout/`, `notification/`, `osd/`, `polkit/`
@@ -205,7 +207,7 @@
 - `i3_service.{h,cpp}`: i3 and Sway compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
 - `dock_service.{h,cpp}`: Per-output dock entries from the compositor client list, ordered left to right.
 - `user_service.{h,cpp}`: Display name, OS name and uptime text.
-- `wayland/`: Wayland-only services: `capture`, `frame`, `idle`, `input`, `media` decoder, `output`, settings editing and `text_input`.
+- `wayland/`: Wayland-only services: `capture`, `clipboard`, `frame`, `idle`, `input`, `media` decoder, `output`, settings editing and `text_input`.
 - `x11/output_service.{h,cpp}`: RandR outputs and the output under the pointer.
 
 ## `test/`

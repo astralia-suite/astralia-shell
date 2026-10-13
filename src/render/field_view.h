@@ -15,8 +15,16 @@ struct FieldDraw {
     float caret_width = 2.0f;
     float caret_gap = 0.0f;
     Color color = palette::text;
+    Color selection = palette::accent_alt_alpha50;
+    size_t first_index = 0;
 };
 
-Box draw_field_input(Canvas &canvas, const std::string &display, const TextFieldState &field, const TextFieldTypeAnim &anim, const FieldDraw &draw);
+struct FieldCursor {
+    size_t column = 0;
+    size_t selection_from = 0;
+    size_t selection_to = 0;
+};
+
+Box draw_field_input(Canvas &canvas, const std::string &display, const TextFieldState &field, const TextFieldTypeAnim &anim, const FieldDraw &draw, const FieldCursor *cursor = nullptr);
 
 } // namespace astralia::ui

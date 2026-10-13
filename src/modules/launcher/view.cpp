@@ -17,6 +17,8 @@ namespace {
 namespace cfg = launcher_config;
 
 constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
+constexpr Color scrim_color{0.0f, 0.0f, 0.0f, 1.0f};
+constexpr Color flash_color = color("#E4D2FF");
 constexpr ui::TextStyle label_style{ui::FontFamily::text, cfg::label_px};
 constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_size};
@@ -40,12 +42,33 @@ const char *mode_icon(LauncherMode mode) {
 
 } // namespace
 
-LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float width, float height) {
+bool launcher_field_hit(const LauncherFrame &frame, double x, double y) {
+    const ui::Box &f = frame.field;
+    return f.w > 0.0f && x >= f.x && x < f.x + f.w && y >= f.y && y < f.y + f.h;
+}
+
+float launcher_field_column(const LauncherFrame &frame, double x) {
+    if (frame.cell_w <= 0.0f) {
+        return 0.0f;
+    }
+    float column = static_cast<float>(frame.first_column) + (static_cast<float>(x) - frame.text_x) / frame.cell_w;
+    return std::max(column, 0.0f);
+}
+
+LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float width, float height, const EntranceState *entrance) {
     LauncherFrame frame;
     constexpr float inset = cfg::clip_inset;
     float box_h = model.box_height();
     float box_x = (width - cfg::width) / 2.0f;
     float box_y = (height - box_h) / 2.0f;
+    if (entrance != nullptr) {
+        frame.entrance = entrance_sample(*entrance, {box_x, box_y, cfg::width, box_h});
+        canvas.set_opacity(1.0f);
+        if (frame.entrance.scrim > 0.0f) {
+            canvas.rect({0.0f, 0.0f, width, height}, with_alpha(scrim_color, frame.entrance.scrim));
+        }
+        canvas.set_opacity(frame.entrance.opacity);
+    }
     frame.box = {box_x, box_y, cfg::width, box_h};
     canvas.rounded(frame.box, metrics::radius_md, palette::base_alpha80, cfg::menu_border_width, palette::accent);
 
@@ -73,8 +96,22 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
     draw.center_y = center_y - oy;
     draw.caret_height = caret_h;
     draw.caret_width = cfg::caret_width;
-    ui::Box caret = ui::draw_field_input(canvas, elide(model.field().text, cfg::max_row_chars), model.field(), model.query_anim(), draw);
+    const std::string &text = model.field().text;
+    size_t first = model.field_window(cfg::max_row_chars);
+    size_t total = text_field_utf8_len(text);
+    size_t last = std::min(total, first + cfg::max_row_chars);
+    size_t first_byte = text_field_byte_offset(text, first);
+    std::string display = text.substr(first_byte, text_field_byte_offset(text, last) - first_byte);
+    const TextCursor &cursor = model.cursor();
+    auto column_of = [&](size_t byte) { return std::clamp(text_field_char_index(text, byte), first, last) - first; };
+    ui::FieldCursor field_cursor{column_of(cursor.pos), column_of(cursor.begin()), column_of(cursor.end())};
+    draw.first_index = first;
+    ui::Box caret = ui::draw_field_input(canvas, display, model.field(), model.query_anim(), draw, &field_cursor);
     frame.caret = {caret.x + ox, caret.y + oy, caret.w, caret.h};
+    frame.field = {field_x, field_top, field_w, cfg::search_height};
+    frame.text_x = text_x;
+    frame.cell_w = canvas.advance(label_style);
+    frame.first_column = first;
 
     float content_x = mode_x + cfg::search_height + cfg::bullet_gap;
     float list_top = box_y + cfg::list_top;
@@ -135,6 +172,10 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
     }
     canvas.end_group();
     canvas.end_group();
+    if (frame.entrance.flash > 0.0f) {
+        canvas.set_opacity(1.0f);
+        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(flash_color, frame.entrance.flash));
+    }
     return frame;
 }
 

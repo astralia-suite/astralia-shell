@@ -76,16 +76,28 @@ KeyEvent Keyboard::press(xcb_keycode_t keycode, uint16_t modifiers) {
     case XKB_KEY_Tab:
         event.kind = KeyKind::tab;
         break;
+    case XKB_KEY_Home:
+    case XKB_KEY_KP_Home:
+        event.kind = KeyKind::home;
+        break;
+    case XKB_KEY_End:
+    case XKB_KEY_KP_End:
+        event.kind = KeyKind::end;
+        break;
+    case XKB_KEY_Delete:
+    case XKB_KEY_KP_Delete:
+        event.kind = KeyKind::del;
+        break;
     default: {
         std::array<char, 64> buf{};
         int size = xkb_state_key_get_utf8(state_.get(), keycode, buf.data(), buf.size());
         auto first = static_cast<unsigned char>(buf[0]);
+        const xkb_keysym_t *base_syms = nullptr;
+        int base_count = xkb_keymap_key_get_syms_by_level(keymap_.get(), keycode, xkb_state_key_get_layout(state_.get(), keycode), 0, &base_syms);
+        event.base_sym = base_count > 0 ? base_syms[0] : XKB_KEY_NoSymbol;
         if (size > 0 && first >= 0x20 && first != 0x7F) {
             event.kind = KeyKind::text;
             event.text.assign(buf.data(), static_cast<std::size_t>(size));
-            const xkb_keysym_t *base_syms = nullptr;
-            int base_count = xkb_keymap_key_get_syms_by_level(keymap_.get(), keycode, xkb_state_key_get_layout(state_.get(), keycode), 0, &base_syms);
-            event.base_sym = base_count > 0 ? base_syms[0] : XKB_KEY_NoSymbol;
         }
         break;
     }

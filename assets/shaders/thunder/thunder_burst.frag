@@ -10,6 +10,7 @@ uniform float u_intensity;
 uniform float u_seed;
 uniform float u_amp;
 uniform float u_thick;
+uniform float u_stitch;
 uniform vec4 u_core;
 uniform vec4 u_glow;
 
@@ -31,17 +32,21 @@ float bolt_field(vec2 p, vec2 a, vec2 b, float seed) {
     float t = dot(rel, dir) / len;
     float perp = dot(rel, nrm);
     float thick = max(u_thick, 0.001);
-    float tw = mod(u_time, 128.0);
+    bool stitch = u_stitch > 0.5;
+    float tw = mod(u_time, 128.0) * (stitch ? 0.35 : 1.0);
+    float nt = stitch ? t * len / 100.0 : t;
 
-    float disp = (vnoise(t * 7.0 + seed * 13.0 + tw * 9.0) - 0.5);
-    disp += (vnoise(t * 17.0 + seed * 31.0 + tw * 17.0) - 0.5) * 0.45;
-    disp += (vnoise(t * 3.0 + seed * 7.0 - tw * 4.0) - 0.5) * 1.4;
+    float disp = (vnoise(nt * 7.0 + seed * 13.0 + tw * 9.0) - 0.5);
+    disp += (vnoise(nt * 17.0 + seed * 31.0 + tw * 17.0) - 0.5) * 0.45;
+    disp += (vnoise(nt * 3.0 + seed * 7.0 - tw * 4.0) - 0.5) * 1.4;
     disp *= u_amp * smoothstep(0.0, 0.12, t) *
         (1.0 - smoothstep(0.82, 1.0, t));
 
-    float d = abs(perp - disp);
-    float head = 1.0 - smoothstep(u_progress - 0.10, u_progress + 0.02, t);
-    float span = step(-0.02, t) * step(t, 1.02);
+    float along = t * len;
+    float past = max(along - u_progress * len, 0.0) + max(-along, 0.0);
+    float d = stitch ? length(vec2(past, perp - disp)) : abs(perp - disp);
+    float head = stitch ? 1.0 : 1.0 - smoothstep(u_progress - 0.10, u_progress + 0.02, t);
+    float span = stitch ? 1.0 : step(-0.02, t) * step(t, 1.02);
     float core = exp(-d * d * 0.05 / (thick * thick));
     float glow = exp(-d * 0.055 / thick);
     return (core * 1.0 + glow * 0.4) * head * span;

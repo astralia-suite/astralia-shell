@@ -236,6 +236,10 @@ void rain_tab(Pane &pane, float x, float y, float w) {
     toggle_row(pane, x, y, w, "Asynchronous fall speed", rain.async_speed, SettingsAct::rain_async, 0, 0, true);
 }
 
+void launcher_tab(Pane &pane, float x, float y, float w) {
+    toggle_row(pane, x, y, w, "Lightning entrance", pane.model.config().launcher_lightning, SettingsAct::launcher_lightning, 0, 0, true);
+}
+
 struct Knob {
     SettingsField field;
     const char *label;
@@ -479,6 +483,9 @@ void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float b
         break;
     case SettingsTab::idle:
         idle_tab(pane, x, y, w);
+        break;
+    case SettingsTab::launcher:
+        launcher_tab(pane, x, y, w);
         break;
     case SettingsTab::logout:
         toggle_row(pane, x, y, w, "Animated central logo", pane.model.config().logout_animated_logo, SettingsAct::logout_logo, 0, 0, true);

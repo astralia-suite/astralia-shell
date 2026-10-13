@@ -14,6 +14,48 @@ namespace astralia {
 
 void text_field_backspace(std::string &text);
 
+struct TextCursor {
+    size_t pos = 0;
+    size_t anchor = 0;
+
+    bool has_selection() const { return pos != anchor; }
+    size_t begin() const { return pos < anchor ? pos : anchor; }
+    size_t end() const { return pos < anchor ? anchor : pos; }
+};
+
+enum class CursorDir { Left,
+                       Right };
+
+void text_cursor_clamp(const std::string &text, TextCursor &cursor);
+
+void text_cursor_move(const std::string &text, TextCursor &cursor, CursorDir dir, bool extend);
+
+void text_cursor_move_word(const std::string &text, TextCursor &cursor, CursorDir dir, bool extend);
+
+void text_cursor_home(TextCursor &cursor, bool extend);
+
+void text_cursor_end(const std::string &text, TextCursor &cursor, bool extend);
+
+void text_cursor_select_all(const std::string &text, TextCursor &cursor);
+
+void text_cursor_select_word(const std::string &text, TextCursor &cursor, size_t byte);
+
+void text_cursor_set(const std::string &text, TextCursor &cursor, size_t byte, bool extend);
+
+bool text_cursor_delete_selection(std::string &text, TextCursor &cursor);
+
+bool text_cursor_insert(std::string &text, TextCursor &cursor, const std::string &inserted);
+
+bool text_cursor_backspace(std::string &text, TextCursor &cursor);
+
+bool text_cursor_delete(std::string &text, TextCursor &cursor);
+
+std::string text_cursor_selected_text(const std::string &text, const TextCursor &cursor);
+
+size_t text_field_byte_offset(const std::string &text, size_t char_index);
+
+size_t text_field_char_index(const std::string &text, size_t byte);
+
 struct TextFieldState {
     std::string text;
     std::string preedit;

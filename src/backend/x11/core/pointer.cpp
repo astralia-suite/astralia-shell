@@ -66,6 +66,15 @@ input::KeyEvent to_neutral(const KeyEvent &event) {
     case KeyKind::tab:
         out.kind = input::KeyKind::Tab;
         break;
+    case KeyKind::home:
+        out.kind = input::KeyKind::Home;
+        break;
+    case KeyKind::end:
+        out.kind = input::KeyKind::End;
+        break;
+    case KeyKind::del:
+        out.kind = input::KeyKind::Delete;
+        break;
     }
     return out;
 }

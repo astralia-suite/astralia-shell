@@ -92,9 +92,10 @@ void check_tabs() {
     test::check(order == std::vector<SettingsTab>{SettingsTab::bar, SettingsTab::displays, SettingsTab::wallpaper}, "a minimal backend has three tabs");
 
     SettingsCaps full;
-    full.animation = full.idle = full.logout = full.rain = full.visualizer = true;
+    full.animation = full.idle = full.launcher = full.logout = full.rain = full.visualizer = true;
     Env rich(full);
-    test::check(rich.model.tabs().size() == 8 && rich.model.tabs().front().tab == SettingsTab::animation, "capabilities add the extra tabs in order");
+    test::check(rich.model.tabs().size() == 9 && rich.model.tabs().front().tab == SettingsTab::animation, "capabilities add the extra tabs in order");
+    test::check(rich.model.tabs()[4].tab == SettingsTab::launcher, "the launcher tab sits between idle and logout");
 
     minimal.model.open();
     test::check(minimal.model.active_tab() == SettingsTab::wallpaper, "the overlay opens on the wallpaper tab");
@@ -139,7 +140,7 @@ void check_tab_fade() {
 void check_actions() {
     Instant instant;
     SettingsCaps caps;
-    caps.rain = caps.visualizer = caps.animation = caps.logout = caps.idle = true;
+    caps.rain = caps.visualizer = caps.animation = caps.logout = caps.idle = caps.launcher = true;
     Env env(caps);
     env.model.open();
 
@@ -178,6 +179,8 @@ void check_actions() {
     env.click(SettingsAct::rain_mode, 1);
     env.click(SettingsAct::rain_async);
     test::check(env.config.rain.mode == astralia::RainMode::Stiletto && env.config.rain.async_speed, "rain settings apply");
+    env.click(SettingsAct::launcher_lightning);
+    test::check(!env.config.launcher_lightning, "the lightning toggle flips");
     env.click(SettingsAct::visualizer_shape, 1);
     env.config.visualizer.fps = 30;
     env.click(SettingsAct::visualizer_reset, static_cast<int>(SettingsField::visualizer_fps));

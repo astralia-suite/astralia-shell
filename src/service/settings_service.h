@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "config/bar_layout.h"
+#include "config/launcher_config.h"
 #include "config/rain_config.h"
 #include "config/visualizer_config.h"
 
@@ -52,6 +53,8 @@ struct Config {
     bool default_wallpaper_enabled = true;
     bool default_lock_panel_enabled = true;
     std::map<std::string, MonitorOverride> monitor_overrides;
+
+    bool launcher_lightning = true;
 
     bool logout_animated_logo = true;
     bool animations_disabled = false;

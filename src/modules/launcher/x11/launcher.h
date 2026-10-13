@@ -7,6 +7,7 @@
 #include "app/shell.h"
 #include "core/event_loop.h"
 #include "core/keyboard.h"
+#include "core/x_clipboard.h"
 #include "core/x_connection.h"
 
 #include "modules/launcher/model.h"
@@ -34,6 +35,7 @@ class Launcher {
     Services &services_;
     XWindow window_;
     Keyboard keyboard_;
+    X11Clipboard clipboard_;
     CairoCanvas canvas_;
     LauncherModel model_;
     LauncherFrame frame_;

@@ -12,6 +12,7 @@
 
 #include "core/animation.h"
 #include "core/async_process.h"
+#include "core/clipboard.h"
 #include "core/input.h"
 #include "core/reactor.h"
 
@@ -47,6 +48,12 @@ class LauncherModel {
     void click_row(int index);
     bool hover(int row);
     void toggle_caret();
+    void pointer_down(float column, Clock::time_point now);
+    void pointer_drag(float column);
+    void pointer_up();
+    void set_clipboard(Clipboard *clipboard) { clipboard_ = clipboard; }
+    size_t field_window(size_t width);
+    const TextCursor &cursor() const { return cursor_; }
     void tick(Clock::time_point now) { animations_.tick(now); }
     void sync_layout();
 
@@ -74,6 +81,10 @@ class LauncherModel {
   private:
     void changed();
     void query_changed();
+    void text_edited();
+    void key_text(const input::KeyEvent &event);
+    void paste(const std::string &text);
+    size_t byte_at_column(float column) const;
     void arm_debounce();
     std::chrono::milliseconds until_debounce() const;
     void debounce_fired();
@@ -93,6 +104,13 @@ class LauncherModel {
     std::string search_root_;
     std::vector<DesktopEntry> apps_;
     TextFieldState field_;
+    TextCursor cursor_;
+    Clipboard *clipboard_ = nullptr;
+    size_t field_first_ = 0;
+    bool dragging_ = false;
+    bool have_click_ = false;
+    Clock::time_point last_click_{};
+    size_t last_click_byte_ = 0;
     TextFieldTypeAnim query_anim_;
     LauncherMode mode_ = LauncherMode::drun;
     std::string effective_query_;

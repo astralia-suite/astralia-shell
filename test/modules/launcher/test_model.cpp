@@ -2,8 +2,10 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <string>
 #include <unistd.h>
+#include <vector>
 
 #include "check.h"
 #include "core/pump.h"
@@ -180,6 +182,281 @@ void check_view() {
         query = query || (op.kind == Kind::text && op.text == "xy");
     }
     test::check(query, "the query is drawn");
+
+    auto plain = [](const test::RecordingCanvas &recorded) {
+        std::vector<test::Op> ops;
+        for (const test::Op &op : recorded.ops) {
+            if (op.kind != Kind::opacity) {
+                ops.push_back(op);
+            }
+        }
+        return ops;
+    };
+    astralia::EntranceState finished{1.0f, 3.0f};
+    test::RecordingCanvas animated;
+    astralia::LauncherFrame done = astralia::paint_launcher(animated, model, 1920, 1200, &finished);
+    std::vector<test::Op> expected = plain(canvas);
+    std::vector<test::Op> actual = plain(animated);
+    bool identical = expected.size() == actual.size() && done.box.y == frame.box.y;
+    for (std::size_t i = 0; identical && i < expected.size(); ++i) {
+        identical = expected[i].kind == actual[i].kind && expected[i].box.x == actual[i].box.x && expected[i].box.y == actual[i].box.y && expected[i].text == actual[i].text;
+    }
+    test::check(identical, "a finished entrance paints the same card as none");
+
+    astralia::EntranceState tracing{0.2f, 3.0f};
+    test::RecordingCanvas start;
+    astralia::LauncherFrame early = astralia::paint_launcher(start, model, 1920, 1200, &tracing);
+    test::check(early.box.y == frame.box.y && early.entrance.opacity == 0.0f && !early.entrance.bolts.empty() && start.count(Kind::rect) == canvas.count(Kind::rect) + 1, "the card is hidden in place under a dimmed backdrop while the outline is traced");
+    model.close();
+}
+
+KeyEvent chord(KeyKind kind, bool shift = false, bool ctrl = false) {
+    KeyEvent event;
+    event.kind = kind;
+    event.shift = shift;
+    event.ctrl = ctrl;
+    return event;
+}
+
+KeyEvent shortcut(char letter) {
+    KeyEvent event;
+    event.kind = KeyKind::Text;
+    event.ctrl = true;
+    event.base_sym = static_cast<unsigned char>(letter);
+    event.text = std::string(1, static_cast<char>(letter - 'a' + 1));
+    return event;
+}
+
+struct FakeClipboard : astralia::Clipboard {
+    std::string stored;
+    bool defer = false;
+    std::function<void(std::string)> waiting;
+
+    void set(std::string text) override { stored = std::move(text); }
+    void request(std::function<void(std::string)> done) override {
+        if (defer) {
+            waiting = std::move(done);
+        } else {
+            done(stored);
+        }
+    }
+};
+
+std::string selected(const LauncherModel &model) {
+    return astralia::text_cursor_selected_text(model.field().text, model.cursor());
+}
+
+void check_caret_editing() {
+    Instant instant;
+    astralia::PollReactor reactor = make_reactor();
+    LauncherModel model(reactor);
+    model.open(false);
+    model.set_search_root("/nonexistent-root");
+    model.set_apps({});
+
+    type(model, "hello");
+    model.key(key(KeyKind::Left));
+    model.key(key(KeyKind::Left));
+    test::check(model.cursor().pos == 3 && !model.cursor().has_selection(), "left moves the caret back");
+    type(model, "X");
+    test::check(model.field().text == "helXlo" && model.cursor().pos == 4, "typing inserts at the caret");
+    model.key(key(KeyKind::Backspace));
+    test::check(model.field().text == "hello" && model.cursor().pos == 3, "backspace removes before the caret");
+    model.key(key(KeyKind::Delete));
+    test::check(model.field().text == "helo" && model.cursor().pos == 3, "delete removes after the caret");
+    model.key(key(KeyKind::Home));
+    test::check(model.cursor().pos == 0, "home goes to the start");
+    model.key(key(KeyKind::Backspace));
+    test::check(model.field().text == "helo", "backspace at the start does nothing");
+    model.key(key(KeyKind::End));
+    test::check(model.cursor().pos == 4, "end goes to the end");
+    model.key(key(KeyKind::Delete));
+    test::check(model.field().text == "helo", "delete at the end does nothing");
+    model.key(key(KeyKind::Right));
+    test::check(model.cursor().pos == 4, "right stops at the end");
+
+    model.key(chord(KeyKind::Left, true));
+    model.key(chord(KeyKind::Left, true));
+    test::check(selected(model) == "lo" && model.cursor().pos == 2, "shift and left extend the selection");
+    model.key(chord(KeyKind::Right, true));
+    test::check(selected(model) == "o", "shift and right shrink the selection");
+    model.key(chord(KeyKind::Left, true));
+    model.key(key(KeyKind::Left));
+    test::check(!model.cursor().has_selection() && model.cursor().pos == 2, "left collapses a selection to its start");
+    model.key(chord(KeyKind::End, true));
+    test::check(selected(model) == "lo", "shift and end select to the end");
+    model.key(key(KeyKind::Right));
+    test::check(!model.cursor().has_selection() && model.cursor().pos == 4, "right collapses a selection to its end");
+    model.key(chord(KeyKind::Home, true));
+    type(model, "go");
+    test::check(model.field().text == "go" && model.cursor().pos == 2, "typing replaces the selection");
+    model.key(key(KeyKind::Left));
+    model.key(chord(KeyKind::Right, true));
+    model.key(key(KeyKind::Backspace));
+    test::check(model.field().text == "g", "backspace deletes the selection");
+
+    LauncherModel words(reactor);
+    words.open(false);
+    words.set_apps({});
+    type(words, "foo bar");
+    words.key(chord(KeyKind::Left, false, true));
+    test::check(words.cursor().pos == 4, "ctrl and left jump to the word start");
+    words.key(chord(KeyKind::Left, false, true));
+    test::check(words.cursor().pos == 0, "ctrl and left jump again");
+    words.key(chord(KeyKind::Right, false, true));
+    test::check(words.cursor().pos == 3, "ctrl and right jump to the word end");
+    words.key(chord(KeyKind::Right, true, true));
+    test::check(selected(words) == " bar" && words.cursor().pos == 7, "ctrl, shift and right select by word");
+
+    LauncherModel utf(reactor);
+    utf.open(false);
+    utf.set_apps({});
+    type(utf, "a");
+    utf.key(key(KeyKind::Text, "ñ"));
+    type(utf, "b");
+    utf.key(key(KeyKind::Left));
+    test::check(utf.cursor().pos == 3, "the caret steps over a whole character");
+    utf.key(key(KeyKind::Left));
+    test::check(utf.cursor().pos == 1, "the caret steps over a two byte character");
+    utf.key(key(KeyKind::Delete));
+    test::check(utf.field().text == "ab", "delete removes a whole character");
+    utf.key(key(KeyKind::Backspace));
+    test::check(utf.field().text == "b" && utf.cursor().pos == 0, "backspace removes a whole character");
+    test::check(utf.query_anim().chars.size() == 1, "the typing animation follows edits in the middle");
+}
+
+void check_clipboard_keys() {
+    Instant instant;
+    astralia::PollReactor reactor = make_reactor();
+    LauncherModel model(reactor);
+    model.open(false);
+    model.set_search_root("/nonexistent-root");
+    model.set_apps({});
+    FakeClipboard clipboard;
+    model.set_clipboard(&clipboard);
+
+    type(model, "hello world");
+    model.key(shortcut('c'));
+    test::check(clipboard.stored.empty() && model.field().text == "hello world", "copy without a selection does nothing and inserts no text");
+    model.key(shortcut('a'));
+    test::check(selected(model) == "hello world", "ctrl and a select everything");
+    model.key(shortcut('c'));
+    test::check(clipboard.stored == "hello world" && model.field().text == "hello world", "ctrl and c copy the selection");
+
+    model.key(key(KeyKind::Right));
+    model.key(shortcut('v'));
+    test::check(model.field().text == "hello worldhello world" && model.cursor().pos == 22, "ctrl and v paste at the caret");
+
+    model.key(chord(KeyKind::Home, true));
+    model.key(shortcut('x'));
+    test::check(model.field().text.empty() && clipboard.stored == "hello worldhello world", "ctrl and x cut the selection");
+    clipboard.stored = "a\nb\tc";
+    model.key(shortcut('v'));
+    test::check(model.field().text == "a b c", "pasted line breaks become spaces");
+    model.key(key(KeyKind::Left));
+    clipboard.stored = "";
+    model.key(shortcut('v'));
+    test::check(model.field().text == "a b c", "pasting nothing changes nothing");
+
+    KeyEvent chord_text = key(KeyKind::Text, "q");
+    chord_text.ctrl = true;
+    chord_text.base_sym = 'q';
+    model.key(chord_text);
+    KeyEvent alt_text = key(KeyKind::Text, "q");
+    alt_text.alt = true;
+    model.key(alt_text);
+    test::check(model.field().text == "a b c", "ctrl and alt chords are not typed");
+
+    clipboard.defer = true;
+    model.key(shortcut('v'));
+    model.close();
+    clipboard.waiting("late");
+    test::check(model.field().text.empty(), "a paste that arrives after closing is dropped");
+
+    LauncherModel loose(reactor);
+    loose.open(false);
+    loose.set_apps({});
+    type(loose, "abc");
+    loose.key(shortcut('a'));
+    loose.key(shortcut('c'));
+    loose.key(shortcut('v'));
+    test::check(loose.field().text == "abc", "clipboard keys without a clipboard do nothing");
+}
+
+void check_pointer_editing() {
+    using Clock = LauncherModel::Clock;
+    Instant instant;
+    astralia::PollReactor reactor = make_reactor();
+    LauncherModel model(reactor);
+    model.open(false);
+    model.set_search_root("/nonexistent-root");
+    model.set_apps({});
+    type(model, "hello world");
+
+    Clock::time_point t0 = Clock::now();
+    model.pointer_down(2.2f, t0);
+    test::check(model.cursor().pos == 2 && !model.cursor().has_selection(), "a click places the caret on the nearest boundary");
+    model.pointer_drag(5.4f);
+    test::check(selected(model) == "llo", "dragging selects");
+    model.pointer_up();
+    model.pointer_drag(9.0f);
+    test::check(selected(model) == "llo", "moving without the button leaves the selection alone");
+    model.pointer_down(40.0f, t0 + std::chrono::seconds(2));
+    test::check(model.cursor().pos == 11 && !model.cursor().has_selection(), "a click past the text goes to the end");
+    model.pointer_up();
+
+    Clock::time_point t1 = t0 + std::chrono::seconds(10);
+    model.pointer_down(7.1f, t1);
+    model.pointer_up();
+    model.pointer_down(7.1f, t1 + std::chrono::milliseconds(100));
+    test::check(selected(model) == "world", "a double click selects the word");
+    model.pointer_drag(0.0f);
+    test::check(selected(model) == "world", "a double click does not start a drag");
+    model.pointer_up();
+
+    model.pointer_down(7.1f, t1 + std::chrono::seconds(5));
+    model.pointer_up();
+    model.pointer_down(7.1f, t1 + std::chrono::seconds(5) + std::chrono::milliseconds(900));
+    test::check(!model.cursor().has_selection(), "slow clicks are not a double click");
+
+    test::check(model.field_window(20) == 0, "short text needs no scrolling");
+    model.key(key(KeyKind::End));
+    test::check(model.field_window(5) == 6, "long text scrolls to keep the caret visible");
+    model.key(key(KeyKind::Home));
+    test::check(model.field_window(5) == 0, "moving the caret back scrolls back");
+    model.key(key(KeyKind::End));
+    test::check(model.field_window(5) == 6, "the end scrolls forward again");
+    model.key(key(KeyKind::Left));
+    test::check(model.field_window(5) == 6, "the window stays while the caret is inside it");
+}
+
+void check_field_paint() {
+    using Kind = test::Op::Kind;
+    Instant instant;
+    astralia::PollReactor reactor = make_reactor();
+    LauncherModel model(reactor);
+    model.open(false);
+    model.set_apps({});
+    type(model, "abc");
+    model.sync_layout();
+
+    test::RecordingCanvas plain;
+    astralia::LauncherFrame frame = astralia::paint_launcher(plain, model, 1920, 1200);
+    test::check(frame.field.w > 0.0f && astralia::launcher_field_hit(frame, frame.field.x + 1.0f, frame.field.y + 1.0f), "the field is reported for pointer hits");
+    test::check(!astralia::launcher_field_hit(frame, frame.field.x - 1.0f, frame.field.y + 1.0f), "points outside the field miss");
+    test::check(astralia::launcher_field_column(frame, frame.text_x) == 0.0f && astralia::launcher_field_column(frame, frame.text_x - 50.0f) == 0.0f, "columns start at the text origin");
+    float caret_at_end = frame.caret.x;
+
+    model.key(key(KeyKind::Left));
+    test::RecordingCanvas moved;
+    astralia::LauncherFrame left = astralia::paint_launcher(moved, model, 1920, 1200);
+    test::check(left.caret.x < caret_at_end, "the caret follows the cursor");
+    test::check(moved.count(Kind::rect) == plain.count(Kind::rect), "no selection draws no highlight");
+
+    model.key(chord(KeyKind::Left, true));
+    test::RecordingCanvas highlighted;
+    astralia::paint_launcher(highlighted, model, 1920, 1200);
+    test::check(highlighted.count(Kind::rect) == plain.count(Kind::rect) + 1, "a selection draws one highlight");
     model.close();
 }
 
@@ -190,4 +467,8 @@ void check_launcher_model() {
     check_search_flow();
     check_layout_animation();
     check_view();
+    check_caret_editing();
+    check_clipboard_keys();
+    check_pointer_editing();
+    check_field_paint();
 }
