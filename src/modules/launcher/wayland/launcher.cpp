@@ -50,7 +50,7 @@ void launcher_start_entrance(LauncherState &state) {
 
 void launcher_draw_entrance(LauncherState &state) {
     const astralia::EntranceFrame &e = state.frame.entrance;
-    astralia::Color core = astralia::with_alpha(astralia::palette::text, 1.0f);
+    astralia::Color core = astralia::with_alpha(astralia::palette::white, 1.0f);
     astralia::Color glow = astralia::with_alpha(astralia::palette::electro, 1.0f);
     for (const astralia::EntranceBurst &burst : e.bursts) {
         ThunderRectShockParams r;

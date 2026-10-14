@@ -44,6 +44,13 @@ inline constexpr float slider_focus_ring = 2.0f;
 // Animation
 inline constexpr float reveal_ms = 220.0f;
 
+// Scroll
+inline constexpr float scroll_roller = 14.0f;
+inline constexpr float scroll_overhang = 6.0f;
+inline constexpr float scroll_cap = 6.0f;
+inline constexpr float scroll_rounding = 6.0f;
+inline constexpr float scroll_band = 4.0f;
+
 // Typography
 inline constexpr int text_px = 17;
 inline constexpr int small_px = 13;

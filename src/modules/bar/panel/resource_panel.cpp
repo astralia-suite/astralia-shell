@@ -56,7 +56,7 @@ float memory_content(ui::Canvas &canvas, const SystemStatsState &stats) {
 }
 
 ui::Box card(ui::Canvas &canvas, const ui::Box &box, const char *title) {
-    canvas.rounded(box, cfg::card_radius, palette::overlay, 2.0f, palette::accent);
+    canvas.rounded(box, cfg::card_radius, palette::surface, metrics::border_thin, palette::ink);
     ui::TextSize size = canvas.measure(title, title_style);
     canvas.text(title, title_style, box.x + cfg::card_side, box.y + cfg::card_top + (cfg::card_header - size.h) / 2.0f, palette::text);
     return {box.x + cfg::card_side, box.y + cfg::card_top + cfg::card_header + cfg::card_header_gap, box.w - 2.0f * cfg::card_side, box.h};

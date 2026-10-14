@@ -18,7 +18,7 @@ namespace astralia {
 
 namespace {
 
-constexpr uint16_t backing_width = 520;
+constexpr uint16_t backing_width = 540;
 constexpr uint16_t backing_height = 940;
 constexpr double wheel_step = 40.0;
 
@@ -45,6 +45,11 @@ PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
         }
     };
     set_.on_state = [this](PanelId id, bool open) { state_changed(id, open); };
+    services.theme.changed.connect([this] {
+        if (window_.mapped()) {
+            paint();
+        }
+    });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     loop.on_window(popup_.id(), [this](const xcb_generic_event_t &event) { handle_popup(event); });
 }
@@ -93,15 +98,16 @@ void PanelHost::paint() {
     if (panel == nullptr) {
         return;
     }
-    float x = panel->card_x(static_cast<float>(output_.width));
-    OutputGeometry geometry{static_cast<int16_t>(output_.x + static_cast<int>(x)), static_cast<int16_t>(output_.y + top_), static_cast<uint16_t>(panel->content().width()), 1};
+    Panel::Inset inset = Panel::inset();
+    float x = panel->card_x(static_cast<float>(output_.width)) - inset.x;
+    OutputGeometry geometry{static_cast<int16_t>(output_.x + static_cast<int>(x)), static_cast<int16_t>(output_.y + top_), static_cast<uint16_t>(panel->content().width() + 2.0f * inset.x), 1};
     if (window_.cr() == nullptr) {
         geometry.height = backing_height;
         window_.place(geometry, backing_width, backing_height);
     }
     canvas_.bind(window_.cr());
     window_.clear();
-    panel->paint_at(canvas_, 0.0f, 0.0f);
+    panel->paint_at(canvas_, inset.x, 0.0f);
     ui::Box extent = panel->extent();
     geometry.height = static_cast<uint16_t>(std::clamp(static_cast<int>(extent.h), 1, static_cast<int>(backing_height)));
     if (window_.geometry() != geometry) {

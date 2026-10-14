@@ -28,7 +28,7 @@ hidden = ['-fvisibility=hidden', '-fvisibility-inlines-hidden']
 
 data_dir = get_option('prefix') / get_option('datadir') / 'astralia-shell'
 add_project_arguments(
-  '-DASTRALIA_DEFAULT_WALLPAPER="@0@"'.format(data_dir / 'stellar-restoration.png'),
+  '-DASTRALIA_DEFAULT_WALLPAPER="@0@"'.format(data_dir / 'default-wallpaper.jpg'),
   '-DASTRALIA_ASSET_DIR="@0@"'.format(data_dir),
   '-DASTRALIA_SOURCE_ASSET_DIR="@0@"'.format(meson.project_source_root() / 'assets'),
   language: 'cpp',
@@ -131,6 +131,7 @@ core_shared = static_library(
     'src/service/notification_service.cpp',
     'src/service/polkit_service.cpp',
     'src/service/telemetry_service.cpp',
+    'src/service/theme_service.cpp',
     'src/service/tray_service.cpp',
     'src/service/settings_service.cpp',
     'src/service/user_service.cpp',
@@ -140,6 +141,11 @@ core_shared = static_library(
     'src/render/field_view.cpp',
     'src/render/marquee.cpp',
     'src/render/module_base.cpp',
+    'src/render/palette_extract.cpp',
+    'src/render/scroll.cpp',
+    'src/render/scroll_sequence.cpp',
+    'src/render/sticker.cpp',
+    'src/render/theme.cpp',
     'src/render/text_field.cpp',
   ),
   include_directories: inc,
@@ -171,7 +177,7 @@ install_data(
   'assets/fonts/YujiMai.ttf',
   install_dir: data_dir / 'fonts',
 )
-install_data('assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
+install_data('assets/default-wallpaper.jpg', 'assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
 install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
 install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
 install_data('assets/gifs/profile.gif', install_dir: data_dir / 'gifs')
@@ -266,7 +272,12 @@ unit = executable(
     'test/core/test_reactor.cpp',
     'test/core/test_spawn.cpp',
     'test/render/test_module_base.cpp',
+    'test/render/test_oklab.cpp',
+    'test/render/test_palette_extract.cpp',
+    'test/render/test_scroll.cpp',
+    'test/render/test_scroll_sequence.cpp',
     'test/render/test_text_cursor.cpp',
+    'test/render/test_theme.cpp',
     'test/render/test_tokens.cpp',
     'test/modules/bar/test_bar.cpp',
     'test/modules/bar/test_panel.cpp',
@@ -295,6 +306,7 @@ unit = executable(
     'test/service/test_settings.cpp',
     'test/service/test_wallpaper.cpp',
     'test/service/test_telemetry.cpp',
+    'test/service/test_theme_service.cpp',
   ),
   include_directories: [inc, include_directories('test')],
   link_with: [core_base, core_shared],

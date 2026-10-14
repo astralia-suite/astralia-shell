@@ -14,6 +14,7 @@
 #include "core/reactor.h"
 
 #include "render/canvas.h"
+#include "render/scroll_sequence.h"
 
 namespace astralia {
 
@@ -121,13 +122,13 @@ class Panel {
     bool is_open() const { return open_; }
     bool animating() const { return animations_.hasActive() || content_->animations().hasActive(); }
     bool dragging() const { return dragging_; }
-    bool closing() const { return closing_; }
+    bool closing() const { return sequence_.closing(); }
     const ui::Box &dialog() const { return dialog_; }
     PanelContent &content() { return *content_; }
     const PanelContent &content() const { return *content_; }
     const ui::Box &card() const { return card_; }
 
-    bool popup_wanted() const { return open_ && !closing_ && content_->popup_height() > 0.0f; }
+    bool popup_wanted() const { return open_ && !closing() && sequence_.settled() && content_->popup_height() > 0.0f; }
     float popup_width() const { return content_->popup_width(); }
     float popup_height() const { return content_->popup_height(); }
     ui::Box popup_anchor() const;
@@ -138,9 +139,15 @@ class Panel {
     void dismiss_popup();
 
     float card_x(float surface_width) const;
-    ui::Box paint(ui::Canvas &canvas, float surface_width, float top) { return paint_at(canvas, card_x(surface_width), top); }
-    ui::Box paint_at(ui::Canvas &canvas, float x, float top);
+    ui::Box paint(ui::Canvas &canvas, float surface_width, float top) { return paint_at(canvas, card_x(surface_width), top, surface_width); }
+    ui::Box paint_at(ui::Canvas &canvas, float x, float top, float surface_width = 0.0f);
     ui::Box extent() const;
+
+    struct Inset {
+        float x;
+        float y;
+    };
+    static Inset inset();
 
     std::function<void()> on_changed;
     std::function<void()> on_closed;
@@ -152,12 +159,12 @@ class Panel {
     std::unique_ptr<PanelContent> content_;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     AnimationManager animations_;
+    ScrollSequence sequence_{animations_, 10};
     int timer_ = -1;
     Reactor *reactor_ = nullptr;
     std::vector<PanelRegion> regions_;
     std::vector<PanelRegion> popup_regions_;
     bool open_ = false;
-    bool closing_ = false;
     float reveal_ = -1.0f;
     float target_ = -1.0f;
     float scroll_ = 0.0f;

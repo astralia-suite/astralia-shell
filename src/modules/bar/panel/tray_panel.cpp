@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/bar/panel/tray_panel.h"
 #include "modules/bar/panel/widgets.h"
@@ -126,7 +127,7 @@ void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, Pan
         if (image != ui::no_image) {
             ui::TextSize size = canvas.image_size(image);
             float scale = size.w > 0.0f && size.h > 0.0f ? cfg::tray_icon / std::max(size.w, size.h) : 1.0f;
-            canvas.draw_image(image, {cell.x + (cell.w - size.w * scale) / 2.0f, cell.y + (cell.h - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, palette::text);
+            canvas.draw_image(image, {cell.x + (cell.w - size.w * scale) / 2.0f, cell.y + (cell.h - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, palette::white);
         } else {
             panel_widgets::centered_text(canvas, icon::apps, ui::TextStyle{ui::FontFamily::icon, cfg::icon_px}, target, palette::text);
         }
@@ -143,7 +144,7 @@ float TrayPanel::popup_height() const {
 
 void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &paint) {
     std::vector<TrayMenuRow> rows = tray_menu_rows(level(), !path_.empty());
-    canvas.rounded(box, cfg::tray_menu_radius, palette::overlay, cfg::tray_menu_border, palette::accent);
+    sticker(canvas, box, cfg::tray_menu_radius, palette::paper);
     float x = box.x + cfg::tray_menu_pad;
     float width = box.w - 2.0f * cfg::tray_menu_pad;
     float y = box.y + cfg::tray_menu_pad;

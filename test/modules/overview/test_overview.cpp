@@ -13,6 +13,8 @@
 #include "modules/overview/model.h"
 #include "modules/overview/view.h"
 
+#include "render/scroll.h"
+
 namespace {
 
 namespace cfg = astralia::overview_config;
@@ -172,23 +174,58 @@ void check_input() {
     test::check(compositor.calls.back() == "focus 1", "dropping on the same workspace focuses it");
 }
 
-void check_slide() {
+void check_overview_stages() {
+    using std::chrono::seconds;
+    using std::chrono::steady_clock;
     test::FakeCompositor compositor;
     setup_single(compositor);
+    compositor.state_.clients = {client("0x1", 1, 100, 100, 400, 300)};
     OverviewModel model(compositor);
     int closed = 0;
     model.on_closed = [&] { ++closed; };
     model.open("A", 1366, 768);
-    test::check(model.slide_y() == 768.0f && model.animating(), "the overview starts below the screen");
-    model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(1));
-    test::check(model.slide_y() == 0.0f, "and slides up");
+    test::check(model.slide_y() == 768.0f && model.scroll() == 0.0f && model.animating(), "the closed scroll starts below the screen");
+    model.sync(1366, 768);
+    test::check(model.indicator() == nullptr && !model.clickable(683, 384), "nothing reacts while the scroll is closed");
+    int calls = static_cast<int>(compositor.calls.size());
+    model.press(683, 384);
+    test::check(static_cast<int>(compositor.calls.size()) == calls && !model.dragging(), "pointer presses are ignored until the scroll is open");
+
+    model.tick(steady_clock::now() + seconds(1));
+    test::check(model.slide_y() == 0.0f && model.scroll() == 0.0f && !model.fully_open(), "the scroll rises first and is still closed");
+    model.tick(steady_clock::now() + seconds(2));
+    test::check(model.scroll() == 1.0f && model.grid_alpha() == 0.0f && model.fully_open() && model.animating(), "then it unrolls and the grid starts to fade in");
+    model.tick(steady_clock::now() + seconds(3));
+    test::check(model.grid_alpha() == 1.0f && !model.animating(), "the grid settles last");
     model.sync(1366, 768);
     test::check(model.indicator() != nullptr, "the indicator shows once settled");
+
     model.close();
-    test::check(model.is_open(), "closing keeps the overview until the slide ends");
+    test::check(model.is_open() && !model.fully_open(), "closing keeps the overview until the drop ends");
     test::check(!model.key(key(KeyKind::Right)), "keys are ignored while closing");
-    model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(2));
-    test::check(!model.is_open() && closed == 1, "the overview closes after the slide");
+    model.tick(steady_clock::now() + seconds(4));
+    test::check(model.grid_alpha() == 0.0f && model.scroll() == 1.0f, "the grid fades out before the scroll moves");
+    model.tick(steady_clock::now() + seconds(5));
+    test::check(model.scroll() == 0.0f && model.slide_y() == 0.0f && model.is_open() && closed == 0, "the scroll rolls up before it drops");
+    model.tick(steady_clock::now() + seconds(6));
+    test::check(!model.is_open() && closed == 1, "the overview closes after the drop");
+
+    model.open("A", 1366, 768);
+    model.close();
+    model.tick(steady_clock::now() + seconds(1));
+    model.tick(steady_clock::now() + seconds(2));
+    test::check(!model.is_open() && closed == 2 && model.scroll() == 0.0f, "closing during the rise never unrolls the scroll");
+
+    {
+        Instant instant;
+        OverviewModel snap(compositor);
+        int snapped = 0;
+        snap.on_closed = [&] { ++snapped; };
+        snap.open("A", 1366, 768);
+        test::check(snap.fully_open() && !snap.animating(), "instant mode opens straight to the final scroll");
+        snap.close();
+        test::check(!snap.is_open() && snapped == 1, "and closes straight away");
+    }
 }
 
 void check_view() {
@@ -200,9 +237,14 @@ void check_view() {
     OverviewModel model(compositor);
     model.open("A", 1366, 768);
     model.sync(1366, 768);
+    astralia::ScrollMetrics metrics;
+    test::RecordingCanvas frame;
+    astralia::paint_scroll(frame, astralia::scroll_geometry(model.layout().panels[0], 1.0f, metrics), metrics);
+    size_t scroll_ops = frame.count(Kind::rounded);
+
     test::RecordingCanvas canvas;
     astralia::paint_overview(canvas, model, {});
-    test::check(canvas.count(Kind::rounded) == 1 + 10 + 1 + 1, "panel, cells, one tile and the indicator");
+    test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 1 + 1, "the scroll, cells, one tile and the indicator");
     test::check(canvas.count(Kind::text) == 10 && canvas.count(Kind::image) <= 1, "a number per cell");
 
     test::RecordingCanvas live;
@@ -211,7 +253,56 @@ void check_view() {
         ++art_calls;
         return true;
     });
-    test::check(art_calls == 1 && live.count(Kind::rounded) == 1 + 10 + 1, "live art replaces the placeholder tile");
+    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 1, "live art replaces the placeholder tile");
+}
+
+void check_staged_view() {
+    using Kind = test::Op::Kind;
+    using std::chrono::milliseconds;
+    using std::chrono::seconds;
+    using std::chrono::steady_clock;
+    test::FakeCompositor compositor;
+    setup_single(compositor);
+    compositor.state_.clients = {client("0x1", 1, 0, 0, 683, 374)};
+    OverviewModel model(compositor);
+    model.open("A", 1366, 768);
+    model.sync(1366, 768);
+    test::RecordingCanvas rising;
+    astralia::paint_overview(rising, model, {});
+    test::check(rising.count(Kind::rounded) > 0 && rising.count(Kind::text) == 0, "the closed scroll rises with no grid");
+
+    model.tick(steady_clock::now() + seconds(1));
+    model.tick(steady_clock::now() + milliseconds(static_cast<int>(astralia::ScrollTimings{}.scroll_ms / 2)));
+    model.sync(1366, 768);
+    test::check(model.scroll() > 0.0f && model.scroll() < 1.0f, "the scroll is half unrolled");
+    test::RecordingCanvas unrolling;
+    astralia::paint_overview(unrolling, model, {});
+    test::check(unrolling.count(Kind::text) == 0 && unrolling.count(Kind::begin_group) == 0, "the scroll unrolls empty");
+
+    model.tick(steady_clock::now() + seconds(2));
+    model.sync(1366, 768);
+    test::RecordingCanvas waiting;
+    astralia::paint_overview(waiting, model, {});
+    test::check(model.scroll() == 1.0f && waiting.count(Kind::text) == 0, "the grid waits for the open scroll");
+
+    model.tick(steady_clock::now() + seconds(3));
+    model.sync(1366, 768);
+    test::RecordingCanvas open;
+    astralia::paint_overview(open, model, {});
+    test::check(open.count(Kind::text) == 10 && open.count(Kind::begin_group) == 0, "the grid appears once the scroll is open");
+
+    model.close();
+    model.tick(steady_clock::now() + milliseconds(static_cast<int>(astralia::ScrollTimings{}.grid_out_ms / 2)));
+    model.sync(1366, 768);
+    test::RecordingCanvas fading;
+    astralia::paint_overview(fading, model, {});
+    test::check(model.grid_alpha() > 0.0f && model.grid_alpha() < 1.0f && model.scroll() == 1.0f && fading.count(Kind::text) == 10, "the grid fades while the scroll stays open");
+
+    model.tick(steady_clock::now() + seconds(4));
+    model.sync(1366, 768);
+    test::RecordingCanvas gone;
+    astralia::paint_overview(gone, model, {});
+    test::check(gone.count(Kind::text) == 0 && model.scroll() == 1.0f, "the grid is gone before the scroll rolls up");
 }
 
 } // namespace
@@ -220,6 +311,7 @@ void check_overview() {
     check_layout();
     check_tiles();
     check_input();
-    check_slide();
+    check_overview_stages();
     check_view();
+    check_staged_view();
 }

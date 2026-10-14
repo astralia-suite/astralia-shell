@@ -31,6 +31,7 @@
 #include "service/notification_service.h"
 #include "service/polkit_service.h"
 #include "service/telemetry_service.h"
+#include "service/theme_service.h"
 #include "service/tray_service.h"
 #include "service/wayland/text_input_service.h"
 
@@ -86,6 +87,7 @@ struct WaylandState {
     std::unique_ptr<astralia::SystemBus> session_bus;
     std::unique_ptr<astralia::MediaService> media;
     std::unique_ptr<astralia::PolkitService> polkit;
+    std::unique_ptr<astralia::ThemeService> theme;
     int config_watch_fd = -1;
     bool config_own_write_pending = false;
     MonitorOutput *last_pointer_monitor = nullptr;

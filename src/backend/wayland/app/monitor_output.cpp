@@ -93,6 +93,18 @@ int monitor_active_workspace_id(const MonitorOutput &mon) {
     return it != mon.app->desktop->state().by_monitor.end() ? it->second.active_id : -1;
 }
 
+void theme_sync(WaylandState &app) {
+    if (!app.theme)
+        return;
+    std::string primary;
+    for (auto &mon : app.outputs)
+        if (!mon->output.name.empty()) {
+            primary = mon->output.name;
+            break;
+        }
+    app.theme->sync(app.cfg, primary);
+}
+
 void apply_config_update(WaylandState &app, Config new_cfg) {
     bool idle_changed =
         app.cfg.idle_management_enabled != new_cfg.idle_management_enabled || app.cfg.ambient_enabled != new_cfg.ambient_enabled || app.cfg.ambient_timeout_seconds != new_cfg.ambient_timeout_seconds || app.cfg.screensaver_enabled != new_cfg.screensaver_enabled || app.cfg.screensaver_timeout_seconds != new_cfg.screensaver_timeout_seconds || app.cfg.monitor_overrides != new_cfg.monitor_overrides;
@@ -110,6 +122,7 @@ void apply_config_update(WaylandState &app, Config new_cfg) {
     astralia::animation_set_instant(new_cfg.animations_disabled);
 
     app.cfg = new_cfg;
+    theme_sync(app);
     for (auto &m : app.overlays)
         m->apply_config(app, app.cfg);
     for (auto &mon : app.outputs)

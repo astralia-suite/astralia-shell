@@ -212,7 +212,7 @@ void GlCanvas::draw_image(ui::ImageId id, const ui::Box &box, const astralia::Co
 
 void GlCanvas::gauge(const ui::Box &box, float stroke, float value, const astralia::Color &fill) {
     if (const Texture *tex = cached_arc_gauge(cache_, scale_, box.w, stroke, value, fill)) {
-        texture(*tex, std::round(box.x), std::round(box.y), astralia::rgba(astralia::palette::text));
+        texture(*tex, std::round(box.x), std::round(box.y), astralia::rgba(astralia::palette::white));
     }
 }
 

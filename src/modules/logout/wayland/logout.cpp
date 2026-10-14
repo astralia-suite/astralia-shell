@@ -175,7 +175,7 @@ void logout_paint(LogoutState &state) {
         float cy = static_cast<float>(state.base.height) / 2.0f;
         float time_s =
             std::chrono::duration<float>(now - state.model.burst_started()).count();
-        astralia::Color core = astralia::with_alpha(astralia::palette::text, 1.0f);
+        astralia::Color core = astralia::with_alpha(astralia::palette::white, 1.0f);
         astralia::Color glow = astralia::with_alpha(astralia::palette::electro, 1.0f);
 
         ThunderParams p;

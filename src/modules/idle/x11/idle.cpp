@@ -177,7 +177,7 @@ void Idle::paint(const Output &output, Overlay &overlay) {
         overlay.canvas.bind(cr);
         ui::ImageId logo = overlay.canvas.image(logo_asset, static_cast<int>(kIdleLogoSize));
         ui::TextSize size = overlay.canvas.image_size(logo);
-        overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h}, palette::text);
+        overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h}, palette::white);
     } else {
         paint_wallpaper(cr, services_.settings.config(), output.name, 0, 0, width, height);
     }

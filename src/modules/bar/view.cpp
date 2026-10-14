@@ -3,6 +3,7 @@
 
 #include "config/bar_layout.h"
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/bar/view.h"
 
@@ -17,9 +18,9 @@ namespace cfg = bar_layout;
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, static_cast<int>(cfg::icon_px)};
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
-void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box, const Color &border) {
+void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box, const Color &fill) {
     if (style.has_pill_bg()) {
-        canvas.rounded(box, box.h * style.radius_ratio, style.bg, style.border_width, border);
+        sticker(canvas, box, box.h * style.radius_ratio, fill, style.border, style.border_width, style.shadow);
     }
 }
 
@@ -28,9 +29,9 @@ void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView
         return;
     }
     float pad = view.box.h * style.pad_ratio;
+    capsule_background(canvas, style, view.box, view.tint.value_or(style.bg));
     canvas.begin_group(view.box, {1.0f, true});
     ui::Box local{0.0f, 0.0f, view.box.w, view.box.h};
-    capsule_background(canvas, style, local, view.border.value_or(style.border));
     ui::TextSize icon = canvas.measure(view.glyph, icon_style);
     canvas.text(view.glyph, icon_style, pad, (local.h - icon.h) / 2.0f, palette::text);
     if (!view.label.empty() && view.expand > 0.0f) {
@@ -49,11 +50,12 @@ void paint_workspaces(ui::Canvas &canvas, const BarModel &model) {
         return;
     }
     const BarStyleSpec &style = model.style();
-    capsule_background(canvas, style, layout.workspaces, style.border);
+    capsule_background(canvas, style, layout.workspaces, style.bg);
     for (const BarWorkspace &ws : model.workspaces()) {
-        const Color &color = ws.active ? palette::accent_alt : ws.occupied ? palette::accent
-                                                                           : palette::text_dim;
-        canvas.rounded(ws.box, ws.box.h / 2.0f, color);
+        const Color &fill = ws.active ? palette::ink : ws.occupied ? palette::accent
+                                                                   : palette::paper;
+        const Color &outline = ws.occupied || ws.active ? palette::ink : palette::text_muted;
+        canvas.rounded(ws.box, ws.box.h / 2.0f, fill, metrics::border_thin, outline);
     }
     ui::TextSize glyph = canvas.measure(icon::overview, icon_style);
     float x = layout.overview.x + cfg::workspace_overview_gap / 2.0f;
@@ -66,7 +68,7 @@ void paint_dock(ui::Canvas &canvas, const BarModel &model) {
         return;
     }
     const BarStyleSpec &style = model.style();
-    capsule_background(canvas, style, layout.dock, style.border);
+    capsule_background(canvas, style, layout.dock, style.bg);
     float pad = layout.height * style.pad_ratio;
     float y = std::round((layout.height - cfg::dock_icon) / 2.0f);
     for (const BarDockSlot &slot : model.dock()) {
@@ -84,7 +86,7 @@ void paint_dock(ui::Canvas &canvas, const BarModel &model) {
         float h = std::round(size.h * scale);
         float x = std::round(layout.dock.x + pad + slot.x);
         float alpha = slot.entry.focused ? cfg::dock_focused_alpha : cfg::dock_unfocused_alpha;
-        canvas.draw_image(image, {x + std::round((cfg::dock_icon - w) / 2.0f), y + std::round((cfg::dock_icon - h) / 2.0f), w, h}, with_alpha(palette::text, alpha));
+        canvas.draw_image(image, {x + std::round((cfg::dock_icon - w) / 2.0f), y + std::round((cfg::dock_icon - h) / 2.0f), w, h}, with_alpha(palette::white, alpha));
     }
 }
 

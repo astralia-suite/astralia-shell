@@ -109,7 +109,17 @@ void overlay_panel_destroy_surface(OverlayPanelBase &base) {
     base.configured = false;
 }
 
-void overlay_panel_toggle(OverlayPanelBase &base) {
+void overlay_panel_release(OverlayPanelBase &base) {
+    base.open = false;
+    if (!base.layer_surface)
+        return;
+    zwlr_layer_surface_v1_set_keyboard_interactivity(base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+    overlay_panel_update_input_region(base);
+    wl_surface_commit(base.surface);
+    klog("panel: %s released exclusive keyboard interactivity", base.name_space ? base.name_space : "?");
+}
+
+void overlay_panel_toggle(OverlayPanelBase &base, bool fade) {
     if (!base.layer_surface || base.egl_surface == EGL_NO_SURFACE)
         return;
 
@@ -123,14 +133,15 @@ void overlay_panel_toggle(OverlayPanelBase &base) {
     }
 
     overlay_panel_request_frame(base);
+    if (!fade) {
+        base.animations.cancelForOwner(kOverlayFadeOwner);
+        if (opening)
+            base.opacity = 1.0f;
+        return;
+    }
     base.animations.animate(base.opacity, opening ? 1.0f : 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&base](float v) { base.opacity = v; }, [&base, opening] {
-            if (opening)
-                return;
-            base.open = false;
-            zwlr_layer_surface_v1_set_keyboard_interactivity(base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
-            overlay_panel_update_input_region(base);
-            wl_surface_commit(base.surface);
-            klog("panel: %s released exclusive keyboard interactivity", base.name_space ? base.name_space : "?"); }, kOverlayFadeOwner);
+            if (!opening)
+                overlay_panel_release(base); }, kOverlayFadeOwner);
 }
 
 void panel_reveal_open(PanelHeightReveal &r) {

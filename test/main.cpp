@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "check.h"
+#include "palette_fixture.h"
 
 void check_json();
 void check_json_write();
@@ -15,6 +16,11 @@ void check_path_home();
 void check_reactor();
 void check_animation();
 void check_tokens();
+void check_oklab();
+void check_palette_extract();
+void check_scroll();
+void check_scroll_sequence();
+void check_theme();
 void check_input();
 void check_text_cursor();
 void check_module_base();
@@ -38,6 +44,7 @@ void check_monitor_overrides();
 void check_settings_service();
 void check_wallpaper_resolve();
 void check_wallpaper_images();
+void check_theme_service();
 void check_dock();
 void check_hyprland();
 void check_i3();
@@ -79,6 +86,7 @@ int main() {
     if (mkdtemp(state_dir) != nullptr) {
         setenv("XDG_STATE_HOME", state_dir, 1);
     }
+    test::apply_base_theme();
     check_spawn_helpers();
     check_json();
     check_json_write();
@@ -90,6 +98,11 @@ int main() {
     check_reactor();
     check_animation();
     check_tokens();
+    check_oklab();
+    check_palette_extract();
+    check_scroll();
+    check_scroll_sequence();
+    check_theme();
     check_input();
     check_text_cursor();
     check_module_base();
@@ -113,6 +126,7 @@ int main() {
     check_settings_service();
     check_wallpaper_resolve();
     check_wallpaper_images();
+    check_theme_service();
     check_dock();
     check_hyprland();
     check_i3();

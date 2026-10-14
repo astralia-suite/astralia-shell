@@ -52,7 +52,9 @@ void scale_event(void *data, wl_output *, int32_t factor) {
     static_cast<MonitorOutput *>(data)->output.scale = factor;
 }
 void name_event(void *data, wl_output *, const char *name) {
-    static_cast<MonitorOutput *>(data)->output.name = name;
+    auto *mon = static_cast<MonitorOutput *>(data);
+    mon->output.name = name;
+    app_detail::theme_sync(*mon->app);
 }
 void description(void *, wl_output *, const char *) {}
 void done(void *data, wl_output *) {
@@ -143,6 +145,7 @@ void registry_global_remove(void *data, wl_registry *, uint32_t name) {
         state->last_pointer_monitor = nullptr;
     monitor_output_destroy(**it);
     state->outputs.erase(it);
+    app_detail::theme_sync(*state);
 }
 
 } // namespace

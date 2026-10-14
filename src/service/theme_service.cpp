@@ -1,0 +1,128 @@
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <filesystem>
+#include <optional>
+#include <thread>
+
+#include "core/deferred_call.h"
+#include "core/log.h"
+
+#include "render/decode.h"
+#include "render/theme.h"
+#include "service/theme_service.h"
+#include "service/wallpaper_service.h"
+
+namespace astralia {
+
+namespace {
+
+constexpr int sample_side = 256;
+constexpr float same_hue_epsilon = 0.5f;
+
+bool seed_differs(const Seed &a, const Seed &b) {
+    return std::fabs(a.hue - b.hue) > same_hue_epsilon;
+}
+
+std::optional<Extraction> extract_from_file(const std::string &path) {
+    if (path.empty()) {
+        return std::nullopt;
+    }
+    auto pixels = decode_pixels(path, [](int w, int h) { return static_cast<double>(sample_side) / std::max(1, std::max(w, h)); });
+    if (!pixels) {
+        log::info("theme: could not decode {}", path);
+        return std::nullopt;
+    }
+    Extraction extraction = extract_seeds(pixels->data.get(), pixels->width, pixels->height, pixels->premultiplied);
+    if (!extraction.found) {
+        log::info("theme: no usable colour in {}", path);
+        return std::nullopt;
+    }
+    return extraction;
+}
+
+std::optional<Extraction> resolve_theme(const std::string &path) {
+    if (std::optional<Extraction> extraction = extract_from_file(path)) {
+        return extraction;
+    }
+    return extract_from_file(default_wallpaper_path());
+}
+
+} // namespace
+
+std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_name) {
+    if (!monitor_name.empty()) {
+        return wallpaper_image_for(cfg, monitor_name);
+    }
+    for (const auto &[name, columns] : cfg.wallpaper_columns) {
+        if (!columns.empty() && !columns.front().empty()) {
+            return columns.front();
+        }
+    }
+    return cfg.default_wallpaper_enabled ? cfg.wallpaper_path : "";
+}
+
+ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
+    ThemeSource source;
+    source.path = theme_wallpaper_path(cfg, monitor_name);
+    if (source.path.empty()) {
+        return source;
+    }
+    std::error_code ec;
+    auto modified = std::filesystem::last_write_time(source.path, ec);
+    if (!ec) {
+        source.modified = std::chrono::duration_cast<std::chrono::nanoseconds>(modified.time_since_epoch()).count();
+    }
+    return source;
+}
+
+bool theme_extraction_differs(const std::optional<Extraction> &a, const Extraction &b) {
+    if (!a || seed_differs(a->primary, b.primary) || a->secondary.has_value() != b.secondary.has_value()) {
+        return true;
+    }
+    return a->secondary && seed_differs(*a->secondary, *b.secondary);
+}
+
+ThemeService::ThemeService() : life_(std::make_shared<int>(0)) {}
+
+void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
+    if (cfg.wallpaper_animated_enabled) {
+        return;
+    }
+    ThemeSource source = theme_source(cfg, monitor_name);
+    if (has_source_ && source == source_) {
+        return;
+    }
+    bool first = !has_source_;
+    has_source_ = true;
+    source_ = source;
+    uint64_t gen = ++generation_;
+    if (first) {
+        if (std::optional<Extraction> extraction = resolve_theme(source.path)) {
+            apply(*extraction);
+        }
+        return;
+    }
+    std::weak_ptr<int> life = life_;
+    std::thread([this, path = source.path, gen, life] {
+        std::optional<Extraction> extraction = resolve_theme(path);
+        DeferredCall::call_later([this, extraction, gen, life] {
+            auto keep = life.lock();
+            if (!keep || gen != generation_ || !extraction) {
+                return;
+            }
+            apply(*extraction);
+        });
+    }).detach();
+}
+
+void ThemeService::apply(const Extraction &extraction) {
+    if (!theme_extraction_differs(applied_, extraction)) {
+        return;
+    }
+    applied_ = extraction;
+    theme_apply(theme_from_seed(extraction));
+    changed.emit();
+}
+
+} // namespace astralia

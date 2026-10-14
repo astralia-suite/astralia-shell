@@ -43,7 +43,10 @@ class FakeContent final : public PanelContent {
     int body_hover = -2;
     int hover_a = -1;
 
+    astralia::PanelAnchor side = astralia::PanelAnchor::right;
+
     std::string_view title() const override { return "Fake"; }
+    astralia::PanelAnchor anchor() const override { return side; }
     bool has_header() const override { return header; }
     astralia::ui::Box popup_anchor() const override { return {10, 20, 40, 40}; }
     float popup_width() const override { return popup > 0.0f ? 220.0f : 0.0f; }
@@ -113,10 +116,11 @@ void check_panel_framework() {
     h.panel->open();
     test::check(h.panel->is_open() && h.content->opened_count == 1, "open calls the content");
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
-    test::check(card.w == 400 && card.x == 580 && card.y == 50, "the card sits at the right margin under the bar");
+    float rod = Panel::inset().y;
+    test::check(card.w == 400 && card.x == 580 && card.y == 50 + rod, "the card sits at the right margin under the upper roller");
     float chrome = 20 + 32 + 4 + 1 + 8 + 20;
     test::check(card.h == chrome + 100, "the card height is chrome plus content");
-    test::check(h.panel->contains(600, 60) && !h.panel->contains(10, 10), "contains covers the card only");
+    test::check(h.panel->contains(card.x + 20, card.y + 10) && !h.panel->contains(10, 10) && !h.panel->contains(card.x + 20, 50), "contains covers the card only");
 
     double bx = card.x + 20 + 5;
     double by = card.y + 20 + 32 + 4 + 1 + 8 + 5;
@@ -139,7 +143,7 @@ void check_panel_framework() {
     test::check(!h.panel->press(card.x - 200, card.y + 2000, astralia::input::Button::Middle), "middle clicks are ignored");
     h.content->dialog = 40.0f;
     h.panel->paint(h.canvas, 1000, 50);
-    test::check(h.panel->contains(card.x + 5, card.y + card.h + 8 + 5), "contains covers the dialog card");
+    test::check(h.panel->contains(card.x + 5, card.y + card.h + rod + 8 + 5), "contains covers the dialog card");
     h.panel->press(5, 5);
     test::check(h.content->dismissed == 1 && h.panel->is_open(), "an outside press dismisses the dialog first");
     h.panel->paint(h.canvas, 1000, 50);
@@ -226,16 +230,75 @@ void check_panel_scroll() {
 }
 
 void check_panel_animation() {
+    using std::chrono::seconds;
+    using std::chrono::steady_clock;
     Harness h;
     h.panel->open();
+    astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
+    test::check(h.panel->animating(), "the scroll animates in");
+    test::check(!h.panel->press(card.x + 25, card.y + 80) && h.content->activated == 0, "the card ignores presses until the scroll is open");
+    test::check(h.canvas.count(test::Op::Kind::text) == 0, "the content waits for the open scroll");
+    h.panel->tick(steady_clock::now() + seconds(1));
+    h.panel->tick(steady_clock::now() + seconds(2));
+    h.panel->tick(steady_clock::now() + seconds(3));
+    test::check(!h.panel->animating(), "the stages finish");
+    h.canvas.ops.clear();
     h.panel->paint(h.canvas, 1000, 50);
-    test::check(h.panel->animating(), "the card reveal animates");
-    h.panel->tick(std::chrono::steady_clock::now() + std::chrono::seconds(1));
-    test::check(!h.panel->animating(), "the reveal finishes");
+    test::check(h.canvas.count(test::Op::Kind::text) > 0, "the content shows once the scroll is open");
+    test::check(h.panel->press(card.x + 25, card.y + 20 + 32 + 4 + 1 + 8 + 5) && h.content->activated == 1, "and the card takes presses");
     h.panel->close();
-    test::check(h.panel->is_open() && h.panel->animating(), "closing keeps the card until the reveal ends");
-    h.panel->tick(std::chrono::steady_clock::now() + std::chrono::seconds(2));
-    test::check(!h.panel->is_open() && h.closed == 1, "the panel closes after the reveal");
+    test::check(h.panel->is_open() && h.panel->animating() && h.panel->closing(), "closing keeps the card until the scroll has slid out");
+    h.panel->tick(steady_clock::now() + seconds(4));
+    test::check(h.panel->is_open() && h.closed == 0, "the content fades before the scroll rolls up");
+    h.panel->tick(steady_clock::now() + seconds(5));
+    h.panel->tick(steady_clock::now() + seconds(6));
+    test::check(!h.panel->is_open() && h.closed == 1, "the panel closes after the slide");
+}
+
+bool beyond(const test::RecordingCanvas &canvas, bool (*outside)(const astralia::ui::Box &)) {
+    bool any = false;
+    for (const test::Op &op : canvas.ops) {
+        if (op.kind == test::Op::Kind::rounded) {
+            any = true;
+            if (!outside(op.box)) {
+                return false;
+            }
+        }
+    }
+    return any;
+}
+
+void check_panel_entry() {
+    using astralia::PanelAnchor;
+    struct Case {
+        PanelAnchor side;
+        bool (*outside)(const astralia::ui::Box &);
+        const char *name;
+    };
+    constexpr float width = 1000.0f;
+    const Case cases[] = {
+        {PanelAnchor::left, [](const astralia::ui::Box &b) { return b.x + b.w <= 0.0f; }, "a left panel's scroll starts off the left edge"},
+        {PanelAnchor::right, [](const astralia::ui::Box &b) { return b.x >= width; }, "a right panel's scroll starts off the right edge"},
+        {PanelAnchor::center, [](const astralia::ui::Box &b) { return b.y + b.h <= 0.0f; }, "a centre panel's scroll starts above the top edge"},
+    };
+    for (const Case &c : cases) {
+        Harness h;
+        h.content->side = c.side;
+        h.panel->open();
+        h.panel->paint(h.canvas, width, 50);
+        test::check(beyond(h.canvas, c.outside), c.name);
+    }
+}
+
+void check_panel_resting_scroll() {
+    Instant instant;
+    Harness h;
+    h.panel->open();
+    astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
+    astralia::ui::Box extent = h.panel->extent();
+    Panel::Inset inset = Panel::inset();
+    test::check(extent.x == card.x - inset.x && extent.y == 50 && extent.w == card.w + 2.0f * inset.x && extent.h == card.h + 2.0f * inset.y, "the extent wraps the card and both rollers");
+    test::check(h.panel->card().y == 50 + inset.y, "the card box is where the paper rests");
 }
 
 void check_calendar() {
@@ -349,6 +412,8 @@ void check_panel() {
     check_dialog_heights();
     check_panel_scroll();
     check_panel_animation();
+    check_panel_entry();
+    check_panel_resting_scroll();
     check_calendar();
     check_battery_text();
     check_tray_menu();

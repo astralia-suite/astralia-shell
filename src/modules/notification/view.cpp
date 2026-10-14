@@ -3,6 +3,7 @@
 
 #include "config/notification_config.h"
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/notification/view.h"
 
@@ -51,7 +52,8 @@ void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view, 
         float y = card.y + entry.slide_offset;
         const Color &accent = urgency_color(entry.urgency);
 
-        canvas.rounded({0, y, cfg::card_width, card.height}, cfg::card_radius, with_alpha(palette::overlay, opacity), cfg::border_width, with_alpha(accent, opacity));
+        const Color &face = entry.urgency == notification_urgency_critical ? palette::critical_container : palette::paper;
+        sticker(canvas, {0, y, cfg::card_width, card.height}, cfg::card_radius, with_alpha(face, opacity), with_alpha(palette::ink, opacity));
         if (entry.timed) {
             progress_bar(canvas, y, entry.progress, accent, opacity);
         }

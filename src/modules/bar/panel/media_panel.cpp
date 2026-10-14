@@ -20,7 +20,7 @@ constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 
 void button(ui::Canvas &canvas, PanelPaint &paint, float x, float y, float size, const char *glyph, int action) {
     ui::Box box{x, y, size, size};
-    canvas.rounded(box, size / 2.0f, palette::overlay);
+    canvas.rounded(box, size / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
     ui::TextSize extent = canvas.measure(glyph, icon_style);
     canvas.text(glyph, icon_style, x + (size - extent.w) / 2.0f, y + (size - extent.h) / 2.0f, palette::text);
     paint.region(box, action);
@@ -40,14 +40,14 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     const MediaStatus &status = media_.status();
     float thumb = cfg::media_thumb;
     ui::Box art{view.x, view.y, thumb, thumb};
-    canvas.rounded(art, cfg::media_thumb_radius, palette::overlay);
+    canvas.rounded(art, cfg::media_thumb_radius, palette::surface, metrics::border_thin, palette::ink);
     ui::ImageId image = status.has_player && media_is_local_art_url(status.track.art_url) ? canvas.image(status.track.art_url.substr(7), static_cast<int>(thumb)) : ui::no_image;
     if (image != ui::no_image) {
         ui::TextSize size = canvas.image_size(image);
         if (size.w > 0 && size.h > 0) {
             float scale = std::max(thumb / size.w, thumb / size.h);
             canvas.begin_group(art, {1.0f, true});
-            canvas.draw_image(image, {(thumb - size.w * scale) / 2.0f, (thumb - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, palette::text);
+            canvas.draw_image(image, {(thumb - size.w * scale) / 2.0f, (thumb - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, palette::white);
             canvas.end_group();
         }
     } else {

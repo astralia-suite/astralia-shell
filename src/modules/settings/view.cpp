@@ -9,6 +9,7 @@
 #include "config/settings_config.h"
 #include "config/visualizer_config.h"
 #include "render/icons.h"
+#include "render/scroll.h"
 
 #include "core/path_home.h"
 
@@ -58,7 +59,7 @@ struct Pane {
 
 void toggle_switch(Pane &pane, float x, float y, bool on, SettingsAct act, int a, int b) {
     ui::Box track{x, y, cfg::toggle_width, cfg::toggle_height};
-    pane.rounded(track, cfg::toggle_height / 2.0f, on ? palette::accent : palette::text_alpha11);
+    pane.rounded(track, cfg::toggle_height / 2.0f, on ? palette::accent : palette::surface_alt, metrics::border_thin, palette::ink);
     float knob_x = on ? x + cfg::toggle_width - cfg::toggle_knob - cfg::toggle_knob_inset : x + cfg::toggle_knob_inset;
     pane.rounded({knob_x, y + (cfg::toggle_height - cfg::toggle_knob) / 2.0f, cfg::toggle_knob, cfg::toggle_knob}, cfg::toggle_knob / 2.0f, palette::text);
     pane.region(track, act, a, b);
@@ -68,7 +69,7 @@ float toggle_row(Pane &pane, float x, float y, float w, std::string_view label, 
     float h = tiled ? cfg::tile_height : cfg::toggle_height;
     float inset = tiled ? cfg::tile_margin : 0.0f;
     if (tiled) {
-        pane.rounded({x, y, w, h}, cfg::tile_radius, palette::text_alpha04, cfg::tile_border, palette::text_alpha07);
+        pane.rounded({x, y, w, h}, cfg::tile_radius, palette::surface, cfg::tile_border, palette::text_alpha20);
     }
     pane.left(label, text_style, x + inset, {x, y, w, h}, tiled ? with_alpha(palette::text, cfg::label_opacity) : palette::text);
     toggle_switch(pane, x + w - inset - cfg::toggle_width, y + (h - cfg::toggle_height) / 2.0f, value, act, a, b);
@@ -82,7 +83,7 @@ void tiles(Pane &pane, float x, float y, float w, const std::vector<std::string>
     for (size_t i = 0; i < labels.size(); ++i) {
         ui::Box box{cx, y, tile_w, cfg::selector_height};
         bool is_active = static_cast<int>(i) == active;
-        pane.rounded(box, cfg::tile_radius, palette::lavender_alpha20, cfg::selector_border, is_active ? palette::accent_alt : transparent);
+        pane.rounded(box, cfg::tile_radius, is_active ? palette::accent_alt : palette::surface, cfg::selector_border, is_active ? palette::ink : palette::text_muted);
         pane.centered(labels[i], text_style, box, palette::text);
         pane.region(box, act, static_cast<int>(i), b);
         cx += tile_w + cfg::selector_spacing;
@@ -96,7 +97,7 @@ void monitor_row(Pane &pane, float x, float y, float w, const std::string &selec
     float cx = x;
     auto draw = [&](const std::string &label, int index, bool active) {
         ui::Box box{cx, y, tile_w, cfg::selector_height};
-        pane.rounded(box, cfg::tile_radius, palette::lavender_alpha20, cfg::selector_border, active ? palette::accent_alt : transparent);
+        pane.rounded(box, cfg::tile_radius, active ? palette::accent_alt : palette::surface, cfg::selector_border, active ? palette::ink : palette::text_muted);
         pane.centered(label, text_style, box, palette::text);
         pane.region(box, act, index, 0);
         cx += tile_w + cfg::selector_spacing;
@@ -109,7 +110,7 @@ void monitor_row(Pane &pane, float x, float y, float w, const std::string &selec
 
 void number_field(Pane &pane, const ui::Box &box, SettingsField field, const std::string &value) {
     bool focused = pane.model.focused() == field;
-    pane.rounded(box, metrics::radius_sm, palette::field_bg, metrics::border_thin, focused ? palette::accent : transparent);
+    pane.rounded(box, metrics::radius_sm, palette::surface, metrics::border_thin, focused ? palette::ink : palette::text_alpha20);
     float cy = box.y + box.h / 2.0f;
     if (focused) {
         ui::FieldDraw draw;
@@ -183,7 +184,7 @@ void displays_tab(Pane &pane, float x, float y, float w) {
 
 void idle_tier(Pane &pane, float x, float y, float w, std::string_view label, SettingsField field, uint32_t value, uint32_t default_value, bool enabled, bool show_reset, SettingsAct reset_act, SettingsAct toggle_act) {
     float h = cfg::tile_height;
-    pane.rounded({x, y, w, h}, cfg::tile_radius, palette::text_alpha04, cfg::tile_border, palette::text_alpha07);
+    pane.rounded({x, y, w, h}, cfg::tile_radius, palette::surface, cfg::tile_border, palette::text_alpha20);
     float inset = cfg::tile_margin;
     pane.left(label, text_style, x + inset, {x, y, w, h}, with_alpha(palette::text, cfg::label_opacity));
     float switch_x = x + w - inset - cfg::toggle_width;
@@ -264,7 +265,7 @@ void visualizer_tab(Pane &pane, float x, float y, float w) {
     Config defaults;
     for (const Knob &knob : knobs) {
         float h = cfg::tile_height;
-        pane.rounded({x, y, w, h}, cfg::tile_radius, palette::text_alpha04, cfg::tile_border, palette::text_alpha07);
+        pane.rounded({x, y, w, h}, cfg::tile_radius, palette::surface, cfg::tile_border, palette::text_alpha20);
         pane.left(knob.label, text_style, x + cfg::tile_margin, {x, y, w, h}, with_alpha(palette::text, cfg::label_opacity));
         float field_x = x + w - cfg::tile_margin - cfg::number_field_width;
         float reset_x = field_x - cfg::tile_spacing - cfg::reset_icon_size;
@@ -313,7 +314,7 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         for (const Chip &chip : chips) {
             ui::Box box{cx, y, chip_w, cfg::region_chip_height};
             bool active = monitors[static_cast<size_t>(chip.monitor)] == picker.region && chip.column == picker.column;
-            pane.rounded(box, metrics::radius_sm, active ? palette::accent_alpha19 : palette::field_bg, metrics::border_thin, active ? palette::accent_alt : transparent);
+            pane.rounded(box, metrics::radius_sm, active ? palette::accent : palette::surface, metrics::border_thin, active ? palette::ink : palette::text_alpha20);
             pane.centered(chip.label, text_style, box, palette::text);
             pane.region(box, SettingsAct::wallpaper_region, chip.monitor, chip.column | (animated ? 0x100 : 0));
             cx += chip_w + cfg::region_chip_gap;
@@ -324,9 +325,9 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
     SettingsField dir_field = animated ? SettingsField::wallpaper_animated_dir : SettingsField::wallpaper_dir;
     bool focused = model.focused() == dir_field;
     ui::Box bar{x, y, w, cfg::dir_bar_height};
-    pane.rounded(bar, metrics::radius_sm, palette::field_bg, metrics::border_thin, focused ? palette::accent : transparent);
+    pane.rounded(bar, metrics::radius_sm, palette::surface, metrics::border_thin, focused ? palette::ink : palette::text_alpha20);
     float input_x = x + cfg::dir_bar_label_margin;
-    input_x += pane.text("Dir", text_style, input_x, y + (cfg::dir_bar_height - pane.canvas.measure("Dir", text_style).h) / 2.0f, palette::accent).w + cfg::dir_bar_field_margin;
+    input_x += pane.text("Dir", text_style, input_x, y + (cfg::dir_bar_height - pane.canvas.measure("Dir", text_style).h) / 2.0f, palette::lavender).w + cfg::dir_bar_field_margin;
     float button_x = x + w - cfg::dir_bar_edge_margin - cfg::dir_bar_button_width;
     float input_w = button_x - cfg::dir_bar_edge_margin - input_x;
     float center_y = y + cfg::dir_bar_height / 2.0f;
@@ -349,7 +350,7 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
     }
     pane.region({input_x, y, input_w, cfg::dir_bar_height}, SettingsAct::field_focus, static_cast<int>(dir_field), 0);
     ui::Box button{button_x, y + (cfg::dir_bar_height - cfg::dir_bar_button_height) / 2.0f, cfg::dir_bar_button_width, cfg::dir_bar_button_height};
-    pane.rounded(button, metrics::radius_sm, palette::text_alpha11);
+    pane.rounded(button, metrics::radius_sm, palette::accent_container, metrics::border_thin, palette::ink);
     pane.centered(picker.scanning ? "\xE2\x80\xA6" : "Rescan", text_style, button, palette::text);
     pane.region(button, SettingsAct::wallpaper_rescan, 0, animated_flag);
     y += cfg::dir_bar_height + cfg::row_gap;
@@ -359,14 +360,14 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
     if (caps.wallpaper_columns) {
         int count = picker.region.empty() ? 1 : wallpaper_column_count(config, picker.region, animated);
         ui::Box minus{x, control_y, cfg::stepper_button, cfg::field_height};
-        pane.rounded(minus, metrics::radius_sm, palette::field_bg, metrics::border_thin);
+        pane.rounded(minus, metrics::radius_sm, palette::surface, metrics::border_thin, palette::ink);
         pane.centered("-", text_style, minus, palette::text);
         pane.region(minus, SettingsAct::wallpaper_count, -1, animated_flag);
         std::string count_text = std::to_string(count);
         float count_w = pane.canvas.measure(count_text, text_style).w + 12.0f;
         pane.centered(count_text, text_style, {x + cfg::stepper_button, control_y, count_w, cfg::field_height}, palette::text);
         ui::Box plus{x + cfg::stepper_button + count_w, control_y, cfg::stepper_button, cfg::field_height};
-        pane.rounded(plus, metrics::radius_sm, palette::field_bg, metrics::border_thin);
+        pane.rounded(plus, metrics::radius_sm, palette::surface, metrics::border_thin, palette::ink);
         pane.centered("+", text_style, plus, palette::text);
         pane.region(plus, SettingsAct::wallpaper_count, 1, animated_flag);
 
@@ -382,8 +383,8 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         for (int i = 0; i < 2; ++i) {
             bool active = mode == (i == 0 ? "crop" : "fit");
             ui::Box box{fx, control_y, widths[i], cfg::field_height};
-            pane.rounded(box, metrics::radius_sm, active ? palette::accent_alpha19 : palette::field_bg, metrics::border_thin, active ? palette::accent : transparent);
-            pane.centered(labels[i], text_style, box, active ? palette::accent : palette::text);
+            pane.rounded(box, metrics::radius_sm, active ? palette::accent : palette::surface, metrics::border_thin, active ? palette::ink : palette::text_alpha20);
+            pane.centered(labels[i], text_style, box, palette::text);
             pane.region(box, SettingsAct::wallpaper_fill, i, animated_flag);
             fx += widths[i] + 6.0f;
         }
@@ -410,7 +411,7 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         pane.text(picker.scanning ? "Scanning\xE2\x80\xA6" : (animated ? "No videos found" : "No images found"), text_style, x, y, palette::text_dim);
         return;
     }
-    pane.rounded({x, y, w, picker.grid_height}, metrics::radius_sm, transparent, metrics::border_thin, palette::accent);
+    pane.rounded({x, y, w, picker.grid_height}, metrics::radius_sm, transparent, metrics::border_thin, palette::ink);
     float visible_h = std::min(picker.grid_height - cfg::grid_inset * 2.0f, content_h);
     float row_w = static_cast<float>(columns) * cell - cfg::thumb_gap;
     float grid_x = x + cfg::grid_inset + (inset_w - row_w) / 2.0f;
@@ -438,7 +439,7 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
                 if (size.w > 0 && size.h > 0) {
                     float scale = std::max(cfg::thumb_size / size.w, cfg::thumb_size / size.h);
                     pane.canvas.begin_group(tile, {1.0f, true});
-                    pane.canvas.draw_image(image, {(cfg::thumb_size - size.w * scale) / 2.0f, (cfg::thumb_size - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, pane.fade(palette::text));
+                    pane.canvas.draw_image(image, {(cfg::thumb_size - size.w * scale) / 2.0f, (cfg::thumb_size - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, pane.fade(palette::white));
                     pane.canvas.end_group();
                 }
             }
@@ -449,7 +450,7 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
             float label_h = name_size.h + cfg::thumb_label_pad;
             pane.rect({tile.x, tile.y + cfg::thumb_size - label_h, cfg::thumb_size, label_h}, palette::overlay);
             pane.text(name, clipped, tile.x + cfg::thumb_label_pad / 2.0f, tile.y + cfg::thumb_size - (label_h + name_size.h) / 2.0f, palette::text);
-            pane.rounded(tile, cfg::thumb_radius, transparent, active ? metrics::border_thick : 0.0f, active ? palette::accent_alt : transparent);
+            pane.rounded(tile, cfg::thumb_radius, transparent, active ? metrics::border_thick : 0.0f, active ? palette::ink : transparent);
             ui::Box hit{grid_x + tile.x, grid_y + tile.y, tile.w, tile.h};
             float top = std::max(hit.y, grid_y);
             float bottom_edge = std::min(hit.y + hit.h, grid_y + visible_h);
@@ -465,7 +466,7 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         std::string warning = "Warning: Animated wallpaper is running on CPU.";
         ui::TextSize size = pane.canvas.measure(warning, text_style);
         float h = size.h + cfg::warning_pad * 2.0f;
-        pane.rounded({x, y, w, h}, metrics::radius_sm, palette::critical_alpha15, metrics::border_thin, palette::critical);
+        pane.rounded({x, y, w, h}, metrics::radius_sm, palette::critical_container, metrics::border_thin, palette::critical);
         pane.text(warning, text_style, x + cfg::warning_pad, y + (h - size.h) / 2.0f, palette::critical);
     }
 }
@@ -513,14 +514,22 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
     float py = (height - ph) / 2.0f;
     frame.panel = {px, py, pw, ph};
     model.set_panel(frame.panel);
-    canvas.rounded(frame.panel, metrics::radius_md, palette::overlay, metrics::border_thick, palette::accent);
+
+    constexpr ScrollMetrics scroll_style{};
+    const ScrollSequence &sequence = model.sequence();
+    ScrollOffset slide = scroll_slide_offset(ScrollEntry::from_bottom, sequence.slide(), scroll_bounds(scroll_geometry(frame.panel, 0.0f, scroll_style)), width, height);
+    paint_scroll(canvas, scroll_geometry({px, py + slide.dy, pw, ph}, sequence.scroll(), scroll_style), scroll_style);
+    if (sequence.grid() <= 0.0f) {
+        return frame;
+    }
+    canvas.set_opacity(sequence.grid());
 
     float pad = cfg::card_padding;
     float header_y = py + pad;
     ui::TextSize title = canvas.measure("Settings", title_style);
     canvas.text("Settings", title_style, px + pad, header_y + (cfg::header_height - title.h) / 2.0f, palette::text);
     ui::Box close{px + pw - pad - cfg::action_button_size, header_y + (cfg::header_height - cfg::action_button_size) / 2.0f, cfg::action_button_size, cfg::action_button_size};
-    canvas.rounded(close, cfg::action_button_size / 2.0f, palette::overlay, 0.0f, palette::overlay);
+    canvas.rounded(close, cfg::action_button_size / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
     ui::TextSize close_size = canvas.measure(icon::close, icon_style);
     canvas.text(icon::close, icon_style, close.x + (close.w - close_size.w) / 2.0f, close.y + (close.h - close_size.h) / 2.0f, palette::text);
     model.add_region(close, SettingsAct::close);
@@ -536,7 +545,7 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
     ui::Box avatar{rail_x + (rail_w - cfg::avatar_size) / 2.0f, content_y + cfg::profile_top_padding, cfg::avatar_size, cfg::avatar_size};
     bool drawn = art.avatar && art.avatar(canvas, avatar);
     if (!drawn) {
-        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::text_alpha04, cfg::avatar_border, palette::accent);
+        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::text_alpha04, cfg::avatar_border, palette::ink);
         ui::TextSize glyph = canvas.measure(icon::user, icon_style);
         canvas.text(icon::user, icon_style, avatar.x + (avatar.w - glyph.w) / 2.0f, avatar.y + (avatar.h - glyph.h) / 2.0f, palette::text);
     }
@@ -556,14 +565,14 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
     float rail_y = content_y + block_h + cfg::profile_divider_gap;
     float rail_h = py + ph - pad - rail_y;
 
-    canvas.rounded({rail_x, rail_y, rail_w, rail_h}, metrics::radius_md, palette::text_alpha04);
+    canvas.rounded({rail_x, rail_y, rail_w, rail_h}, metrics::radius_md, palette::surface, metrics::border_thin, palette::ink);
     float row_y = rail_y + cfg::rail_padding;
     for (const SettingsTabInfo &info : model.tabs()) {
         bool active = info.tab == model.active_tab();
-        const Color &color = active ? palette::accent : palette::text_dim;
+        const Color &color = active ? palette::text : palette::text_dim;
         ui::Box row{rail_x, row_y, rail_w, cfg::rail_item_height};
         if (active) {
-            canvas.rounded(row, metrics::radius_sm, palette::accent_alpha19);
+            canvas.rounded(row, metrics::radius_sm, palette::accent, metrics::border_thin, palette::ink);
         }
         float icon_x = rail_x + cfg::rail_padding;
         ui::TextSize glyph = canvas.measure(info.icon, icon_style);
@@ -584,6 +593,7 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
     Pane pane{canvas, model, model.tab_alpha()};
     tab_content(pane, model.active_tab(), content_x, content_y, content_w, py + ph - pad);
     frame.caret = pane.caret;
+    canvas.set_opacity(1.0f);
     return frame;
 }
 

@@ -4,6 +4,7 @@
 
 #include "modules/osd/view.h"
 
+#include "render/sticker.h"
 #include "render/tokens.h"
 
 namespace astralia {
@@ -22,7 +23,7 @@ void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
     if (model.opacity() <= 0.0f) {
         return;
     }
-    canvas.rounded({0, 0, width, height}, height / 2.0f, palette::overlay, cfg::border_width, palette::electro);
+    sticker(canvas, {0, 0, width, height}, height / 2.0f, palette::paper);
 
     ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
     ui::TextSize icon_size = canvas.measure(model.glyph(), icon_style);

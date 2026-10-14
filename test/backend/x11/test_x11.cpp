@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include "palette_fixture.h"
+
 #include "core/config_file.h"
 #include "core/json.h"
 #include "core/pointer.h"
@@ -119,6 +121,7 @@ void check_cover_cache() {
 
 void check_bar_styles() {
     using namespace astralia;
+    test::apply_base_theme();
     const BarStyleSpec &okinami = bar_style_spec(BarStyle::okinami, false);
     BarFrame frame = bar_frame(okinami, 100.0f, IslandSpan{150.0f, 250.0f}, 300.0f, 400.0f);
 
@@ -129,9 +132,14 @@ void check_bar_styles() {
     const unsigned char *data = cairo_image_surface_get_data(surface);
     int stride = cairo_image_surface_get_stride(surface);
     auto alpha = [&](int x, int y) { return static_cast<int>(data[y * stride + x * 4 + 3]); };
-    check(alpha(50, 2) == 204 && alpha(125, 2) == 204, "rail and island overlap share one alpha");
-    check(alpha(125, 5) == 255, "rail border line is opaque");
-    check(alpha(50, 5) == 204 && alpha(50, 20) == 204, "island interior replaces the rail line");
+    auto is = [&](int x, int y, const Color &c) {
+        const unsigned char *p = data + y * stride + x * 4;
+        auto close = [](int a, float b) { return std::abs(a - static_cast<int>(std::lround(b * 255.0f))) <= 1; };
+        return p[3] == 255 && close(p[2], c.r) && close(p[1], c.g) && close(p[0], c.b);
+    };
+    check(is(50, 2, palette::paper) && is(125, 2, palette::paper), "rail and island overlap share one fill");
+    check(is(125, 5, palette::ink), "rail border line is the outline colour");
+    check(is(50, 5, palette::paper) && is(50, 20, palette::paper), "island interior replaces the rail line");
     check(alpha(125, 20) == 0, "the gap under the rail is transparent");
     cairo_destroy(cr);
     cairo_surface_destroy(surface);

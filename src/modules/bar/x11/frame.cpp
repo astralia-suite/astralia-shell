@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <numbers>
 
 #include "modules/bar/x11/frame.h"
@@ -47,19 +48,27 @@ void fillet_inner(cairo_t *cr, const BarStyleSpec &spec, const Fillet &fillet) {
 void paint_continuous(cairo_t *cr, const BarStyleSpec &spec, double width, double height) {
     double border = spec.border_width;
     double inset = border / 2.0;
-    double radius = height * spec.radius_ratio;
-    set_source(cr, palette::base_alpha80);
-    rounded_rect(cr, 0.0, 0.0, width, height, radius);
+    double shadow = spec.shadow;
+    double face_w = width - shadow;
+    double face_h = height - shadow;
+    double radius = std::min(height * spec.radius_ratio, std::min(face_w, face_h) / 2.0);
+    if (shadow > 0.0) {
+        set_source(cr, spec.border);
+        rounded_rect(cr, shadow, shadow, face_w, face_h, radius);
+        cairo_fill(cr);
+    }
+    set_source(cr, spec.bg);
+    rounded_rect(cr, 0.0, 0.0, face_w, face_h, radius);
     cairo_fill(cr);
-    set_source(cr, palette::accent);
+    set_source(cr, spec.border);
     cairo_set_line_width(cr, border);
-    rounded_rect(cr, inset, inset, width - 2 * inset, height - 2 * inset, radius - inset);
+    rounded_rect(cr, inset, inset, face_w - 2 * inset, face_h - 2 * inset, radius - inset);
     cairo_stroke(cr);
 }
 
 void paint_okinami(cairo_t *cr, const BarStyleSpec &spec, const BarFrame &frame, double width, double height) {
     double border = spec.border_width;
-    set_source(cr, palette::accent);
+    set_source(cr, spec.border);
     cairo_rectangle(cr, 0.0, 0.0, width, spec.rail_height);
     cairo_fill(cr);
     for (const IslandShape &island : frame.islands) {
@@ -71,7 +80,7 @@ void paint_okinami(cairo_t *cr, const BarStyleSpec &spec, const BarFrame &frame,
     }
 
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    set_source(cr, palette::base_alpha80);
+    set_source(cr, spec.bg);
     cairo_rectangle(cr, 0.0, 0.0, width, spec.rail_height - border);
     cairo_fill(cr);
     for (const IslandShape &island : frame.islands) {

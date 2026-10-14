@@ -92,7 +92,7 @@ void BarModel::refresh(Clock::time_point now) {
         view.glyph = visible ? glyph : nullptr;
         view.label = visible ? std::move(label) : std::string();
         view.visible = visible && glyph != nullptr;
-        view.border.reset();
+        view.tint.reset();
         view.alert = false;
     };
     set(BarItem::logout, icon::power, "Logout", true);
@@ -165,9 +165,12 @@ void BarModel::refresh(Clock::time_point now) {
         const BatteryStatus &status = sources_.battery->status();
         set(BarItem::battery, bar_battery_glyph(status), bar_battery_label(status), true);
         BarItemView &view = mut(BarItem::battery);
-        view.border = status.full ? palette::text : status.charging    ? palette::accent_alt
-                                                : status.percent <= 25 ? palette::critical
-                                                                       : palette::accent;
+        if (status.full) {
+            view.tint.reset();
+        } else {
+            view.tint = status.charging ? palette::accent_alt : status.percent <= 25 ? palette::critical_container
+                                                                                     : palette::accent;
+        }
         view.alert = !status.charging && !status.full && status.percent <= cfg::battery_critical_percent;
     } else {
         set(BarItem::battery, nullptr, "", false);

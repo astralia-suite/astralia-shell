@@ -3,6 +3,7 @@
 
 #include "config/launcher_config.h"
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/launcher/files_provider.h"
 #include "modules/launcher/view.h"
@@ -18,7 +19,6 @@ namespace cfg = launcher_config;
 
 constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
 constexpr Color scrim_color{0.0f, 0.0f, 0.0f, 1.0f};
-constexpr Color flash_color = color("#E4D2FF");
 constexpr ui::TextStyle label_style{ui::FontFamily::text, cfg::label_px};
 constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_size};
@@ -70,7 +70,7 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
         canvas.set_opacity(frame.entrance.opacity);
     }
     frame.box = {box_x, box_y, cfg::width, box_h};
-    canvas.rounded(frame.box, metrics::radius_md, palette::base_alpha80, cfg::menu_border_width, palette::accent);
+    sticker(canvas, frame.box, metrics::radius_md, palette::paper, palette::ink, cfg::menu_border_width);
 
     float ox = box_x + inset;
     float oy = box_y + inset;
@@ -78,14 +78,14 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
 
     float mode_x = box_x + cfg::menu_pad;
     float field_top = box_y + cfg::menu_pad;
-    canvas.rounded({mode_x - ox, field_top - oy, cfg::search_height, cfg::search_height}, metrics::radius_sm, transparent, cfg::border_width, palette::accent);
+    canvas.rounded({mode_x - ox, field_top - oy, cfg::search_height, cfg::search_height}, metrics::radius_sm, palette::surface, cfg::border_width, palette::ink);
     const char *mode_glyph = mode_icon(model.mode());
     ui::TextSize mode_size = canvas.measure(mode_glyph, icon_style);
     canvas.text(mode_glyph, icon_style, mode_x - ox + (cfg::search_height - mode_size.w) / 2.0f, field_top - oy + (cfg::search_height - mode_size.h) / 2.0f, palette::text);
 
     float field_x = mode_x + cfg::search_height + cfg::pad;
     float field_w = box_x + cfg::width - cfg::menu_pad - field_x;
-    canvas.rounded({field_x - ox, field_top - oy, field_w, cfg::search_height}, metrics::radius_sm, transparent, cfg::border_width, palette::accent);
+    canvas.rounded({field_x - ox, field_top - oy, field_w, cfg::search_height}, metrics::radius_sm, palette::surface, cfg::border_width, palette::ink);
     float text_x = field_x + cfg::pad;
     float center_y = field_top + cfg::search_height / 2.0f;
 
@@ -130,15 +130,15 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
             frame.rows.push_back({{content_x, list_top + y, row_w, cfg::row_height}, i});
         }
         const LauncherRow &row = rows[static_cast<size_t>(i)];
-        canvas.rounded({row_x, y, row_w, cfg::row_height}, metrics::radius_sm, palette::text_alpha03);
+        canvas.rounded({row_x, y, row_w, cfg::row_height}, metrics::radius_sm, palette::surface);
         if (i == model.hovered() && i != model.selected()) {
-            canvas.rounded({row_x, y, row_w, cfg::row_height}, metrics::radius_sm, transparent, cfg::border_width, palette::accent);
+            canvas.rounded({row_x, y, row_w, cfg::row_height}, metrics::radius_sm, transparent, cfg::border_width, palette::ink);
         }
 
         float x = row_x + cfg::pad;
         ui::ImageId image = row.icon_path.empty() ? ui::no_image : canvas.image(row.icon_path, cfg::icon_size);
         if (image != ui::no_image) {
-            canvas.draw_image(image, {x, y + (cfg::row_height - cfg::icon_size) / 2.0f, static_cast<float>(cfg::icon_size), static_cast<float>(cfg::icon_size)}, palette::text);
+            canvas.draw_image(image, {x, y + (cfg::row_height - cfg::icon_size) / 2.0f, static_cast<float>(cfg::icon_size), static_cast<float>(cfg::icon_size)}, palette::white);
         } else {
             ui::TextSize size = canvas.measure(row.glyph, icon_style);
             canvas.text(row.glyph, icon_style, x + (cfg::icon_size - size.w) / 2.0f, y + (cfg::row_height - size.h) / 2.0f, palette::text);
@@ -164,17 +164,17 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
         if (bullet == ui::no_image) {
             continue;
         }
-        canvas.draw_image(bullet, {(cfg::search_height - cfg::bullet_size) / 2.0f, static_cast<float>(slot) * cfg::row_pitch + (cfg::row_height - cfg::bullet_size) / 2.0f, cfg::bullet_size, cfg::bullet_size}, palette::text);
+        canvas.draw_image(bullet, {(cfg::search_height - cfg::bullet_size) / 2.0f, static_cast<float>(slot) * cfg::row_pitch + (cfg::row_height - cfg::bullet_size) / 2.0f, cfg::bullet_size, cfg::bullet_size}, palette::white);
     }
 
     if (model.selected() >= 0) {
-        canvas.rounded({row_x, model.highlight_offset() - model.scroll_offset(), row_w, cfg::row_height}, metrics::radius_sm, transparent, cfg::highlight_border_width, palette::accent_alt_alpha50);
+        canvas.rounded({row_x, model.highlight_offset() - model.scroll_offset(), row_w, cfg::row_height}, metrics::radius_sm, transparent, cfg::highlight_border_width, palette::ink);
     }
     canvas.end_group();
     canvas.end_group();
     if (frame.entrance.flash > 0.0f) {
         canvas.set_opacity(1.0f);
-        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(flash_color, frame.entrance.flash));
+        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(palette::accent_container, frame.entrance.flash));
     }
     return frame;
 }

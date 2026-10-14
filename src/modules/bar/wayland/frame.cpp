@@ -3,6 +3,7 @@
 
 #include "modules/bar/wayland/frame.h"
 
+#include "render/sticker.h"
 #include "render/tokens.h"
 
 namespace {
@@ -59,7 +60,7 @@ std::vector<uint8_t> fillet_rgba(int size, bool circle_on_right) {
 
 void bar_frame_base(GlCanvas &canvas, const astralia::BarStyleSpec &style, const astralia::BarFrame &frame, float width, float height) {
     if (style.continuous) {
-        canvas.rounded({0.0f, 0.0f, width, height}, height * style.radius_ratio, style.bg, style.border_width, style.border);
+        astralia::sticker(canvas, {0.0f, 0.0f, width, height}, height * style.radius_ratio, style.bg, style.border, style.border_width, style.shadow);
         return;
     }
     if (!style.has_rail())

@@ -7,11 +7,15 @@ namespace astralia {
 namespace {
 
 constexpr int autohide_strip_px = 1;
-constexpr Color bar_background{0.0f, 0.0f, 0.0f, 0.7f};
+BarStyleSpec islands{{}, {}, metrics::border_thick, 0.5f, 0.5f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, metrics::shadow_offset};
+BarStyleSpec okinami{{}, {}, metrics::border_thick, 0.0f, 0.25f, 0, 0, 6.0f, 16.0f, 12.0f};
+BarStyleSpec continuous{{}, {}, metrics::border_thick, 0.5f, 0.25f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, metrics::shadow_offset, true};
 
-constexpr BarStyleSpec islands{bar_background, palette::accent, metrics::border_thin, 0.5f, 0.5f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f};
-constexpr BarStyleSpec okinami{bar_background, palette::accent, metrics::border_thin, 0.0f, 0.25f, 0, 0, 6.0f, 16.0f, 12.0f};
-constexpr BarStyleSpec continuous{bar_background, palette::accent, 2.0f, 0.5f, 0.25f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, true};
+const BarStyleSpec &live(BarStyleSpec &spec) {
+    spec.bg = palette::paper;
+    spec.border = palette::ink;
+    return spec;
+}
 
 } // namespace
 
@@ -22,13 +26,13 @@ BarStyle bar_style_resolve(BarStyle requested, bool islands_supported) {
 const BarStyleSpec &bar_style_spec(BarStyle style, bool islands_supported) {
     switch (bar_style_resolve(style, islands_supported)) {
     case BarStyle::okinami:
-        return okinami;
+        return live(okinami);
     case BarStyle::continuous:
-        return continuous;
+        return live(continuous);
     case BarStyle::islands:
         break;
     }
-    return islands;
+    return live(islands);
 }
 
 IslandShape bar_island_shape(const BarStyleSpec &spec, float left, float right, bool flush_left, bool flush_right) {

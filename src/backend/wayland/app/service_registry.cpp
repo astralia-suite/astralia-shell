@@ -22,6 +22,7 @@
 #include "service/network_service.h"
 #include "service/notification_service.h"
 #include "service/polkit_service.h"
+#include "service/theme_service.h"
 #include "service/tray_service.h"
 #include "service/wayland/idle_service.h"
 #include "service/wayland/text_input_service.h"
@@ -185,6 +186,24 @@ class CompositorWorkspaceService final : public Service {
     }
 };
 
+class ThemeFollowService final : public Service {
+  public:
+    const char *name() const override { return "theme"; }
+
+    bool init(WaylandState &app) override {
+        app.theme = std::make_unique<astralia::ThemeService>();
+        app.theme->changed.connect([&app] {
+            redraw_all_monitors(app);
+            for (auto &m : app.overlays)
+                if (m->is_open())
+                    m->request_frame();
+            app_detail::rest_egl_current(app);
+        });
+        app_detail::theme_sync(app);
+        return true;
+    }
+};
+
 class PolkitBusService final : public Service {
   public:
     const char *name() const override { return "polkit"; }
@@ -278,6 +297,7 @@ std::vector<std::unique_ptr<Service>> build_services() {
     services.push_back(std::make_unique<TrayService>());
     services.push_back(std::make_unique<MprisService>());
     services.push_back(std::make_unique<PolkitBusService>());
+    services.push_back(std::make_unique<ThemeFollowService>());
     services.push_back(std::make_unique<CompositorWorkspaceService>());
     services.push_back(std::make_unique<TextInputProtocolService>());
     services.push_back(std::make_unique<ClipboardProtocolService>());

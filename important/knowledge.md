@@ -47,6 +47,16 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Keep constants only one host draws with in `<module>_style_config.h`. Constants a shared view draws with go in the module's shared config.
 - Move call sites to the shared names instead of keeping alias headers. Aliases hide which service a file uses.
 - Only Wayland animates; X11 calls `animation_set_instant(true)`. Models then animate unconditionally and snap to the end value on X11.
+- The palette is runtime state, written only by `theme_apply` on the reactor thread. A render thread would need a snapshot.
+- `ThemeService` extracts the wallpaper seed on a worker and checks a generation. A stale decode must not override a newer wallpaper.
+- The palette has no literals and stays empty until `theme_apply`. The first `ThemeService::sync` decodes synchronously, before any module paints.
+- A bar style spec row is refreshed from the live palette in `bar_style_spec`. X11 bars call it again on theme change.
+- Draw cards, islands and chips through `sticker()`; its box includes the shadow. Layout and window size stay unchanged.
+- Fills under a `sticker()` are opaque. A translucent face shows the hard shadow through it.
+- Mid-tone `accent` fails contrast as text on `paper`. Use `lavender` for accent-coloured text and `text` for the rest.
+- Tint photos, app icons and gauges with `palette::white`. A themed tint recolours or dims the image; only monochrome masks take `text`.
+- The theme follows the first monitor's wallpaper through `wallpaper_image_for`. Resync on config, monitor name and output changes.
+- Wayland text and icon textures are white and tinted at draw; only the gauge cache keys on colour. A theme change clears nothing.
 - Submenu icons are the `SubmenuIcon` enum in the shared model. Each backend maps it to its glyph.
 - A canvas draws images at their natural size. Scale to the slot yourself, or a PNG icon covers the whole bar.
 - `Canvas::gauge` is implemented on cairo. The resource panel is portable to X11.
@@ -185,7 +195,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] Gate that reveal clip on the height tween, not `animations.hasActive()`. A looping marquee kept it true forever.
 - [wayland] A cached geometry value derives from the variable used for drawing. The animation target stored a wrong position.
 - [wayland] A filled widget at the same origin as an earlier label paints over it. Offset the fill or draw the label last.
-- [wayland] Overlapping translucent shapes of one colour double-darken. `Okinami` draws its rail and islands with opaque `palette::base`.
+- [wayland] Overlapping translucent shapes of one colour double-darken. `Okinami` draws its rail and islands with opaque `palette::paper`.
 - [wayland] A multi-shape outline is two stacked layers: the whole silhouette in the border colour, the inset one in the fill.
 - [wayland] A rounded rect placed above the surface edge shows only its bottom corners rounded. `Okinami` islands therefore need no shader.
 - [wayland] `draw_texture_rect` rounds its `x` and `y`, but shapes do not. Round the shared edge first or a texture lands a pixel off.
@@ -235,6 +245,15 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] A paint that re-arms only while a tween is active needs every time-varying element tween-driven. A wall-clock bar froze otherwise.
 - [wayland] `AnimationManager` advances only when `tick()` runs each frame. A panel that forgets freezes, `on_complete` callbacks included.
 - [wayland] Repeated `tick()` calls per instant are safe. Progress comes from wall-clock time, not accumulated delta.
+- Every scroll opens and closes through `ScrollSequence`: slide, unroll, content, then the reverse. Stages chain from the real clock, so a test needs one `tick()` per stage.
+- A bar panel's scroll is vertical and enters from its anchor's side: left, right or top. `scroll_slide_offset` measures from the closed bounds, so one function serves every side.
+- A scroll ignores pointer input until `settled()`, but Escape still works. Regions exist only once the content is drawn, so nothing hidden can be clicked.
+- Scroll content fades with `set_opacity`, never a clip. A dragged overview tile can then leave its panel.
+- A bar `Panel` paints at `paint_at(x, top)`, where `top` is the upper roller's edge. The paper rests one roller thickness lower.
+- [x11] The panel host sizes its window from `extent()` and paints at `Panel::inset()`. The rollers would otherwise clip.
+- [wayland] A scroll overlay opens with `overlay_panel_toggle(base, false)` and releases from `on_closed`. The surface fade would hide the roll-up.
+- [wayland] A host requests its frame before `model.close()`. With animations off the close ends inside the call, so a later request is dropped.
+- A bar `Panel` positions its card by `paint_at(x, top)` where `top` is the upper roller's top edge. The paper rests one roller thickness lower, and `card_` is that resting box. An X11 host sizes its window from `extent()` and paints at `Panel::inset()`, or the rollers clip.
 - [wayland] Two `animate()` calls sharing an owner id cancel each other. Give each animated property its own id.
 - [wayland] An animation's `on_complete` that destroys its surface fires inside paint's `tick()`. Re-check validity after `tick()` or defer the destroy.
 - [wayland] An unlock animation's `on_complete` defers teardown via `DeferredCall`. Freeing inline destroys the manager mid-iteration.

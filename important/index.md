@@ -82,7 +82,13 @@
 ## `src/render/`
 
 - `canvas.h`: The `Canvas` interface every view draws through: shapes, text, images, groups, opacity and gauges.
-- `tokens.h`: `Color`, the palette, metrics and colour helpers shared by every backend.
+- `tokens.h`: `Color`, the mutable palette (empty until `theme_apply` runs), metrics and colour helpers shared by every backend.
+- `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
+- `palette_extract.{h,cpp}`: Downsamples an RGBA image, clusters it with k-means in OKLab and returns the seed hues.
+- `theme.{h,cpp}`: `Theme` roles derived from a seed hue in OKLCH and `theme_apply` onto the palette.
+- `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow, drawn over a canvas.
+- `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical, for the overview, settings and bar panels.
+- `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade that every scroll opens and closes with.
 - `glyphs.h`: Volume and brightness glyph thresholds over the icon table.
 - `geometry.h`: `Box`, the one rectangle type.
 - `host.h`: The surface and host contract a backend gives a module.
@@ -97,7 +103,7 @@
 
 - `bar_style.h`: `BarStyle` enum with its names and labels.
 - `bar_layout.h`: Bar height, margins, pill gaps, workspace, dock and peek constants shared by both bars.
-- `panel_config.h`: Panel card, row, slider, typography and per-panel constants.
+- `panel_config.h`: Panel card, scroll, row, slider, typography and per-panel constants.
 - `visualizer_config.h`: Visualizer constants and the `VisualizerParams` stored in the config.
 - `rain_config.h`: Rain constants and the `RainParams` stored in the config.
 - `idle_config.h`: Idle activity pulse and screensaver logo constants both hosts use.
@@ -125,7 +131,7 @@
 - `style.{h,cpp}`: `BarStyleSpec` for the three styles, the `islands` fallback, island and fillet geometry, autohide geometry.
 - `model.{h,cpp}`: Items, workspace pills, dock row, hover, pinning, linger, volume peek, layout and hit tests.
 - `view.{h,cpp}`: Paints items, workspaces, dock icons and dividers over the canvas.
-- `panel/panel.{h,cpp}`: `Panel` card with reveal, scroll, drag, dialogs and a refresh timer, plus the `PanelContent` interface.
+- `panel/panel.{h,cpp}`: `Panel` scroll card with staged open, content scrolling, drag, dialogs and a refresh timer, plus `PanelContent`.
 - `panel/panel_set.{h,cpp}`: Owns the panels, keeps one open at a time and routes changes to the host.
 - `panel/widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm dialog the panels share.
 - `panel/*_panel.{h,cpp}`: Content of the battery, bluetooth, brightness, clock, media, network, resource, tray and volume panels.
@@ -168,14 +174,14 @@
 
 ## `src/modules/overview/`
 
-- `model.{h,cpp}`: Block layout over one or many monitors, tiles, paging, indicator, drag and drop and keys.
-- `view.{h,cpp}`: Paints tiles, workspace numbers, indicator and the live capture hook.
+- `model.{h,cpp}`: Block layout over one or many monitors, tiles, paging, indicator, drag and drop, keys and the scroll stages.
+- `view.{h,cpp}`: Paints the scroll, tiles, workspace numbers, indicator and the live capture hook.
 - `paging.{h,cpp}`: Workspace paging maths for the overview grid: workspace at a cell, page of a workspace, arrow stepping.
 
 ## `src/modules/settings/`
 
 - `model.{h,cpp}`: Tabs by capability (animation, bar, displays, idle, launcher, logout, rain, visualizer, wallpaper), monitor selections, fields, pickers and actions.
-- `view.{h,cpp}`: Paints each tab, fields, pickers and thumbnails over the canvas.
+- `view.{h,cpp}`: Paints the scroll, each tab, fields, pickers and thumbnails over the canvas.
 
 ## `src/modules/logout/`, `notification/`, `osd/`, `polkit/`
 
@@ -191,6 +197,7 @@
 
 - `settings_service.{h,cpp}`: The unified `Config`, its JSON load and save, per-output override accessors and hot reload.
 - `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output from `Config`.
+- `theme_service.{h,cpp}`: Follows the wallpaper: the first sync decodes at once, later ones off-thread; an unusable wallpaper falls back to the default wallpaper asset.
 - `battery_service.{h,cpp}`: UPower display-device status, device list and `on_battery`, read asynchronously.
 - `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds and `rfkill` control.
 - `network_service.{h,cpp}`: NetworkManager status, `nmcli` scans while watched, ethernet state and connectivity checks.

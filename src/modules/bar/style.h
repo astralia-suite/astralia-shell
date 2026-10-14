@@ -20,6 +20,7 @@ struct BarStyleSpec {
     float rail_height;
     float island_radius;
     float fillet_radius;
+    float shadow = 0.0f;
     bool continuous = false;
 
     bool has_rail() const { return rail_height > 0.0f; }

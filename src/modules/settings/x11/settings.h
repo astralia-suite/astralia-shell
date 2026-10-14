@@ -26,6 +26,7 @@ class Settings {
     void toggle();
     void open();
     void close();
+    void closed();
     void handle(const xcb_generic_event_t &event);
     void schedule_paint();
     void paint();

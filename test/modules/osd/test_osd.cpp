@@ -92,11 +92,12 @@ void check_osd_view() {
     test::RecordingCanvas canvas;
     astralia::paint_osd(canvas, model);
     test::check(canvas.ops.front().kind == Kind::opacity && canvas.ops.front().value == 1.0f, "opacity comes first");
-    test::check(canvas.count(Kind::rounded) == 3, "card, track and fill");
-    const test::Op &card = canvas.ops[1];
-    test::check(card.box.w == 300 && card.box.h == 50 && card.radius == 25 && card.border_width > 0, "card geometry");
-    const test::Op &track = canvas.ops[3];
-    const test::Op &fill = canvas.ops[4];
+    constexpr float shadow = astralia::metrics::shadow_offset;
+    test::check(canvas.count(Kind::rounded) == 4, "shadow, card, track and fill");
+    const test::Op &card = canvas.ops[2];
+    test::check(card.box.w == 300 - shadow && card.box.h == 50 - shadow && card.radius == (50 - shadow) / 2 && card.border_width > 0, "card geometry");
+    const test::Op &track = canvas.ops[4];
+    const test::Op &fill = canvas.ops[5];
     test::check(track.box.h == 6 && std::fabs(fill.box.w - track.box.w / 2.0f) < 1e-3f, "fill is half the track at fifty percent");
     test::check(track.box.x == 25 + 18 + 10, "track starts after the icon");
     const test::Op &label = canvas.ops.back();
@@ -105,7 +106,7 @@ void check_osd_view() {
     model.show(OsdKind::volume, 0, false, OsdModel::Clock::now());
     test::RecordingCanvas empty;
     astralia::paint_osd(empty, model);
-    test::check(empty.count(Kind::rounded) == 2, "no fill at zero");
+    test::check(empty.count(Kind::rounded) == 3, "no fill at zero");
 }
 
 } // namespace

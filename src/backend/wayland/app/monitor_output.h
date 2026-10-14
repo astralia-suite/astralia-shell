@@ -45,6 +45,7 @@ int monitor_active_workspace_id(const MonitorOutput &mon);
 
 void rest_egl_current(WaylandState &app);
 
+void theme_sync(WaylandState &app);
 void apply_config_update(WaylandState &app, Config new_cfg);
 void save_and_apply_config_update(WaylandState &app, Config new_cfg);
 MonitorOutput *active_target_monitor(WaylandState &app);

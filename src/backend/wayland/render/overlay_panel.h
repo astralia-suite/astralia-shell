@@ -44,7 +44,9 @@ bool overlay_panel_init_egl(OverlayPanelBase &base, EGLDisplay display, EGLConfi
 
 void overlay_panel_request_frame(OverlayPanelBase &base);
 
-void overlay_panel_toggle(OverlayPanelBase &base);
+void overlay_panel_toggle(OverlayPanelBase &base, bool fade = true);
+
+void overlay_panel_release(OverlayPanelBase &base);
 
 void overlay_panel_destroy_surface(OverlayPanelBase &base);
 

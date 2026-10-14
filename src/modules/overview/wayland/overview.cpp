@@ -26,6 +26,7 @@ astralia::OverviewModel &ensure_model(OverviewState &state, WaylandState &app) {
     if (!state.model) {
         state.model = std::make_unique<astralia::OverviewModel>(*app.desktop);
         state.model->on_close_requested = [&state, &app] { overview_toggle(state, app); };
+        state.model->on_closed = [&state] { overlay_panel_release(state.base); };
     }
     return *state.model;
 }
@@ -69,11 +70,11 @@ void overview_toggle(OverviewState &state, WaylandState &app, bool by_widget) {
         app.desktop->refresh();
         state.opened_by_widget = by_widget;
         model.open(bound_output_name(state, app), static_cast<float>(state.base.width), static_cast<float>(state.base.height));
+        overlay_panel_toggle(state.base, false);
     } else {
+        overview_request_frame(state);
         model.close();
     }
-    overlay_panel_toggle(state.base);
-    overview_request_frame(state);
 }
 
 std::vector<astralia::ShellBinding> overview_shell_bindings(OverviewState &overview, WaylandState &state) {

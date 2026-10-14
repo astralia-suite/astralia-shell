@@ -299,7 +299,7 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
             float size = dot * scale;
             ui::Box d{dx + static_cast<float>(i) * (dot + gap) + (dot - size) / 2.0f + slide, cy - size / 2.0f, size, size};
             if (echo != ui::no_image) {
-                canvas.draw_image(echo, d, palette::text);
+                canvas.draw_image(echo, d, palette::white);
             } else {
                 canvas.rounded(d, size / 2.0f, palette::text);
             }

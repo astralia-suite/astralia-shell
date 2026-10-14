@@ -65,6 +65,7 @@ bool settings_init_egl(SettingsState &state, WaylandState &app) {
         };
         state.model = std::make_unique<astralia::SettingsModel>(wayland_caps(), std::move(hooks));
         state.model->on_close_requested = [&state, &app] { settings_toggle(state, app); };
+        state.model->on_closed = [&state] { overlay_panel_release(state.base); };
         state.model->on_changed = [&state] { settings_request_frame(state); };
         state.model->on_text_focus = [&state](bool focused) {
             if (state.sync_text_input_focus)
@@ -75,8 +76,8 @@ bool settings_init_egl(SettingsState &state, WaylandState &app) {
     AnimatedImageStyle pfp_style;
     pfp_style.size = cfg::avatar_size;
     pfp_style.circular = true;
-    pfp_style.ring_fill = astralia::rgba(astralia::palette::text_alpha04);
-    pfp_style.border_color = astralia::rgba(astralia::palette::accent);
+    pfp_style.ring_fill = astralia::rgba(astralia::palette::surface);
+    pfp_style.border_color = astralia::rgba(astralia::palette::ink);
     pfp_style.border_width = cfg::avatar_border;
     pfp_style.decode = {15, static_cast<int>(cfg::avatar_size) * 2};
     animated_image_set_source(state.profile_pic, user_info::profile_media_path(), pfp_style);
@@ -96,13 +97,13 @@ void settings_toggle(SettingsState &state, WaylandState &app) {
     klog("settings: toggle called (was_open=%d opacity=%.2f)", state.base.open, static_cast<double>(state.base.opacity));
     if (opening) {
         state.model->open();
+        overlay_panel_toggle(state.base, false);
+        animated_image_show(state.profile_pic, [&state] { settings_request_frame(state); });
+        settings_request_frame(state);
     } else {
+        settings_request_frame(state);
         state.model->close();
     }
-    overlay_panel_toggle(state.base);
-    if (opening)
-        animated_image_show(state.profile_pic, [&state] { settings_request_frame(state); });
-    settings_request_frame(state);
     (void)app;
 }
 
@@ -153,7 +154,7 @@ void settings_paint(SettingsState &state) {
     state.canvas.begin(scale);
     state.canvas.set_opacity(state.base.opacity);
     state.frame = {};
-    if (state.model && state.base.opacity > 0.0f) {
+    if (state.model && state.base.open) {
         state.model->sync();
         astralia::SettingsArt art;
         art.user_name = user_info::username();

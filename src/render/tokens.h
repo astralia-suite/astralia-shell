@@ -35,57 +35,60 @@ inline constexpr Color lerp_color(Color a, Color b, float t) {
 
 namespace palette {
 
-inline constexpr Color accent = color("#9B57F4");
-inline constexpr Color accent_alpha12 = color("#9B57F41F");
-inline constexpr Color accent_alpha19 = color("#9B57F430");
-inline constexpr Color accent_alpha25 = color("#9B57F440");
-inline constexpr Color accent_container = color("#3C1877");
+inline constexpr Color white{1.0f, 1.0f, 1.0f, 1.0f};
 
-inline constexpr Color accent_alt = color("#DBAA24");
-inline constexpr Color accent_alt_alpha50 = color("#DBAA2480");
-inline constexpr Color accent_alt_container = color("#2A1957");
+inline Color ink{};
+inline Color paper{};
+inline Color surface{};
 
-inline constexpr Color base = color("#0A0614");
-inline constexpr Color base_alpha80 = color("#0A0614CC");
-inline constexpr Color overlay = color("#0A0614EB");
+inline Color accent{};
+inline Color accent_alpha12{};
+inline Color accent_alpha19{};
+inline Color accent_alpha25{};
+inline Color accent_container{};
 
-inline constexpr Color lavender = color("#806FBE");
-inline constexpr Color lavender_alpha20 = color("#806FBE33");
+inline Color accent_alt{};
+inline Color accent_alt_alpha50{};
+inline Color accent_alt_container{};
 
-inline constexpr Color field_bg = color("#170D30");
-inline constexpr Color surface_alt = color("#1D113B");
+inline Color base{};
+inline Color overlay{};
 
-inline constexpr Color text = color("#F0ECF9");
-inline constexpr Color text_alpha03 = color("#F0ECF908");
-inline constexpr Color text_alpha04 = color("#F0ECF90A");
-inline constexpr Color text_alpha06 = color("#F0ECF90F");
-inline constexpr Color text_alpha07 = color("#F0ECF912");
-inline constexpr Color text_alpha08 = color("#F0ECF914");
-inline constexpr Color text_alpha11 = color("#F0ECF91C");
-inline constexpr Color text_alpha15 = color("#F0ECF926");
-inline constexpr Color text_alpha20 = color("#F0ECF933");
-inline constexpr Color text_alpha65 = color("#F0ECF9A6");
-inline constexpr Color text_alpha85 = color("#F0ECF9D9");
-inline constexpr Color text_muted = color("#AB9DC8");
-inline constexpr Color text_dim = color("#AB9DC899");
+inline Color lavender{};
 
-inline constexpr Color electro = color("#9D3EF2");
+inline Color field_bg{};
+inline Color surface_alt{};
 
-inline constexpr Color critical = color("#F44747");
-inline constexpr Color critical_alpha15 = color("#F4474726");
+inline Color text{};
+inline Color text_alpha04{};
+inline Color text_alpha06{};
+inline Color text_alpha08{};
+inline Color text_alpha11{};
+inline Color text_alpha15{};
+inline Color text_alpha20{};
+inline Color text_alpha65{};
+inline Color text_muted{};
+inline Color text_dim{};
 
-inline constexpr Color warn = color("#E0A83A");
+inline Color electro{};
 
-inline constexpr Color window_backdrop = color("#000000B3");
+inline Color critical{};
+inline Color critical_alpha15{};
+inline Color critical_container{};
+
+inline Color warn{};
+
+inline Color window_backdrop{};
 
 } // namespace palette
 
 namespace metrics {
 
-inline constexpr float radius_md = 10.0f;
-inline constexpr float radius_sm = 5.0f;
+inline constexpr float radius_md = 14.0f;
+inline constexpr float radius_sm = 8.0f;
 inline constexpr float border_thin = 2.0f;
-inline constexpr float border_thick = 4.0f;
+inline constexpr float border_thick = 3.0f;
+inline constexpr float shadow_offset = 3.0f;
 
 } // namespace metrics
 

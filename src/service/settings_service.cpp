@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <charconv>
 #include <cstdlib>
+#include <filesystem>
 #include <format>
 #include <optional>
 #include <utility>
@@ -157,8 +158,16 @@ Config load_initial(const std::string &path) {
 
 } // namespace
 
+std::string default_wallpaper_path() {
+    std::error_code ec;
+    if (std::filesystem::exists(ASTRALIA_DEFAULT_WALLPAPER, ec)) {
+        return ASTRALIA_DEFAULT_WALLPAPER;
+    }
+    return std::string(ASTRALIA_SOURCE_ASSET_DIR) + "/default-wallpaper.jpg";
+}
+
 Config::Config()
-    : wallpaper_path(ASTRALIA_DEFAULT_WALLPAPER), wallpaper_dir(home_subdir("Pictures")),
+    : wallpaper_path(default_wallpaper_path()), wallpaper_dir(home_subdir("Pictures")),
       wallpaper_animated_dir(home_subdir("Videos")) {}
 
 namespace {

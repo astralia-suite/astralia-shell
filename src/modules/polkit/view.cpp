@@ -5,6 +5,8 @@
 #include "modules/polkit/layout.h"
 #include "modules/polkit/view.h"
 
+#include "render/sticker.h"
+
 namespace astralia {
 
 namespace {
@@ -42,7 +44,7 @@ void dots(ui::Canvas &canvas, const PolkitModel &model, float x0, float width, f
         float cell_x = x + static_cast<float>(i) * dot;
         ui::Box box{cell_x + (dot - size) / 2.0f, cy - size / 2.0f, size, size};
         if (echo != ui::no_image) {
-            canvas.draw_image(echo, box, palette::text);
+            canvas.draw_image(echo, box, palette::white);
         } else {
             canvas.rounded(box, size / 2.0f, palette::text);
         }
@@ -61,7 +63,7 @@ void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width, f
     ui::Box card{(surface_width - card_w) / 2.0f, (surface_height - card_h) / 2.0f, card_w, card_h};
 
     canvas.begin_group(card, {model.card_scale(), false});
-    canvas.rounded({0, 0, card_w, card_h}, cfg::card_radius, palette::overlay, cfg::border_width, palette::accent);
+    sticker(canvas, {0, 0, card_w, card_h}, cfg::card_radius, palette::paper);
 
     float pad = cfg::card_pad;
     float content_w = card_w - pad * 2.0f;
@@ -76,7 +78,7 @@ void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width, f
     draw_marquee_text(canvas, model.animations(), model.marquee(), prompt.message, message_style, pad, y, content_w, palette::text_muted);
     y += cfg::message_line_height + cfg::spacing;
 
-    canvas.rounded({pad, y, content_w, cfg::field_height}, cfg::field_radius, palette::field_bg, cfg::border_width, palette::accent);
+    canvas.rounded({pad, y, content_w, cfg::field_height}, cfg::field_radius, palette::surface, metrics::border_thick, palette::ink);
     float field_cy = y + cfg::field_height / 2.0f;
     float dots_w = content_w - cfg::dot_margin * 2.0f;
     if (prompt.needs_input) {

@@ -141,12 +141,13 @@ void check_logout_view() {
         logo_alpha = alpha;
         test::check(area.w == astralia::logout_config::logo_size && area.x == 0, "logo area is local to its group");
     });
-    test::check(canvas.count(Kind::rounded) == 8 && canvas.count(Kind::text) == 8, "eight buttons with a glyph each");
+    test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8, "eight buttons with a glyph each");
     test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1 && logo_calls == 1 && logo_alpha == 1.0f, "one logo group");
-    const test::Op &top = canvas.ops[0];
-    test::check(top.box.w > astralia::logout_config::button_size && top.box.w < astralia::logout_config::button_size * 1.06, "the selected button is enlarged");
-    const test::Op &next = canvas.ops[2];
-    test::check(next.box.w == astralia::logout_config::button_size, "the others keep their size");
+    constexpr float face = astralia::logout_config::button_size - astralia::metrics::shadow_offset;
+    const test::Op &top = canvas.ops[1];
+    test::check(top.box.w > face && top.box.w < face * 1.06, "the selected button is enlarged");
+    const test::Op &next = canvas.ops[4];
+    test::check(next.box.w == face, "the others keep their size");
     const test::Op &group = canvas.ops.back().kind == Kind::end_group ? canvas.ops[canvas.ops.size() - 2] : canvas.ops.back();
     (void)group;
     bool centered = false;

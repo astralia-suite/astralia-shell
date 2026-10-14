@@ -104,6 +104,10 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
     });
     services_.battery.changed.connect(redraw);
     services_.brightness.changed.connect(redraw);
+    services_.theme.changed.connect([this] {
+        spec_ = &bar_style_spec(style_, true);
+        draw();
+    });
     draw();
 
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) {

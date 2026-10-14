@@ -17,6 +17,7 @@
 #include "service/settings_service.h"
 
 #include "render/geometry.h"
+#include "render/scroll_sequence.h"
 #include "render/text_field.h"
 
 namespace astralia {
@@ -162,6 +163,7 @@ class SettingsModel {
     float tab_alpha() const { return tab_alpha_; }
     bool animating() const { return animations_.hasActive(); }
     bool is_open() const { return open_; }
+    const ScrollSequence &sequence() const { return sequence_; }
     SettingsField focused() const { return focused_; }
     const TextFieldState &field() const { return field_; }
     TextFieldState &field() { return field_; }
@@ -176,6 +178,7 @@ class SettingsModel {
     void rescan(bool animated);
 
     std::function<void()> on_close_requested;
+    std::function<void()> on_closed;
     std::function<void()> on_changed;
     std::function<void(bool)> on_text_focus;
 
@@ -194,6 +197,7 @@ class SettingsModel {
     SettingsHooks hooks_;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     AnimationManager animations_;
+    ScrollSequence sequence_{animations_, 30};
     std::vector<SettingsTabInfo> tabs_;
     std::vector<SettingsRegion> regions_;
     ui::Box panel_;

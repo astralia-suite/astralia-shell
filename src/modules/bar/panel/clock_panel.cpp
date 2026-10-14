@@ -40,7 +40,7 @@ std::chrono::year_month_day to_ymd(int year, int month, int day) {
 void nav_button(ui::Canvas &canvas, PanelPaint &paint, float x, float y, const char *glyph, int action) {
     float size = cfg::clock_nav_button;
     ui::Box box{x, y, size, size};
-    canvas.rounded(box, size / 2.0f, palette::overlay);
+    canvas.rounded(box, size / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
     if (glyph == nullptr) {
         float dot = cfg::clock_today_dot;
         canvas.rounded({x + (size - dot) / 2.0f, y + (size - dot) / 2.0f, dot, dot}, dot / 2.0f, palette::accent);

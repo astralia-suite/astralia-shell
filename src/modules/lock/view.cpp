@@ -8,6 +8,7 @@
 #include "modules/lock/layout.h"
 #include "modules/lock/view.h"
 
+#include "render/sticker.h"
 #include "render/tokens.h"
 
 namespace astralia {
@@ -67,7 +68,7 @@ struct CardBody {
 };
 
 CardBody draw_card(ui::Canvas &canvas, const LockRect &col, const std::string &title) {
-    canvas.rounded({col.x, col.y, col.w, col.h}, kLockSidePanelRadius, palette::overlay, kLockCardBorderWidth, palette::accent);
+    sticker(canvas, {col.x, col.y, col.w, col.h}, kLockSidePanelRadius, palette::surface);
     float x = col.x + kLockSidePanelPad;
     float y = col.y + kLockSidePanelPad;
     float w = col.w - 2.0f * kLockSidePanelPad;
@@ -83,7 +84,7 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     const LockModel &model = pane.model;
     float h = kLockInputHeight;
     float r = h * 0.5f;
-    canvas.rounded({x, y, w, h}, r, palette::field_bg, kLockBgBorderWidth, palette::accent);
+    canvas.rounded({x, y, w, h}, r, palette::surface, kLockBgBorderWidth, palette::ink);
 
     float cy = y + h * 0.5f;
     ui::TextStyle icon = icon_style(static_cast<int>(kLockPillIconSize));
@@ -96,7 +97,7 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     float btn_y = cy - btn * 0.5f;
     canvas.rounded({btn_x, btn_y, btn, btn}, btn * 0.5f, has_text ? palette::accent : palette::surface_alt);
     ui::TextSize arrow = canvas.measure(icon::arrow_right, icon);
-    canvas.text(icon::arrow_right, icon, std::round(btn_x + (btn - arrow.w) * 0.5f), std::round(btn_y + (btn - arrow.h) * 0.5f), has_text ? palette::base : palette::text_muted);
+    canvas.text(icon::arrow_right, icon, std::round(btn_x + (btn - arrow.w) * 0.5f), std::round(btn_y + (btn - arrow.h) * 0.5f), has_text ? palette::text : palette::text_muted);
     pane.model.hits().pill_button = absolute(pane, {btn_x, btn_y, btn, btn});
 
     float mid_x = x + h;
@@ -126,7 +127,7 @@ void draw_pill(Pane &pane, float x, float y, float w) {
         float dx = row_x + static_cast<float>(i) * kLockDotSize + (anim ? anim->slide_x : 0.0f);
         ui::Box box{std::round(dx + (kLockDotSize - size) * 0.5f), std::round(cy - size * 0.5f), size, size};
         if (echo != ui::no_image) {
-            canvas.draw_image(echo, box, palette::text);
+            canvas.draw_image(echo, box, palette::white);
         } else {
             canvas.rounded(box, size * 0.5f, palette::text);
         }
@@ -194,7 +195,7 @@ void draw_fetch(Pane &pane, const LockRect &col) {
     ui::TextSize name = canvas.measure(pane.info.user, text_style(px, true));
     float head_h = std::max(prompt.h, name.h);
     float hx = x;
-    canvas.text(">", text_style(px, true), std::round(hx), std::round(y + (head_h - prompt.h) * 0.5f), palette::accent);
+    canvas.text(">", text_style(px, true), std::round(hx), std::round(y + (head_h - prompt.h) * 0.5f), palette::lavender);
     hx += prompt.w + kLockFetchChipPad;
     canvas.text(pane.info.user, text_style(px, true), std::round(hx), std::round(y + (head_h - name.h) * 0.5f), palette::text);
     y += head_h + kLockFetchLineGap;
@@ -262,7 +263,7 @@ void draw_media(Pane &pane, const LockRect &col) {
         cover = canvas.thumbnail(media.track.art_url.substr(7), static_cast<int>(art));
     }
     if (cover != ui::no_image) {
-        canvas.draw_image(cover, art_box, palette::text);
+        canvas.draw_image(cover, art_box, palette::white);
     } else {
         ui::TextStyle note_style = icon_style(static_cast<int>(art * 0.4f));
         ui::TextSize note = canvas.measure(icon::music_note, note_style);
@@ -270,7 +271,7 @@ void draw_media(Pane &pane, const LockRect &col) {
     }
 
     float ty = ay + art + kLockMediaTextGap * 3.0f;
-    put_centered(canvas, title, title_style, cx, ty, palette::accent);
+    put_centered(canvas, title, title_style, cx, ty, palette::lavender);
     ty += title_size.h + kLockMediaTextGap;
     put_centered(canvas, artist, artist_style, cx, ty, palette::text_muted);
     ty += artist_size.h + kLockMediaBtnGap * 1.5f;
@@ -407,7 +408,7 @@ void draw_notifications(Pane &pane, const LockRect &col) {
 
         canvas.rounded({0.0f, cy, cw, ch}, kLockNotifCardRadius, palette::field_bg);
         float iy = cy + pad;
-        canvas.text(app, app_style, pad, std::round(iy), palette::accent);
+        canvas.text(app, app_style, pad, std::round(iy), palette::lavender);
         iy += app_size.h + kLockMediaTextGap;
         if (!record.summary.empty()) {
             canvas.text(record.summary, summary_style, pad, std::round(iy), palette::text);
@@ -442,7 +443,7 @@ void draw_center(Pane &pane, const LockRect &col, float output_h) {
     float cx = col.x + col.w * 0.5f;
 
     float mx = cx - clock_w * 0.5f;
-    canvas.text(pane.info.hour, clock_style, std::round(mx), std::round(y), palette::accent);
+    canvas.text(pane.info.hour, clock_style, std::round(mx), std::round(y), palette::text);
     mx += hour.w + kLockClockGap;
     canvas.text(":", clock_style, std::round(mx), std::round(y), palette::text);
     mx += colon.w + kLockClockGap;
@@ -457,10 +458,10 @@ void draw_center(Pane &pane, const LockRect &col, float output_h) {
     ui::ImageId face = pane.avatar && pane.avatar(canvas, avatar) ? ui::no_image : canvas.image(kLockProfileAsset, static_cast<int>(kLockProfileSize) * 2);
     if (face != ui::no_image) {
         canvas.begin_group(avatar, {1.0f, true, kLockProfileSize * 0.5f});
-        canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::text);
+        canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
         canvas.end_group();
     }
-    canvas.rounded(avatar, kLockProfileSize * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f}, kLockProfileBorderWidth, palette::accent);
+    canvas.rounded(avatar, kLockProfileSize * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f}, kLockProfileBorderWidth, palette::ink);
     y += kLockProfileSize + kLockGapAvatarInput;
 
     float pill_w = col.w * kLockInputWidthFrac;
@@ -482,13 +483,13 @@ void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const 
 
     model.hits() = {};
     canvas.begin_group({px, py, pw, ph}, {motion.panel_scale, true, kLockCardRadius, motion.panel_rotation});
-    canvas.rounded({0.0f, 0.0f, pw, ph}, kLockCardRadius, palette::overlay, kLockBgBorderWidth, palette::accent);
+    sticker(canvas, {0.0f, 0.0f, pw, ph}, kLockCardRadius, palette::paper);
 
     if (motion.icon_alpha > 0.001f) {
         const char *glyph = motion.unlocking ? icon::lock_open : icon::lock;
         ui::TextStyle style = icon_style(static_cast<int>(kLockFontIcon));
         ui::TextSize size = canvas.measure(glyph, style);
-        canvas.text(glyph, style, std::round((pw - size.w) * 0.5f), std::round((ph - size.h) * 0.5f), with_alpha(palette::accent, palette::accent.a * motion.icon_alpha));
+        canvas.text(glyph, style, std::round((pw - size.w) * 0.5f), std::round((ph - size.h) * 0.5f), with_alpha(palette::text, palette::text.a * motion.icon_alpha));
     }
     if (motion.content_alpha <= 0.001f) {
         canvas.end_group();

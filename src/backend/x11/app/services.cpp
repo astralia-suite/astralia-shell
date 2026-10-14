@@ -23,6 +23,13 @@ Services::Services(XConnection &x, EventLoop &loop)
     : system(loop), session(loop, BusKind::session), compositor(make_compositor(loop, i3_socket_from_root(x))),
       network(system, loop), bluetooth(system), battery(system), brightness(loop), notifications(loop),
       polkit(loop), audio(loop), media(session), tray(loop), outputs(x, loop), settings(loop) {
+    auto sync_theme = [this] {
+        const std::vector<Output> &all = outputs.outputs();
+        theme.sync(settings.config(), all.empty() ? std::string() : all.front().name);
+    };
+    settings.changed.connect(sync_theme);
+    outputs.changed.connect(sync_theme);
+    sync_theme();
     cpu_temp_init(cpu_temp);
     gpu_temp_init(gpu_temp, loop);
 }

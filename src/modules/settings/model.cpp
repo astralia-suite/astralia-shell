@@ -223,19 +223,28 @@ void SettingsModel::open() {
     active_ = pending_ = SettingsTab::wallpaper;
     animations_.cancelForOwner(owner_tab_fade);
     tab_alpha_ = 1.0f;
+    sequence_.open();
     sync();
 }
 
 void SettingsModel::close() {
+    if (!open_ || sequence_.closing()) {
+        return;
+    }
     commit_field();
-    open_ = false;
-    static_picker_.files.clear();
-    static_picker_.dir.clear();
-    animated_picker_.files.clear();
-    animated_picker_.dir.clear();
-    static_picker_.generation++;
-    animated_picker_.generation++;
-    static_picker_.scanning = animated_picker_.scanning = false;
+    sequence_.close([this] {
+        open_ = false;
+        static_picker_.files.clear();
+        static_picker_.dir.clear();
+        animated_picker_.files.clear();
+        animated_picker_.dir.clear();
+        static_picker_.generation++;
+        animated_picker_.generation++;
+        static_picker_.scanning = animated_picker_.scanning = false;
+        if (on_closed) {
+            on_closed();
+        }
+    });
 }
 
 BarStyle SettingsModel::effective_bar_style() const {
@@ -275,7 +284,7 @@ void SettingsModel::sync() {
         int count = picker.region.empty() ? 1 : wallpaper_column_count(current, picker.region, animated);
         picker.column = std::clamp(picker.column, 0, count - 1);
     }
-    if (open_ && active_ == SettingsTab::wallpaper) {
+    if (open_ && !sequence_.closing() && active_ == SettingsTab::wallpaper) {
         bool animated = caps_.animated_wallpaper && current.wallpaper_animated_enabled;
         const std::string &dir = animated ? current.wallpaper_animated_dir : current.wallpaper_dir;
         WallpaperPicker &picker = animated ? animated_picker_ : static_picker_;
@@ -374,6 +383,9 @@ void SettingsModel::edit(const std::function<void(Config &)> &apply) {
 }
 
 bool SettingsModel::key(const input::KeyEvent &event) {
+    if (!open_ || sequence_.closing()) {
+        return false;
+    }
     if (focused_ == SettingsField::none) {
         if (event.kind == input::KeyKind::Escape) {
             if (on_close_requested) {
@@ -450,6 +462,9 @@ bool SettingsModel::clickable(double x, double y) const {
 }
 
 void SettingsModel::click(double x, double y) {
+    if (!open_ || sequence_.closing() || !sequence_.settled()) {
+        return;
+    }
     for (const SettingsRegion &region : regions_) {
         const ui::Box &b = region.box;
         if (b.w > 0 && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
@@ -464,6 +479,9 @@ void SettingsModel::click(double x, double y) {
 }
 
 void SettingsModel::scroll(float pixels) {
+    if (!open_ || sequence_.closing() || !sequence_.settled()) {
+        return;
+    }
     if (active_ != SettingsTab::wallpaper) {
         return;
     }

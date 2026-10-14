@@ -59,6 +59,7 @@ Settings::Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
                                         paint();
                                     });
     model_.on_close_requested = [this] { close(); };
+    model_.on_closed = [this] { closed(); };
     model_.on_changed = [this] { schedule_paint(); };
     canvas_.on_image_ready = [this] { schedule_paint(); };
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
@@ -117,6 +118,9 @@ void Settings::close() {
         return;
     }
     model_.close();
+}
+
+void Settings::closed() {
     open_ = false;
     repaint_pending_ = false;
     window_.set_cursor(CursorShape::arrow);

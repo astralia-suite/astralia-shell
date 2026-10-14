@@ -15,6 +15,7 @@
 #include "service/polkit_service.h"
 #include "service/settings_service.h"
 #include "service/telemetry_service.h"
+#include "service/theme_service.h"
 #include "service/tray_service.h"
 #include "service/user_service.h"
 
@@ -43,6 +44,7 @@ struct Services {
     TrayService tray;
     OutputService outputs;
     SettingsService settings;
+    ThemeService theme;
     UserService user;
     CpuTempState cpu_temp;
     GpuTempState gpu_temp;

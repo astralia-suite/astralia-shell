@@ -130,11 +130,59 @@ void check_tabs() {
 void check_tab_fade() {
     Env animated;
     animated.model.open();
-    animated.click(SettingsAct::tab, static_cast<int>(SettingsTab::bar));
-    test::check(animated.model.active_tab() == SettingsTab::wallpaper && animated.model.animating(), "a tab switch fades out first");
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(1));
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(2));
+    animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(3));
+    animated.click(SettingsAct::tab, static_cast<int>(SettingsTab::bar));
+    test::check(animated.model.active_tab() == SettingsTab::wallpaper && animated.model.animating(), "a tab switch fades out first");
+    animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(4));
+    animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(5));
     test::check(animated.model.active_tab() == SettingsTab::bar && animated.model.tab_alpha() == 1.0f, "then fades the new tab in");
+}
+
+void check_scroll_stages() {
+    using Kind = test::Op::Kind;
+    using std::chrono::seconds;
+    using std::chrono::steady_clock;
+    Env env{SettingsCaps{}};
+    int closed = 0;
+    int closes = 0;
+    env.model.on_closed = [&] { ++closed; };
+    env.model.on_close_requested = [&] { ++closes; };
+    astralia::SettingsArt art{"someone", "up 3 hours", {}};
+
+    env.model.open();
+    test::check(env.model.is_open() && env.model.sequence().slide() == 1.0f && env.model.animating(), "the closed scroll starts below the screen");
+    test::RecordingCanvas rising;
+    astralia::paint_settings(rising, env.model, art, 1920, 1200);
+    test::check(rising.count(Kind::rounded) > 0 && rising.count(Kind::text) == 0 && !env.model.clickable(960, 600), "the closed scroll shows no content");
+    env.model.click(5, 5);
+    test::check(closes == 0, "clicks are ignored before the scroll is open");
+
+    env.model.tick(steady_clock::now() + seconds(1));
+    env.model.tick(steady_clock::now() + seconds(2));
+    test::check(env.model.sequence().settled() && env.model.sequence().grid() == 0.0f, "the scroll unrolls before the content");
+    test::RecordingCanvas unrolled;
+    astralia::paint_settings(unrolled, env.model, art, 1920, 1200);
+    test::check(unrolled.count(Kind::text) == 0, "the open scroll is still empty");
+
+    env.model.tick(steady_clock::now() + seconds(3));
+    test::RecordingCanvas shown;
+    astralia::paint_settings(shown, env.model, art, 1920, 1200);
+    test::check(shown.count(Kind::text) > 0 && shown.count(Kind::begin_group) == 0, "then the content appears");
+    env.model.click(5, 5);
+    test::check(closes == 1, "and clicks work");
+
+    env.model.close();
+    test::check(env.model.is_open() && closed == 0, "closing keeps the overlay until the scroll has dropped");
+    test::check(!env.model.key(key(KeyKind::Down)), "keys are ignored while closing");
+    env.model.tick(steady_clock::now() + seconds(4));
+    test::RecordingCanvas fading;
+    astralia::paint_settings(fading, env.model, art, 1920, 1200);
+    test::check(fading.count(Kind::text) == 0 && env.model.sequence().scroll() == 1.0f && closed == 0, "the content goes before the scroll rolls up");
+    env.model.tick(steady_clock::now() + seconds(5));
+    env.model.tick(steady_clock::now() + seconds(6));
+    test::check(!env.model.is_open() && closed == 1, "the overlay closes once, after the drop");
 }
 
 void check_actions() {
@@ -305,6 +353,7 @@ void check_settings() {
     check_fields();
     check_tabs();
     check_tab_fade();
+    check_scroll_stages();
     check_actions();
     check_wallpaper();
     check_view();

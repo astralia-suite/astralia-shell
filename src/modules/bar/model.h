@@ -55,7 +55,7 @@ struct BarSources {
 struct BarItemView {
     const char *glyph = nullptr;
     std::string label;
-    std::optional<Color> border;
+    std::optional<Color> tint;
     bool alert = false;
     bool visible = false;
     float expand = 0.0f;

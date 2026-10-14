@@ -18,6 +18,8 @@
 
 namespace astralia {
 
+std::string default_wallpaper_path();
+
 struct MonitorOverride {
     bool enabled = false;
     bool osd = true;

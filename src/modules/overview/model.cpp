@@ -9,6 +9,8 @@
 
 #include "modules/overview/model.h"
 
+#include "render/scroll.h"
+
 #include "service/icon_service.h"
 
 namespace astralia {
@@ -18,7 +20,7 @@ namespace {
 namespace cfg = overview_config;
 
 constexpr OverviewGrid grid{cfg::columns, cfg::rows};
-constexpr uint64_t owner_slide = 5;
+constexpr ScrollMetrics scroll_style{};
 constexpr uint64_t owner_indicator_x = 3;
 constexpr uint64_t owner_indicator_y = 4;
 
@@ -92,30 +94,27 @@ void OverviewModel::open(std::string output_name, float width, float height) {
     group_ = overview_page_of(grid, selected_);
     global_mode_ = false;
     dragging_ = false;
-    closing_ = false;
     open_ = true;
     indicator_tracking_ = false;
     indicator_visible_ = false;
-    slide_y_ = height;
-    animations_.animate(slide_y_, 0.0f, cfg::anim_ms, astralia::Easing::EaseOutCubic, [this](float v) { slide_y_ = v; }, {}, owner_slide);
+    sequence_.open();
 }
 
 void OverviewModel::close() {
-    if (!open_ || closing_) {
+    if (!open_ || sequence_.closing()) {
         return;
     }
     dragging_ = false;
-    closing_ = true;
-    animations_.animate(slide_y_, height_, cfg::anim_ms, astralia::Easing::EaseOutCubic, [this](float v) { slide_y_ = v; }, [this] {
+    sequence_.close([this] {
         open_ = false;
-        closing_ = false;
         tiles_.clear();
         tile_anim_.clear();
         layout_ = {};
         indicator_visible_ = false;
         if (on_closed) {
             on_closed();
-        } }, owner_slide);
+        }
+    });
 }
 
 const OverviewCell *OverviewModel::find_cell(int workspace) const {
@@ -144,9 +143,10 @@ void OverviewModel::compute_layout(float width, float height) {
     float pad = cfg::padding;
 
     if (global_mode_ && !state.monitors.empty()) {
-        float gap_x = spacing * (cfg::columns - 1) + pad * 2.0f + cfg::global_block_spacing;
-        float gap_y = spacing * (cfg::rows - 1) + pad * 2.0f + cfg::global_block_spacing;
-        float frame = 2.0f * (pad + cfg::margin);
+        float gap_x = spacing * (cfg::columns - 1) + pad * 2.0f + cfg::global_block_spacing + scroll_style.roller_w * 2.0f;
+        float gap_y = spacing * (cfg::rows - 1) + pad * 2.0f + cfg::global_block_spacing + scroll_style.overhang * 2.0f;
+        float frame_x = 2.0f * (pad + cfg::margin + scroll_style.roller_w);
+        float frame_y = 2.0f * (pad + cfg::margin);
         const std::vector<CompositorMonitor> &ms = state.monitors;
         std::vector<float> steps_x = separation_steps(ms, &CompositorMonitor::x, 0);
         std::vector<float> steps_y = separation_steps(ms, &CompositorMonitor::y, 1);
@@ -159,8 +159,8 @@ void OverviewModel::compute_layout(float width, float height) {
         float scale = cfg::global_scale;
         for (size_t i = 0; i < ms.size(); ++i) {
             WorkArea area = compositor_work_area(ms[i]);
-            float fixed_x = steps_x[i] * gap_x + spacing * (cfg::columns - 1) + frame;
-            float fixed_y = steps_y[i] * gap_y + spacing * (cfg::rows - 1) + frame;
+            float fixed_x = steps_x[i] * gap_x + spacing * (cfg::columns - 1) + frame_x;
+            float fixed_y = steps_y[i] * gap_y + spacing * (cfg::rows - 1) + frame_y;
             float per_x = static_cast<float>((ms[i].x - min_x + std::max(1.0, area.width)) * cfg::columns);
             float per_y = static_cast<float>((ms[i].y - min_y + std::max(1.0, area.height)) * cfg::rows);
             scale = std::min({scale, (width - fixed_x) / per_x, (height - fixed_y) / per_y});
@@ -185,9 +185,10 @@ void OverviewModel::compute_layout(float width, float height) {
         }
         work_w = std::max(1.0, work_w);
         work_h = std::max(1.0, work_h);
-        float frame = 2.0f * (pad + cfg::margin);
-        float fit_x = (width - frame - spacing * (cfg::columns - 1)) / (static_cast<float>(work_w) * cfg::columns);
-        float fit_y = (height - frame - spacing * (cfg::rows - 1)) / (static_cast<float>(work_h) * cfg::rows);
+        float frame_x = 2.0f * (pad + cfg::margin + scroll_style.roller_w);
+        float frame_y = 2.0f * (pad + cfg::margin);
+        float fit_x = (width - frame_x - spacing * (cfg::columns - 1)) / (static_cast<float>(work_w) * cfg::columns);
+        float fit_y = (height - frame_y - spacing * (cfg::rows - 1)) / (static_cast<float>(work_h) * cfg::rows);
         layout_.scale = std::max(0.01f, std::min({cfg::scale, fit_x, fit_y}));
         blocks.push_back(make_block(work_w, work_h, group_, layout_.scale, 0.0f, 0.0f));
     }
@@ -201,7 +202,7 @@ void OverviewModel::compute_layout(float width, float height) {
     float root_w = grid_w + pad * 2.0f + cfg::margin * 2.0f;
     float root_h = grid_h + pad * 2.0f + cfg::margin * 2.0f;
     float origin_x = std::round((width - root_w) / 2.0f) + cfg::margin;
-    float origin_y = std::round((height - root_h) / 2.0f) + slide_y_ + cfg::margin;
+    float origin_y = std::round((height - root_h) / 2.0f) + slide_y() + cfg::margin;
 
     for (const Block &b : blocks) {
         layout_.panels.push_back({origin_x + b.x, origin_y + b.y, b.cell_w * cfg::columns + spacing * (cfg::columns - 1) + pad * 2.0f, b.cell_h * cfg::rows + spacing * (cfg::rows - 1) + pad * 2.0f});
@@ -296,7 +297,7 @@ void OverviewModel::update_indicator() {
         indicator_tracking_ = false;
         return;
     }
-    if (slide_y_ != 0.0f) {
+    if (!sequence_.settled()) {
         return;
     }
     const ui::Box &rect = cell->rect;
@@ -350,7 +351,7 @@ void OverviewModel::select(int workspace, bool shift, bool alt) {
 }
 
 bool OverviewModel::key(const input::KeyEvent &event) {
-    if (!open_ || closing_) {
+    if (!open_ || sequence_.closing()) {
         return false;
     }
     if (global_mode_) {
@@ -411,7 +412,7 @@ bool OverviewModel::key(const input::KeyEvent &event) {
 }
 
 void OverviewModel::press(double x, double y) {
-    if (!open_ || closing_) {
+    if (!fully_open()) {
         return;
     }
     for (auto it = tiles_.rbegin(); it != tiles_.rend(); ++it) {
@@ -473,7 +474,7 @@ void OverviewModel::release() {
 }
 
 bool OverviewModel::clickable(double x, double y) const {
-    if (!open_) {
+    if (!fully_open()) {
         return false;
     }
     for (const OverviewTile &tile : tiles_) {

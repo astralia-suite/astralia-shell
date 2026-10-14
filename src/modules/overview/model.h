@@ -14,6 +14,7 @@
 #include "service/compositor_service.h"
 
 #include "render/geometry.h"
+#include "render/scroll_sequence.h"
 
 namespace astralia {
 
@@ -56,7 +57,10 @@ class OverviewModel {
     bool global_mode() const { return global_mode_; }
     int selected() const { return selected_; }
     int drag_target() const { return drag_target_; }
-    float slide_y() const { return slide_y_; }
+    float slide_y() const { return sequence_.slide() * height_; }
+    float scroll() const { return sequence_.scroll(); }
+    float grid_alpha() const { return sequence_.grid(); }
+    bool fully_open() const { return open_ && !sequence_.closing() && sequence_.settled(); }
     const OverviewLayout &layout() const { return layout_; }
     const std::vector<OverviewTile> &tiles() const { return tiles_; }
     ui::Box tile_rect(const OverviewTile &tile) const;
@@ -79,15 +83,14 @@ class OverviewModel {
 
     Compositor &compositor_;
     AnimationManager animations_;
+    ScrollSequence sequence_{animations_, 5};
     bool open_ = false;
-    bool closing_ = false;
     bool global_mode_ = false;
     std::string output_name_;
     float width_ = 0.0f;
     float height_ = 0.0f;
     int group_ = 0;
     int selected_ = -1;
-    float slide_y_ = 0.0f;
     OverviewLayout layout_;
     std::vector<OverviewTile> tiles_;
     struct TileAnim {

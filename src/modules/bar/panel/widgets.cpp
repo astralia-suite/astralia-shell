@@ -2,6 +2,7 @@
 
 #include "config/panel_config.h"
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/bar/panel/widgets.h"
 
@@ -65,7 +66,7 @@ void toggle(ui::Canvas &canvas, const ui::Box &box, bool on) {
 
 void icon_button(ui::Canvas &canvas, const ui::Box &box, const char *glyph, const Color &color) {
     constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
-    canvas.rounded(box, box.w / 2.0f, palette::overlay);
+    canvas.rounded(box, box.w / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
     centered_text(canvas, glyph, icon_style, box, color);
 }
 
@@ -82,7 +83,7 @@ void device_row(ui::Canvas &canvas, const ui::Box &box, const DeviceRow &row, Pa
         constexpr std::string_view busy = "Connecting\xE2\x80\xA6";
         ui::TextSize size = canvas.measure(busy, text_style);
         actions = size.w;
-        canvas.text(busy, text_style, right - size.w, box.y + (box.h - size.h) / 2.0f, palette::accent);
+        canvas.text(busy, text_style, right - size.w, box.y + (box.h - size.h) / 2.0f, palette::lavender);
     } else {
         float size = cfg::close_button;
         float y = box.y + (box.h - size) / 2.0f;
@@ -119,7 +120,7 @@ void device_row(ui::Canvas &canvas, const ui::Box &box, const DeviceRow &row, Pa
 
 void dialog_top(ui::Canvas &canvas, const ui::Box &box, std::string_view label, PanelPaint &paint, int close_id) {
     constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
-    canvas.rounded(box, metrics::radius_md, palette::overlay, metrics::border_thin, palette::accent);
+    sticker(canvas, box, metrics::radius_md, palette::paper);
     size_t chars = static_cast<size_t>(cfg::dialog_label_chars);
     std::string shown = label.size() <= chars ? std::string(label) : std::string(label.substr(0, chars - 1)) + "\xE2\x80\xA6";
     canvas.text(shown, text_style, box.x + cfg::padding, box.y + cfg::dialog_top_margin, palette::text_dim);
@@ -140,11 +141,11 @@ void confirm_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view lab
     float cancel_w = canvas.measure("Cancel", text_style).w + cfg::dialog_button_pad;
     float bx = x + (width - (ok_w + cfg::row_gap + cancel_w)) / 2.0f;
     ui::Box ok{bx, y, ok_w, cfg::dialog_button};
-    canvas.rounded(ok, cfg::dialog_button_radius, palette::critical_alpha15);
-    panel_widgets::centered_text(canvas, confirm_label, text_style, ok, palette::critical);
+    canvas.rounded(ok, cfg::dialog_button_radius, palette::critical_container, metrics::border_thin, palette::ink);
+    panel_widgets::centered_text(canvas, confirm_label, text_style, ok, palette::text);
     paint.region(ok, confirm_id);
     ui::Box cancel{bx + ok_w + cfg::row_gap, y, cancel_w, cfg::dialog_button};
-    canvas.rounded(cancel, cfg::dialog_button_radius, palette::overlay);
+    canvas.rounded(cancel, cfg::dialog_button_radius, palette::accent_container, metrics::border_thin, palette::ink);
     panel_widgets::centered_text(canvas, "Cancel", text_style, cancel, palette::text);
     paint.region(cancel, cancel_id);
 }

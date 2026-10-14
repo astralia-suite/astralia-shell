@@ -5,6 +5,7 @@
 #include "modules/logout/layout.h"
 #include "modules/logout/view.h"
 
+#include "render/sticker.h"
 #include "render/tokens.h"
 
 namespace astralia {
@@ -47,9 +48,8 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
         float scale = (model.exiting() ? 1.0f : t) * highlight;
         float w = size * scale;
 
-        Color fill = with_alpha(palette::field_bg, visible);
-        Color border = with_alpha(lerp_color(palette::accent, palette::accent_alt, model.highlight_border()[idx]), visible);
-        canvas.rounded({bx - w / 2.0f, by - w / 2.0f, w, w}, static_cast<float>(cfg::button_corner_radius) * scale, fill, cfg::border_width, border);
+        Color fill = with_alpha(lerp_color(palette::paper, palette::accent_alt, model.highlight_border()[idx]), visible);
+        sticker(canvas, {bx - w / 2.0f, by - w / 2.0f, w, w}, static_cast<float>(cfg::button_corner_radius) * scale, fill, with_alpha(palette::ink, visible), metrics::border_thick, metrics::shadow_offset * scale);
 
         const char *glyph = cfg::actions[idx].glyph;
         ui::TextSize extent = canvas.measure(glyph, glyph_style);
@@ -64,7 +64,7 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
     canvas.end_group();
 
     if (model.flash() > 0.0f) {
-        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(color("#E4D2FF"), model.flash()));
+        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(palette::accent_container, model.flash()));
     }
 }
 
