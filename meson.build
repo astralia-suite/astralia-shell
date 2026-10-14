@@ -181,7 +181,6 @@ install_data(
 install_data('assets/default-wallpaper.jpg', 'assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
 install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
 install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
-install_data('assets/gifs/profile.gif', install_dir: data_dir / 'gifs')
 install_data('assets/pam/astralia-shell', install_dir: data_dir / 'pam')
 install_data(
   'assets/constellation/C1.png',
@@ -323,7 +322,7 @@ if wayland_enabled
       'test/backend/wayland/test_wayland.cpp',
       'test/backend/wayland/app/test_config.cpp',
       'test/backend/wayland/core/test_poll_source.cpp',
-      'test/backend/wayland/render/test_animated_image.cpp',
+      'test/backend/wayland/render/test_media_decode.cpp',
       'test/backend/wayland/render/test_image_decode.cpp',
       'test/backend/wayland/render/test_marquee_scroll.cpp',
       'test/backend/wayland/render/test_palette.cpp',

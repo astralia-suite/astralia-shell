@@ -13,7 +13,6 @@
 #include "modules/logout/wayland/logout_style_config.h"
 
 #include "render/geometry.h"
-#include "wayland/render/animated_image.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/renderer.h"
@@ -32,10 +31,6 @@ struct LogoutState {
     wl_output *bound_output = nullptr;
 
     ThunderBurst thunder;
-    AnimatedImage logo_gif;
-    AnimatedImage logo_png;
-    bool logo_animated = true;
-    bool logo_source_set = false;
 };
 
 astralia::ui::Box logout_detail_button_rect(int index, float center_x, float center_y);
@@ -47,8 +42,6 @@ bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display,
 void logout_retarget(LogoutState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name);
 
 void logout_request_frame(LogoutState &state);
-
-void logout_apply_logo_config(LogoutState &state, bool animated);
 
 void logout_toggle(LogoutState &state, bool by_widget = false);
 

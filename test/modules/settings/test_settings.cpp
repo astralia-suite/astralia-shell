@@ -92,10 +92,10 @@ void check_tabs() {
     test::check(order == std::vector<SettingsTab>{SettingsTab::bar, SettingsTab::displays, SettingsTab::wallpaper}, "a minimal backend has three tabs");
 
     SettingsCaps full;
-    full.animation = full.idle = full.launcher = full.logout = full.rain = full.visualizer = true;
+    full.animation = full.idle = full.launcher = full.rain = full.visualizer = true;
     Env rich(full);
-    test::check(rich.model.tabs().size() == 9 && rich.model.tabs().front().tab == SettingsTab::animation, "capabilities add the extra tabs in order");
-    test::check(rich.model.tabs()[4].tab == SettingsTab::launcher, "the launcher tab sits between idle and logout");
+    test::check(rich.model.tabs().size() == 8&& rich.model.tabs().front().tab == SettingsTab::animation, "capabilities add the extra tabs in order");
+    test::check(rich.model.tabs()[4].tab == SettingsTab::launcher, "the launcher tab sits between idle and rain");
 
     minimal.model.open();
     test::check(minimal.model.active_tab() == SettingsTab::wallpaper, "the overlay opens on the wallpaper tab");
@@ -188,7 +188,7 @@ void check_scroll_stages() {
 void check_actions() {
     Instant instant;
     SettingsCaps caps;
-    caps.rain = caps.visualizer = caps.animation = caps.logout = caps.idle = caps.launcher = true;
+    caps.rain = caps.visualizer = caps.animation = caps.idle = caps.launcher = true;
     Env env(caps);
     env.model.open();
 
@@ -234,8 +234,7 @@ void check_actions() {
     env.click(SettingsAct::visualizer_reset, static_cast<int>(SettingsField::visualizer_fps));
     test::check(env.config.visualizer.visualizer_shape == astralia::VisualizerShape::Sphere && env.config.visualizer.fps == 60, "visualizer settings apply and reset");
     env.click(SettingsAct::animation_disable);
-    env.click(SettingsAct::logout_logo);
-    test::check(env.config.animations_disabled && !env.config.logout_animated_logo, "single toggles flip");
+    test::check(env.config.animations_disabled, "single toggles flip");
     env.click(SettingsAct::wallpaper_default);
     env.click(SettingsAct::wallpaper_animated);
     test::check(!env.config.default_wallpaper_enabled && env.config.wallpaper_animated_enabled, "wallpaper mode toggles flip");

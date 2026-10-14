@@ -21,7 +21,6 @@ namespace cfg = settings_config;
 SettingsCaps x11_caps() {
     SettingsCaps caps = settings_caps(x11_capabilities());
     caps.autohide = true;
-    caps.logout = true;
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;
     caps.bar_styles.assign(bar_config::supported_styles.begin(), bar_config::supported_styles.end());
@@ -199,6 +198,7 @@ void Settings::paint() {
     SettingsArt art;
     art.user_name = services_.user.name();
     art.uptime = services_.user.uptime();
+    art.face = services_.user.face_path();
     paint_settings(canvas_, model_, art, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
     window_.present();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);

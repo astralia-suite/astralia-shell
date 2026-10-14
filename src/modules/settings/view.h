@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <string>
 
 #include "modules/settings/model.h"
@@ -12,7 +11,7 @@ namespace astralia {
 struct SettingsArt {
     std::string user_name;
     std::string uptime;
-    std::function<bool(ui::Canvas &, const ui::Box &)> avatar;
+    std::string face;
 };
 
 struct SettingsFrame {

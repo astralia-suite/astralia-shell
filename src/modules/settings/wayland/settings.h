@@ -15,7 +15,6 @@
 #include "modules/settings/model.h"
 #include "modules/settings/view.h"
 
-#include "wayland/render/animated_image.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 
@@ -39,7 +38,6 @@ struct SettingsState {
     GlCanvas canvas;
     std::unique_ptr<astralia::SettingsModel> model;
     astralia::SettingsFrame frame;
-    AnimatedImage profile_pic;
     std::function<void(bool)> sync_text_input_focus;
 };
 

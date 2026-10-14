@@ -23,7 +23,6 @@ namespace cfg = astralia::settings_config;
 
 astralia::SettingsCaps wayland_caps() {
     astralia::SettingsCaps caps = astralia::settings_caps(astralia::wayland_capabilities());
-    caps.logout = true;
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;
     caps.autohide = true;
@@ -73,14 +72,6 @@ bool settings_init_egl(SettingsState &state, WaylandState &app) {
         };
     }
 
-    AnimatedImageStyle pfp_style;
-    pfp_style.size = cfg::avatar_size;
-    pfp_style.circular = true;
-    pfp_style.ring_fill = astralia::rgba(astralia::palette::surface);
-    pfp_style.border_color = astralia::rgba(astralia::palette::ink);
-    pfp_style.border_width = cfg::avatar_border;
-    pfp_style.decode = {15, static_cast<int>(cfg::avatar_size) * 2};
-    animated_image_set_source(state.profile_pic, user_info::profile_media_path(), pfp_style);
     return true;
 }
 
@@ -98,7 +89,6 @@ void settings_toggle(SettingsState &state, WaylandState &app) {
     if (opening) {
         state.model->open();
         overlay_panel_toggle(state.base, false);
-        animated_image_show(state.profile_pic, [&state] { settings_request_frame(state); });
         settings_request_frame(state);
     } else {
         settings_request_frame(state);
@@ -141,10 +131,6 @@ void settings_paint(SettingsState &state) {
     state.base.animations.tick(now);
     if (state.model)
         state.model->tick(now);
-    if (state.base.open)
-        animated_image_tick(state.profile_pic, now);
-    else
-        animated_image_hide(state.profile_pic);
     gl_make_current(state.base.egl_display, state.base.egl_surface, state.base.egl_context);
     int32_t scale = state.base.output_scale.scale;
     state.renderer->begin_frame(state.base.width, state.base.height, scale);
@@ -159,18 +145,13 @@ void settings_paint(SettingsState &state) {
         astralia::SettingsArt art;
         art.user_name = user_info::username();
         art.uptime = user_info::uptime_string();
-        art.avatar = [&state](astralia::ui::Canvas &, const astralia::ui::Box &box) {
-            if (state.profile_pic.frames.empty())
-                return false;
-            animated_image_draw(state.profile_pic, state.canvas, box.x, box.y, box.w, box.h, 1.0f);
-            return true;
-        };
+        art.face = user_info::face_path();
         state.frame = astralia::paint_settings(state.canvas, *state.model, art, static_cast<float>(state.base.width), static_cast<float>(state.base.height));
     }
     state.canvas.flush();
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
 
-    if (state.base.animations.hasActive() || animated_image_animating(state.profile_pic) || (state.model && state.model->animating()))
+    if (state.base.animations.hasActive() || (state.model && state.model->animating()))
         overlay_panel_request_frame(state.base);
 }
 

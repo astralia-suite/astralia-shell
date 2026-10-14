@@ -22,7 +22,6 @@ struct Pane {
     LockModel &model;
     LockMotion &motion;
     const LockInfo &info;
-    const LockAvatarArt &avatar;
     float origin_x;
     float origin_y;
 };
@@ -455,11 +454,15 @@ void draw_center(Pane &pane, const LockRect &col, float output_h) {
 
     ui::Box avatar{std::round(cx - kLockProfileSize * 0.5f), std::round(y), kLockProfileSize, kLockProfileSize};
     canvas.rounded(avatar, kLockProfileSize * 0.5f, palette::field_bg);
-    ui::ImageId face = pane.avatar && pane.avatar(canvas, avatar) ? ui::no_image : canvas.image(kLockProfileAsset, static_cast<int>(kLockProfileSize) * 2);
+    ui::ImageId face = pane.info.face.empty() ? ui::no_image : canvas.image(pane.info.face, static_cast<int>(kLockProfileSize) * 2);
     if (face != ui::no_image) {
         canvas.begin_group(avatar, {1.0f, true, kLockProfileSize * 0.5f});
         canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
         canvas.end_group();
+    } else {
+        ui::TextStyle glyph_style = icon_style(static_cast<int>(kLockProfileSize * 0.5f));
+        ui::TextSize glyph = canvas.measure(icon::user, glyph_style);
+        canvas.text(icon::user, glyph_style, std::round(avatar.x + (avatar.w - glyph.w) * 0.5f), std::round(avatar.y + (avatar.h - glyph.h) * 0.5f), palette::text);
     }
     canvas.rounded(avatar, kLockProfileSize * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f}, kLockProfileBorderWidth, palette::ink);
     y += kLockProfileSize + kLockGapAvatarInput;
@@ -470,7 +473,7 @@ void draw_center(Pane &pane, const LockRect &col, float output_h) {
 
 } // namespace
 
-void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info, float width, float height, const LockAvatarArt &avatar) {
+void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info, float width, float height) {
     float card_w = lock_card_width(height);
     float card_h = lock_card_height(height);
     float pw = motion.panel_w > 0.0f ? motion.panel_w : card_w;
@@ -504,7 +507,7 @@ void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const 
     float cy0 = (ph - card_h) * 0.5f;
     canvas.set_opacity(motion.content_alpha);
     canvas.begin_group({cx0, cy0, card_w, card_h}, {motion.content_scale});
-    Pane pane{canvas, model, motion, info, avatar, px + cx0, py + cy0};
+    Pane pane{canvas, model, motion, info, px + cx0, py + cy0};
 
     float bat_h = draw_battery(pane, left);
     float top = left.y + (bat_h > 0.0f ? bat_h + kLockPanelGap : 0.0f);

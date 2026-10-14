@@ -18,7 +18,6 @@
 #include "wayland/config/idle_config.h"
 
 #include "core/animation.h"
-#include "wayland/render/animated_image.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/renderer.h"
 #include "wayland/render/texture.h"
@@ -54,8 +53,6 @@ struct IdleOverlayState {
     astralia::Bounce bounce{40.0f, 40.0f, astralia::kIdleLogoSpeed, astralia::kIdleLogoSpeed * 0.75f};
     std::chrono::steady_clock::time_point last_tick =
         std::chrono::steady_clock::now();
-
-    AnimatedImage logo;
 
     std::function<void(GlCanvas &canvas, float w, float h)> draw_ambient;
 };

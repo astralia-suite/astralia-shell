@@ -13,6 +13,7 @@ class UserService {
     const std::string &name() const { return name_; }
     std::string os_name() const;
     std::string uptime() const;
+    std::string face_path() const;
 
   private:
     std::string name_;

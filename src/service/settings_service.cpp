@@ -282,9 +282,6 @@ Config parse_config(std::string_view source) {
     const Json *launcher = section(root, "launcher", "launcher");
     cfg.launcher_lightning = flag(launcher, "lightning", cfg.launcher_lightning);
 
-    const Json *logout = section(root, "logout", "starward");
-    cfg.logout_animated_logo = flag(logout, "animatedLogo", cfg.logout_animated_logo);
-
     const Json *animation = section(root, "animation", "animation");
     cfg.animations_disabled = flag(animation, "disabled", cfg.animations_disabled);
 
@@ -372,8 +369,6 @@ std::string serialize_config(const Config &cfg) {
     Json launcher = Json::make_object();
     launcher.set("lightning", Json::from_bool(cfg.launcher_lightning));
 
-    Json logout = Json::make_object();
-    logout.set("animatedLogo", Json::from_bool(cfg.logout_animated_logo));
     Json animation = Json::make_object();
     animation.set("disabled", Json::from_bool(cfg.animations_disabled));
 
@@ -382,7 +377,6 @@ std::string serialize_config(const Config &cfg) {
     root.set("wallpaper", std::move(wallpaper));
     root.set("displays", std::move(displays));
     root.set("launcher", std::move(launcher));
-    root.set("logout", std::move(logout));
     root.set("animation", std::move(animation));
     root.set("idle", std::move(idle));
     root.set("visualizer", std::move(visualizer));

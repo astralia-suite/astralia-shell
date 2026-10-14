@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <filesystem>
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
@@ -27,12 +26,7 @@ astralia::ui::Box logout_detail_button_rect(int index, float center_x, float cen
 
 namespace {
 
-AnimatedImage &active_logo(LogoutState &state) {
-    return state.logo_animated ? state.logo_gif : state.logo_png;
-}
-
 void finish_close(LogoutState &state) {
-    animated_image_hide(active_logo(state));
     state.base.open = false;
     zwlr_layer_surface_v1_set_keyboard_interactivity(state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
     overlay_panel_update_input_region(state.base);
@@ -70,31 +64,6 @@ void logout_request_frame(LogoutState &state) {
     overlay_panel_request_frame(state.base);
 }
 
-void logout_apply_logo_config(LogoutState &state, bool animated) {
-    if (!state.logo_source_set) {
-        auto resolve = [](const char *installed, const char *dev) {
-            return std::string(std::filesystem::exists(installed) ? installed : dev);
-        };
-
-        AnimatedImageStyle gif_style;
-        gif_style.size = kLogoutLogoSize;
-        gif_style.decode = {30, static_cast<int>(kLogoutLogoSize)};
-        gif_style.circular = true;
-        gif_style.border_width = kLogoutBorderWidth;
-        gif_style.border_color = astralia::rgba(astralia::palette::accent);
-        animated_image_set_source(state.logo_gif, resolve(ASTRALIA_SHELL_LOGOUT_LOGO, "assets/logout/logo.gif"), gif_style);
-
-        AnimatedImageStyle png_style;
-        png_style.size = kLogoutLogoSize;
-        png_style.decode = {1, static_cast<int>(kLogoutLogoSize), AnimateFit::Fit};
-        animated_image_set_source(state.logo_png, resolve(ASTRALIA_SHELL_LOGOUT_LOGO_STATIC, "assets/logout/logo.png"), png_style);
-        state.logo_source_set = true;
-    }
-
-    state.logo_animated = animated;
-    animated_image_hide(animated ? state.logo_png : state.logo_gif);
-}
-
 void logout_toggle(LogoutState &state, bool by_widget) {
     if (!state.base.layer_surface || state.base.egl_surface == EGL_NO_SURFACE)
         return;
@@ -108,7 +77,6 @@ void logout_toggle(LogoutState &state, bool by_widget) {
         overlay_panel_update_input_region(state.base);
         wl_surface_commit(state.base.surface);
         state.opened_by_widget = by_widget;
-        animated_image_show(active_logo(state), [&state] { logout_request_frame(state); });
         state.model.open();
     } else {
         state.model.toggle();
@@ -125,7 +93,6 @@ std::vector<astralia::ShellBinding> logout_shell_bindings(LogoutState &logout, W
                  if (target && (target->output.wl != logout.bound_output || !logout.base.layer_surface))
                      logout_retarget(logout, state.compositor, state.layer_shell, state.display, state.renderer, state.egl_display, state.egl_config, state.egl_context, target->output.wl, target->output.name.c_str());
              }
-             logout_apply_logo_config(logout, state.cfg.logout_animated_logo);
              logout_toggle(logout);
          }},
     };
@@ -154,7 +121,6 @@ void logout_paint(LogoutState &state) {
         return;
     auto now = std::chrono::steady_clock::now();
     state.model.tick(now);
-    animated_image_tick(active_logo(state), now);
     if (!gl_make_current(state.base.egl_display, state.base.egl_surface, state.base.egl_context))
         return;
     state.renderer->begin_frame(state.base.width, state.base.height, state.base.output_scale.scale);
@@ -164,9 +130,7 @@ void logout_paint(LogoutState &state) {
     state.canvas.begin(state.base.output_scale.scale);
     state.canvas.set_opacity(state.base.opacity);
     if (state.base.open) {
-        astralia::paint_logout(state.canvas, state.model, static_cast<float>(state.base.width), static_cast<float>(state.base.height), [&state](astralia::ui::Canvas &, const astralia::ui::Box &area, float alpha) {
-            animated_image_draw(active_logo(state), state.canvas, area.x, area.y, area.w, area.h, alpha);
-        });
+        astralia::paint_logout(state.canvas, state.model, static_cast<float>(state.base.width), static_cast<float>(state.base.height));
     }
     state.canvas.flush();
 
@@ -255,7 +219,7 @@ void logout_paint(LogoutState &state) {
     if (!eglSwapBuffers(state.base.egl_display, state.base.egl_surface))
         klog("logout: eglSwapBuffers failed, egl error 0x%04x", eglGetError());
 
-    if (state.model.animating() || animated_image_animating(active_logo(state)))
+    if (state.model.animating())
         overlay_panel_request_frame(state.base);
 }
 
@@ -277,8 +241,6 @@ class LogoutModule final : public Module {
             return false;
         state_.bound_output = output_;
         request_frame();
-
-        logout_apply_logo_config(state_, app.cfg.logout_animated_logo);
         return true;
     }
 
@@ -328,7 +290,6 @@ class LogoutModule final : public Module {
             if (target && (target->output.wl != state_.bound_output || !state_.base.layer_surface))
                 logout_retarget(state_, app.compositor, app.layer_shell, app.display, app.renderer, app.egl_display, app.egl_config, app.egl_context, target->output.wl, target->output.name.c_str());
         }
-        logout_apply_logo_config(state_, app.cfg.logout_animated_logo);
         logout_toggle(state_, true);
     }
 

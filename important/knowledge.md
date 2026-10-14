@@ -274,19 +274,15 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] A panel's geometry locks at open. Recomputing height every frame desynced the close animation's start value.
 - [wayland] `MarqueeTextState::marqueeing` means scrolling, not overflowing. Clip on texture width over box width.
 - [wayland] A cell-snapped rain column varies its fall rate by skipping ticks with a fractional accumulator. A fractional step desnaps glyphs from the grid.
-- [wayland] Hide an animated image after the close fade, not at close start. Clearing frames mid-tween pops the image out.
-- [wayland] `animated_image_draw`'s alpha must fade the ring and fill as well. Skipping them left a logo frame lingering.
-- [wayland] An `AnimatedImage` binds to one source; use one instance per source. Re-pointing leaves a stale job that never restarts.
-- [wayland] `animated_image_animating` excludes single-frame stills. A static logo otherwise repaints overlays every frame.
-- [wayland] Free an animated image's frame textures while its surface is off-screen. `hide` clears them and `show` reloads from the cache.
+- Logos and avatars are static images drawn with `Canvas::image` and `draw_image`, never decoded per frame. The shell carries no gifs.
+- The profile picture comes from `UserService::face_path`, which tries `~/.face`, `~/.face.icon` and the AccountsService icon. With no face file, the lock and settings views draw the `icon::user` glyph and no image.
 
 ## Wayland: media and decode
 
-- [wayland] One `libav` plugin, `media_plugin`, decodes every animated surface. `media_service` owns the cache path, key, decode and existence check.
+- [wayland] One `libav` plugin, `media_plugin`, decodes every animated wallpaper. `media_service` owns the cache path, key, decode and existence check.
 - [wayland] The `.rgba` cache key includes every decode-shaping parameter, such as `fit`. Otherwise old-shape frames are reused silently.
 - [wayland] Decode frames into a `.tmp` directory and rename on success. A killed decode left a partial set that later runs trusted.
 - [wayland] Remove the rename target first. `rename(2)` into a non-empty directory fails, and a stale `.png` cache blocked every promotion.
-- [wayland] A bounded gif decode needs `fps * seconds` frames, not a fixed count. A 36-frame cap showed 2.4 s of a 7 s logo.
 - [wayland] Pick the hardware decoder from a preference list of `AVHWDeviceType`s. Try `CUDA`, then `VAAPI`, then software.
 - [wayland] Zero-copy texture import is vendor-specific. `VAAPI` uses `DMA-BUF` and `EGLImage` on Mesa; `CUDA` interop is separate.
 - [wayland] `AVCodecContext::get_format` takes a plain function pointer. Pass the wanted hardware format through `opaque`.

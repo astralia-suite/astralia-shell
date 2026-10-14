@@ -16,7 +16,6 @@
 
 #include "modules/lock/model.h"
 
-#include "wayland/render/animated_image.h"
 #include "wayland/render/gl_canvas.h"
 
 #include "service/wayland/frame_service.h"
@@ -63,7 +62,6 @@ struct LockState {
 
     astralia::LockModel model;
     std::string user;
-    AnimatedImage avatar;
 
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>
         draw_wallpaper;

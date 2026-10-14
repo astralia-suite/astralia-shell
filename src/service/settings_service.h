@@ -58,7 +58,6 @@ struct Config {
 
     bool launcher_lightning = true;
 
-    bool logout_animated_logo = true;
     bool animations_disabled = false;
 
     bool idle_management_enabled = true;

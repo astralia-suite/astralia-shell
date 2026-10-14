@@ -488,9 +488,6 @@ void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float b
     case SettingsTab::launcher:
         launcher_tab(pane, x, y, w);
         break;
-    case SettingsTab::logout:
-        toggle_row(pane, x, y, w, "Animated central logo", pane.model.config().logout_animated_logo, SettingsAct::logout_logo, 0, 0, true);
-        break;
     case SettingsTab::rain:
         rain_tab(pane, x, y, w);
         break;
@@ -543,8 +540,14 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
     float rail_x = px + pad;
 
     ui::Box avatar{rail_x + (rail_w - cfg::avatar_size) / 2.0f, content_y + cfg::profile_top_padding, cfg::avatar_size, cfg::avatar_size};
-    bool drawn = art.avatar && art.avatar(canvas, avatar);
-    if (!drawn) {
+    ui::ImageId face = art.face.empty() ? ui::no_image : canvas.image(art.face, static_cast<int>(cfg::avatar_size) * 2);
+    if (face != ui::no_image) {
+        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::surface);
+        canvas.begin_group(avatar, {1.0f, true, cfg::avatar_size / 2.0f});
+        canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
+        canvas.end_group();
+        canvas.rounded(avatar, cfg::avatar_size / 2.0f, {0.0f, 0.0f, 0.0f, 0.0f}, cfg::avatar_border, palette::ink);
+    } else {
         canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::text_alpha04, cfg::avatar_border, palette::ink);
         ui::TextSize glyph = canvas.measure(icon::user, icon_style);
         canvas.text(icon::user, icon_style, avatar.x + (avatar.w - glyph.w) / 2.0f, avatar.y + (avatar.h - glyph.h) / 2.0f, palette::text);

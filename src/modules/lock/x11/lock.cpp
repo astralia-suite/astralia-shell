@@ -324,6 +324,7 @@ LockInfo Lock::info() const {
             clock_text("%H", 8),
             clock_text("%M", 8),
             date_text(),
+            services_.user.face_path(),
             &services_.battery.status(),
             &services_.media.status(),
             &services_.system_stats,

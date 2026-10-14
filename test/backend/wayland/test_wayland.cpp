@@ -9,7 +9,7 @@ void test_keyboard();
 void test_active_output();
 void test_dock();
 void test_input_convert();
-void test_animated_image();
+void test_media_decode();
 void test_marquee_scroll();
 void test_palette();
 void test_image_decode();
@@ -31,7 +31,7 @@ int main() {
         {"dock", test_dock},
         {"input_convert", test_input_convert},
 
-        {"animated_image", test_animated_image},
+        {"media_decode", test_media_decode},
         {"marquee_scroll", test_marquee_scroll},
         {"palette", test_palette},
         {"image_decode", test_image_decode},

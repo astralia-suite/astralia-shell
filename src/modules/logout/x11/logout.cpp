@@ -107,11 +107,7 @@ void Logout::paint() {
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     canvas_.bind(cr);
-    paint_logout(canvas_, model_, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height), [](ui::Canvas &canvas, const ui::Box &area, float) {
-        ui::ImageId logo = canvas.image(logout_config::logo_asset, logout_config::logo_size);
-        ui::TextSize size = canvas.image_size(logo);
-        canvas.draw_image(logo, {area.x + (area.w - size.w) / 2.0f, area.y + (area.h - size.h) / 2.0f, size.w, size.h}, palette::white);
-    });
+    paint_logout(canvas_, model_, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
     window_.present();
 }
 

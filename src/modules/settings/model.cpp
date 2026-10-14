@@ -73,7 +73,6 @@ const std::vector<SettingsTabInfo> &settings_all_tabs() {
         {SettingsTab::displays, "Displays", icon::device_desktop},
         {SettingsTab::idle, "Idle", icon::moon_stars},
         {SettingsTab::launcher, "Launcher", icon::apps},
-        {SettingsTab::logout, "Logout", icon::power},
         {SettingsTab::rain, "Rain", icon::code},
         {SettingsTab::visualizer, "Visualizer", icon::wave_sine},
         {SettingsTab::wallpaper, "Wallpaper", icon::wallpaper},
@@ -188,9 +187,6 @@ SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
             break;
         case SettingsTab::launcher:
             present = caps_.launcher;
-            break;
-        case SettingsTab::logout:
-            present = caps_.logout;
             break;
         case SettingsTab::rain:
             present = caps_.rain;
@@ -627,9 +623,6 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         return;
     case SettingsAct::launcher_lightning:
         edit([](Config &config) { config.launcher_lightning = !config.launcher_lightning; });
-        return;
-    case SettingsAct::logout_logo:
-        edit([](Config &config) { config.logout_animated_logo = !config.logout_animated_logo; });
         return;
     default:
         dispatch_wallpaper(region);

@@ -65,6 +65,7 @@ astralia::LockInfo lock_info(const LockState &st) {
             clock_text("%H"),
             clock_text("%M"),
             date,
+            user_info::face_path(),
             &app.battery->status(),
             &app.media->status(),
             &app.system_stats,
@@ -101,7 +102,6 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
 
     auto now = clk::now();
     los.motion.animations.tick(now);
-    animated_image_tick(st.avatar, now);
 
     los.canvas.begin(los.output_scale.scale);
     step("draw_wallpaper");
@@ -114,12 +114,7 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     if (!los.panel_gated) {
         float oh = static_cast<float>(los.height);
         astralia::lock_motion_fit(los.motion, lock_card_width(oh), lock_card_height(oh));
-        astralia::paint_lock(los.canvas, st.model, los.motion, lock_info(st), static_cast<float>(los.width), oh, [&st, &los](astralia::ui::Canvas &, const astralia::ui::Box &box) {
-            if (st.avatar.frames.empty())
-                return false;
-            animated_image_draw(st.avatar, los.canvas, box.x, box.y, box.w, box.h, 1.0f);
-            return true;
-        });
+        astralia::paint_lock(los.canvas, st.model, los.motion, lock_info(st), static_cast<float>(los.width), oh);
         los.hits = st.model.hits();
     }
     los.canvas.flush();
@@ -144,8 +139,7 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
              "scale=%.2f content=%.2f",
              f, los.output_name.c_str(), st.locked, st.unlocking, los.panel_gated, los.motion.panel_scale, los.motion.content_alpha);
 
-    bool avatar_running = st.locked && !st.unlocking && !los.panel_gated && animated_image_animating(st.avatar);
-    if (los.motion.animations.hasActive() || avatar_running)
+    if (los.motion.animations.hasActive())
         request_frame(los.frame_clock);
 }
 
@@ -324,14 +318,6 @@ bool lock_request(LockState &st, WaylandState &app) {
     if (st.user.empty())
         st.user = user_info::username();
 
-    AnimatedImageStyle avatar_style;
-    avatar_style.size = kLockProfileSize;
-    avatar_style.circular = true;
-    avatar_style.border_width = kLockProfileBorderWidth;
-    avatar_style.decode = {static_cast<int>(kLockAvatarFps), static_cast<int>(kLockProfileSize) * 2};
-    animated_image_set_source(st.avatar, user_info::profile_media_path(), avatar_style);
-    animated_image_show(st.avatar, [&st] { request_all(st); });
-
     for (auto &mon : app.outputs)
         create_output_surface(st, mon->output.wl, mon->output.name);
 
@@ -344,7 +330,6 @@ void lock_teardown(LockState &st) {
     for (auto &up : st.surfaces)
         destroy_output_surface(st, *up);
     st.surfaces.clear();
-    animated_image_hide(st.avatar);
     st.active = false;
     st.locked = false;
     st.unlocking = false;

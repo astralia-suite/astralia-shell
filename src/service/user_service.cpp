@@ -1,9 +1,11 @@
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <pwd.h>
 #include <sstream>
 #include <sys/sysinfo.h>
 #include <unistd.h>
+#include <vector>
 
 #include "service/user_service.h"
 
@@ -48,6 +50,23 @@ UserService::UserService() : name_("unknown") {
     if (entry->pw_name != nullptr) {
         name_ = entry->pw_name;
     }
+}
+
+std::string UserService::face_path() const {
+    std::vector<std::string> candidates;
+    if (const char *home = std::getenv("HOME"); home != nullptr && home[0] != '\0') {
+        candidates.push_back(std::string(home) + "/.face");
+        candidates.push_back(std::string(home) + "/.face.icon");
+    }
+    if (const passwd *entry = getpwuid(getuid()); entry != nullptr && entry->pw_name != nullptr) {
+        candidates.push_back(std::string("/var/lib/AccountsService/icons/") + entry->pw_name);
+    }
+    for (const std::string &path : candidates) {
+        if (access(path.c_str(), R_OK) == 0) {
+            return path;
+        }
+    }
+    return {};
 }
 
 std::string UserService::uptime() const {

@@ -30,7 +30,6 @@ wayland_sources = files(
   '../../modules/visualizer/wayland/sphere_visualizer.cpp',
   '../../modules/visualizer/wayland/visualizer_shaders.cpp',
   '../../modules/wallpaper/wayland/wallpaper.cpp',
-  'render/animated_image.cpp',
   'render/arc_gauge.cpp',
   'render/gl.cpp',
   'render/gl_canvas.cpp',
@@ -83,12 +82,8 @@ wayland_args = [
   '-DASTRALIA_SHELL_SHADER_DIR="@0@"'.format(wayland_data_dir / 'shaders'),
   '-DASTRALIA_SHELL_DEFAULT_WALLPAPER="@0@"'.format(wayland_data_dir / 'stellar-restoration.png'),
   '-DASTRALIA_SHELL_BULLET_DIR="@0@"'.format(wayland_data_dir / 'constellation'),
-  '-DASTRALIA_SHELL_LOGOUT_LOGO="@0@"'.format(wayland_data_dir / 'logout' / 'logo.gif'),
-  '-DASTRALIA_SHELL_LOGOUT_LOGO_STATIC="@0@"'.format(wayland_data_dir / 'logout' / 'logo.png'),
-  '-DASTRALIA_SHELL_IDLE_LOGO="@0@"'.format(wayland_data_dir / 'stellar-restoration.svg'),
   '-DASTRALIA_SHELL_INPUT_ECHO="@0@"'.format(wayland_data_dir / 'polkit' / 'electro.png'),
   '-DASTRALIA_SHELL_PAM_DIR="@0@"'.format(wayland_data_dir / 'pam'),
-  '-DASTRALIA_SHELL_PROFILE_MEDIA="@0@"'.format(wayland_data_dir / 'gifs' / 'profile.gif'),
   '-DASTRALIA_SHELL_MEDIA_PLUGIN="@0@"'.format(wayland_data_dir / 'plugins' / 'libastralia-shell-media.so'),
 ]
 
@@ -128,7 +123,6 @@ wayland_media_deps = [
   dependency('libdrm'),
 ]
 
-install_data('../../../assets/logout/logo.gif', install_dir: wayland_data_dir / 'logout')
 install_data(
   '../../../assets/stellar-restoration.png',
   install_dir: wayland_data_dir,

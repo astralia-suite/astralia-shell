@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -23,6 +22,7 @@ struct LockInfo {
     std::string hour;
     std::string minute;
     std::string date;
+    std::string face;
     const BatteryStatus *battery = nullptr;
     const MediaStatus *media = nullptr;
     const SystemStatsState *stats = nullptr;
@@ -31,9 +31,6 @@ struct LockInfo {
     const std::vector<Notification> *notifications = nullptr;
 };
 
-// Draws the avatar into its box and returns true, or returns false to fall back to the static image.
-using LockAvatarArt = std::function<bool(ui::Canvas &, const ui::Box &)>;
-
-void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info, float width, float height, const LockAvatarArt &avatar = {});
+void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info, float width, float height);
 
 } // namespace astralia

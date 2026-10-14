@@ -27,7 +27,6 @@ enum class SettingsTab : uint8_t { animation,
                                    displays,
                                    idle,
                                    launcher,
-                                   logout,
                                    rain,
                                    visualizer,
                                    wallpaper };
@@ -42,7 +41,6 @@ struct SettingsCaps {
     bool animation = false;
     bool idle = false;
     bool launcher = false;
-    bool logout = false;
     bool rain = false;
     bool visualizer = false;
     bool animated_wallpaper = false;
@@ -87,7 +85,6 @@ enum class SettingsAct : uint8_t {
     visualizer_reset,
     animation_disable,
     launcher_lightning,
-    logout_logo,
     wallpaper_default,
     wallpaper_animated,
     wallpaper_region,

@@ -18,7 +18,7 @@ constexpr ui::TextStyle glyph_style{ui::FontFamily::glyph, cfg::glyph_px};
 
 } // namespace
 
-void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, float height, const LogoutLogoPainter &logo) {
+void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, float height) {
     if (!model.open_state()) {
         return;
     }
@@ -58,8 +58,14 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
 
     constexpr float logo_size = cfg::logo_size;
     canvas.begin_group({cx - logo_size / 2.0f, cy - logo_size / 2.0f, logo_size, logo_size}, {model.logo_scale(), false});
-    if (logo) {
-        logo(canvas, {0.0f, 0.0f, logo_size, logo_size}, model.exiting() ? model.exit_fade() : 1.0f);
+    ui::ImageId logo = canvas.image(cfg::logo_asset, cfg::logo_size);
+    if (logo != ui::no_image) {
+        ui::TextSize extent = canvas.image_size(logo);
+        float fit = std::min(logo_size / extent.w, logo_size / extent.h);
+        float w = extent.w * fit;
+        float h = extent.h * fit;
+        float alpha = model.exiting() ? model.exit_fade() : 1.0f;
+        canvas.draw_image(logo, {(logo_size - w) / 2.0f, (logo_size - h) / 2.0f, w, h}, with_alpha(palette::white, alpha));
     }
     canvas.end_group();
 

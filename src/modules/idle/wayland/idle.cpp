@@ -40,7 +40,7 @@ constexpr zwlr_layer_surface_v1_listener idle_overlay_layer_surface_listener =
 };
 
 void idle_overlay_bounce(IdleOverlayState &state, float dt) {
-    if (dt <= 0.0f || dt > 0.5f || state.logo.frames.empty())
+    if (dt <= 0.0f || dt > 0.5f)
         return;
     astralia::bounce_step(state.bounce, dt, static_cast<float>(state.width), static_cast<float>(state.height), astralia::kIdleLogoSize);
 }
@@ -58,12 +58,8 @@ void idle_overlay_paint(IdleOverlayState &state) {
     state.animations.tick(now);
     float dt = std::chrono::duration<float>(now - state.last_tick).count();
     state.last_tick = now;
-    if (state.screensaver_active) {
-        animated_image_tick(state.logo, now);
+    if (state.screensaver_active)
         idle_overlay_bounce(state, dt);
-    } else if (state.screensaver_opacity <= 0.0f) {
-        animated_image_hide(state.logo);
-    }
 
     if (state.ambient_opacity > 0.0f && state.draw_ambient) {
         state.canvas.begin(state.output_scale.scale);
@@ -75,7 +71,14 @@ void idle_overlay_paint(IdleOverlayState &state) {
     if (state.screensaver_opacity > 0.0f) {
         state.canvas.begin(state.output_scale.scale);
         state.canvas.rect({0, 0, static_cast<float>(state.width), static_cast<float>(state.height)}, {0.0f, 0.0f, 0.0f, state.screensaver_opacity});
-        animated_image_draw(state.logo, state.canvas, state.bounce.x, state.bounce.y, astralia::kIdleLogoSize, astralia::kIdleLogoSize, state.screensaver_opacity);
+        astralia::ui::ImageId logo = state.canvas.image(astralia::kIdleLogoAsset, static_cast<int>(astralia::kIdleLogoSize) * state.output_scale.scale);
+        if (logo != astralia::ui::no_image) {
+            astralia::ui::TextSize extent = state.canvas.image_size(logo);
+            float fit = std::min(astralia::kIdleLogoSize / extent.w, astralia::kIdleLogoSize / extent.h);
+            float w = extent.w * fit;
+            float h = extent.h * fit;
+            state.canvas.draw_image(logo, {state.bounce.x + (astralia::kIdleLogoSize - w) / 2.0f, state.bounce.y + (astralia::kIdleLogoSize - h) / 2.0f, w, h}, astralia::with_alpha(astralia::palette::white, state.screensaver_opacity));
+        }
         state.canvas.flush();
     }
 
@@ -123,18 +126,6 @@ bool idle_overlay_init_egl(IdleOverlayState &state, Renderer &renderer, EGLDispl
     state.frame_clock.surface = state.surface;
     state.frame_clock.draw = [&state] { idle_overlay_paint(state); };
 
-    const char *logo_candidates[] = {ASTRALIA_SHELL_IDLE_LOGO, "assets/stellar-restoration.svg"};
-    std::string logo_path = logo_candidates[1];
-    for (const char *candidate : logo_candidates) {
-        if (std::filesystem::exists(candidate)) {
-            logo_path = candidate;
-            break;
-        }
-    }
-    AnimatedImageStyle logo_style;
-    logo_style.size = astralia::kIdleLogoSize;
-    logo_style.decode = {30, static_cast<int>(astralia::kIdleLogoSize), AnimateFit::Fit};
-    animated_image_set_source(state.logo, logo_path, logo_style);
     return true;
 }
 
@@ -154,8 +145,6 @@ void idle_overlay_set_active(IdleOverlayState &state, bool ambient_active, bool 
     }
     if (screensaver_active != state.screensaver_active) {
         state.screensaver_active = screensaver_active;
-        if (screensaver_active)
-            animated_image_show(state.logo, [&state] { idle_overlay_request_frame(state); });
         state.animations.animate(state.screensaver_opacity, screensaver_active ? 1.0f : 0.0f, kIdleOverlayFadeMs, astralia::Easing::EaseOutCubic, [&state](float v) { state.screensaver_opacity = v; }, {}, kIdleScreensaverFadeOwner);
         changed = true;
     }

@@ -12,7 +12,7 @@
 
 - `meson.build`: Builds `astralia-core-base`, `astralia-core-shared`, the `astralia` executable, the backend plugins and the tests.
 - `meson.options`: `backends` selects which backend plugins build; `native_cpu` tunes the x11 plugin for the X201.
-- `assets/`: Fonts, constellation bullets, logos, shaders, gifs, the PAM service and the polkit glyph, installed to `share/astralia-shell/`.
+- `assets/`: Fonts, constellation bullets, logos, shaders, the PAM service and the polkit glyph, installed to `share/astralia-shell/`.
 - `build.sh`: Sets up dependencies per backend, builds, tests, installs, runs or uninstalls the shell.
 - `readme.md`: Requirements, install, build options, running, backend selection and the module and verb tables.
 - `.clang-format`: Project code style.
@@ -181,7 +181,7 @@
 
 ## `src/modules/settings/`
 
-- `model.{h,cpp}`: Tabs by capability (animation, bar, displays, idle, launcher, logout, rain, visualizer, wallpaper), monitor selections, fields, pickers and actions.
+- `model.{h,cpp}`: Tabs by capability (animation, bar, displays, idle, launcher, rain, visualizer, wallpaper), monitor selections, fields, pickers and actions.
 - `view.{h,cpp}`: Paints the scroll, each tab, fields, pickers and thumbnails over the canvas.
 
 ## `src/modules/logout/`, `notification/`, `osd/`, `polkit/`
@@ -214,7 +214,7 @@
 - `hyprland_service.{h,cpp}`: Hyprland compositor over its request and event sockets, with Lua dispatch commands and workspace paging.
 - `i3_service.{h,cpp}`: i3 and Sway compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
 - `dock_service.{h,cpp}`: Per-output dock entries from the compositor client list, ordered left to right.
-- `user_service.{h,cpp}`: Display name, OS name and uptime text.
+- `user_service.{h,cpp}`: Display name, OS name, uptime text and the profile picture path.
 - `wayland/`: Wayland-only services: `capture`, `clipboard`, `frame`, `idle`, `input`, `media` decoder, `output`, settings editing and `text_input`.
 - `x11/output_service.{h,cpp}`: RandR outputs and the output under the pointer.
 

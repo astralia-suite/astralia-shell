@@ -1,19 +1,16 @@
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
-#include <filesystem>
 #include <functional>
 #include <string>
 #include <sys/stat.h>
 #include <thread>
 #include <vector>
 
-#include "core/deferred_call.h"
 #include "wayland/core/log.h"
 
 #include "wayland/plugin/media_plugin.h"
@@ -21,8 +18,6 @@
 #include "wayland/render/image.h"
 
 #include "service/wayland/media_service.h"
-
-namespace fs = std::filesystem;
 
 namespace {
 
@@ -160,12 +155,6 @@ void box_downsample_rgba(const unsigned char *src, int sw, int sh, unsigned char
     }
 }
 
-bool is_still_image(const std::string &path) {
-    std::string ext = fs::path(path).extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
-    return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".webp" || ext == ".bmp" || ext == ".svg";
-}
-
 unsigned char *decode_first_frame(const std::string &path, int &w, int &h, int target_w = 0, int target_h = 0) {
     unsigned char *data = load_image_decode(path, w, h, 0, target_w, target_h);
     if (data)
@@ -181,39 +170,6 @@ unsigned char *decode_first_frame(const std::string &path, int &w, int &h, int t
     auto *out = new unsigned char[frames[0].rgba.size()];
     std::memcpy(out, frames[0].rgba.data(), frames[0].rgba.size());
     return out;
-}
-
-unsigned char *center_crop_square(unsigned char *src, int sw, int sh, int px, int &out_side) {
-    float scale =
-        std::max(static_cast<float>(px) / sw, static_cast<float>(px) / sh);
-    int dw = std::max(px, static_cast<int>(std::lround(sw * scale)));
-    int dh = std::max(px, static_cast<int>(std::lround(sh * scale)));
-    auto *scaled = new unsigned char[static_cast<size_t>(dw) * dh * 4];
-    box_downsample_rgba(src, sw, sh, scaled, dw, dh);
-    delete[] src;
-    auto *out = new unsigned char[static_cast<size_t>(px) * px * 4];
-    int ox = (dw - px) / 2;
-    int oy = (dh - px) / 2;
-    for (int y = 0; y < px; ++y)
-        std::memcpy(out + static_cast<size_t>(y) * px * 4, scaled + (static_cast<size_t>(y + oy) * dw + ox) * 4, static_cast<size_t>(px) * 4);
-    delete[] scaled;
-    out_side = px;
-    return out;
-}
-
-int count_rgba_frames(const std::string &dir) {
-    int n = 0;
-    std::error_code ec;
-    for (auto &e : fs::directory_iterator(dir, ec))
-        if (e.path().extension() == ".rgba")
-            ++n;
-    return n;
-}
-
-std::string frame_path(const std::string &dir, int index) {
-    char name[32];
-    std::snprintf(name, sizeof(name), "/f%03d.rgba", index + 1);
-    return dir + name;
 }
 
 } // namespace
@@ -269,31 +225,12 @@ std::string animate_cache_home_dir() {
     return std::string(home ? home : "") + "/.cache";
 }
 
-std::string animate_cache_key(const std::string &path, long mtime) {
-    return std::to_string(std::hash<std::string>{}(path + ":" + std::to_string(mtime)));
-}
-
-int animate_frame_index(float elapsed_s, float fps, int n) {
-    if (n <= 1 || fps <= 0.0f || elapsed_s <= 0.0f)
-        return 0;
-    return static_cast<int>(elapsed_s * fps) % n;
-}
-
 AnimateSize animate_decode_size(int target_w, int target_h, int max_height) {
     if (target_w <= 0 || target_h <= 0 || max_height <= 0 || target_h <= max_height)
         return {std::max(target_w, 0), std::max(target_h, 0)};
     double ratio = static_cast<double>(max_height) / target_h;
     return {std::max(1, static_cast<int>(std::lround(target_w * ratio))),
             max_height};
-}
-
-AnimateSize animate_fit_size(int src_w, int src_h, int px) {
-    int longest = std::max(src_w, src_h);
-    if (src_w <= 0 || src_h <= 0 || px <= 0 || longest <= px)
-        return {std::max(src_w, 0), std::max(src_h, 0)};
-    double ratio = static_cast<double>(px) / longest;
-    return {std::max(1, static_cast<int>(std::lround(src_w * ratio))),
-            std::max(1, static_cast<int>(std::lround(src_h * ratio)))};
 }
 
 std::string animate_scale_filter(int w, int h, AnimateFit fit) {
@@ -338,90 +275,4 @@ unsigned char *animate_decode_scaled(const std::string &path, int target_w, int 
     if (cacheable)
         rgba_write(cache_path, out_width, out_height, result);
     return result;
-}
-
-unsigned char *animate_job_frame(const AnimateJob &job, int index, int &out_width, int &out_height) {
-    if (index < 0 || index >= job.frame_count || job.frames_dir.empty())
-        return nullptr;
-    return rgba_read(frame_path(job.frames_dir, index), out_width, out_height);
-}
-
-void animate_job_start(AnimateJob &job, const std::string &source_path, const AnimateDecodeParams &params, std::function<void()> on_ready) {
-    if (job.attempted)
-        return;
-    job.attempted = true;
-
-    struct stat st{};
-    if (source_path.empty() || stat(source_path.c_str(), &st) != 0) {
-        klog("media_decode: no source media '%s'", source_path.c_str());
-        return;
-    }
-
-    AnimateFit fit = params.fit;
-    std::string key = animate_cache_key(fit == AnimateFit::Fit ? source_path + "|fit" : source_path, st.st_mtime);
-    std::string dir = animate_cache_home_dir() + "/astralia-shell/animated/" + key;
-    int px = std::max(1, params.square_px);
-    int fps = std::max(1, params.fps);
-    bool still = is_still_image(source_path);
-    int max_frames = still ? 1 : fps * kAnimateMaxSeconds;
-
-    job.worker = std::thread([&job, source_path, dir, px, fps, max_frames, still, fit, on_ready = std::move(on_ready)] {
-        std::error_code ec;
-        int existing = count_rgba_frames(dir);
-        if (existing == 0) {
-            std::string tmp = dir + ".tmp";
-            fs::remove_all(tmp, ec);
-            fs::create_directories(tmp, ec);
-            if (still) {
-                int w = 0, h = 0;
-                unsigned char *data =
-                    decode_first_frame(source_path, w, h, px, px);
-                if (data && fit == AnimateFit::Fit) {
-                    AnimateSize size = animate_fit_size(w, h, px);
-                    auto *scaled = new unsigned char[static_cast<size_t>(size.w) * size.h * 4];
-                    box_downsample_rgba(data, w, h, scaled, size.w, size.h);
-                    delete[] data;
-                    rgba_write(tmp + "/f001.rgba", size.w, size.h, scaled);
-                    delete[] scaled;
-                } else if (data) {
-                    int side = 0;
-                    unsigned char *sq =
-                        center_crop_square(data, w, h, px, side);
-                    rgba_write(tmp + "/f001.rgba", side, side, sq);
-                    delete[] sq;
-                }
-            } else {
-                std::string filter =
-                    "fps=" + std::to_string(fps) + "," +
-                    animate_scale_filter(px, px, fit);
-                std::vector<MediaFrame> frames =
-                    media_decode_frames(source_path, filter, max_frames);
-                for (size_t i = 0; i < frames.size(); ++i) {
-                    char name[32];
-                    std::snprintf(name, sizeof(name), "/f%03zu.rgba", i + 1);
-                    rgba_write(tmp + name, frames[i].width, frames[i].height, frames[i].rgba.data());
-                }
-            }
-            existing = count_rgba_frames(tmp);
-            if (existing > 0) {
-                fs::remove_all(dir, ec);
-                fs::rename(tmp, dir, ec);
-                if (ec)
-                    klog("media_decode: frame promotion failed for '%s': %s", source_path.c_str(), ec.message().c_str());
-            } else {
-                fs::remove_all(tmp, ec);
-            }
-        }
-        if (existing <= 0) {
-            klog("media_decode: decode produced no frames for '%s'", source_path.c_str());
-            return;
-        }
-        job.frames_dir = dir;
-        job.frame_count = existing;
-        astralia::DeferredCall::call_later([&job, on_ready] {
-            job.ready = true;
-            if (on_ready)
-                on_ready();
-        });
-    });
 }

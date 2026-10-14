@@ -83,45 +83,13 @@ struct MediaFrame {
 
 std::vector<MediaFrame> media_decode_frames(const std::string &path, const std::string &filter_desc, int max_frames);
 
-constexpr int kAnimateMaxSeconds = 30;
 inline constexpr int kAnimateWallpaperFps = 15;
 inline constexpr int kAnimateMaxDecodeDim = 1440;
 
 enum class AnimateFit { Crop,
                         Fit };
 
-struct AnimateDecodeParams {
-    int fps = 15;
-    int square_px = 200;
-    AnimateFit fit = AnimateFit::Crop;
-};
-
-struct AnimateJob {
-    std::string frames_dir;
-    int frame_count = 0;
-    bool ready = false;
-    bool attempted = false;
-    std::thread worker;
-
-    AnimateJob() = default;
-    AnimateJob(const AnimateJob &) = delete;
-    AnimateJob &operator=(const AnimateJob &) = delete;
-
-    ~AnimateJob() {
-        if (worker.joinable())
-            worker.join();
-    }
-};
-
-void animate_job_start(AnimateJob &job, const std::string &source_path, const AnimateDecodeParams &params, std::function<void()> on_ready);
-
-unsigned char *animate_job_frame(const AnimateJob &job, int index, int &out_width, int &out_height);
-
 std::string animate_cache_home_dir();
-
-std::string animate_cache_key(const std::string &path, long mtime);
-
-int animate_frame_index(float elapsed_s, float fps, int n);
 
 struct AnimateSize {
     int w = 0;
@@ -129,8 +97,6 @@ struct AnimateSize {
 };
 
 AnimateSize animate_decode_size(int target_w, int target_h, int max_height);
-
-AnimateSize animate_fit_size(int src_w, int src_h, int px);
 
 std::string animate_scale_filter(int w, int h, AnimateFit fit);
 

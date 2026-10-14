@@ -4,8 +4,6 @@
 
 constexpr int kLogoutButtonCount = astralia::logout_config::button_count;
 constexpr float kLogoutButtonSize = static_cast<float>(astralia::logout_config::button_size);
-constexpr float kLogoutLogoSize = static_cast<float>(astralia::logout_config::logo_size);
-constexpr float kLogoutBorderWidth = static_cast<float>(astralia::logout_config::border_width);
 constexpr float kLogoutButtonsRadius = static_cast<float>(astralia::logout_config::ring_radius);
 
 constexpr float kLogoutSlashOvershoot = 0.3f;

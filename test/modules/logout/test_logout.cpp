@@ -127,22 +127,16 @@ void check_logout_view() {
     using Kind = test::Op::Kind;
     Harness idle;
     test::RecordingCanvas none;
-    astralia::paint_logout(none, idle.model, 1920, 1200, {});
+    astralia::paint_logout(none, idle.model, 1920, 1200);
     test::check(none.ops.empty(), "a closed card draws nothing");
 
     Instant instant;
     Harness h;
     h.model.open();
     test::RecordingCanvas canvas;
-    int logo_calls = 0;
-    float logo_alpha = 0;
-    astralia::paint_logout(canvas, h.model, 1920, 1200, [&](astralia::ui::Canvas &, const astralia::ui::Box &area, float alpha) {
-        ++logo_calls;
-        logo_alpha = alpha;
-        test::check(area.w == astralia::logout_config::logo_size && area.x == 0, "logo area is local to its group");
-    });
+    astralia::paint_logout(canvas, h.model, 1920, 1200);
     test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8, "eight buttons with a glyph each");
-    test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1 && logo_calls == 1 && logo_alpha == 1.0f, "one logo group");
+    test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1, "one logo group");
     constexpr float face = astralia::logout_config::button_size - astralia::metrics::shadow_offset;
     const test::Op &top = canvas.ops[1];
     test::check(top.box.w > face && top.box.w < face * 1.06, "the selected button is enlarged");

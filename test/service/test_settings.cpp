@@ -26,7 +26,6 @@ std::string sample_config() {
   },
   "idle": {"ambientEnabled": true, "ambientTimeoutSeconds": 150, "enabled": false, "screensaverEnabled": true, "screensaverTimeoutSeconds": 300},
   "launcher": {"lightning": false},
-  "logout": {"animatedLogo": true},
   "rain": {"asyncSpeed": true, "mode": "stiletto"},
   "visualizer": {"fps": 30, "fractalComplexity": 3, "glowDirections": 16.0, "glowQuality": 6.0, "particleSize": 8, "particleThin": 0.11999999731779099, "visualizerShape": "sphere"},
   "wallpaper": {
