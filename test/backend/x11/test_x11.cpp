@@ -137,9 +137,9 @@ void check_bar_styles() {
         auto close = [](int a, float b) { return std::abs(a - static_cast<int>(std::lround(b * 255.0f))) <= 1; };
         return p[3] == 255 && close(p[2], c.r) && close(p[1], c.g) && close(p[0], c.b);
     };
-    check(is(50, 2, palette::paper) && is(125, 2, palette::paper), "rail and island overlap share one fill");
+    check(is(50, 2, palette::accent_container) && is(125, 2, palette::accent_container), "rail and island overlap share one fill");
     check(is(125, 5, palette::ink), "rail border line is the outline colour");
-    check(is(50, 5, palette::paper) && is(50, 20, palette::paper), "island interior replaces the rail line");
+    check(is(50, 5, palette::accent_container) && is(50, 20, palette::accent_container), "island interior replaces the rail line");
     check(alpha(125, 20) == 0, "the gap under the rail is transparent");
     cairo_destroy(cr);
     cairo_surface_destroy(surface);

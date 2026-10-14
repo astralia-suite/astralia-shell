@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <optional>
 #include <vector>
 
@@ -22,7 +23,10 @@ struct BarStyleSpec {
     float fillet_radius;
     float shadow = 0.0f;
     bool continuous = false;
+    Color shadow_color{};
+    float shadow_dx = 0.0f;
 
+    int shadow_overshoot() const { return static_cast<int>(std::max(0.0f, shadow - metrics::shadow_offset)); }
     bool has_rail() const { return rail_height > 0.0f; }
     bool has_pill_bg() const { return !has_rail() && !continuous; }
 };
@@ -61,6 +65,6 @@ struct BarGeometry {
     int exclusive_zone;
 };
 
-BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin, int hug_radius);
+BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin, int hug_radius, int overshoot = 0);
 
 } // namespace astralia

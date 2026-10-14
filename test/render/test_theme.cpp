@@ -21,7 +21,7 @@ void check_theme() {
 
     test::apply_base_theme();
     Theme base = theme_from_seed(test::base_extraction());
-    check(near(base.accent, palette::accent) && near(base.ink, palette::ink) && near(base.paper, palette::paper) && near(base.text_dim, palette::text_dim) && near(base.window_backdrop, palette::window_backdrop), "applying a theme sets every role");
+    check(near(base.accent, palette::accent) && near(base.ink, palette::ink) && near(base.paper, palette::paper) && near(base.shadow, palette::shadow) && near(base.text_dim, palette::text_dim) && near(base.window_backdrop, palette::window_backdrop), "applying a theme sets every role");
 
     bool contrast_ok = true;
     for (int hue = 0; hue < 360; hue += 15) {
@@ -44,7 +44,7 @@ void check_theme() {
     check(!near(other.accent, palette::accent), "a different seed gives a different accent");
     theme_apply(other);
     check(near(other.accent, palette::accent) && near(other.text, palette::text) && near(other.text_alpha20, palette::text_alpha20) && near(other.overlay, palette::overlay), "theme_apply sets the palette to the derived values");
-    check(near(bar_style_spec(BarStyle::islands, true).border, other.ink) && near(bar_style_spec(BarStyle::okinami, true).bg, other.paper) && near(bar_style_spec(BarStyle::continuous, true).bg, other.paper), "bar styles follow the live palette");
+    check(near(bar_style_spec(BarStyle::islands, true).border, other.ink) && near(bar_style_spec(BarStyle::islands, true).shadow_color, other.shadow) && near(bar_style_spec(BarStyle::okinami, true).border, other.ink) && near(bar_style_spec(BarStyle::okinami, true).bg, other.accent_container) && near(bar_style_spec(BarStyle::continuous, true).bg, other.accent_container), "bar styles follow the live palette");
     test::apply_base_theme();
     check(near(base.accent, palette::accent), "theme_apply restores the base theme");
 }

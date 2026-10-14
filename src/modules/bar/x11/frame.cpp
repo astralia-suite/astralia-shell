@@ -49,12 +49,13 @@ void paint_continuous(cairo_t *cr, const BarStyleSpec &spec, double width, doubl
     double border = spec.border_width;
     double inset = border / 2.0;
     double shadow = spec.shadow;
-    double face_w = width - shadow;
-    double face_h = height - shadow;
+    double shadow_dx = spec.shadow_dx;
+    double face_w = width - shadow_dx;
+    double face_h = height + spec.shadow_overshoot() - shadow;
     double radius = std::min(height * spec.radius_ratio, std::min(face_w, face_h) / 2.0);
     if (shadow > 0.0) {
-        set_source(cr, spec.border);
-        rounded_rect(cr, shadow, shadow, face_w, face_h, radius);
+        set_source(cr, spec.shadow_color);
+        rounded_rect(cr, shadow_dx, shadow, face_w, face_h, radius);
         cairo_fill(cr);
     }
     set_source(cr, spec.bg);

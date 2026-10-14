@@ -159,11 +159,11 @@ void toggle_panel(MonitorOutput &mon, BarItem item) {
 }
 
 int32_t bar_current_height(const MonitorOutput &mon) {
-    return astralia::bar_autohide_geometry(bar_state(mon).autohide.enabled, bar_state(mon).autohide.collapsed, static_cast<int>(layout_cfg::height), bar_style_of(mon).top_margin, bar_hug_radius_px(mon)).height;
+    return astralia::bar_autohide_geometry(bar_state(mon).autohide.enabled, bar_state(mon).autohide.collapsed, static_cast<int>(layout_cfg::height), bar_style_of(mon).top_margin, bar_hug_radius_px(mon), bar_style_of(mon).shadow_overshoot()).height;
 }
 
 void bar_autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed, const astralia::BarStyleSpec &style) {
-    astralia::BarGeometry g = astralia::bar_autohide_geometry(autohide, collapsed, static_cast<int>(layout_cfg::height), style.top_margin, bar_hug_radius_px(mon));
+    astralia::BarGeometry g = astralia::bar_autohide_geometry(autohide, collapsed, static_cast<int>(layout_cfg::height), style.top_margin, bar_hug_radius_px(mon), style.shadow_overshoot());
     set_surface_geometry(bar_state(mon).layer_surface, bar_state(mon).surface, bar_state(mon).egl_window, bar_state(mon).width, g.height, g.margin_top, style.side_margin, g.exclusive_zone, bar_state(mon).output_scale.scale);
 }
 
@@ -301,7 +301,7 @@ void bar_paint(MonitorOutput &mon) {
     model.tick(now);
     model.layout(bs.canvas, width);
 
-    bs.canvas.begin_group({0.0f, content_y_offset, width, height}, {});
+    bs.canvas.begin_group({0.0f, content_y_offset, width, height + static_cast<float>(style.shadow_overshoot())}, {});
     astralia::BarFrame frame = model.frame();
     bar_frame_base(bs.canvas, style, frame, width, height);
     astralia::paint_bar(bs.canvas, model);
@@ -326,7 +326,7 @@ bool BarPerMonitorModule::create_surface(WaylandState &app, MonitorOutput &mon, 
     state.model = std::make_unique<astralia::BarModel>(bar_sources(app, mon.output.name), std::chrono::steady_clock::now());
     state.clock_label = clock_text();
     const astralia::BarStyleSpec &style = astralia::bar_style_spec(app.cfg.bar_style, true);
-    astralia::BarGeometry geometry = astralia::bar_autohide_geometry(state.autohide.enabled, state.autohide.collapsed, static_cast<int>(layout_cfg::height), style.top_margin, bar_hug_radius_px(mon));
+    astralia::BarGeometry geometry = astralia::bar_autohide_geometry(state.autohide.enabled, state.autohide.collapsed, static_cast<int>(layout_cfg::height), style.top_margin, bar_hug_radius_px(mon), style.shadow_overshoot());
     LayerSurfaceConfig bar_cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         .name_space = "astralia-shell",

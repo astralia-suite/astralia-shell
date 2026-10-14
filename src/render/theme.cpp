@@ -27,10 +27,11 @@ Theme theme_from_seed(const Extraction &extraction) {
     Theme t{};
     t.scheme = Scheme::light;
 
-    t.ink = color_from_oklch({0.30f, 0.045f, hue});
-    t.paper = color_from_oklch({0.975f, 0.012f, hue});
-    t.surface = color_from_oklch({0.945f, 0.020f, hue});
-    t.surface_alt = color_from_oklch({0.900f, 0.035f, hue});
+    t.ink = color_from_oklch({0.30f, 0.080f, hue});
+    t.paper = color_from_oklch({0.965f, 0.035f, hue});
+    t.surface = color_from_oklch({0.935f, 0.050f, hue});
+    t.surface_alt = color_from_oklch({0.890f, 0.075f, hue});
+    t.shadow = color_from_oklch({0.22f, 0.065f, hue});
 
     t.accent = color_from_oklch({0.80f, 0.110f, hue});
     t.accent_alpha12 = with_alpha(t.accent, byte_alpha(0x1F));
@@ -57,7 +58,7 @@ Theme theme_from_seed(const Extraction &extraction) {
     t.text_alpha15 = with_alpha(t.ink, byte_alpha(0x26));
     t.text_alpha20 = with_alpha(t.ink, byte_alpha(0x33));
     t.text_alpha65 = with_alpha(t.ink, byte_alpha(0xA6));
-    t.text_muted = color_from_oklch({0.45f, 0.040f, hue});
+    t.text_muted = color_from_oklch({0.45f, 0.070f, hue});
     t.text_dim = with_alpha(t.text_muted, byte_alpha(0x99));
 
     t.electro = color_from_oklch({0.70f, 0.150f, hue});
@@ -77,6 +78,7 @@ void theme_apply(const Theme &t) {
     palette::paper = t.paper;
     palette::surface = t.surface;
     palette::surface_alt = t.surface_alt;
+    palette::shadow = t.shadow;
 
     palette::accent = t.accent;
     palette::accent_alpha12 = t.accent_alpha12;

@@ -155,7 +155,7 @@ bool Bar::refresh_style() {
     style_ = next;
     spec_ = &bar_style_spec(next, true);
     model_.set_style(*spec_);
-    full_height_ = static_cast<uint16_t>(spec_->top_margin + bar_layout::height);
+    full_height_ = static_cast<uint16_t>(spec_->top_margin + bar_layout::height + spec_->shadow_overshoot());
     height_ = collapsed_ ? collapsed_height() : full_height_;
     return true;
 }
@@ -288,7 +288,7 @@ void Bar::draw(const ui::Box *dirty) {
     cairo_translate(cr, left, top);
     paint_bar_frame(cr, *spec_, model_.frame(), width, bar_layout::height);
     cairo_restore(cr);
-    canvas_.begin_group({left, top, width, bar_layout::height}, {});
+    canvas_.begin_group({left, top, width, bar_layout::height + static_cast<float>(spec_->shadow_overshoot())}, {});
     paint_bar(canvas_, model_, dirty);
     canvas_.end_group();
     cairo_restore(cr);

@@ -86,7 +86,7 @@
 - `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
 - `palette_extract.{h,cpp}`: Downsamples an RGBA image, clusters it with k-means in OKLab and returns the seed hues.
 - `theme.{h,cpp}`: `Theme` roles derived from a seed hue in OKLCH and `theme_apply` onto the palette.
-- `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow, drawn over a canvas.
+- `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow (outline-coloured unless `shadow_color` is given), drawn over a canvas.
 - `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical, for the overview, settings and bar panels.
 - `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade that every scroll opens and closes with.
 - `glyphs.h`: Volume and brightness glyph thresholds over the icon table.

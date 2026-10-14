@@ -59,7 +59,10 @@ void check_bar_style() {
     using astralia::bar_autohide_geometry;
     auto shown = bar_autohide_geometry(false, false, 40, 10, 0);
     test::check(shown.height == 40 && shown.margin_top == 10 && shown.exclusive_zone == 40, "autohide off keeps the bar shown");
-    auto hugged = bar_autohide_geometry(false, false, 40, 10, 30);
+    auto overshot = bar_autohide_geometry(false, false, 40, 10, 0, 3);
+    test::check(overshot.height == 43 && overshot.exclusive_zone == 40, "shadow overshoot grows the surface only");
+    test::check(bar_style_spec(BarStyle::islands, true).shadow_overshoot() == 3 && bar_style_spec(BarStyle::okinami, true).shadow_overshoot() == 0, "only shadowed styles overshoot the bar");
+    auto hugged =bar_autohide_geometry(false, false, 40, 10, 30);
     test::check(hugged.height == 70 && hugged.exclusive_zone == 40, "hug radius grows the surface only");
     auto revealed = bar_autohide_geometry(true, false, 40, 10, 30);
     test::check(revealed.height == 80 && revealed.margin_top == 0 && revealed.exclusive_zone == 0, "revealed autohide reserves nothing");

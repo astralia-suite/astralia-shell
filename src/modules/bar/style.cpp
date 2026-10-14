@@ -7,13 +7,15 @@ namespace astralia {
 namespace {
 
 constexpr int autohide_strip_px = 1;
-BarStyleSpec islands{{}, {}, metrics::border_thick, 0.5f, 0.5f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, metrics::shadow_offset};
+constexpr float pill_shadow = 2.0f * metrics::border_thick;
+BarStyleSpec islands{{}, {}, metrics::border_thick, 0.5f, 0.5f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, pill_shadow};
 BarStyleSpec okinami{{}, {}, metrics::border_thick, 0.0f, 0.25f, 0, 0, 6.0f, 16.0f, 12.0f};
-BarStyleSpec continuous{{}, {}, metrics::border_thick, 0.5f, 0.25f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, metrics::shadow_offset, true};
+BarStyleSpec continuous{{}, {}, metrics::border_thick, 0.5f, 0.25f, bar_layout::top_margin, bar_layout::side_margin, 0.0f, 0.0f, 0.0f, pill_shadow, true};
 
 const BarStyleSpec &live(BarStyleSpec &spec) {
-    spec.bg = palette::paper;
+    spec.bg = palette::accent_container;
     spec.border = palette::ink;
+    spec.shadow_color = palette::shadow;
     return spec;
 }
 
@@ -62,14 +64,14 @@ BarFrame bar_frame(const BarStyleSpec &spec, std::optional<float> left_end, std:
     return frame;
 }
 
-BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin, int hug_radius) {
+BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin, int hug_radius, int overshoot) {
     if (!autohide) {
-        return {bar_height + hug_radius, top_margin, bar_height};
+        return {bar_height + hug_radius + overshoot, top_margin, bar_height};
     }
     if (collapsed) {
         return {autohide_strip_px, 0, 0};
     }
-    return {top_margin + bar_height + hug_radius, 0, 0};
+    return {top_margin + bar_height + hug_radius + overshoot, 0, 0};
 }
 
 } // namespace astralia

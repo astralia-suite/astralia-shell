@@ -14,6 +14,7 @@ struct Theme {
     Color paper;
     Color surface;
     Color surface_alt;
+    Color shadow;
 
     Color accent;
     Color accent_alpha12;

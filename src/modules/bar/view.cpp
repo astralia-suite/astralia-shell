@@ -20,7 +20,7 @@ constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
 void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box, const Color &fill) {
     if (style.has_pill_bg()) {
-        sticker(canvas, box, box.h * style.radius_ratio, fill, style.border, style.border_width, style.shadow);
+        sticker(canvas, {box.x, box.y, box.w, box.h + static_cast<float>(style.shadow_overshoot())}, box.h * style.radius_ratio, fill, style.border, style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
     }
 }
 

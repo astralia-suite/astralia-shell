@@ -40,6 +40,7 @@ inline constexpr Color white{1.0f, 1.0f, 1.0f, 1.0f};
 inline Color ink{};
 inline Color paper{};
 inline Color surface{};
+inline Color shadow{};
 
 inline Color accent{};
 inline Color accent_alpha12{};
