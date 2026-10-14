@@ -79,6 +79,23 @@ void CairoCanvas::rounded(const ui::Box &box, float radius, const Color &fill, f
     }
 }
 
+void CairoCanvas::fillet(const ui::Box &box, bool circle_on_right, const Color &color) {
+    cairo_save(cr_);
+    cairo_rectangle(cr_, box.x, box.y, box.w, box.h);
+    cairo_clip(cr_);
+    cairo_new_path(cr_);
+    cairo_rectangle(cr_, box.x, box.y, box.w, box.h);
+    cairo_arc(cr_, box.x + (circle_on_right ? box.w : 0.0), box.y + box.h, box.w, 0.0, 2.0 * M_PI);
+    cairo_set_fill_rule(cr_, CAIRO_FILL_RULE_EVEN_ODD);
+    set_source(cr_, color);
+    cairo_fill(cr_);
+    cairo_restore(cr_);
+}
+
+void CairoCanvas::set_erase(bool on) {
+    cairo_set_operator(cr_, on ? CAIRO_OPERATOR_SOURCE : CAIRO_OPERATOR_OVER);
+}
+
 ui::TextSize CairoCanvas::measure(std::string_view text, const ui::TextStyle &style) {
     if (text.empty()) {
         return {};

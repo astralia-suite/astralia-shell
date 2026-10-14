@@ -23,8 +23,9 @@
 #include "core/pointer.h"
 
 #include "modules/bar/style.h"
-#include "modules/bar/x11/frame.h"
+#include "modules/bar/frame.h"
 
+#include "render/cairo_canvas.h"
 #include "render/cover_cache.h"
 #include "render/image_decode.h"
 
@@ -127,7 +128,10 @@ void check_bar_styles() {
 
     cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 400, 40);
     cairo_t *cr = cairo_create(surface);
-    paint_bar_frame(cr, okinami, frame, 400, 40);
+    CairoCanvas canvas;
+    canvas.bind(cr);
+    bar_frame_base(canvas, okinami, frame, 400, 40);
+    bar_frame_overlay(canvas, okinami, frame, 400, 40, 0.0f, false, false);
     cairo_surface_flush(surface);
     const unsigned char *data = cairo_image_surface_get_data(surface);
     int stride = cairo_image_surface_get_stride(surface);
@@ -141,6 +145,11 @@ void check_bar_styles() {
     check(is(125, 5, palette::ink), "rail border line is the outline colour");
     check(is(50, 5, palette::accent_container) && is(50, 20, palette::accent_container), "island interior replaces the rail line");
     check(alpha(125, 20) == 0, "the gap under the rail is transparent");
+    int fx = static_cast<int>(frame.fillets.front().edge_x);
+    int fr = static_cast<int>(okinami.fillet_radius);
+    int fy = static_cast<int>(okinami.rail_height);
+    check(alpha(fx + fr - 2, fy + fr - 1) == 0, "the fillet cutout leaves the circle side transparent");
+    check(alpha(fx + 1, fy + 2) == 255, "the fillet fills the corner beside the island");
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 }

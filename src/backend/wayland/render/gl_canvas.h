@@ -25,6 +25,8 @@ class GlCanvas final : public astralia::ui::Canvas {
 
     void rect(const astralia::ui::Box &box, const astralia::Color &fill) override;
     void rounded(const astralia::ui::Box &box, float radius, const astralia::Color &fill, float border_width, const astralia::Color &border) override;
+    void fillet(const astralia::ui::Box &box, bool circle_on_right, const astralia::Color &color) override;
+    void set_erase(bool on) override { erase_ = on; }
     astralia::ui::TextSize measure(std::string_view text, const astralia::ui::TextStyle &style) override;
     float advance(const astralia::ui::TextStyle &style) override;
     void text(std::string_view text, const astralia::ui::TextStyle &style, float x, float y, const astralia::Color &color) override;
@@ -40,7 +42,6 @@ class GlCanvas final : public astralia::ui::Canvas {
     void texture(const Texture &tex, const astralia::ui::Box &box, const float tint[4], float radius = 0.0f);
     void texture(const Texture &tex, float x, float y, const float tint[4]);
     void video(const VideoTexture &tex, const astralia::ui::Box &box);
-    void set_erase(bool on) { erase_ = on; }
     Renderer &renderer() { return *renderer_; }
 
   private:

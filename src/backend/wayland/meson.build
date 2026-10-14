@@ -12,7 +12,6 @@ wayland_sources = files(
   'core/log.cpp',
   'core/poll_source.cpp',
   '../../modules/bar/wayland/bar.cpp',
-  '../../modules/bar/wayland/frame.cpp',
   '../../modules/bar/wayland/panel_surface.cpp',
   '../../modules/dashboard/wayland/dashboard.cpp',
   '../../modules/idle/wayland/idle.cpp',

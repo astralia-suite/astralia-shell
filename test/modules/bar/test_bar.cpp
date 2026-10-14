@@ -8,6 +8,7 @@
 
 #include "core/animation.h"
 
+#include "modules/bar/frame.h"
 #include "modules/bar/model.h"
 #include "modules/bar/style.h"
 #include "modules/bar/view.h"
@@ -215,8 +216,36 @@ void check_bar_interaction() {
 
 } // namespace
 
+void check_bar_frame() {
+    using astralia::bar_style_spec;
+    using test::Op;
+    const astralia::BarStyleSpec &okinami = bar_style_spec(BarStyle::okinami, false);
+    astralia::BarFrame frame = astralia::bar_frame(okinami, 300.0f, astralia::IslandSpan{500.0f, 700.0f}, 900.0f, 1000.0f);
+
+    test::RecordingCanvas base;
+    astralia::bar_frame_base(base, okinami, frame, 1000.0f, 40.0f);
+    test::check(base.count(Op::Kind::rounded) == 2 * frame.islands.size() && base.count(Op::Kind::rect) == 2, "the base draws the rail and each island twice, outline then fill");
+    test::check(base.count(Op::Kind::erase) == 2 && base.ops.back().kind == Op::Kind::erase && base.ops.back().value == 0.0f, "the base ends with erase off");
+
+    test::RecordingCanvas overlay;
+    astralia::bar_frame_overlay(overlay, okinami, frame, 1000.0f, 40.0f, 0.0f, true, true);
+    test::check(overlay.count(Op::Kind::fillet) == 2 * frame.fillets.size(), "each fillet draws an outline and an inner cutout");
+    test::check(overlay.ops.back().kind == Op::Kind::erase && overlay.ops.back().value == 0.0f, "the overlay ends with erase off");
+    const Op &outer = overlay.ops.front();
+    test::check(outer.kind == Op::Kind::fillet && outer.box.w == okinami.fillet_radius && outer.box.h == okinami.fillet_radius && outer.box.y == okinami.rail_height, "the outer fillet is a square of the fillet radius under the rail");
+
+    test::RecordingCanvas hugged;
+    astralia::bar_frame_overlay(hugged, okinami, frame, 1000.0f, 40.0f, 12.0f, true, true);
+    test::check(hugged.count(Op::Kind::fillet) == overlay.count(Op::Kind::fillet) + 4, "hug corners add an outline and a cutout per flush side");
+
+    test::RecordingCanvas pill;
+    astralia::bar_frame_overlay(pill, bar_style_spec(BarStyle::continuous, false), frame, 1000.0f, 40.0f, 12.0f, true, true);
+    test::check(pill.ops.empty(), "a style without a rail has no overlay");
+}
+
 void check_bar() {
     check_bar_style();
+    check_bar_frame();
     check_bar_glyphs();
     check_bar_text();
     check_bar_layout();

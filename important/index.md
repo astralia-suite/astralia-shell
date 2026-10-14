@@ -81,7 +81,7 @@
 
 ## `src/render/`
 
-- `canvas.h`: The `Canvas` interface every view draws through: shapes, text, images, groups, opacity and gauges.
+- `canvas.h`: The `Canvas` interface every view draws through: shapes, fillets, erase mode, text, images, groups, opacity and gauges.
 - `tokens.h`: `Color`, the mutable palette (empty until `theme_apply` runs), metrics and colour helpers shared by every backend.
 - `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
 - `palette_extract.{h,cpp}`: Downsamples an RGBA image, clusters it with k-means in OKLab and returns the seed hues.
@@ -131,12 +131,13 @@
 - `style.{h,cpp}`: `BarStyleSpec` for the three styles, the `islands` fallback, island and fillet geometry, autohide geometry.
 - `model.{h,cpp}`: Items, workspace pills, dock row, hover, pinning, linger, volume peek, layout and hit tests.
 - `view.{h,cpp}`: Paints items, workspaces, dock icons and dividers over the canvas.
+- `frame.{h,cpp}`: The bar background over the canvas for both backends: pill or rail and islands, then fillets and hug corners.
 - `panel/panel.{h,cpp}`: `Panel` scroll card with staged open, content scrolling, drag, dialogs and a refresh timer, plus `PanelContent`.
 - `panel/panel_set.{h,cpp}`: Owns the panels, keeps one open at a time and routes changes to the host.
 - `panel/widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm dialog the panels share.
 - `panel/*_panel.{h,cpp}`: Content of the battery, bluetooth, brightness, clock, media, network, resource, tray and volume panels.
-- `wayland/`: Per-monitor bar surface, one overlay `PanelSurface`, and the `GlCanvas` frame with fillets and hug corners.
-- `x11/`: Bar window, struts and autohide strip, `BarSet` per output, one `PanelHost` window, and the cairo frame painter.
+- `wayland/`: Per-monitor bar surface, and one overlay `PanelSurface`.
+- `x11/`: Bar window, struts and autohide strip, `BarSet` per output, and one `PanelHost` window.
 
 ## `src/modules/lock/`
 

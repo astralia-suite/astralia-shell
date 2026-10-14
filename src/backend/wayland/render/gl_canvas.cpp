@@ -54,6 +54,10 @@ void GlCanvas::shape(const Draw &draw) {
     draw(false);
 }
 
+void GlCanvas::fillet(const ui::Box &box, bool circle_on_right, const astralia::Color &color) {
+    shape([&](bool erase) { renderer_->draw_fillet(ox() + box.x, oy() + box.y, box.w, circle_on_right, erase ? kWhite : astralia::rgba(color)); });
+}
+
 const Texture *GlCanvas::glyphs(std::string_view text, const ui::TextStyle &style) {
     if (text.empty()) {
         return nullptr;

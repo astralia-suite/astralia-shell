@@ -12,7 +12,6 @@
 #include "wayland/app/wayland_state.h"
 
 #include "modules/bar/model.h"
-#include "modules/bar/wayland/frame.h"
 #include "modules/bar/wayland/panel_surface.h"
 
 #include "core/animation.h"
@@ -45,7 +44,6 @@ struct BarPerMonitorState {
     GlCanvas canvas;
     astralia::AnimationManager animations;
     AutoHideState autohide;
-    BarDecor decor;
 
     std::unique_ptr<astralia::BarModel> model;
     std::unique_ptr<PanelSurface> panels;

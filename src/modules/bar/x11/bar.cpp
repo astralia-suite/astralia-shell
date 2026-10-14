@@ -12,10 +12,10 @@
 
 #include "core/pointer.h"
 
+#include "modules/bar/frame.h"
 #include "modules/bar/panel/panel_set.h"
 #include "modules/bar/view.h"
 #include "modules/bar/x11/bar.h"
-#include "modules/bar/x11/frame.h"
 
 #include "render/app_fonts.h"
 #include "render/draw.h"
@@ -284,12 +284,11 @@ void Bar::draw(const ui::Box *dirty) {
     cairo_set_source_rgba(cr, 0, 0, 0, 0);
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-    cairo_save(cr);
-    cairo_translate(cr, left, top);
-    paint_bar_frame(cr, *spec_, model_.frame(), width, bar_layout::height);
-    cairo_restore(cr);
     canvas_.begin_group({left, top, width, bar_layout::height + static_cast<float>(spec_->shadow_overshoot())}, {});
+    BarFrame frame = model_.frame();
+    bar_frame_base(canvas_, *spec_, frame, width, bar_layout::height);
     paint_bar(canvas_, model_, dirty);
+    bar_frame_overlay(canvas_, *spec_, frame, width, bar_layout::height, 0.0f, false, false);
     canvas_.end_group();
     cairo_restore(cr);
     if (dirty != nullptr) {

@@ -9,7 +9,6 @@ x11_sources = files(
   'core/x_clipboard.cpp',
   'core/x_connection.cpp',
   '../../modules/bar/x11/bar.cpp',
-  '../../modules/bar/x11/frame.cpp',
   '../../modules/bar/x11/panel_host.cpp',
   '../../modules/bar/x11/bar_set.cpp',
   '../../modules/dashboard/x11/dashboard.cpp',

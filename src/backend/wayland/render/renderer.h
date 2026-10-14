@@ -49,6 +49,8 @@ class Renderer {
 
     void draw_rounded_rect(float x, float y, float w, float h, float radius, float border_width, const float fill[4], const float border[4]);
 
+    void draw_fillet(float x, float y, float size, bool circle_on_right, const float color[4]);
+
     void draw_texture(float x, float y, const Texture &tex, const float tint[4]);
 
     void draw_texture_rect(float x, float y, float w, float h, const Texture &tex, const float tint[4]);
@@ -74,6 +76,7 @@ class Renderer {
     GLuint tex_program_ = 0;
     GLuint rrect_program_ = 0;
     GLuint rounded_tex_program_ = 0;
+    GLuint fillet_program_ = 0;
     GLuint video_program_ = 0;
     GLuint quad_vbo_ = 0;
     float viewport_[2] = {0, 0};

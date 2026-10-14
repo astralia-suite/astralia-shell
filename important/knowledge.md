@@ -204,11 +204,14 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] `GlCanvas` draws immediately; call order is paint order. `set_opacity()` applies to the draws after it, so set it before painting.
 - [wayland] Modules draw only through `GlCanvas`; its `texture`, `video`, `set_erase` and `renderer()` extras serve hooks and shader passes.
 - [wayland] A group clips only when it is not itself scaled or rotated. Scissor rects ignore the model transform.
-- [wayland] A narrower anti-aliasing band crisps rounded rect edges. One pixel fixed what a two-pixel `smoothstep` softened.
+- [wayland] Shape edges use a linear ramp one device pixel wide, `clamp(0.5 - d / length(vec2(dFdx(d), dFdy(d))), 0.0, 1.0)`. A `smoothstep` window pushes coverage to the extremes and reads as stair-stepping on curves.
+- [wayland] Shape shaders output straight alpha, `vec4(rgb, a * coverage)`. Multiplying `rgb` by coverage as well squares the edge under `GL_SRC_ALPHA`.
+- [wayland] Analytic shapes draw on a quad padded by `kEdgePad` and take the unpadded size as a uniform. A quad cut at the rect clips the outer half of the ramp.
 - [wayland] `rrect.frag`'s distance needs the interior `min(max(q.x, q.y), 0.0)` term. Otherwise a border wider than the radius fills the rect.
 - [wayland] `draw_rounded_rect` always reads its border colour, even at zero width. Passing `nullptr` is a null read.
 - [wayland] A `border_width` ported 1:1 from QML looks thinner here. Match `metrics::border_thin` (`2.0f`).
-- [wayland] A concave hug corner is the same quarter-circle cutout as a convex fillet. `fillet_rgba` serves both.
+- [wayland] A concave hug corner is the same quarter-circle cutout as a convex fillet. `Canvas::fillet` serves both.
+- Fillets and the bar frame are drawn once, in `modules/bar/frame.cpp`, over `Canvas::fillet` and `Canvas::set_erase`. Each backend implements only those two primitives.
 - [wayland] A single shared `Renderer` resets itself in `begin_frame()`. Callers leaked stale opacity into the next paint.
 - [wayland] Two hand-rolled opacity pipelines for one window drift apart. Unify on `GlCanvas`.
 - [wayland] A fresh share context starts with `GL_BLEND` disabled. Raw GL paths enable it once per context.

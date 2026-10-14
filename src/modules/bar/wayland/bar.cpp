@@ -9,6 +9,7 @@
 
 #include "config/bar_layout.h"
 
+#include "modules/bar/frame.h"
 #include "modules/bar/model.h"
 #include "modules/bar/panel/panel_set.h"
 #include "modules/bar/view.h"
@@ -303,9 +304,9 @@ void bar_paint(MonitorOutput &mon) {
 
     bs.canvas.begin_group({0.0f, content_y_offset, width, height + static_cast<float>(style.shadow_overshoot())}, {});
     astralia::BarFrame frame = model.frame();
-    bar_frame_base(bs.canvas, style, frame, width, height);
+    astralia::bar_frame_base(bs.canvas, style, frame, width, height);
     astralia::paint_bar(bs.canvas, model);
-    bar_frame_overlay(bs.canvas, bs.decor, style, frame, width, height, bs.output_scale.scale, bar_hug_radius_px(mon), model.layout().left_end.has_value(), model.layout().right_start.has_value());
+    astralia::bar_frame_overlay(bs.canvas, style, frame, width, height, static_cast<float>(bar_hug_radius_px(mon)), model.layout().left_end.has_value(), model.layout().right_start.has_value());
     bs.canvas.end_group();
     bs.canvas.flush();
     eglSwapBuffers(app.egl_display, bs.egl_surface);

@@ -64,6 +64,7 @@ core_base = static_library(
 core_shared = static_library(
   'astralia-core-shared',
   files(
+    'src/modules/bar/frame.cpp',
     'src/modules/bar/model.cpp',
     'src/modules/bar/panel/battery_panel.cpp',
     'src/modules/bar/panel/bluetooth_panel.cpp',
@@ -322,7 +323,6 @@ if wayland_enabled
       'test/backend/wayland/test_wayland.cpp',
       'test/backend/wayland/app/test_config.cpp',
       'test/backend/wayland/core/test_poll_source.cpp',
-      'test/modules/bar/wayland/test_fillet.cpp',
       'test/backend/wayland/render/test_animated_image.cpp',
       'test/backend/wayland/render/test_image_decode.cpp',
       'test/backend/wayland/render/test_marquee_scroll.cpp',

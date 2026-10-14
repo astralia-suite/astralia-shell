@@ -10,6 +10,8 @@ namespace test {
 struct Op {
     enum class Kind { rect,
                       rounded,
+                      fillet,
+                      erase,
                       text,
                       image,
                       begin_group,
@@ -35,6 +37,12 @@ class RecordingCanvas final : public astralia::ui::Canvas {
     }
     void rounded(const astralia::ui::Box &box, float radius, const astralia::Color &fill, float border_width, const astralia::Color &) override {
         ops.push_back({Op::Kind::rounded, box, radius, border_width, "", fill});
+    }
+    void fillet(const astralia::ui::Box &box, bool circle_on_right, const astralia::Color &color) override {
+        ops.push_back({Op::Kind::fillet, box, 0, 0, "", color, circle_on_right ? 1.0f : 0.0f});
+    }
+    void set_erase(bool on) override {
+        ops.push_back({Op::Kind::erase, {}, 0, 0, "", {}, on ? 1.0f : 0.0f});
     }
     astralia::ui::TextSize measure(std::string_view text, const astralia::ui::TextStyle &style) override {
         if (text.empty()) {

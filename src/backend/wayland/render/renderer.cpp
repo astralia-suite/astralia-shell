@@ -9,6 +9,13 @@
 #include "wayland/render/renderer.h"
 #include "wayland/render/texture.h"
 
+namespace {
+
+// Logical pixels added around a shape that is drawn with an analytic edge, so the outer half of the ramp is not clipped by the quad.
+constexpr float kEdgePad = 2.0f;
+
+} // namespace
+
 bool Renderer::init() {
     texture_detect_caps();
     video_texture_detect_caps(eglGetCurrentDisplay());
@@ -23,8 +30,9 @@ bool Renderer::init() {
     tex_program_ = build("renderer/tex.frag", "tex");
     rrect_program_ = build("renderer/rrect.frag", "rrect");
     rounded_tex_program_ = build("renderer/rounded_tex.frag", "rounded_tex");
+    fillet_program_ = build("renderer/fillet.frag", "fillet");
     video_program_ = build("renderer/video.frag", "video");
-    if (!rect_program_ || !tex_program_ || !rrect_program_ || !rounded_tex_program_ || !video_program_)
+    if (!rect_program_ || !tex_program_ || !rrect_program_ || !rounded_tex_program_ || !fillet_program_ || !video_program_)
         return false;
 
     static const float quad[] = {0, 0, 1, 0, 0, 1, 1, 1};
@@ -43,6 +51,8 @@ void Renderer::destroy() {
         glDeleteProgram(rrect_program_);
     if (rounded_tex_program_)
         glDeleteProgram(rounded_tex_program_);
+    if (fillet_program_)
+        glDeleteProgram(fillet_program_);
     if (video_program_)
         glDeleteProgram(video_program_);
     if (quad_vbo_)
@@ -115,9 +125,10 @@ void Renderer::draw_rect(float x, float y, float w, float h, const float color[4
 
 void Renderer::draw_rounded_rect(float x, float y, float w, float h, float radius, float border_width, const float fill[4], const float border[4]) {
     glUseProgram(rrect_program_);
-    set_common_uniforms(rrect_program_, x, y, w, h);
+    set_common_uniforms(rrect_program_, x - kEdgePad, y - kEdgePad, w + 2.0f * kEdgePad, h + 2.0f * kEdgePad);
     float size[2] = {w, h};
     glUniform2fv(glGetUniformLocation(rrect_program_, "u_size"), 1, size);
+    glUniform1f(glGetUniformLocation(rrect_program_, "u_pad"), kEdgePad);
     glUniform1f(glGetUniformLocation(rrect_program_, "u_radius"), radius);
     glUniform1f(glGetUniformLocation(rrect_program_, "u_border_width"), border_width);
     float fc[4] = {fill[0], fill[1], fill[2], fill[3] * opacity_};
@@ -125,6 +136,17 @@ void Renderer::draw_rounded_rect(float x, float y, float w, float h, float radiu
     glUniform4fv(glGetUniformLocation(rrect_program_, "u_fill_color"), 1, fc);
     glUniform4fv(glGetUniformLocation(rrect_program_, "u_border_color"), 1, bc);
     draw_quad(rrect_program_);
+}
+
+void Renderer::draw_fillet(float x, float y, float size, bool circle_on_right, const float color[4]) {
+    glUseProgram(fillet_program_);
+    set_common_uniforms(fillet_program_, x - kEdgePad, y - kEdgePad, size + 2.0f * kEdgePad, size + 2.0f * kEdgePad);
+    glUniform1f(glGetUniformLocation(fillet_program_, "u_size"), size);
+    glUniform1f(glGetUniformLocation(fillet_program_, "u_pad"), kEdgePad);
+    glUniform1f(glGetUniformLocation(fillet_program_, "u_circle_right"), circle_on_right ? 1.0f : 0.0f);
+    float c[4] = {color[0], color[1], color[2], color[3] * opacity_};
+    glUniform4fv(glGetUniformLocation(fillet_program_, "u_color"), 1, c);
+    draw_quad(fillet_program_);
 }
 
 void Renderer::draw_texture(float x, float y, const Texture &tex, const float tint[4]) {
@@ -149,7 +171,8 @@ void Renderer::draw_texture_rect_rounded(float x, float y, float w, float h, flo
     x = std::round(x);
     y = std::round(y);
     glUseProgram(rounded_tex_program_);
-    set_common_uniforms(rounded_tex_program_, x, y, w, h);
+    set_common_uniforms(rounded_tex_program_, x - kEdgePad, y - kEdgePad, w + 2.0f * kEdgePad, h + 2.0f * kEdgePad);
+    glUniform1f(glGetUniformLocation(rounded_tex_program_, "u_pad"), kEdgePad);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.id);
     glUniform1i(glGetUniformLocation(rounded_tex_program_, "u_tex"), 0);

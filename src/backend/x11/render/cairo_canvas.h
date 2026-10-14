@@ -22,6 +22,8 @@ class CairoCanvas final : public ui::Canvas {
 
     void rect(const ui::Box &box, const Color &fill) override;
     void rounded(const ui::Box &box, float radius, const Color &fill, float border_width, const Color &border) override;
+    void fillet(const ui::Box &box, bool circle_on_right, const Color &color) override;
+    void set_erase(bool on) override;
     ui::TextSize measure(std::string_view text, const ui::TextStyle &style) override;
     float advance(const ui::TextStyle &style) override;
     void text(std::string_view text, const ui::TextStyle &style, float x, float y, const Color &color) override;
