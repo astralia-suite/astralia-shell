@@ -71,12 +71,17 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     model.begin_frame();
     float zoom = std::clamp(model.zoom(), 0.0f, 1.0f);
     canvas.set_opacity(1.0f);
-    canvas.rect({0.0f, 0.0f, width, height}, palette::base);
+    // Confine the picker to the targeted column of the display.
+    float columns = static_cast<float>(model.column_count());
+    float x0 = std::floor(width * static_cast<float>(model.column()) / columns);
+    float x1 = std::floor(width * static_cast<float>(model.column() + 1) / columns);
+    width = x1 - x0;
+    canvas.rect({x0, 0.0f, width, height}, palette::base);
 
     const std::vector<std::string> &files = model.files();
     if (files.empty()) {
         if (!model.scanning()) {
-            centred_text(canvas, "No images in " + model.directory(), width / 2.0f, height / 2.0f, palette::text);
+            centred_text(canvas, (model.animated() ? "No videos in " : "No images in ") + model.directory(), x0 + width / 2.0f, height / 2.0f, palette::text);
         }
         return;
     }
@@ -87,7 +92,7 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     float target_cy = (height - stack_h) / 2.0f + target_h / 2.0f;
     float card_w = lerp(width, target_w, zoom);
     float card_h = lerp(height, target_h, zoom);
-    float cx = width / 2.0f;
+    float cx = x0 + width / 2.0f;
     float cy = lerp(height / 2.0f, target_cy, zoom);
 
     int centre_px = std::min(cfg::centre_px, static_cast<int>(std::max(width, height)));
@@ -96,6 +101,7 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     int first = std::max(0, static_cast<int>(std::floor(position)) - cfg::visible_neighbours);
     int last = std::min(static_cast<int>(files.size()) - 1, static_cast<int>(std::ceil(position)) + cfg::visible_neighbours);
 
+    canvas.begin_group({x0, 0.0f, width, height}, {.clip = true});
     for (int ring = cfg::visible_neighbours + 1; ring >= 0; --ring) {
         for (int index = first; index <= last; ++index) {
             float distance = static_cast<float>(index) - position;
@@ -110,11 +116,12 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
             canvas.set_opacity(fade);
             const std::string &path = files[static_cast<size_t>(index)];
             bool current = path == model.current();
-            draw_card(canvas, box, zoom, path, current ? centre_px : near_px, near_px);
+            draw_card(canvas, {box.x - x0, box.y, box.w, box.h}, zoom, path, current ? centre_px : near_px, near_px);
             model.add_card(box, index);
         }
     }
     canvas.set_opacity(1.0f);
+    canvas.end_group();
 
     if (zoom < 1.0f) {
         return;

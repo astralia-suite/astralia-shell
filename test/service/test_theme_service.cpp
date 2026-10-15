@@ -23,6 +23,12 @@ void check_theme_service() {
     check(theme_wallpaper_path(cfg, "DP-1") == "", "a monitor with a blank column falls back to the blank global path");
     cfg.wallpaper_columns["DP-1"] = {"/dp1.png"};
     check(theme_wallpaper_path(cfg, "DP-1") == "/dp1.png", "a monitor uses its own column image");
+    Config animated = cfg;
+    animated.wallpaper_animated_enabled = true;
+    animated.wallpaper_animated_columns["DP-1"] = {"/clip.mp4", "/second.mp4"};
+    check(theme_wallpaper_path(animated, "DP-1") == "/clip.mp4", "animated mode themes from the first animated column");
+    check(theme_wallpaper_path(animated, "DP-2").empty(), "an animated monitor without a video has no theme path");
+    check(theme_wallpaper_path(animated, "") == "/clip.mp4", "animated mode without a monitor takes the first animated column");
     cfg.wallpaper_columns.clear();
     std::filesystem::path file = std::filesystem::temp_directory_path() / "astralia-theme-source-test.png";
     std::ofstream(file) << "x";

@@ -25,6 +25,7 @@
 #include "service/theme_service.h"
 #include "service/tray_service.h"
 #include "service/wayland/idle_service.h"
+#include "service/wayland/media_service.h"
 #include "service/wayland/text_input_service.h"
 
 namespace {
@@ -192,6 +193,7 @@ class ThemeFollowService final : public Service {
 
     bool init(WaylandState &app) override {
         app.theme = std::make_unique<astralia::ThemeService>();
+        app.theme->decode_video_frame = [](const std::string &path, int &w, int &h) { return animate_decode_scaled(path, 256, 256, w, h); };
         app.theme->changed.connect([&app] {
             redraw_all_monitors(app);
             for (auto &m : app.overlays)

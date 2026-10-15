@@ -33,7 +33,7 @@ WallpaperSelectModel::~WallpaperSelectModel() {
 }
 
 bool WallpaperSelectModel::available() const {
-    return !(animated_wallpaper_ && hooks_.config().wallpaper_animated_enabled);
+    return true;
 }
 
 void WallpaperSelectModel::open(const std::string &monitor, int column) {
@@ -43,8 +43,9 @@ void WallpaperSelectModel::open(const std::string &monitor, int column) {
     const Config &config = hooks_.config();
     monitor_ = monitor;
     column_ = column;
-    current_ = wallpaper_column_path(config, monitor, column, false);
-    directory_ = config.wallpaper_dir;
+    animated_ = animated_wallpaper_ && config.wallpaper_animated_enabled;
+    current_ = animated_ ? wallpaper_column_override(config, monitor, column, true) : wallpaper_column_path(config, monitor, column, false);
+    directory_ = animated_ ? config.wallpaper_animated_dir : config.wallpaper_dir;
     files_.clear();
     if (!current_.empty()) {
         files_.push_back(current_);
@@ -84,8 +85,9 @@ void WallpaperSelectModel::scan() {
     uint64_t generation = ++generation_;
     std::weak_ptr<bool> alive = alive_;
     std::string directory = directory_;
-    std::thread([this, alive, generation, directory] {
-        std::vector<std::string> found = wallpaper_list_files(directory, false, cfg::max_images);
+    bool animated = animated_;
+    std::thread([this, alive, generation, directory, animated] {
+        std::vector<std::string> found = wallpaper_list_files(directory, animated, cfg::max_images);
         DeferredCall::call_later([this, alive, generation, found = std::move(found)]() mutable {
             if (!alive.lock() || generation != generation_) {
                 return;
@@ -145,7 +147,7 @@ void WallpaperSelectModel::apply() {
     }
     const std::string &path = files_[static_cast<size_t>(selected_)];
     if (!same_file(path, current_)) {
-        hooks_.update([monitor = monitor_, column = column_, path](Config &config) { wallpaper_set_column(config, monitor, column, path, false); });
+        hooks_.update([monitor = monitor_, column = column_, animated = animated_, path](Config &config) { wallpaper_set_column(config, monitor, column, path, animated); });
     }
     request_close();
 }

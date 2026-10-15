@@ -11,6 +11,7 @@
 #include "core/input.h"
 
 #include "service/settings_service.h"
+#include "service/wallpaper_service.h"
 
 #include "render/geometry.h"
 
@@ -59,6 +60,8 @@ class WallpaperSelectModel {
     const std::string &directory() const { return directory_; }
     const std::string &monitor() const { return monitor_; }
     int column() const { return column_; }
+    bool animated() const { return animated_; }
+    int column_count() const { return wallpaper_column_count(hooks_.config(), monitor_, animated_); }
     const std::vector<std::string> &files() const { return files_; }
 
     std::function<void()> on_close_requested;
@@ -73,6 +76,7 @@ class WallpaperSelectModel {
 
     WallpaperSelectHooks hooks_;
     bool animated_wallpaper_;
+    bool animated_ = false;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     AnimationManager animations_;
     std::vector<WallpaperCard> cards_;

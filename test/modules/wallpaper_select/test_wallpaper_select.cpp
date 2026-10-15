@@ -167,12 +167,27 @@ void check_clicks(astralia::PollReactor &reactor) {
 void check_availability() {
     Env plain;
     test::check(plain.model.available(), "the selector is available");
-    Env animated(true);
-    animated.config.wallpaper_animated_enabled = true;
-    test::check(!animated.model.available(), "the selector waits while an animated wallpaper plays");
     Env x11;
     x11.config.wallpaper_animated_enabled = true;
     test::check(x11.model.available(), "a backend without animated wallpapers ignores the setting");
+}
+
+void check_animated(astralia::PollReactor &reactor) {
+    Folder folder;
+    std::ofstream(folder.root / "y.mp4").put('x');
+    std::ofstream(folder.root / "x.webm").put('x');
+    Env env(true);
+    env.config.wallpaper_animated_enabled = true;
+    env.config.wallpaper_animated_dir = folder.root.string();
+    env.config.wallpaper_animated_columns["DP-1"] = {"", folder.file("y.mp4")};
+    env.config.wallpaper_animated_column_counts["DP-1"] = 2;
+    env.model.open("DP-1", 1);
+    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }), "the animated scan finishes");
+    test::check(env.model.animated() && env.model.column_count() == 2, "the animated column count is used");
+    test::check(env.model.files().size() == 2 && env.model.files()[0] == folder.file("y.mp4") && env.model.files()[1] == folder.file("x.webm"), "only videos are listed, starting from the current one");
+    env.model.step(1);
+    env.key(KeyKind::Enter);
+    test::check(astralia::wallpaper_column_override(env.config, "DP-1", 1, true) == folder.file("x.webm") && env.config.wallpaper_columns.empty(), "applying sets the animated column and leaves the static ones alone");
 }
 
 void check_view(astralia::PollReactor &reactor) {
@@ -182,7 +197,7 @@ void check_view(astralia::PollReactor &reactor) {
     opened(reactor, env, folder);
     test::RecordingCanvas canvas;
     astralia::paint_wallpaper_select(canvas, env.model, 1920.0f, 1080.0f);
-    test::check(canvas.count(Kind::begin_group) == 3, "the current wallpaper and its neighbours are drawn");
+    test::check(canvas.count(Kind::begin_group) == 4, "the current wallpaper and its neighbours are drawn inside the column clip");
     float centre_w = 1920.0f * cfg::card_scale;
     bool shrunk = false;
     for (const test::Op &op : canvas.ops) {
@@ -210,5 +225,6 @@ void check_wallpaper_select() {
     check_apply(reactor);
     check_clicks(reactor);
     check_availability();
+    check_animated(reactor);
     check_view(reactor);
 }

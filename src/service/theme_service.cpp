@@ -24,9 +24,24 @@ bool seed_differs(const Seed &a, const Seed &b) {
     return std::fabs(a.hue - b.hue) > same_hue_epsilon;
 }
 
-std::optional<Extraction> extract_from_file(const std::string &path) {
+std::optional<Extraction> extract_from_video(const std::string &path, const ThemeService::VideoFrameDecoder &decoder) {
+    int w = 0;
+    int h = 0;
+    std::unique_ptr<unsigned char[]> data(decoder ? decoder(path, w, h) : nullptr);
+    if (!data) {
+        log::info("theme: could not decode a frame of {}", path);
+        return std::nullopt;
+    }
+    Extraction extraction = extract_seeds(data.get(), w, h, false);
+    return extraction.found ? std::optional<Extraction>(extraction) : std::nullopt;
+}
+
+std::optional<Extraction> extract_from_file(const std::string &path, const ThemeService::VideoFrameDecoder &decoder) {
     if (path.empty()) {
         return std::nullopt;
+    }
+    if (wallpaper_is_video(path)) {
+        return extract_from_video(path, decoder);
     }
     auto pixels = decode_pixels(path, [](int w, int h) { return static_cast<double>(sample_side) / std::max(1, std::max(w, h)); });
     if (!pixels) {
@@ -41,16 +56,27 @@ std::optional<Extraction> extract_from_file(const std::string &path) {
     return extraction;
 }
 
-std::optional<Extraction> resolve_theme(const std::string &path) {
-    if (std::optional<Extraction> extraction = extract_from_file(path)) {
+std::optional<Extraction> resolve_theme(const std::string &path, const ThemeService::VideoFrameDecoder &decoder) {
+    if (std::optional<Extraction> extraction = extract_from_file(path, decoder)) {
         return extraction;
     }
-    return extract_from_file(default_wallpaper_path());
+    return extract_from_file(default_wallpaper_path(), decoder);
 }
 
 } // namespace
 
 std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_name) {
+    if (cfg.wallpaper_animated_enabled) {
+        if (!monitor_name.empty()) {
+            return wallpaper_column_override(cfg, monitor_name, 0, true);
+        }
+        for (const auto &[name, columns] : cfg.wallpaper_animated_columns) {
+            if (!columns.empty() && !columns.front().empty()) {
+                return columns.front();
+            }
+        }
+        return "";
+    }
     if (!monitor_name.empty()) {
         return wallpaper_image_for(cfg, monitor_name);
     }
@@ -91,9 +117,6 @@ bool theme_extraction_differs(const std::optional<Extraction> &a, const Extracti
 ThemeService::ThemeService() : life_(std::make_shared<int>(0)) {}
 
 void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
-    if (cfg.wallpaper_animated_enabled) {
-        return;
-    }
     ThemeSource source = theme_source(cfg, monitor_name);
     if (has_source_ && source == source_) {
         return;
@@ -103,14 +126,14 @@ void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
     source_ = source;
     uint64_t gen = ++generation_;
     if (first) {
-        if (std::optional<Extraction> extraction = resolve_theme(source.path)) {
+        if (std::optional<Extraction> extraction = resolve_theme(source.path, decode_video_frame)) {
             apply(*extraction);
         }
         return;
     }
     std::weak_ptr<int> life = life_;
-    std::thread([this, path = source.path, gen, life] {
-        std::optional<Extraction> extraction = resolve_theme(path);
+    std::thread([this, path = source.path, decoder = decode_video_frame, gen, life] {
+        std::optional<Extraction> extraction = resolve_theme(path, decoder);
         DeferredCall::call_later([this, extraction, gen, life] {
             auto keep = life.lock();
             if (!keep || gen != generation_ || !extraction) {
