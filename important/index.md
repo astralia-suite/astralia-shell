@@ -192,8 +192,8 @@
 - `wallpaper/view.{h,cpp}`: Paints the desktop menu over the canvas at a given origin.
 - `wallpaper/wayland/`: Per-output background surface; a right-click toggles the menu drawn on that surface and entries run through `WaylandState` hooks.
 - `wallpaper/x11/`: Root pixmap painter, plus one bottom `InputOnly` desktop window per output that catches the right-click and opens the menu window.
-- `wallpaper_select/model.{h,cpp}`: Wallpaper folder listing, selection, wheel accumulation, zoom and step tweens, card hit tests and apply to one output column.
-- `wallpaper_select/view.{h,cpp}`: Paints the current wallpaper zoomed out to a card, its neighbours, the file label and the card hit boxes.
+- `wallpaper_select/model.{h,cpp}`: Image or video listing, selection, wheel accumulation, zoom and step tweens, card hit tests and apply to one output column.
+- `wallpaper_select/view.{h,cpp}`: Paints the current wallpaper as a card with neighbours, label and hit boxes, clipped to its column.
 - `wallpaper_select/wayland/`: Full-output overlay with exclusive keyboard, retargeted to the output it opens on.
 - `wallpaper_select/x11/`: Override-redirect window with keyboard focus, painted through cairo.
 
@@ -211,7 +211,7 @@
 
 - `settings_service.{h,cpp}`: The unified `Config`, its JSON load and save, per-output override accessors and hot reload.
 - `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output from `Config`, and lists image or video files in a folder.
-- `theme_service.{h,cpp}`: Follows the wallpaper: the first sync decodes at once, later ones off-thread; an unusable wallpaper falls back to the default wallpaper asset.
+- `theme_service.{h,cpp}`: Themes from the wallpaper or the first animated frame, off-thread after the first sync, else the default asset.
 - `battery_service.{h,cpp}`: UPower display-device status, device list and `on_battery`, read asynchronously.
 - `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds and `rfkill` control.
 - `network_service.{h,cpp}`: NetworkManager status, `nmcli` scans while watched, ethernet state and connectivity checks.

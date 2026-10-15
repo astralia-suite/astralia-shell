@@ -1,4 +1,4 @@
-#include <algorithm>
+g#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <string>
@@ -71,7 +71,6 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     model.begin_frame();
     float zoom = std::clamp(model.zoom(), 0.0f, 1.0f);
     canvas.set_opacity(1.0f);
-    // Confine the picker to the targeted column of the display.
     float columns = static_cast<float>(model.column_count());
     float x0 = std::floor(width * static_cast<float>(model.column()) / columns);
     float x1 = std::floor(width * static_cast<float>(model.column() + 1) / columns);
