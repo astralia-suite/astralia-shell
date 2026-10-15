@@ -35,6 +35,15 @@ void check_theme() {
     }
     check(contrast_ok, "text contrast reaches 4.5 on paper, surfaces and accents for every seed hue");
 
+    Theme muted = theme_from_seed({{200.0f, 0.05f, 0.7f}, std::nullopt, true});
+    Theme candy = theme_from_seed({{200.0f, 0.16f, 0.7f}, std::nullopt, true});
+    check(oklch_from_color(candy.accent).C > oklch_from_color(muted.accent).C + 0.04f, "a vivid seed gives a more saturated accent than a muted one");
+    bool ends_ok = true;
+    for (const Theme *e : {&muted, &candy}) {
+        ends_ok = ends_ok && contrast_ratio(e->text, e->accent) >= 4.5f && contrast_ratio(e->text, e->surface_alt) >= 4.5f && contrast_ratio(e->text_muted, e->paper) >= 4.5f;
+    }
+    check(ends_ok, "contrast holds at the muted and vivid ends");
+
     Theme paired = theme_from_seed({{200.0f, 0.1f, 0.7f}, Seed{320.0f, 0.1f, 0.7f}, true});
     Theme rotated = theme_from_seed({{200.0f, 0.1f, 0.7f}, std::nullopt, true});
     check(hue_distance(oklch_from_color(paired.accent_alt).h, 320.0f) < 6.0f, "the secondary seed drives accent_alt");

@@ -15,6 +15,7 @@ constexpr float alpha_floor = 0.5f;
 constexpr float grey_chroma = 0.04f;
 constexpr float vivid_chroma = 0.12f;
 constexpr float secondary_hue_gap = 40.0f;
+constexpr float secondary_hue_near = 90.0f;
 constexpr float merge_distance = 1e-4f;
 
 float chroma_weight(float chroma) {
@@ -172,10 +173,13 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
     std::stable_sort(ranked.begin(), ranked.end(), [](const Scored &a, const Scored &b) { return a.score > b.score; });
 
     Extraction result{ranked[0].seed, std::nullopt, true};
-    for (size_t i = 1; i < ranked.size(); ++i) {
-        if (hue_distance(ranked[i].seed.hue, result.primary.hue) >= secondary_hue_gap) {
-            result.secondary = ranked[i].seed;
-            break;
+    // Prefer a neighbouring hue so the accent stays harmonious, else any distinct one.
+    for (float limit : {secondary_hue_near, 360.0f}) {
+        for (size_t i = 1; i < ranked.size() && !result.secondary; ++i) {
+            float gap = hue_distance(ranked[i].seed.hue, result.primary.hue);
+            if (gap >= secondary_hue_gap && gap <= limit) {
+                result.secondary = ranked[i].seed;
+            }
         }
     }
     return result;

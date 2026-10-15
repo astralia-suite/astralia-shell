@@ -57,6 +57,19 @@ void check_palette_extract() {
     check(b.found && hue_distance(b.primary.hue, hue_of("#2060E0")) < 3.0f, "the larger of two colours wins");
     check(b.secondary.has_value() && hue_distance(b.secondary->hue, hue_of("#E0A020")) < 3.0f, "the smaller colour becomes the secondary");
 
+    Image trio(300, 100, color("#2060E0"));
+    for (int y = 0; y < trio.height; ++y) {
+        for (int x = 0; x < 60; ++x) {
+            trio.set(x, y, color("#E0A020"));
+        }
+        for (int x = 60; x < 120; ++x) {
+            trio.set(x, y, color("#A040E0"));
+        }
+    }
+    Extraction t3 = extract_seeds(trio.data.data(), trio.width, trio.height, false);
+    float gap = t3.secondary ? hue_distance(t3.secondary->hue, t3.primary.hue) : 0.0f;
+    check(t3.secondary.has_value() && gap >= 40.0f && gap <= 90.0f, "the secondary prefers a neighbouring hue");
+
     Image grey(100, 100, color("#808080"));
     for (int y = 0; y < 10; ++y) {
         for (int x = 0; x < 10; ++x) {

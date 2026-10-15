@@ -18,15 +18,6 @@ namespace cfg = overview_config;
 constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
 constexpr ui::TextStyle number_style{ui::FontFamily::text, cfg::number_px};
 
-int centered_icon_size(const ui::Box &rect) {
-    float wanted = std::min(rect.w, rect.h) * cfg::icon_to_tile_ratio;
-    if (wanted < static_cast<float>(cfg::icon_min_size)) {
-        return 0;
-    }
-    int size = static_cast<int>(wanted) / cfg::icon_size_step * cfg::icon_size_step;
-    return std::clamp(size, cfg::icon_min_size, cfg::icon_max_size);
-}
-
 void paint_cell(ui::Canvas &canvas, const OverviewModel &model, const OverviewCell &cell, float scale) {
     bool hovered = model.dragging() && model.drag_target() == cell.workspace;
     canvas.rounded(cell.rect, cfg::screen_rounding * scale, hovered ? palette::accent_container : palette::surface, cfg::workspace_border_width, hovered ? palette::ink : palette::text_muted);
@@ -48,18 +39,12 @@ void paint_tile(ui::Canvas &canvas, OverviewModel &model, const OverviewTile &ti
     if (path.empty()) {
         return;
     }
-    if (live) {
-        float size = std::round(std::min(rect.w, rect.h) * cfg::corner_icon_ratio);
-        if (size < 1.0f) {
-            return;
-        }
-        ui::ImageId icon = canvas.image(path, static_cast<int>(size));
-        canvas.draw_image(icon, {rect.x + rect.w - size - cfg::corner_icon_inset, rect.y + rect.h - size - cfg::corner_icon_inset, size, size}, palette::white);
-    } else if (int size = centered_icon_size(rect); size > 0) {
-        ui::ImageId icon = canvas.image(path, size);
-        ui::TextSize actual = canvas.image_size(icon);
-        canvas.draw_image(icon, {std::round(rect.x + (rect.w - actual.w) / 2.0f), std::round(rect.y + (rect.h - actual.h) / 2.0f), actual.w, actual.h}, palette::white);
+    float size = std::round(std::min(rect.w, rect.h) * cfg::corner_icon_ratio);
+    if (size < 1.0f) {
+        return;
     }
+    ui::ImageId icon = canvas.image(path, static_cast<int>(size));
+    canvas.draw_image(icon, {rect.x + rect.w - size - cfg::corner_icon_inset, rect.y + rect.h - size - cfg::corner_icon_inset, size, size}, palette::white);
 }
 
 } // namespace
@@ -89,7 +74,7 @@ void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTile
         paint_tile(canvas, model, tile, art, scale);
     }
     if (const ui::Box *indicator = model.indicator()) {
-        canvas.rounded(*indicator, cfg::screen_rounding * scale, transparent, cfg::indicator_border_width, palette::lavender);
+        canvas.rounded(*indicator, cfg::screen_rounding * scale, transparent, cfg::indicator_border_width, palette::ink);
     }
     canvas.set_opacity(1.0f);
 }

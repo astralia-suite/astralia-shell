@@ -109,7 +109,7 @@ void BarModel::refresh(Clock::time_point now) {
         if (portal) {
             glyph = icon::lock;
             label = "Sign in";
-        } else if (net.ethernet_connected()) {
+        } else if (net.status().kind == NetworkKind::ethernet || net.ethernet_connected()) {
             glyph = icon::router;
             label = "Ethernet";
         } else if (net.status().kind == NetworkKind::wifi) {

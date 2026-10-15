@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 
 #include "render/oklab.h"
@@ -13,6 +14,11 @@ constexpr float warn_hue = 75.0f;
 
 float byte_alpha(int value) { return static_cast<float>(value) / 255.0f; }
 
+constexpr float dusty_chroma = 0.04f;
+constexpr float candy_chroma = 0.16f;
+
+float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
 float wrap_hue(float hue) {
     float h = std::fmod(hue, 360.0f);
     return h < 0.0f ? h + 360.0f : h;
@@ -24,29 +30,32 @@ Theme theme_from_seed(const Extraction &extraction) {
     float hue = extraction.primary.hue;
     float alt_hue = extraction.secondary ? extraction.secondary->hue : wrap_hue(hue + alt_hue_offset);
 
+    float vivid = std::clamp((extraction.primary.chroma - dusty_chroma) / (candy_chroma - dusty_chroma), 0.0f, 1.0f);
+    auto c = [vivid](float dusty, float candy) { return lerp(dusty, candy, vivid); };
+
     Theme t{};
     t.scheme = Scheme::light;
 
-    t.ink = color_from_oklch({0.30f, 0.080f, hue});
-    t.paper = color_from_oklch({0.965f, 0.035f, hue});
-    t.surface = color_from_oklch({0.935f, 0.050f, hue});
-    t.surface_alt = color_from_oklch({0.890f, 0.075f, hue});
+    t.ink = color_from_oklch({0.30f, c(0.080f, 0.130f), hue});
+    t.paper = color_from_oklch({0.920f, c(0.040f, 0.090f), hue});
+    t.surface = color_from_oklch({0.900f, c(0.050f, 0.100f), hue});
+    t.surface_alt = color_from_oklch({0.860f, c(0.065f, 0.120f), hue});
     t.shadow = color_from_oklch({0.22f, 0.065f, hue});
 
-    t.accent = color_from_oklch({0.80f, 0.110f, hue});
+    t.accent = color_from_oklch({0.80f, c(0.070f, 0.140f), hue});
     t.accent_alpha12 = with_alpha(t.accent, byte_alpha(0x1F));
     t.accent_alpha19 = with_alpha(t.accent, byte_alpha(0x30));
     t.accent_alpha25 = with_alpha(t.accent, byte_alpha(0x40));
-    t.accent_container = color_from_oklch({0.90f, 0.060f, hue});
+    t.accent_container = color_from_oklch({0.90f, c(0.040f, 0.080f), hue});
 
-    t.accent_alt = color_from_oklch({0.82f, 0.110f, alt_hue});
+    t.accent_alt = color_from_oklch({0.82f, c(0.070f, 0.140f), alt_hue});
     t.accent_alt_alpha50 = with_alpha(t.accent_alt, byte_alpha(0x80));
-    t.accent_alt_container = color_from_oklch({0.92f, 0.050f, alt_hue});
+    t.accent_alt_container = color_from_oklch({0.92f, c(0.035f, 0.070f), alt_hue});
 
     t.base = t.paper;
     t.overlay = with_alpha(t.paper, byte_alpha(0xEB));
 
-    t.lavender = color_from_oklch({0.55f, 0.100f, hue});
+    t.lavender = color_from_oklch({0.55f, c(0.070f, 0.120f), hue});
 
     t.field_bg = t.surface;
 
@@ -58,7 +67,7 @@ Theme theme_from_seed(const Extraction &extraction) {
     t.text_alpha15 = with_alpha(t.ink, byte_alpha(0x26));
     t.text_alpha20 = with_alpha(t.ink, byte_alpha(0x33));
     t.text_alpha65 = with_alpha(t.ink, byte_alpha(0xA6));
-    t.text_muted = color_from_oklch({0.45f, 0.070f, hue});
+    t.text_muted = color_from_oklch({0.42f, c(0.060f, 0.100f), hue});
     t.text_dim = with_alpha(t.text_muted, byte_alpha(0x99));
 
     t.electro = color_from_oklch({0.70f, 0.150f, hue});

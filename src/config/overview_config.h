@@ -19,7 +19,7 @@ inline constexpr float window_rounding = 18.0f;
 inline constexpr float background_border_width = 2.0f;
 inline constexpr float workspace_border_width = 2.0f;
 inline constexpr float window_border_width = 2.0f;
-inline constexpr float indicator_border_width = 2.0f;
+inline constexpr float indicator_border_width = 4.0f;
 
 // Workspace label
 inline constexpr int number_px = 40;
@@ -28,10 +28,6 @@ inline constexpr float number_fade = 0.8f;
 // Window tile
 inline constexpr float corner_icon_ratio = 0.2f;
 inline constexpr float corner_icon_inset = 4.0f;
-inline constexpr float icon_to_tile_ratio = 0.5f;
-inline constexpr int icon_min_size = 16;
-inline constexpr int icon_max_size = 48;
-inline constexpr int icon_size_step = 4;
 
 // Animation
 inline constexpr float anim_ms = 200.0f;
