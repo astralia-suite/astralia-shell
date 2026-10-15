@@ -82,11 +82,11 @@
 ## `src/render/`
 
 - `canvas.h`: The `Canvas` interface every view draws through: shapes, fillets, erase mode, text, images, groups, opacity and gauges.
-- `tokens.h`: `Color`, the mutable palette (empty until `theme_apply` runs), metrics and colour helpers shared by every backend.
+- `tokens.h`: `Color`, the mutable palette with the `pop_a`, `pop_b` and `pop_c` roles (empty until `theme_apply` runs), metrics and colour helpers shared by every backend.
 - `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
-- `palette_extract.{h,cpp}`: Downsamples an RGBA image, clusters it with k-means in OKLab and returns the seed hues.
-- `theme.{h,cpp}`: `Theme` roles derived from a seed hue in OKLCH and `theme_apply` onto the palette.
-- `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow (outline-coloured unless `shadow_color` is given), drawn over a canvas.
+- `palette_extract.{h,cpp}`: Downsamples an RGBA image, clusters it with k-means in OKLab and returns up to four seeds ranked by `sqrt(area) * chroma`.
+- `theme.{h,cpp}`: `Theme` roles derived from the seeds in OKLCH, with `pop_*` rotating the first seed when hues are missing, and `theme_apply` onto the palette.
+- `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow, and `selectable()`, the one idle, hover and selected control look.
 - `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical, for the overview, settings and bar panels.
 - `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade that every scroll opens and closes with.
 - `glyphs.h`: Volume and brightness glyph thresholds over the icon table.

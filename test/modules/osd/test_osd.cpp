@@ -95,10 +95,10 @@ void check_osd_view() {
     constexpr float shadow = astralia::metrics::shadow_offset;
     test::check(canvas.count(Kind::rounded) == 4, "shadow, card, track and fill");
     const test::Op &card = canvas.ops[2];
-    test::check(card.box.w == 300 - shadow && card.box.h == 50 - shadow && card.radius == (50 - shadow) / 2 && card.border_width > 0, "card geometry");
+    test::check(card.box.w == 300 - shadow && card.box.h == 50 - shadow && card.radius == astralia::metrics::radius_card && card.border_width > 0, "card geometry");
     const test::Op &track = canvas.ops[4];
     const test::Op &fill = canvas.ops[5];
-    test::check(track.box.h == 6 && std::fabs(fill.box.w - track.box.w / 2.0f) < 1e-3f, "fill is half the track at fifty percent");
+    test::check(track.box.h == 6 && std::fabs(fill.box.w - (track.box.w / 2.0f - astralia::metrics::border_thin)) < 1e-3f, "fill is half the track at fifty percent, inside the outline");
     test::check(track.box.x == 25 + 18 + 10, "track starts after the icon");
     const test::Op &label = canvas.ops.back();
     test::check(label.kind == Kind::text && label.text == "50%" && std::fabs(label.box.x + 27 - (300 - 25)) < 1e-3f, "label is right aligned");

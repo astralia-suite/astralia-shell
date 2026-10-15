@@ -26,6 +26,7 @@ class BluetoothPanel final : public PanelContent {
     explicit BluetoothPanel(BluetoothService &bluetooth);
 
     std::string_view title() const override { return "Bluetooth"; }
+    const Color &tint() const override { return palette::accent; }
     void opened() override;
     void closed() override;
     float content_height(ui::Canvas &canvas) override;

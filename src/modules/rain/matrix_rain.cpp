@@ -154,7 +154,7 @@ void MatrixRain::tick() {
             float y = offset_y_ + head * kMatrixRainCellHeight;
             bool bold = rain_random01() < kMatrixRainBoldChance;
             char32_t glyph = random_glyph();
-            draw_glyph_centered(cr, glyph, x, y, bold, palette::text);
+            draw_glyph_centered(cr, glyph, x, y, bold, palette::pop_b);
             col.last_glyph = glyph;
             col.last_head_drop = head;
             col.last_head_valid = true;

@@ -30,6 +30,7 @@ class VolumePanel final : public PanelContent {
     explicit VolumePanel(AudioService &audio);
 
     std::string_view title() const override { return "Volume"; }
+    const Color &tint() const override { return palette::pop_a; }
     void opened() override;
     void closed() override;
     float content_height(ui::Canvas &canvas) override;

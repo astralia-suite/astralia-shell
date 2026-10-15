@@ -157,11 +157,11 @@ void check_paint() {
     canvas.ops.clear();
     astralia::paint_notifications(canvas, view, layout);
     constexpr float shadow = astralia::metrics::shadow_offset;
-    test::check(canvas.count(Kind::rounded) == 3, "shadow, card and urgency dot");
+    test::check(canvas.count(Kind::rounded) == 5, "shadow, card, app tag with its shadow and urgency dot");
     test::check(canvas.count(Kind::text) == 4, "app, title, body and the close glyph");
     test::check(canvas.count(Kind::begin_group) == 0, "no countdown group on a static backend");
     test::check(canvas.ops[1].box.w == cfg::card_width - shadow && canvas.ops[1].box.h == layout.cards[0].height - shadow, "the card spans the stack width");
-    test::check(canvas.ops[2].color.r == astralia::palette::critical.r && canvas.ops[2].color.g == astralia::palette::critical.g && canvas.ops[1].color.r == astralia::palette::critical_container.r, "a critical card uses the critical colour");
+    test::check(canvas.ops[3].color.r == astralia::palette::critical.r && canvas.ops[3].color.g == astralia::palette::critical.g && canvas.ops[1].color.r == astralia::palette::critical_container.r, "a critical card uses the critical colour");
 }
 
 void check_paint_animated() {

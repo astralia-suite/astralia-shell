@@ -1,6 +1,7 @@
 #pragma once
 
 #include "render/canvas.h"
+#include "render/tokens.h"
 
 namespace astralia {
 
@@ -16,7 +17,7 @@ struct ScrollMetrics {
     float roller_w = 18.0f;
     float overhang = 10.0f;
     float cap_h = 8.0f;
-    float rounding = 6.0f;
+    float rounding = metrics::radius_card;
     float band = 4.0f;
     ScrollAxis axis = ScrollAxis::horizontal;
 };

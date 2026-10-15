@@ -60,10 +60,12 @@ void check_bar_style() {
     using astralia::bar_autohide_geometry;
     auto shown = bar_autohide_geometry(false, false, 40, 10, 0);
     test::check(shown.height == 40 && shown.margin_top == 10 && shown.exclusive_zone == 40, "autohide off keeps the bar shown");
-    auto overshot = bar_autohide_geometry(false, false, 40, 10, 0, 3);
-    test::check(overshot.height == 43 && overshot.exclusive_zone == 40, "shadow overshoot grows the surface only");
-    test::check(bar_style_spec(BarStyle::islands, true).shadow_overshoot() == 3 && bar_style_spec(BarStyle::okinami, true).shadow_overshoot() == 0, "only shadowed styles overshoot the bar");
-    auto hugged =bar_autohide_geometry(false, false, 40, 10, 30);
+    for (BarStyle pill : {BarStyle::islands, BarStyle::continuous}) {
+        const astralia::BarStyleSpec &spec = bar_style_spec(pill, true);
+        test::check(spec.shadow == astralia::metrics::shadow_offset && spec.shadow_dx == astralia::metrics::shadow_offset && spec.radius == astralia::metrics::radius_card, "the bar shadow and corners match every other component");
+    }
+    test::check(bar_style_spec(BarStyle::okinami, true).island_radius == astralia::metrics::radius_card && bar_style_spec(BarStyle::okinami, true).fillet_radius == astralia::metrics::radius_card && bar_style_spec(BarStyle::okinami, true).shadow == 0.0f, "okinami uses the card radius and no shadow");
+    auto hugged = bar_autohide_geometry(false, false, 40, 10, 30);
     test::check(hugged.height == 70 && hugged.exclusive_zone == 40, "hug radius grows the surface only");
     auto revealed = bar_autohide_geometry(true, false, 40, 10, 30);
     test::check(revealed.height == 80 && revealed.margin_top == 0 && revealed.exclusive_zone == 0, "revealed autohide reserves nothing");
@@ -73,7 +75,7 @@ void check_bar_style() {
     const astralia::BarStyleSpec &okinami = bar_style_spec(BarStyle::okinami, false);
     astralia::BarFrame frame = astralia::bar_frame(okinami, 300.0f, astralia::IslandSpan{500.0f, 700.0f}, 900.0f, 1000.0f);
     test::check(frame.islands.size() == 3 && frame.fillets.size() == 4, "three islands and four fillets");
-    test::check(frame.islands[0].outer_x == -16.0f && frame.islands[2].outer_x + frame.islands[2].outer_width == 1016.0f, "flush islands extend past the edges");
+    test::check(frame.islands[0].outer_x == -okinami.island_radius && frame.islands[2].outer_x + frame.islands[2].outer_width == 1000.0f + okinami.island_radius, "flush islands extend past the edges");
     test::check(frame.islands[1].inner_x == 500.0f + okinami.border_width, "inner edge is inset by the border");
     astralia::BarFrame none = astralia::bar_frame(okinami, std::nullopt, std::nullopt, std::nullopt, 400.0f);
     test::check(none.islands.empty() && none.fillets.empty(), "no groups, no islands");

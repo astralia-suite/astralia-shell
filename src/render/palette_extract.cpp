@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "render/oklab.h"
@@ -145,7 +146,7 @@ std::vector<Cluster> cluster(const std::vector<Oklab> &samples) {
 } // namespace
 
 Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premultiplied) {
-    Extraction none{{0.0f, 0.0f, 0.0f}, std::nullopt, false};
+    Extraction none{{}, false};
     if (rgba == nullptr || width <= 0 || height <= 0) {
         return none;
     }
@@ -162,7 +163,7 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
     float total = static_cast<float>(samples.size());
     for (const Cluster &c : cluster(samples)) {
         Oklch lch = oklch_from_oklab(c.center);
-        float score = c.population / total * chroma_weight(lch.C);
+        float score = std::sqrt(c.population / total) * chroma_weight(lch.C);
         if (c.population > 0 && score > 0.0f) {
             ranked.push_back({{lch.h, lch.C, lch.L}, score});
         }
@@ -172,14 +173,30 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
     }
     std::stable_sort(ranked.begin(), ranked.end(), [](const Scored &a, const Scored &b) { return a.score > b.score; });
 
-    Extraction result{ranked[0].seed, std::nullopt, true};
-    // Prefer a neighbouring hue so the accent stays harmonious, else any distinct one.
+    Extraction result{{ranked[0].seed}, true};
+    std::vector<bool> used(ranked.size(), false);
+    used[0] = true;
+    bool has_secondary = false;
     for (float limit : {secondary_hue_near, 360.0f}) {
-        for (size_t i = 1; i < ranked.size() && !result.secondary; ++i) {
-            float gap = hue_distance(ranked[i].seed.hue, result.primary.hue);
+        for (size_t i = 1; i < ranked.size() && !has_secondary; ++i) {
+            float gap = hue_distance(ranked[i].seed.hue, result.seeds[0].hue);
             if (gap >= secondary_hue_gap && gap <= limit) {
-                result.secondary = ranked[i].seed;
+                result.seeds.push_back(ranked[i].seed);
+                used[i] = true;
+                has_secondary = true;
             }
+        }
+    }
+    for (size_t i = 1; i < ranked.size() && result.seeds.size() < max_seeds; ++i) {
+        if (used[i]) {
+            continue;
+        }
+        bool distinct = true;
+        for (const Seed &chosen : result.seeds) {
+            distinct = distinct && hue_distance(ranked[i].seed.hue, chosen.hue) >= secondary_hue_gap;
+        }
+        if (distinct) {
+            result.seeds.push_back(ranked[i].seed);
         }
     }
     return result;

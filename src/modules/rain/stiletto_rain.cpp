@@ -149,7 +149,7 @@ void StilettoRain::tick() {
         float x = origin_x_ + i * kStilettoRainColumnSpacingPx;
         float head = sweeping_ ? sweep_drop_ : c.drop;
         if (head >= 0.0f)
-            draw_sprite_centered(cr, sprite, x, head, palette::text);
+            draw_sprite_centered(cr, sprite, x, head, palette::pop_b);
     }
 
     if (sweeping_) {

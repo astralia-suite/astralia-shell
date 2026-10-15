@@ -192,7 +192,7 @@ void NetworkPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
         }
         switch (row.kind) {
         case Kind::error: {
-            canvas.rounded(box, metrics::radius_md - 2.0f, palette::critical_alpha15);
+            canvas.rounded(box, metrics::radius_widget, palette::critical_alpha15);
             ui::TextSize glyph = canvas.measure(icon::alert_triangle, icon_style);
             float text_x = box.x + cfg::row_icon_gap;
             canvas.text(icon::alert_triangle, icon_style, text_x, box.y + (box.h - glyph.h) / 2.0f, palette::critical);
@@ -205,7 +205,7 @@ void NetworkPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
             break;
         }
         case Kind::ethernet:
-            canvas.rounded(box, metrics::radius_md - 2.0f, palette::accent_alpha19);
+            canvas.rounded(box, metrics::radius_widget, palette::accent_alpha19);
             panel_widgets::centered_text(canvas, "Ethernet", text_style, box, palette::text);
             break;
         case Kind::no_adapter:
@@ -279,7 +279,7 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
     float width = box.w - 2.0f * cfg::padding;
     float y = box.y + cfg::padding + cfg::dialog_spacer;
     ui::Box field{x, y, width, cfg::network_field_height};
-    canvas.rounded(field, cfg::dialog_button_radius, palette::text_alpha08, 1.0f, palette::text_alpha15);
+    canvas.rounded(field, metrics::radius_widget, palette::text_alpha08, 1.0f, palette::text_alpha15);
     constexpr float dot = 8.0f;
     constexpr float gap = 4.0f;
     float cy = field.y + field.h / 2.0f;
@@ -313,7 +313,7 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
     bool ready = count >= static_cast<size_t>(cfg::network_password_min);
     float button_w = canvas.measure("Connect", text_style).w + cfg::dialog_button_pad;
     ui::Box button{x + (width - button_w) / 2.0f, y, button_w, cfg::dialog_button};
-    canvas.rounded(button, cfg::dialog_button_radius, with_alpha(palette::accent, ready ? 1.0f : 0.4f));
+    canvas.rounded(button, metrics::radius_widget, with_alpha(palette::accent, ready ? 1.0f : 0.4f));
     panel_widgets::centered_text(canvas, "Connect", text_style, button, palette::text);
     if (ready) {
         paint.region(button, confirm);

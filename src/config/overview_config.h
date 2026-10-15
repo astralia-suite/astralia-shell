@@ -14,8 +14,6 @@ inline constexpr float margin = 10.0f;
 inline constexpr float global_block_spacing = 10.0f;
 
 // Rounding and borders
-inline constexpr float screen_rounding = 23.0f;
-inline constexpr float window_rounding = 18.0f;
 inline constexpr float background_border_width = 2.0f;
 inline constexpr float workspace_border_width = 2.0f;
 inline constexpr float window_border_width = 2.0f;

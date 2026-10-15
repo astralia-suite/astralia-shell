@@ -13,6 +13,7 @@ class MediaPanel final : public PanelContent {
     explicit MediaPanel(MediaService &media);
 
     std::string_view title() const override { return "Media"; }
+    const Color &tint() const override { return palette::pop_a; }
     PanelAnchor anchor() const override { return PanelAnchor::center; }
     void opened() override { media_.poll_position(); }
     std::chrono::milliseconds refresh_interval() const override { return std::chrono::milliseconds(panel_config::media_poll_ms); }

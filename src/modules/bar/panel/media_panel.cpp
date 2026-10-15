@@ -40,7 +40,7 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     const MediaStatus &status = media_.status();
     float thumb = cfg::media_thumb;
     ui::Box art{view.x, view.y, thumb, thumb};
-    canvas.rounded(art, cfg::media_thumb_radius, palette::surface, metrics::border_thin, palette::ink);
+    canvas.rounded(art, metrics::radius_widget, palette::surface, metrics::border_thin, palette::ink);
     ui::ImageId image = status.has_player && media_is_local_art_url(status.track.art_url) ? canvas.image(status.track.art_url.substr(7), static_cast<int>(thumb)) : ui::no_image;
     if (image != ui::no_image) {
         ui::TextSize size = canvas.image_size(image);

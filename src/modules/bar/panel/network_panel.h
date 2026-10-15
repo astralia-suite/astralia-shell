@@ -44,6 +44,7 @@ class NetworkPanel final : public PanelContent {
     explicit NetworkPanel(NetworkService &network);
 
     std::string_view title() const override { return "Network"; }
+    const Color &tint() const override { return palette::pop_c; }
     void opened() override;
     void closed() override;
     float content_height(ui::Canvas &canvas) override;

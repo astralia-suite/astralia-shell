@@ -11,6 +11,7 @@ class BrightnessPanel final : public PanelContent {
     explicit BrightnessPanel(BrightnessService &brightness);
 
     std::string_view title() const override { return "Brightness"; }
+    const Color &tint() const override { return palette::pop_b; }
     void opened() override;
     float content_height(ui::Canvas &) override { return panel_config::brightness_row; }
     void paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) override;

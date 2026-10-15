@@ -26,6 +26,7 @@ int clock_panel_iso_week(int year, int month, int day);
 class ClockPanel final : public PanelContent {
   public:
     std::string_view title() const override { return "Clock"; }
+    const Color &tint() const override { return palette::pop_a; }
     PanelAnchor anchor() const override { return PanelAnchor::center; }
     bool has_header() const override { return false; }
     float width() const override { return panel_config::clock_width; }

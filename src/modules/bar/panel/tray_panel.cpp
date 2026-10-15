@@ -120,7 +120,7 @@ void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, Pan
         if (cell.y + cell.h < view.y || cell.y > view.y + view.h) {
             continue;
         }
-        canvas.rounded(cell, metrics::radius_md, palette::text_alpha06);
+        canvas.rounded(cell, metrics::radius_widget, palette::text_alpha06);
         std::string path = tray_item_icon_path(items[i]);
         ui::ImageId image = path.empty() ? ui::no_image : canvas.image(path, static_cast<int>(cfg::tray_icon));
         ui::Box target{cell.x + (cell.w - cfg::tray_icon) / 2.0f, cell.y + (cell.h - cfg::tray_icon) / 2.0f, cfg::tray_icon, cfg::tray_icon};
@@ -144,7 +144,7 @@ float TrayPanel::popup_height() const {
 
 void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &paint) {
     std::vector<TrayMenuRow> rows = tray_menu_rows(level(), !path_.empty());
-    sticker(canvas, box, cfg::tray_menu_radius, palette::paper);
+    sticker(canvas, box, metrics::radius_card, palette::paper);
     float x = box.x + cfg::tray_menu_pad;
     float width = box.w - 2.0f * cfg::tray_menu_pad;
     float y = box.y + cfg::tray_menu_pad;
@@ -160,7 +160,7 @@ void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &
             break;
         case TrayMenuRow::Kind::back: {
             if (hover_id_ == back) {
-                canvas.rounded(r, metrics::radius_sm, palette::text_alpha08);
+                canvas.rounded(r, metrics::radius_widget, palette::text_alpha08);
             }
             panel_widgets::centered_text(canvas, icon::chevron_left, icon_style, {r.x, r.y, cfg::tray_menu_row, r.h}, palette::text);
             paint.region(r, back);
@@ -170,7 +170,7 @@ void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &
             const TrayMenuEntry &e = *row.entry;
             const Color &color = e.enabled ? palette::text : palette::text_dim;
             if (e.enabled && hover_id_ == entry && hover_a_ == e.id) {
-                canvas.rounded(r, metrics::radius_sm, palette::text_alpha08);
+                canvas.rounded(r, metrics::radius_widget, palette::text_alpha08);
             }
             float text_x = r.x + cfg::tray_menu_row_pad;
             if (e.checkbox) {

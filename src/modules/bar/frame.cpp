@@ -6,7 +6,7 @@ namespace astralia {
 
 void bar_frame_base(ui::Canvas &canvas, const BarStyleSpec &style, const BarFrame &frame, float width, float height) {
     if (style.continuous) {
-        sticker(canvas, {0.0f, 0.0f, width, height + static_cast<float>(style.shadow_overshoot())}, height * style.radius_ratio, style.bg, style.border, style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
+        sticker(canvas, {0.0f, 0.0f, width, height}, style.radius, style.bg, style.border, style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
         return;
     }
     if (!style.has_rail())

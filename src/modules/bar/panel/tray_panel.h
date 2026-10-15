@@ -27,6 +27,7 @@ class TrayPanel final : public PanelContent {
     explicit TrayPanel(TrayService &tray);
 
     std::string_view title() const override { return "Tray"; }
+    const Color &tint() const override { return palette::accent; }
     void closed() override;
     float content_height(ui::Canvas &canvas) override;
     void paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) override;

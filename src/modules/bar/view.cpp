@@ -20,7 +20,7 @@ constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
 void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box, const Color &fill) {
     if (style.has_pill_bg()) {
-        sticker(canvas, {box.x, box.y, box.w, box.h + static_cast<float>(style.shadow_overshoot())}, box.h * style.radius_ratio, fill, style.border, style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
+        sticker(canvas, {box.x, box.y, box.w, box.h}, style.radius, fill, style.border, style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
     }
 }
 
@@ -40,7 +40,7 @@ void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView
     }
     canvas.end_group();
     if (view.alert) {
-        canvas.rounded(view.box, metrics::radius_md, palette::critical_alpha15);
+        canvas.rounded(view.box, metrics::radius_widget, palette::critical_alpha15);
     }
 }
 
@@ -52,10 +52,9 @@ void paint_workspaces(ui::Canvas &canvas, const BarModel &model) {
     const BarStyleSpec &style = model.style();
     capsule_background(canvas, style, layout.workspaces, style.bg);
     for (const BarWorkspace &ws : model.workspaces()) {
-        const Color &fill = ws.active ? palette::ink : ws.occupied ? palette::accent
-                                                                   : palette::paper;
-        const Color &outline = ws.occupied || ws.active ? palette::ink : palette::text_muted;
-        canvas.rounded(ws.box, ws.box.h / 2.0f, fill, metrics::border_thin, outline);
+        const Color &fill = ws.active ? palette::accent : ws.occupied ? palette::pop_b
+                                                                      : palette::paper;
+        canvas.rounded(ws.box, ws.box.h / 2.0f, fill, metrics::border_thin, palette::ink);
     }
     ui::TextSize glyph = canvas.measure(icon::overview, icon_style);
     float x = layout.overview.x + cfg::workspace_overview_gap / 2.0f;

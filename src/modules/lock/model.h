@@ -52,8 +52,6 @@ class LockModel {
     LockHits hits_;
 };
 
-// One output's entrance, exit and typing animation. The defaults are the settled card,
-// which is all X11 ever shows.
 struct LockMotion {
     AnimationManager animations;
     float panel_scale = 1.0f;

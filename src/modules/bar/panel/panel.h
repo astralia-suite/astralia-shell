@@ -45,6 +45,7 @@ class PanelContent {
     virtual ~PanelContent() = default;
 
     virtual std::string_view title() const = 0;
+    virtual const Color &tint() const { return palette::accent; }
     virtual PanelAnchor anchor() const { return PanelAnchor::right; }
     virtual bool has_header() const { return true; }
     virtual float width() const { return panel_config::width; }

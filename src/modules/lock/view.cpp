@@ -67,15 +67,18 @@ struct CardBody {
 };
 
 CardBody draw_card(ui::Canvas &canvas, const LockRect &col, const std::string &title) {
-    sticker(canvas, {col.x, col.y, col.w, col.h}, kLockSidePanelRadius, palette::surface);
+    sticker(canvas, {col.x, col.y, col.w, col.h}, metrics::radius_card, palette::surface);
     float x = col.x + kLockSidePanelPad;
     float y = col.y + kLockSidePanelPad;
     float w = col.w - 2.0f * kLockSidePanelPad;
     if (title.empty()) {
         return {x, y, w};
     }
-    ui::TextSize size = put(canvas, title, text_style(static_cast<int>(kLockFontNormal), true), x, y, palette::text);
-    return {x, y + size.h + kLockCardHeaderGap, w};
+    ui::TextStyle style = text_style(static_cast<int>(kLockFontNormal), true);
+    ui::TextSize measured = canvas.measure(title, style);
+    sticker(canvas, {x - kLockCardTagPad, y - kLockCardTagPad / 2.0f, measured.w + 2.0f * kLockCardTagPad + metrics::shadow_widget, measured.h + kLockCardTagPad + metrics::shadow_widget}, metrics::radius_widget, palette::pop_a, palette::ink, metrics::border_thin, metrics::shadow_widget);
+    ui::TextSize size = put(canvas, title, style, x, y, palette::text);
+    return {x, y + size.h + kLockCardHeaderGap + kLockCardTagPad, w};
 }
 
 void draw_pill(Pane &pane, float x, float y, float w) {
@@ -83,7 +86,7 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     const LockModel &model = pane.model;
     float h = kLockInputHeight;
     float r = h * 0.5f;
-    canvas.rounded({x, y, w, h}, r, palette::surface, kLockBgBorderWidth, palette::ink);
+    canvas.rounded({x, y, w, h}, metrics::radius_card, palette::pop_b, kLockBgBorderWidth, palette::ink);
 
     float cy = y + h * 0.5f;
     ui::TextStyle icon = icon_style(static_cast<int>(kLockPillIconSize));
@@ -94,7 +97,7 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     float btn = kLockPillButtonSize;
     float btn_x = x + w - btn - (h - btn) * 0.5f;
     float btn_y = cy - btn * 0.5f;
-    canvas.rounded({btn_x, btn_y, btn, btn}, btn * 0.5f, has_text ? palette::accent : palette::surface_alt);
+    selectable(canvas, {btn_x, btn_y, btn, btn}, metrics::radius_widget, has_text, false, palette::surface_alt);
     ui::TextSize arrow = canvas.measure(icon::arrow_right, icon);
     canvas.text(icon::arrow_right, icon, std::round(btn_x + (btn - arrow.w) * 0.5f), std::round(btn_y + (btn - arrow.h) * 0.5f), has_text ? palette::text : palette::text_muted);
     pane.model.hits().pill_button = absolute(pane, {btn_x, btn_y, btn, btn});
@@ -220,7 +223,7 @@ void draw_fetch(Pane &pane, const LockRect &col) {
         int in_row = std::min(per_row, total - drawn);
         float bx = x;
         for (int i = 0; i < in_row; ++i) {
-            canvas.rounded({bx, y, kLockFetchColorBox, kLockFetchColorBox}, kLockResTileRadius * 0.4f, *terminal[drawn]);
+            canvas.rounded({bx, y, kLockFetchColorBox, kLockFetchColorBox}, metrics::radius_widget, *terminal[drawn]);
             bx += kLockFetchColorBox + kLockFetchColorGap;
             ++drawn;
         }
@@ -256,7 +259,7 @@ void draw_media(Pane &pane, const LockRect &col) {
     float ay = body.y + std::max(0.0f, (avail_h - block_h) * 0.5f);
     ui::Box art_box{cx - art * 0.5f, ay, art, art};
 
-    canvas.rounded(art_box, kLockResTileRadius, palette::field_bg);
+    canvas.rounded(art_box, metrics::radius_widget, palette::field_bg);
     ui::ImageId cover = ui::no_image;
     if (media.has_player && media_is_local_art_url(media.track.art_url)) {
         cover = canvas.thumbnail(media.track.art_url.substr(7), static_cast<int>(art));
@@ -405,7 +408,7 @@ void draw_notifications(Pane &pane, const LockRect &col) {
         ui::TextSize body_size = record.body.empty() ? ui::TextSize{} : canvas.measure(record.body, body_style);
         float ch = 2.0f * pad + app_size.h + (record.summary.empty() ? 0.0f : kLockMediaTextGap + summary_size.h) + (record.body.empty() ? 0.0f : kLockMediaTextGap + body_size.h);
 
-        canvas.rounded({0.0f, cy, cw, ch}, kLockNotifCardRadius, palette::field_bg);
+        canvas.rounded({0.0f, cy, cw, ch}, metrics::radius_card, palette::field_bg);
         float iy = cy + pad;
         canvas.text(app, app_style, pad, std::round(iy), palette::lavender);
         iy += app_size.h + kLockMediaTextGap;
@@ -485,8 +488,8 @@ void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const 
     py = std::round(py);
 
     model.hits() = {};
-    canvas.begin_group({px, py, pw, ph}, {motion.panel_scale, true, kLockCardRadius, motion.panel_rotation});
-    sticker(canvas, {0.0f, 0.0f, pw, ph}, kLockCardRadius, palette::paper);
+    canvas.begin_group({px, py, pw, ph}, {motion.panel_scale, true, metrics::radius_card, motion.panel_rotation});
+    sticker(canvas, {0.0f, 0.0f, pw, ph}, metrics::radius_card, palette::paper);
 
     if (motion.icon_alpha > 0.001f) {
         const char *glyph = motion.unlocking ? icon::lock_open : icon::lock;

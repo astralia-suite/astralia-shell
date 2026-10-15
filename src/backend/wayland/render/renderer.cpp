@@ -11,7 +11,6 @@
 
 namespace {
 
-// Logical pixels added around a shape that is drawn with an analytic edge, so the outer half of the ramp is not clipped by the quad.
 constexpr float kEdgePad = 2.0f;
 
 } // namespace

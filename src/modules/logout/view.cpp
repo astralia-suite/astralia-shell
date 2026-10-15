@@ -28,7 +28,7 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
     constexpr float size = cfg::button_size;
 
     if (model.scrim() > 0.0f) {
-        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(Color{0.0f, 0.0f, 0.0f, 1.0f}, model.scrim()));
+        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(palette::shadow, model.scrim()));
     }
 
     for (int i = 0; i < LogoutModel::count; ++i) {
@@ -49,7 +49,7 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
         float w = size * scale;
 
         Color fill = with_alpha(lerp_color(palette::paper, palette::accent_alt, model.highlight_border()[idx]), visible);
-        sticker(canvas, {bx - w / 2.0f, by - w / 2.0f, w, w}, static_cast<float>(cfg::button_corner_radius) * scale, fill, with_alpha(palette::ink, visible), metrics::border_thick, metrics::shadow_offset * scale);
+        sticker(canvas, {bx - w / 2.0f, by - w / 2.0f, w, w}, metrics::radius_card * scale, fill, with_alpha(palette::ink, visible), metrics::border_thick, metrics::shadow_offset * scale);
 
         const char *glyph = cfg::actions[idx].glyph;
         ui::TextSize extent = canvas.measure(glyph, glyph_style);

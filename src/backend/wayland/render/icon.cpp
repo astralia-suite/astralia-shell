@@ -7,7 +7,6 @@
 
 namespace {
 
-// Renders one glyph cropped to its ink box at device pixels, keeping its fractional offset.
 RasterizedText rasterize_glyph(const char *family, const cairo_font_options_t *options, const std::string &codepoint_utf8, int32_t scale, int px) {
     RasterizedText result;
     astralia::register_app_fonts();
@@ -15,7 +14,6 @@ RasterizedText rasterize_glyph(const char *family, const cairo_font_options_t *o
 
     PangoFontDescription *desc = pango_font_description_from_string(family);
     pango_font_description_set_absolute_size(desc, static_cast<double>(px) * scale * PANGO_SCALE);
-    // No fallback: a codepoint the font lacks would otherwise draw from another font.
     PangoAttrList *attrs = pango_attr_list_new();
     pango_attr_list_insert(attrs, pango_attr_fallback_new(FALSE));
 

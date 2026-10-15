@@ -77,10 +77,15 @@ ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
 }
 
 bool theme_extraction_differs(const std::optional<Extraction> &a, const Extraction &b) {
-    if (!a || seed_differs(a->primary, b.primary) || a->secondary.has_value() != b.secondary.has_value()) {
+    if (!a || a->seeds.size() != b.seeds.size()) {
         return true;
     }
-    return a->secondary && seed_differs(*a->secondary, *b.secondary);
+    for (size_t i = 0; i < b.seeds.size(); ++i) {
+        if (seed_differs(a->seeds[i], b.seeds[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 ThemeService::ThemeService() : life_(std::make_shared<int>(0)) {}

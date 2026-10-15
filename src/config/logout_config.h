@@ -15,7 +15,6 @@ namespace logout_config {
 // Geometry
 inline constexpr int button_count = 8;
 inline constexpr double button_size = 110.0;
-inline constexpr double button_corner_radius = button_size / 5.0;
 inline constexpr double ring_radius = 300.0;
 inline constexpr double highlight_scale = 1.05;
 inline constexpr int logo_size = 250;

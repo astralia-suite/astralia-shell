@@ -52,8 +52,11 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - The palette has no literals and stays empty until `theme_apply`. The first `ThemeService::sync` decodes synchronously, before any module paints.
 - A bar style spec row is refreshed from the live palette in `bar_style_spec`. X11 bars call it again on theme change.
 - Draw cards, islands and chips through `sticker()`; its box includes the shadow. Layout and window size stay unchanged.
-- A `sticker()` shadow is drawn in `outline` unless `shadow_color` is passed. The bar passes `palette::shadow` through `BarStyleSpec::shadow_color`, so a bar pill has three tones: pastel `accent_container` fill, `ink` border and the darkest `shadow`. The shadow drops straight down: `BarStyleSpec::shadow` is the 6px vertical offset and `shadow_dx` is `0`. The face keeps the old height and the shadow overshoots the bar box by `shadow_overshoot()`, which only grows the surface (`bar_autohide_geometry`'s `overshoot`), never the exclusive zone. `okinami` has no shadow.
-- Fills under a `sticker()` are opaque. A translucent face shows the hard shadow through it.
+- A `sticker()` shadow is drawn in `outline` unless `shadow_color` is passed. The bar passes `palette::shadow` through `BarStyleSpec::shadow_color`, so a bar pill has three tones: pastel `accent_container` fill, `ink` border and the darkest `shadow`. The shadow offset is `metrics::shadow_offset` on both axes and the corners are `metrics::radius_card`, like every card. The sticker box includes its shadow, so the surface height is unchanged. `okinami` has no shadow.
+- Fills under a `sticker()` are opaque. A translucent face shows the hard shadow through it; composite alpha fills over `paper` first.
+- Rank wallpaper seeds by `sqrt(area) * chroma`. A linear area score let the pale majority hide the small vivid hair and petals.
+- Draw every selectable control with `selectable()`. One selected look, accent fill with the shadow collapsed, keeps lists, tabs, toggles and tiles consistent.
+- Corners come from `metrics::radius_card` and `radius_widget` only. Per-module radius constants drifted into six unrelated values.
 - Mid-tone `accent` fails contrast as text on `paper`. Use `lavender` for accent-coloured text and `text` for the rest.
 - Tint photos, app icons and gauges with `palette::white`. A themed tint recolours or dims the image; only monochrome masks take `text`.
 - The theme follows the first monitor's wallpaper through `wallpaper_image_for`. Resync on config, monitor name and output changes.

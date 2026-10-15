@@ -28,6 +28,7 @@ class BatteryPanel final : public PanelContent {
     explicit BatteryPanel(BatteryService &battery);
 
     std::string_view title() const override { return "Battery"; }
+    const Color &tint() const override { return palette::pop_b; }
     float content_height(ui::Canvas &canvas) override;
     void paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) override;
 

@@ -13,18 +13,15 @@ namespace cfg = panel_config;
 void slider(ui::Canvas &canvas, const ui::Box &box, float value, bool dimmed, bool focused, float track) {
     float track_y = box.y + (box.h - track) / 2.0f;
     float radius = track / 2.0f;
-    canvas.rounded({box.x, track_y, box.w, track}, radius, palette::text_alpha11);
+    float border = metrics::border_thin;
+    canvas.rounded({box.x, track_y, box.w, track}, radius, palette::surface_alt, border, palette::ink);
     float fill = box.w * std::clamp(value, 0.0f, 1.0f);
-    if (fill > 0.0f) {
-        canvas.rounded({box.x, track_y, fill, track}, radius, dimmed ? palette::text_muted : palette::accent);
+    if (fill > border) {
+        canvas.rounded({box.x + border, track_y + border, fill - border, track - 2.0f * border}, std::max(0.0f, radius - border), dimmed ? palette::text_muted : palette::pop_c);
     }
     float knob_x = std::clamp(fill - cfg::slider_knob / 2.0f, 0.0f, box.w - cfg::slider_knob);
     float knob_y = box.y + (box.h - cfg::slider_knob) / 2.0f;
-    canvas.rounded({box.x + knob_x, knob_y, cfg::slider_knob, cfg::slider_knob}, cfg::slider_knob / 2.0f, palette::text);
-    if (focused) {
-        float inner = cfg::slider_knob - 2.0f * cfg::slider_focus_ring;
-        canvas.rounded({box.x + knob_x + cfg::slider_focus_ring, knob_y + cfg::slider_focus_ring, inner, inner}, inner / 2.0f, palette::accent);
-    }
+    selectable(canvas, {box.x + knob_x, knob_y, cfg::slider_knob, cfg::slider_knob}, metrics::radius_widget, false, focused, palette::pop_b);
 }
 
 float slider_value(const ui::Box &box, double x) {
@@ -36,9 +33,10 @@ float slider_value(const ui::Box &box, double x) {
 
 void flat_bar(ui::Canvas &canvas, const ui::Box &box, float fraction, float min_fill, const Color &track, const Color &fill) {
     float radius = box.h / 2.0f;
-    canvas.rounded(box, radius, track);
+    float border = box.h >= 8.0f ? metrics::border_thin : 0.0f;
+    canvas.rounded(box, radius, track, border, palette::ink);
     float width = std::max(min_fill, box.w * std::clamp(fraction, 0.0f, 1.0f));
-    canvas.rounded({box.x, box.y, std::min(width, box.w), box.h}, radius, fill);
+    canvas.rounded({box.x + border, box.y + border, std::max(0.0f, std::min(width, box.w) - border), box.h - 2.0f * border}, std::max(0.0f, radius - border), fill);
 }
 
 void centered_text(ui::Canvas &canvas, std::string_view text, const ui::TextStyle &style, const ui::Box &box, const Color &color) {
@@ -58,22 +56,24 @@ float right_text(ui::Canvas &canvas, std::string_view text, const ui::TextStyle 
 }
 
 void toggle(ui::Canvas &canvas, const ui::Box &box, bool on) {
-    canvas.rounded(box, box.h / 2.0f, on ? palette::accent : palette::text_alpha11);
-    float knob = box.h - 4.0f;
-    float x = on ? box.x + box.w - 2.0f - knob : box.x + 2.0f;
-    canvas.rounded({x, box.y + 2.0f, knob, knob}, knob / 2.0f, palette::text);
+    selectable(canvas, box, metrics::radius_widget, on, false, palette::surface_alt);
+    float knob = box.h - 8.0f;
+    float x = on ? box.x + box.w - 4.0f - knob : box.x + 4.0f;
+    canvas.rounded({x, box.y + 4.0f, knob, knob}, std::min(metrics::radius_widget, knob / 2.0f), palette::text);
 }
 
 void icon_button(ui::Canvas &canvas, const ui::Box &box, const char *glyph, const Color &color) {
     constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
-    canvas.rounded(box, box.w / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
+    selectable(canvas, box, metrics::radius_widget, false, false, palette::accent_container);
     centered_text(canvas, glyph, icon_style, box, color);
 }
 
 void device_row(ui::Canvas &canvas, const ui::Box &box, const DeviceRow &row, PanelPaint &paint, int connect_id, int forget_id, int index) {
     constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
     constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
-    canvas.rounded(box, metrics::radius_md - 2.0f, row.background);
+    Color face = lerp_color(palette::paper, row.background, row.background.a);
+    face.a = 1.0f;
+    sticker(canvas, box, metrics::radius_widget, face, palette::ink, metrics::border_thin, metrics::shadow_widget);
     ui::TextSize glyph = canvas.measure(row.glyph, icon_style);
     canvas.text(row.glyph, icon_style, box.x + cfg::row_icon_gap, box.y + (box.h - glyph.h) / 2.0f, row.glyph_color);
 
@@ -120,7 +120,7 @@ void device_row(ui::Canvas &canvas, const ui::Box &box, const DeviceRow &row, Pa
 
 void dialog_top(ui::Canvas &canvas, const ui::Box &box, std::string_view label, PanelPaint &paint, int close_id) {
     constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
-    sticker(canvas, box, metrics::radius_md, palette::paper);
+    sticker(canvas, box, metrics::radius_card, palette::paper);
     size_t chars = static_cast<size_t>(cfg::dialog_label_chars);
     std::string shown = label.size() <= chars ? std::string(label) : std::string(label.substr(0, chars - 1)) + "\xE2\x80\xA6";
     canvas.text(shown, text_style, box.x + cfg::padding, box.y + cfg::dialog_top_margin, palette::text_dim);
@@ -141,11 +141,11 @@ void confirm_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view lab
     float cancel_w = canvas.measure("Cancel", text_style).w + cfg::dialog_button_pad;
     float bx = x + (width - (ok_w + cfg::row_gap + cancel_w)) / 2.0f;
     ui::Box ok{bx, y, ok_w, cfg::dialog_button};
-    canvas.rounded(ok, cfg::dialog_button_radius, palette::critical_container, metrics::border_thin, palette::ink);
+    selectable(canvas, ok, metrics::radius_widget, false, false, palette::critical_container);
     panel_widgets::centered_text(canvas, confirm_label, text_style, ok, palette::text);
     paint.region(ok, confirm_id);
     ui::Box cancel{bx + ok_w + cfg::row_gap, y, cancel_w, cfg::dialog_button};
-    canvas.rounded(cancel, cfg::dialog_button_radius, palette::accent_container, metrics::border_thin, palette::ink);
+    selectable(canvas, cancel, metrics::radius_widget, false, false, palette::accent_container);
     panel_widgets::centered_text(canvas, "Cancel", text_style, cancel, palette::text);
     paint.region(cancel, cancel_id);
 }

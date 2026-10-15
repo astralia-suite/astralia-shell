@@ -244,7 +244,7 @@ void check_view() {
 
     test::RecordingCanvas canvas;
     astralia::paint_overview(canvas, model, {});
-    test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 1 + 1, "the scroll, cells, one tile and the indicator");
+    test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 1 + 2, "the scroll, cells, one tile and the indicator with its shadow");
     test::check(canvas.count(Kind::text) == 10 && canvas.count(Kind::image) <= 1, "a number per cell");
 
     test::RecordingCanvas live;
@@ -253,7 +253,7 @@ void check_view() {
         ++art_calls;
         return true;
     });
-    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 1, "live art replaces the placeholder tile");
+    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 2, "live art replaces the placeholder tile");
 }
 
 void check_staged_view() {

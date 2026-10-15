@@ -24,7 +24,6 @@ inline constexpr float kLockFontMono = 18.0f;
 // card layout
 inline constexpr float kLockCardHeightMult = 0.7f;
 inline constexpr float kLockCardRatio = 16.0f / 9.0f;
-inline constexpr float kLockCardRadius = 40.0f;
 inline constexpr float kLockPanelGap = 25.0f;
 inline constexpr float kLockCenterWidth = 560.0f;
 inline constexpr float kLockCenterRefHeight = 1440.0f;
@@ -51,7 +50,6 @@ inline constexpr float kLockProfileBorderWidth = 4.0f;
 inline constexpr float kLockProfileSize = 180.0f;
 
 // side panel
-inline constexpr float kLockSidePanelRadius = 24.0f;
 inline constexpr float kLockSidePanelPad = 20.0f;
 
 // fetch
@@ -63,6 +61,7 @@ inline constexpr float kLockFetchColorGap = 10.0f;
 // card chrome
 inline constexpr float kLockCardBorderWidth = 2.0f;
 inline constexpr float kLockCardHeaderGap = 12.0f;
+inline constexpr float kLockCardTagPad = 6.0f;
 inline constexpr float kLockBatteryRowGap = 8.0f;
 inline constexpr float kLockBatteryIconGap = 10.0f;
 inline constexpr float kLockBatteryBarHeight = 6.0f;
@@ -76,7 +75,6 @@ inline constexpr float kLockMediaTextGap = 4.0f;
 
 // resource gauges
 inline constexpr float kLockResTileGap = 14.0f;
-inline constexpr float kLockResTileRadius = 18.0f;
 inline constexpr float kLockResIconSize = 26.0f;
 inline constexpr float kLockResValueFont = 32.0f;
 inline constexpr float kLockResTempWarnC = 85.0f;
@@ -88,7 +86,6 @@ inline constexpr const char *kLockResGaugeGpuColorHex = "#3FB6C8";
 // notifications
 inline constexpr float kLockNotifCardGap = 8.0f;
 inline constexpr float kLockNotifCardPad = 12.0f;
-inline constexpr float kLockNotifCardRadius = 14.0f;
 inline constexpr int kLockNotifMaxCards = 6;
 
 // scale state

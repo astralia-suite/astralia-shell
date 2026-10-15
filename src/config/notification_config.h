@@ -13,12 +13,12 @@ inline constexpr float max_stack_height = 480.0f;
 // Card geometry
 inline constexpr float card_width = 400.0f;
 inline constexpr float card_pad = 16.0f;
-inline constexpr float card_radius = 10.0f;
 inline constexpr float border_width = 2.0f;
 inline constexpr float content_spacing = 10.0f;
 inline constexpr float header_spacing = 6.0f;
 inline constexpr float extra_height = 8.0f;
 inline constexpr float urgency_dot = 6.0f;
+inline constexpr float tag_pad = 6.0f;
 inline constexpr float progress_height = 4.0f;
 inline constexpr float progress_track_opacity = 0.3f;
 

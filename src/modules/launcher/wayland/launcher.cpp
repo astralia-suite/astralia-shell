@@ -58,7 +58,7 @@ void launcher_draw_entrance(LauncherState &state) {
         r.cy = burst.box.y + burst.box.h / 2.0f;
         r.half_w = burst.box.w / 2.0f;
         r.half_h = burst.box.h / 2.0f;
-        r.corner = astralia::metrics::radius_md;
+        r.corner = astralia::metrics::radius_card;
         r.reach = burst.reach;
         r.time_s = e.time_s;
         r.progress = burst.progress;

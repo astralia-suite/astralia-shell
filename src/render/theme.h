@@ -26,6 +26,10 @@ struct Theme {
     Color accent_alt_alpha50;
     Color accent_alt_container;
 
+    Color pop_a;
+    Color pop_b;
+    Color pop_c;
+
     Color base;
     Color overlay;
 

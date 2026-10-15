@@ -55,7 +55,6 @@ PangoRectangle Text::ink() const {
     return ink;
 }
 
-// Ink extents in Pango units, unrounded.
 PangoRectangle Text::ink_exact() const {
     PangoRectangle ink{};
     pango_layout_get_extents(layout_.get(), &ink, nullptr);

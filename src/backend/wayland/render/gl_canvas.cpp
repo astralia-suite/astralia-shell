@@ -43,7 +43,6 @@ void GlCanvas::flush() {
     renderer_->set_opacity(1.0f);
 }
 
-// In erase mode each shape first clears what lies under it, then draws normally.
 template <typename Draw>
 void GlCanvas::shape(const Draw &draw) {
     if (erase_) {
@@ -228,7 +227,6 @@ void GlCanvas::begin_group(const ui::Box &box, const ui::GroupOptions &options) 
         float cy = group.y + box.h * 0.5f;
         renderer_->push_model(Affine2D::translation(cx, cy).compose(Affine2D::scaling(options.scale)).compose(Affine2D::rotation_deg(options.rotation)).compose(Affine2D::translation(-cx, -cy)));
     }
-    // Scissor clips ignore the model transform, so a transformed group never clips.
     group.clip = options.clip && !group.transformed;
     if (group.clip) {
         renderer_->set_clip(group.x, group.y, box.w, box.h);

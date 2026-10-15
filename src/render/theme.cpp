@@ -8,7 +8,11 @@ namespace astralia {
 
 namespace {
 
+constexpr float fallback_hue = 250.0f;
 constexpr float alt_hue_offset = 40.0f;
+constexpr float pop_a_offset = 120.0f;
+constexpr float pop_b_offset = 240.0f;
+constexpr float pop_c_offset = 180.0f;
 constexpr float critical_hue = 27.0f;
 constexpr float warn_hue = 75.0f;
 
@@ -27,35 +31,42 @@ float wrap_hue(float hue) {
 } // namespace
 
 Theme theme_from_seed(const Extraction &extraction) {
-    float hue = extraction.primary.hue;
-    float alt_hue = extraction.secondary ? extraction.secondary->hue : wrap_hue(hue + alt_hue_offset);
+    const std::vector<Seed> &seeds = extraction.seeds;
+    float hue = seeds.empty() ? fallback_hue : seeds[0].hue;
+    float chroma = seeds.empty() ? dusty_chroma : seeds[0].chroma;
+    auto seed_hue = [&](size_t index, float offset) { return index < seeds.size() ? seeds[index].hue : wrap_hue(hue + offset); };
+    float alt_hue = seed_hue(1, alt_hue_offset);
 
-    float vivid = std::clamp((extraction.primary.chroma - dusty_chroma) / (candy_chroma - dusty_chroma), 0.0f, 1.0f);
+    float vivid = std::clamp((chroma - dusty_chroma) / (candy_chroma - dusty_chroma), 0.0f, 1.0f);
     auto c = [vivid](float dusty, float candy) { return lerp(dusty, candy, vivid); };
 
     Theme t{};
     t.scheme = Scheme::light;
 
-    t.ink = color_from_oklch({0.30f, c(0.080f, 0.130f), hue});
-    t.paper = color_from_oklch({0.920f, c(0.040f, 0.090f), hue});
-    t.surface = color_from_oklch({0.900f, c(0.050f, 0.100f), hue});
-    t.surface_alt = color_from_oklch({0.860f, c(0.065f, 0.120f), hue});
-    t.shadow = color_from_oklch({0.22f, 0.065f, hue});
+    t.ink = color_from_oklch({0.20f, c(0.060f, 0.100f), hue});
+    t.paper = color_from_oklch({0.975f, c(0.010f, 0.020f), hue});
+    t.surface = color_from_oklch({0.945f, c(0.020f, 0.040f), hue});
+    t.surface_alt = color_from_oklch({0.890f, c(0.040f, 0.070f), hue});
+    t.shadow = color_from_oklch({0.14f, 0.050f, hue});
 
-    t.accent = color_from_oklch({0.80f, c(0.070f, 0.140f), hue});
+    t.accent = color_from_oklch({0.74f, c(0.060f, 0.190f), hue});
     t.accent_alpha12 = with_alpha(t.accent, byte_alpha(0x1F));
     t.accent_alpha19 = with_alpha(t.accent, byte_alpha(0x30));
     t.accent_alpha25 = with_alpha(t.accent, byte_alpha(0x40));
     t.accent_container = color_from_oklch({0.90f, c(0.040f, 0.080f), hue});
 
-    t.accent_alt = color_from_oklch({0.82f, c(0.070f, 0.140f), alt_hue});
+    t.accent_alt = color_from_oklch({0.80f, c(0.050f, 0.170f), alt_hue});
     t.accent_alt_alpha50 = with_alpha(t.accent_alt, byte_alpha(0x80));
     t.accent_alt_container = color_from_oklch({0.92f, c(0.035f, 0.070f), alt_hue});
+
+    t.pop_a = color_from_oklch({0.76f, c(0.110f, 0.200f), seed_hue(1, pop_a_offset)});
+    t.pop_b = color_from_oklch({0.86f, c(0.100f, 0.180f), seed_hue(2, pop_b_offset)});
+    t.pop_c = color_from_oklch({0.80f, c(0.100f, 0.170f), seed_hue(3, pop_c_offset)});
 
     t.base = t.paper;
     t.overlay = with_alpha(t.paper, byte_alpha(0xEB));
 
-    t.lavender = color_from_oklch({0.55f, c(0.070f, 0.120f), hue});
+    t.lavender = color_from_oklch({0.48f, c(0.090f, 0.150f), hue});
 
     t.field_bg = t.surface;
 
@@ -68,7 +79,7 @@ Theme theme_from_seed(const Extraction &extraction) {
     t.text_alpha20 = with_alpha(t.ink, byte_alpha(0x33));
     t.text_alpha65 = with_alpha(t.ink, byte_alpha(0xA6));
     t.text_muted = color_from_oklch({0.42f, c(0.060f, 0.100f), hue});
-    t.text_dim = with_alpha(t.text_muted, byte_alpha(0x99));
+    t.text_dim = with_alpha(t.text_muted, byte_alpha(0xD0));
 
     t.electro = color_from_oklch({0.70f, 0.150f, hue});
 
@@ -98,6 +109,10 @@ void theme_apply(const Theme &t) {
     palette::accent_alt = t.accent_alt;
     palette::accent_alt_alpha50 = t.accent_alt_alpha50;
     palette::accent_alt_container = t.accent_alt_container;
+
+    palette::pop_a = t.pop_a;
+    palette::pop_b = t.pop_b;
+    palette::pop_c = t.pop_c;
 
     palette::base = t.base;
     palette::overlay = t.overlay;

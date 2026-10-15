@@ -15,4 +15,15 @@ void sticker(ui::Canvas &canvas, const ui::Box &box, float radius, const Color &
     canvas.rounded({box.x, box.y, w, h}, r, fill, border_width, outline);
 }
 
+void selectable(ui::Canvas &canvas, const ui::Box &box, float radius, bool selected, bool hovered, const Color &idle, float alpha) {
+    Color ink = with_alpha(palette::ink, palette::ink.a * alpha);
+    if (selected) {
+        float s = metrics::shadow_widget;
+        sticker(canvas, {box.x + s, box.y + s, std::max(0.0f, box.w - s), std::max(0.0f, box.h - s)}, radius, with_alpha(palette::accent, palette::accent.a * alpha), ink, metrics::border_thin, 0.0f);
+        return;
+    }
+    const Color &face = hovered ? palette::pop_a : idle;
+    sticker(canvas, box, radius, with_alpha(face, face.a * alpha), ink, metrics::border_thin, metrics::shadow_widget);
+}
+
 } // namespace astralia

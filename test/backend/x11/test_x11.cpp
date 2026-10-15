@@ -22,8 +22,8 @@
 #include "core/json.h"
 #include "core/pointer.h"
 
-#include "modules/bar/style.h"
 #include "modules/bar/frame.h"
+#include "modules/bar/style.h"
 
 #include "render/cairo_canvas.h"
 #include "render/cover_cache.h"

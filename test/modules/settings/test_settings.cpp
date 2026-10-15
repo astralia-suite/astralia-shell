@@ -94,7 +94,7 @@ void check_tabs() {
     SettingsCaps full;
     full.animation = full.idle = full.launcher = full.rain = full.visualizer = true;
     Env rich(full);
-    test::check(rich.model.tabs().size() == 8&& rich.model.tabs().front().tab == SettingsTab::animation, "capabilities add the extra tabs in order");
+    test::check(rich.model.tabs().size() == 8 && rich.model.tabs().front().tab == SettingsTab::animation, "capabilities add the extra tabs in order");
     test::check(rich.model.tabs()[4].tab == SettingsTab::launcher, "the launcher tab sits between idle and rain");
 
     minimal.model.open();

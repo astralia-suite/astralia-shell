@@ -16,8 +16,8 @@ namespace cfg = panel_config;
 
 constexpr uint64_t owner_reveal = 2;
 constexpr int close_id = -1;
-constexpr ScrollMetrics scroll_style{cfg::scroll_roller, cfg::scroll_overhang, cfg::scroll_cap, cfg::scroll_rounding, cfg::scroll_band, ScrollAxis::vertical};
-constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::title_px};
+constexpr ScrollMetrics scroll_style{cfg::scroll_roller, cfg::scroll_overhang, cfg::scroll_cap, metrics::radius_card, cfg::scroll_band, ScrollAxis::vertical};
+constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::title_px, true};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 
 ScrollEntry entry_of(PanelAnchor anchor) {
@@ -345,14 +345,17 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
     float view_top = cfg::padding;
     if (header) {
         ui::TextSize title = canvas.measure(content_->title(), title_style);
+        float tag_pad = cfg::header_tag_pad;
+        sticker(canvas, {cfg::padding - tag_pad, cfg::padding + (cfg::header_height - title.h) / 2.0f - tag_pad / 2.0f, title.w + 2.0f * tag_pad + metrics::shadow_widget, title.h + tag_pad + metrics::shadow_widget}, metrics::radius_widget, content_->tint(), palette::ink, metrics::border_thin, metrics::shadow_widget);
         canvas.text(content_->title(), title_style, cfg::padding, cfg::padding + (cfg::header_height - title.h) / 2.0f, palette::text);
         ui::Box close{width - cfg::padding - cfg::close_button, cfg::padding + (cfg::header_height - cfg::close_button) / 2.0f, cfg::close_button, cfg::close_button};
+        selectable(canvas, close, metrics::radius_widget, false, false, palette::accent_container);
         ui::TextSize glyph = canvas.measure(icon::close, icon_style);
         canvas.text(icon::close, icon_style, close.x + (close.w - glyph.w) / 2.0f, close.y + (close.h - glyph.h) / 2.0f, palette::text);
         chrome_paint.region(close, close_id);
         content_->paint_header(canvas, {cfg::padding, cfg::padding, close.x - cfg::row_gap - cfg::padding, cfg::header_height}, chrome_paint);
         float divider_y = cfg::padding + cfg::header_height + cfg::header_divider_gap;
-        canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f}, palette::text_alpha06);
+        canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f}, palette::ink);
         view_top = divider_y + 1.0f + cfg::content_gap;
     }
     view_h_ = std::max(0.0f, full - cfg::padding - view_top);

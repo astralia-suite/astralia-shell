@@ -8,6 +8,7 @@ inline constexpr float max_height = 520.0f;
 inline constexpr float padding = 20.0f;
 inline constexpr float header_height = 32.0f;
 inline constexpr float header_divider_gap = 4.0f;
+inline constexpr float header_tag_pad = 8.0f;
 inline constexpr float content_gap = 8.0f;
 inline constexpr float gap_below_bar = 8.0f;
 inline constexpr float side_margin = 20.0f;
@@ -31,7 +32,6 @@ inline constexpr float dialog_label = 20.0f;
 inline constexpr float dialog_top_margin = 6.0f;
 inline constexpr float dialog_button = 28.0f;
 inline constexpr float dialog_button_pad = 16.0f;
-inline constexpr float dialog_button_radius = 6.0f;
 inline constexpr float dialog_label_chars = 32.0f;
 inline constexpr float confirm_dialog_height = dialog_spacer + dialog_label + row_gap + dialog_button + row_gap + 2.0f * padding;
 inline constexpr float field_dialog_height = dialog_spacer + dialog_button + row_gap + dialog_button + row_gap + 2.0f * padding;
@@ -39,7 +39,6 @@ inline constexpr float field_dialog_height = dialog_spacer + dialog_button + row
 // Slider
 inline constexpr float slider_track = 6.0f;
 inline constexpr float slider_knob = 12.0f;
-inline constexpr float slider_focus_ring = 2.0f;
 
 // Animation
 inline constexpr float reveal_ms = 220.0f;
@@ -48,7 +47,6 @@ inline constexpr float reveal_ms = 220.0f;
 inline constexpr float scroll_roller = 14.0f;
 inline constexpr float scroll_overhang = 6.0f;
 inline constexpr float scroll_cap = 6.0f;
-inline constexpr float scroll_rounding = 6.0f;
 inline constexpr float scroll_band = 4.0f;
 
 // Typography
@@ -74,7 +72,6 @@ inline constexpr float battery_row = battery_text_row + battery_bar_top_gap + ba
 
 // Media
 inline constexpr float media_thumb = 72.0f;
-inline constexpr float media_thumb_radius = 8.0f;
 inline constexpr float media_title_left = 12.0f;
 inline constexpr float media_title_spacing = 3.0f;
 inline constexpr float media_progress_row = 20.0f;
@@ -136,7 +133,6 @@ inline constexpr float tray_menu_separator_inset = 6.0f;
 inline constexpr float tray_menu_pad = 4.0f;
 inline constexpr float tray_menu_gap = 5.0f;
 inline constexpr float tray_menu_border = 1.0f;
-inline constexpr float tray_menu_radius = 8.0f;
 inline constexpr float tray_menu_row_pad = 8.0f;
 inline constexpr float tray_menu_label_offset = 24.0f;
 inline constexpr float tray_empty_height = 40.0f;
@@ -164,7 +160,6 @@ inline constexpr float card_bottom = 12.0f;
 inline constexpr float card_side = 12.0f;
 inline constexpr float card_header = 32.0f;
 inline constexpr float card_header_gap = 8.0f;
-inline constexpr float card_radius = 12.0f;
 inline constexpr float gauge_diameter = 108.0f;
 inline constexpr float gauge_stroke = 8.0f;
 inline constexpr float gauge_row_gap = 16.0f;

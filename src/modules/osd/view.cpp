@@ -23,7 +23,7 @@ void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
     if (model.opacity() <= 0.0f) {
         return;
     }
-    sticker(canvas, {0, 0, width, height}, height / 2.0f, palette::paper);
+    sticker(canvas, {0, 0, width, height}, metrics::radius_card, palette::paper);
 
     ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
     ui::TextSize icon_size = canvas.measure(model.glyph(), icon_style);
@@ -36,10 +36,11 @@ void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
     float track_w = width - track_x - cfg::bar_margin - cfg::label_width - cfg::content_margin;
     float track_y = (height - cfg::track_height) / 2.0f;
     float radius = cfg::track_height / 2.0f;
-    canvas.rounded({track_x, track_y, track_w, cfg::track_height}, radius, palette::text_alpha11);
+    float border = metrics::border_thin;
+    canvas.rounded({track_x, track_y, track_w, cfg::track_height}, radius, palette::surface_alt, border, palette::ink);
     float fill_w = track_w * std::clamp(model.bar_fill(), 0.0f, 1.0f);
-    if (fill_w > 0.0f) {
-        canvas.rounded({track_x, track_y, fill_w, cfg::track_height}, radius, model.muted() ? palette::text_muted : palette::accent);
+    if (fill_w > border) {
+        canvas.rounded({track_x + border, track_y + border, fill_w - border, cfg::track_height - 2.0f * border}, std::max(0.0f, radius - border), model.muted() ? palette::text_muted : palette::pop_c);
     }
 
     ui::TextStyle label_style{ui::FontFamily::text, cfg::label_px, false, cfg::label_width};

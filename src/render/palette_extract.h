@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
-#include <optional>
+#include <vector>
 
 namespace astralia {
+
+inline constexpr size_t max_seeds = 4;
 
 struct Seed {
     float hue;
@@ -12,8 +15,7 @@ struct Seed {
 };
 
 struct Extraction {
-    Seed primary;
-    std::optional<Seed> secondary;
+    std::vector<Seed> seeds;
     bool found;
 };
 

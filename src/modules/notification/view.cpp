@@ -20,21 +20,21 @@ const Color &urgency_color(uint8_t urgency) {
         return palette::critical;
     }
     if (urgency == 0) {
-        return palette::text_muted;
+        return palette::pop_c;
     }
     return palette::accent;
 }
 
 void progress_bar(ui::Canvas &canvas, float y, float progress, const Color &color, float opacity) {
     constexpr float width = cfg::card_width;
-    float rrect_h = 2.0f * cfg::card_radius;
+    float rrect_h = 2.0f * metrics::radius_card;
     progress = std::clamp(progress, 0.0f, 1.0f);
     canvas.begin_group({0, y, width, cfg::progress_height}, {1.0f, true});
-    canvas.rounded({0, 0, width, rrect_h}, cfg::card_radius, with_alpha(color, cfg::progress_track_opacity * opacity));
+    canvas.rounded({0, 0, width, rrect_h}, metrics::radius_card, with_alpha(color, cfg::progress_track_opacity * opacity));
     canvas.end_group();
     float fill_x = width * (1.0f - progress);
     canvas.begin_group({fill_x, y, width * progress, cfg::progress_height}, {1.0f, true});
-    canvas.rounded({-fill_x, 0, width, rrect_h}, cfg::card_radius, with_alpha(color, opacity));
+    canvas.rounded({-fill_x, 0, width, rrect_h}, metrics::radius_card, with_alpha(color, opacity));
     canvas.end_group();
 }
 
@@ -53,17 +53,21 @@ void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view, 
         const Color &accent = urgency_color(entry.urgency);
 
         const Color &face = entry.urgency == notification_urgency_critical ? palette::critical_container : palette::paper;
-        sticker(canvas, {0, y, cfg::card_width, card.height}, cfg::card_radius, with_alpha(face, opacity), with_alpha(palette::ink, opacity));
+        sticker(canvas, {0, y, cfg::card_width, card.height}, metrics::radius_card, with_alpha(face, opacity), with_alpha(palette::ink, opacity));
         if (entry.timed) {
             progress_bar(canvas, y, entry.progress, accent, opacity);
         }
 
         float x = cfg::card_pad;
         float top = y + cfg::card_pad;
-        canvas.rounded({x, top + (card.header - cfg::urgency_dot) / 2.0f, cfg::urgency_dot, cfg::urgency_dot}, cfg::urgency_dot / 2.0f, with_alpha(accent, opacity));
         std::string_view app = entry.app.empty() ? std::string_view(cfg::app_fallback) : std::string_view(entry.app);
         ui::TextSize app_size = canvas.measure(app, app_style);
-        canvas.text(app, app_style, x + cfg::urgency_dot + cfg::header_spacing, top + (card.header - app_size.h) / 2.0f, with_alpha(palette::text, cfg::app_opacity * opacity));
+        float tag_pad = cfg::tag_pad;
+        float tag_w = cfg::urgency_dot + cfg::header_spacing + app_size.w + 2.0f * tag_pad;
+        float tag_h = app_size.h + tag_pad;
+        sticker(canvas, {x - tag_pad, top + (card.header - tag_h) / 2.0f, tag_w + metrics::shadow_widget, tag_h + metrics::shadow_widget}, metrics::radius_widget, with_alpha(accent, opacity), with_alpha(palette::ink, opacity), metrics::border_thin, metrics::shadow_widget);
+        canvas.rounded({x, top + (card.header - cfg::urgency_dot) / 2.0f, cfg::urgency_dot, cfg::urgency_dot}, cfg::urgency_dot / 2.0f, with_alpha(palette::ink, opacity));
+        canvas.text(app, app_style, x + cfg::urgency_dot + cfg::header_spacing, top + (card.header - app_size.h) / 2.0f, with_alpha(palette::text, opacity));
 
         float row = top + card.header;
         if (card.summary > 0.0f) {

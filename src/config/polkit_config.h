@@ -5,11 +5,10 @@ namespace astralia::polkit_config {
 // Card geometry
 inline constexpr double card_width = 480.0;
 inline constexpr double card_pad = 30.0;
-inline constexpr double card_radius = 20.0;
 inline constexpr double border_width = 5.0;
 inline constexpr double spacing = 16.0;
+inline constexpr double title_tag_pad = 8.0;
 inline constexpr double field_height = 55.0;
-inline constexpr double field_radius = 27.0;
 inline constexpr double dot_margin = 8.0;
 inline constexpr int dot_size = 16;
 

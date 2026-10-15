@@ -13,7 +13,6 @@ unsigned char *load_image_decode(const std::string &path, int &width, int &heigh
         klog("image: failed to load '%s': %s", path.c_str(), pixels.error().c_str());
         return nullptr;
     }
-    // Textures take straight alpha.
     if (pixels->premultiplied) {
         uint8_t *p = pixels->data.get();
         for (size_t i = 0, n = static_cast<size_t>(pixels->width) * pixels->height; i < n; ++i, p += 4) {

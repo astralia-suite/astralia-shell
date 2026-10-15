@@ -47,9 +47,7 @@ class Canvas {
 
     virtual void rect(const Box &box, const Color &fill) = 0;
     virtual void rounded(const Box &box, float radius, const Color &fill, float border_width = 0.0f, const Color &border = {}) = 0;
-    // The square `box` minus the circle of radius `box.w` centred on its bottom edge, on the right corner when `circle_on_right`, else on the left.
     virtual void fillet(const Box &box, bool circle_on_right, const Color &color) = 0;
-    // While on, shapes replace what lies under them instead of blending over it.
     virtual void set_erase(bool on) = 0;
 
     virtual TextSize measure(std::string_view text, const TextStyle &style) = 0;

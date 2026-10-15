@@ -23,7 +23,7 @@ void check_tokens() {
     const float *channels = astralia::rgba(astralia::palette::accent);
     test::check(near(channels[0], astralia::palette::accent.r) && near(channels[3], astralia::palette::accent.a), "rgba exposes r g b a in order");
 
-    test::check(astralia::metrics::radius_md > astralia::metrics::radius_sm, "metrics ordered");
+    test::check(astralia::metrics::radius_card > astralia::metrics::radius_widget && astralia::metrics::border_thick > astralia::metrics::border_thin && astralia::metrics::shadow_offset > astralia::metrics::shadow_widget, "metrics ordered");
 }
 
 void check_glyph_thresholds() {

@@ -18,6 +18,7 @@ class ResourcePanel final : public PanelContent {
     ResourcePanel(CpuTempState &cpu, GpuTempState &gpu, SystemStatsState &stats);
 
     std::string_view title() const override { return "Resource"; }
+    const Color &tint() const override { return palette::pop_c; }
     float max_height() const override { return panel_config::resource_max_height; }
     void opened() override { refresh(); }
     float content_height(ui::Canvas &canvas) override;

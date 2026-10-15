@@ -52,6 +52,10 @@ inline Color accent_alt{};
 inline Color accent_alt_alpha50{};
 inline Color accent_alt_container{};
 
+inline Color pop_a{};
+inline Color pop_b{};
+inline Color pop_c{};
+
 inline Color base{};
 inline Color overlay{};
 
@@ -85,11 +89,12 @@ inline Color window_backdrop{};
 
 namespace metrics {
 
-inline constexpr float radius_md = 14.0f;
-inline constexpr float radius_sm = 8.0f;
+inline constexpr float radius_card = 10.0f;
+inline constexpr float radius_widget = 5.0f;
 inline constexpr float border_thin = 2.0f;
 inline constexpr float border_thick = 3.0f;
 inline constexpr float shadow_offset = 3.0f;
+inline constexpr float shadow_widget = 2.0f;
 
 } // namespace metrics
 

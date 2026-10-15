@@ -72,7 +72,6 @@ void LockModel::clear_password() {
 
 namespace {
 
-// The card spins in as a small lock icon, then expands while its content fades and scales in.
 void enter(LockMotion &m, float card_w, float card_h) {
     m.started = true;
     m.unlocking = false;
@@ -108,7 +107,6 @@ void lock_motion_fit(LockMotion &motion, float card_w, float card_h) {
     }
 }
 
-// The reverse of the entrance: shrink to the icon, then spin out; `done` runs once the spin ends.
 void lock_motion_exit(LockMotion &motion, std::function<void()> done) {
     LockMotion &m = motion;
     m.unlocking = true;

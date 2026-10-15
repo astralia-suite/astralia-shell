@@ -63,7 +63,7 @@ void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width, f
     ui::Box card{(surface_width - card_w) / 2.0f, (surface_height - card_h) / 2.0f, card_w, card_h};
 
     canvas.begin_group(card, {model.card_scale(), false});
-    sticker(canvas, {0, 0, card_w, card_h}, cfg::card_radius, palette::paper);
+    sticker(canvas, {0, 0, card_w, card_h}, metrics::radius_card, palette::paper);
 
     float pad = cfg::card_pad;
     float content_w = card_w - pad * 2.0f;
@@ -72,13 +72,16 @@ void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width, f
 
     ui::TextStyle title = title_style;
     title.max_width = static_cast<int>(content_w);
+    ui::TextSize title_size = canvas.measure(cfg::title_text, title);
+    float tag_pad = static_cast<float>(cfg::title_tag_pad);
+    sticker(canvas, {pad - tag_pad, y - tag_pad / 2.0f, title_size.w + 2.0f * tag_pad + metrics::shadow_widget, static_cast<float>(cfg::title_line_height) + tag_pad + metrics::shadow_widget}, metrics::radius_widget, palette::accent, palette::ink, metrics::border_thin, metrics::shadow_widget);
     line_text(canvas, cfg::title_text, title, pad, y, cfg::title_line_height, palette::text);
     y += cfg::title_line_height + cfg::spacing;
 
     draw_marquee_text(canvas, model.animations(), model.marquee(), prompt.message, message_style, pad, y, content_w, palette::text_muted);
     y += cfg::message_line_height + cfg::spacing;
 
-    canvas.rounded({pad, y, content_w, cfg::field_height}, cfg::field_radius, palette::surface, metrics::border_thick, palette::ink);
+    canvas.rounded({pad, y, content_w, cfg::field_height}, metrics::radius_widget, prompt.needs_input ? palette::pop_b : palette::surface, metrics::border_thick, palette::ink);
     float field_cy = y + cfg::field_height / 2.0f;
     float dots_w = content_w - cfg::dot_margin * 2.0f;
     if (prompt.needs_input) {
