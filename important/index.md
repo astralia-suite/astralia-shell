@@ -115,6 +115,8 @@
 - `osd_config.h`: OSD size, margins and display timing.
 - `overview_config.h`: Overview grid size, scale and rounding.
 - `settings_config.h`: Settings window geometry, tab labels and row sizes.
+- `wallpaper_config.h`: Desktop context menu width, padding, row height and text sizes.
+- `wallpaper_select_config.h`: Wallpaper selector card scale, gap, image sizes, label geometry and motion timings.
 - `icons.h`: The Tabler icon glyph codepoints used by every backend.
 
 ## `src/modules/`
@@ -123,7 +125,7 @@
 - `<name>/model.{h,cpp}`: Display-free state, logic and animation targets, driven by neutral events and tested headless.
 - `<name>/view.{h,cpp}`: The one view, painted over `ui::Canvas` for both backends.
 - `<name>/<backend>/`: The backend's host: surfaces, input conversion, timers and the module-only style config.
-- `bar`, `launcher`, `lock`, `logout`, `notification`, `osd`, `overview`, `polkit`, `settings`, `wallpaper`: Have a host in both backends.
+- `bar`, `launcher`, `lock`, `logout`, `notification`, `osd`, `overview`, `polkit`, `settings`, `wallpaper`, `wallpaper_select`: Have a host in both backends.
 - `idle`, `dashboard`, `rain`, `visualizer`: Have a host in both backends, gated by `Capabilities`.
 
 ## `src/modules/bar/`
@@ -184,6 +186,17 @@
 - `model.{h,cpp}`: Tabs by capability (animation, bar, displays, idle, launcher, rain, visualizer, wallpaper), monitor selections, fields, pickers and actions.
 - `view.{h,cpp}`: Paints the scroll, each tab, fields, pickers and thumbnails over the canvas.
 
+## `src/modules/wallpaper/`, `wallpaper_select/`
+
+- `wallpaper/model.{h,cpp}`: `DesktopMenuModel`, the right-click menu: placement clamped into the output, entries, hover and row hit tests.
+- `wallpaper/view.{h,cpp}`: Paints the desktop menu over the canvas at a given origin.
+- `wallpaper/wayland/`: Per-output background surface; a right-click toggles the menu drawn on that surface and entries run through `WaylandState` hooks.
+- `wallpaper/x11/`: Root pixmap painter, plus one bottom `InputOnly` desktop window per output that catches the right-click and opens the menu window.
+- `wallpaper_select/model.{h,cpp}`: Wallpaper folder listing, selection, wheel accumulation, zoom and step tweens, card hit tests and apply to one output column.
+- `wallpaper_select/view.{h,cpp}`: Paints the current wallpaper zoomed out to a card, its neighbours, the file label and the card hit boxes.
+- `wallpaper_select/wayland/`: Full-output overlay with exclusive keyboard, retargeted to the output it opens on.
+- `wallpaper_select/x11/`: Override-redirect window with keyboard focus, painted through cairo.
+
 ## `src/modules/logout/`, `notification/`, `osd/`, `polkit/`
 
 - `logout/model.{h,cpp}`: Selection, hover, commands and the open and close choreography.
@@ -197,7 +210,7 @@
 ## `src/service/`
 
 - `settings_service.{h,cpp}`: The unified `Config`, its JSON load and save, per-output override accessors and hot reload.
-- `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output from `Config`.
+- `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output from `Config`, and lists image or video files in a folder.
 - `theme_service.{h,cpp}`: Follows the wallpaper: the first sync decodes at once, later ones off-thread; an unusable wallpaper falls back to the default wallpaper asset.
 - `battery_service.{h,cpp}`: UPower display-device status, device list and `on_battery`, read asynchronously.
 - `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds and `rfkill` control.

@@ -1,10 +1,17 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 #include "service/settings_service.h"
 
 namespace astralia {
+
+bool wallpaper_is_image(const std::string &path);
+bool wallpaper_is_video(const std::string &path);
+bool wallpaper_picker_less(const std::string &a, const std::string &b);
+std::vector<std::string> wallpaper_list_files(const std::string &dir, bool animated, std::size_t limit);
 
 int wallpaper_column_count(const Config &cfg, const std::string &monitor_name, bool animated);
 std::string wallpaper_column_override(const Config &cfg, const std::string &monitor_name, int column_index, bool animated);

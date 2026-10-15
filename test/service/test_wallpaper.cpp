@@ -1,4 +1,8 @@
+#include <filesystem>
+#include <fstream>
 #include <string>
+#include <unistd.h>
+#include <vector>
 
 #include "service/wallpaper_service.h"
 
@@ -65,4 +69,27 @@ void check_wallpaper_images() {
     cfg.wallpaper_columns["DP-1"] = {"/a.png", "/b.png"};
     wallpaper_clear_image(cfg, "DP-1");
     check(wallpaper_column_override(cfg, "DP-1", 0, false).empty() && wallpaper_column_override(cfg, "DP-1", 1, false) == "/b.png", "clearing column 0 keeps the other columns");
+}
+
+void check_wallpaper_listing() {
+    using namespace astralia;
+    using test::check;
+    check(wallpaper_is_image("/x/A.PNG") && wallpaper_is_image("b.jpeg") && !wallpaper_is_image("c.mp4") && !wallpaper_is_image("d.txt"), "images are told by extension");
+    check(wallpaper_is_video("/x/a.MKV") && wallpaper_is_video("b.webm") && !wallpaper_is_video("c.png"), "videos are told by extension");
+    check(wallpaper_picker_less("/x/b.jpg", "/x/a.png") && wallpaper_picker_less("/x/a.png", "/x/B.png"), "files order by extension, then by name ignoring case");
+
+    std::filesystem::path root = std::filesystem::temp_directory_path() / ("astralia_test_wallpaper_listing_" + std::to_string(getpid()));
+    std::filesystem::create_directories(root / "sub" / "deep");
+    std::ofstream(root / "b.png").put('x');
+    std::ofstream(root / "a.jpg").put('x');
+    std::ofstream(root / "clip.mp4").put('x');
+    std::ofstream(root / "sub" / "c.png").put('x');
+    std::ofstream(root / "sub" / "deep" / "d.png").put('x');
+    std::vector<std::string> images = wallpaper_list_files(root.string(), false, 100);
+    check(images.size() == 3 && images[0].ends_with("a.jpg") && images[1].ends_with("b.png") && images[2].ends_with("c.png"), "images are listed one folder deep");
+    check(wallpaper_list_files(root.string(), false, 2).size() == 2, "the listing is capped");
+    std::vector<std::string> videos = wallpaper_list_files(root.string(), true, 100);
+    check(videos.size() == 1 && videos[0].ends_with("clip.mp4"), "videos are listed on request");
+    check(wallpaper_list_files((root / "missing").string(), false, 100).empty(), "a missing folder lists nothing");
+    std::filesystem::remove_all(root);
 }

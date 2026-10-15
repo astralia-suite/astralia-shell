@@ -10,6 +10,7 @@ constexpr std::array<ShellVerbSpec, static_cast<size_t>(ShellVerb::count)> verbs
     {"logout", "toggle the logout overlay", nullptr},
     {"overview", "toggle the overview", nullptr},
     {"settings", "toggle the settings overlay", nullptr},
+    {"wallpaper", "toggle the wallpaper selector", nullptr},
     {"dashboard", "toggle the dashboard window", &Capabilities::dashboard},
     {"rain", "toggle the rain overlay", &Capabilities::rain},
     {"visualizer", "toggle the audio visualizer overlay", &Capabilities::visualizer},

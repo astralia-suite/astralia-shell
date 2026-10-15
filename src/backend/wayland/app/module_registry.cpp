@@ -16,6 +16,7 @@
 #include "modules/settings/wayland/settings.h"
 #include "modules/visualizer/wayland/visualizer.h"
 #include "modules/wallpaper/wayland/wallpaper.h"
+#include "modules/wallpaper_select/wayland/wallpaper_select.h"
 
 namespace {
 
@@ -63,6 +64,7 @@ std::vector<std::unique_ptr<Module>> build_app_modules(const astralia::Capabilit
         modules.push_back(make_dashboard_module());
     modules.push_back(make_overview_module());
     modules.push_back(make_settings_module(wallpaper_decode_status));
+    modules.push_back(make_wallpaper_select_module());
     if (capabilities.rain)
         modules.push_back(make_rain_module());
     if (capabilities.visualizer)

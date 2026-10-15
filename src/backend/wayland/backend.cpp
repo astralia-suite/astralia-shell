@@ -170,6 +170,7 @@ int WaylandBackend::run(bool start_locked) {
         return false;
     });
     shell.bind(collect_shell_bindings(app));
+    app.run_verb = [&shell](astralia::ShellVerb verb) { shell.run(verb); };
     shell.after_verb([&app, &rest_egl_current] {
         for (auto &m : app.overlays)
             m->request_frame();

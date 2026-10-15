@@ -26,6 +26,7 @@
 #include "modules/settings/x11/settings.h"
 #include "modules/visualizer/x11/visualizer.h"
 #include "modules/wallpaper/x11/wallpaper.h"
+#include "modules/wallpaper_select/x11/wallpaper_select.h"
 
 namespace astralia {
 
@@ -56,7 +57,7 @@ class X11Backend final : public Backend {
         }
         Shell shell("x11", x11_capabilities());
         Services services(*x, *loop);
-        Wallpaper wallpaper(*x, services);
+        Wallpaper wallpaper(*x, *loop, services);
         BarSet bars(*x, *loop, shell, services);
         Launcher launcher(*x, *loop, shell, services);
         Lock lock(*x, *loop, shell, services);
@@ -66,6 +67,9 @@ class X11Backend final : public Backend {
         Notifications notifications(*x, *loop, services);
         Osd osd(*x, *loop, services);
         Settings settings(*x, *loop, shell, services);
+        WallpaperSelect wallpaper_select(*x, *loop, shell, services);
+        wallpaper.on_settings = [&shell] { shell.run(ShellVerb::settings); };
+        wallpaper.on_wallpaper = [&wallpaper_select](const std::string &monitor, int column) { wallpaper_select.open_on(monitor, column); };
         Dashboard dashboard(*x, *loop, shell, services);
         Rain rain(*x, *loop, shell, services);
         Idle idle(*x, *loop, services);

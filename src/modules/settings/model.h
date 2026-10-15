@@ -126,9 +126,6 @@ struct WallpaperPicker {
 const std::vector<SettingsTabInfo> &settings_all_tabs();
 std::string settings_field_text(const Config &config, SettingsField field, const std::string &monitor);
 void settings_apply_field(Config &config, SettingsField field, const std::string &text, const std::string &monitor);
-bool settings_picker_less(const std::string &a, const std::string &b);
-bool settings_is_image(const std::string &path);
-bool settings_is_video(const std::string &path);
 
 class SettingsModel {
   public:

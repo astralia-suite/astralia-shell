@@ -30,6 +30,7 @@ enum class ShellVerb : int {
     logout,
     overview,
     settings,
+    wallpaper,
     dashboard,
     rain,
     visualizer,

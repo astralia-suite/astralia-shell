@@ -14,6 +14,8 @@
 #include "wayland/app/config.h"
 #include "wayland/app/per_monitor_module.h"
 
+#include "modules/wallpaper/model.h"
+
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/texture.h"
 #include "wayland/render/video_texture.h"
@@ -115,6 +117,7 @@ struct WallpaperState {
 
     WallpaperColumnGl gl;
     std::vector<std::unique_ptr<WallpaperColumn>> columns;
+    astralia::DesktopMenuModel menu;
 
     std::function<void()> on_resize;
 };
@@ -147,6 +150,10 @@ class WallpaperPerMonitorModule final : public PerMonitorModule {
     void request_frame() override;
 
     void apply_config(WaylandState &app, MonitorOutput &mon, const Config &new_cfg) override;
+
+    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t serial) override;
+    void handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) override;
+    bool wants_pointing_hand_cursor() const override;
 
     void pause_animation();
     void resume_animation();

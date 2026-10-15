@@ -24,6 +24,7 @@ x11_sources = files(
   '../../modules/settings/x11/settings.cpp',
   '../../modules/visualizer/x11/visualizer.cpp',
   '../../modules/wallpaper/x11/wallpaper.cpp',
+  '../../modules/wallpaper_select/x11/wallpaper_select.cpp',
   'render/cairo_canvas.cpp',
   'render/app_icon.cpp',
   'render/cover_cache.cpp',

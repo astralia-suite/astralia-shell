@@ -30,6 +30,7 @@ wayland_sources = files(
   '../../modules/visualizer/wayland/sphere_visualizer.cpp',
   '../../modules/visualizer/wayland/visualizer_shaders.cpp',
   '../../modules/wallpaper/wayland/wallpaper.cpp',
+  '../../modules/wallpaper_select/wayland/wallpaper_select.cpp',
   'render/arc_gauge.cpp',
   'render/gl.cpp',
   'render/gl_canvas.cpp',

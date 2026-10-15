@@ -2,7 +2,9 @@
 
 #include <EGL/egl.h>
 #include <cstring>
+#include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 #include <wayland-client.h>
 
@@ -94,6 +96,8 @@ struct WaylandState {
     std::unique_ptr<astralia::Compositor> desktop = std::make_unique<astralia::NullCompositor>();
     astralia::Reactor *reactor = nullptr;
     std::vector<std::unique_ptr<MonitorOutput>> outputs;
+    std::function<void(astralia::ShellVerb)> run_verb;
+    std::function<void(const std::string &, int)> open_wallpaper_select;
 };
 
 inline bool compositor_available(const WaylandState &app) { return std::strcmp(app.desktop->name(), "none") != 0; }

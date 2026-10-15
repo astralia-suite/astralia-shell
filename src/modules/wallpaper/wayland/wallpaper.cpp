@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <linux/input-event-codes.h>
 #include <memory>
 #include <random>
 #include <thread>
@@ -20,6 +21,8 @@
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
 #include "wayland/render/renderer.h"
+
+#include "modules/wallpaper/view.h"
 
 #include "service/wallpaper_service.h"
 
@@ -428,6 +431,11 @@ void wallpaper_paint(WallpaperState &wp) {
     wallpaper_draw_columns(wp, wp.canvas, wp.width, wp.height);
     wp.canvas.flush();
     wallpaper_draw_transitions(wp);
+    if (wp.menu.is_open()) {
+        wp.canvas.begin(wp.output_scale.scale);
+        astralia::paint_desktop_menu(wp.canvas, wp.menu, wp.menu.box().x, wp.menu.box().y);
+        wp.canvas.flush();
+    }
     gl_check("wallpaper_paint");
 
     auto sw0 = std::chrono::steady_clock::now();
@@ -644,6 +652,53 @@ void WallpaperPerMonitorModule::resume_animation() {
 }
 
 void WallpaperPerMonitorModule::request_frame() { wallpaper_wake(state_); }
+
+void WallpaperPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t) {
+    if (surface != state_.surface || state_.width <= 0 || state_.height <= 0)
+        return;
+    astralia::DesktopMenuModel &menu = state_.menu;
+    if (button == BTN_RIGHT) {
+        size_t columns = std::max<size_t>(state_.columns.size(), 1);
+        int column = std::clamp(static_cast<int>(x / (static_cast<double>(state_.width) / static_cast<double>(columns))), 0, static_cast<int>(columns) - 1);
+        menu.toggle(static_cast<float>(x), static_cast<float>(y), static_cast<float>(state_.width), static_cast<float>(state_.height), column);
+        if (menu.is_open())
+            menu.hover(static_cast<float>(x) - menu.box().x, static_cast<float>(y) - menu.box().y);
+        wallpaper_request_frame(state_);
+        return;
+    }
+    if (button != BTN_LEFT || !menu.is_open())
+        return;
+    int entry = menu.entry_at(static_cast<float>(x) - menu.box().x, static_cast<float>(y) - menu.box().y);
+    int column = menu.column();
+    menu.close();
+    wallpaper_request_frame(state_);
+    if (entry < 0)
+        return;
+    if (astralia::DesktopMenuModel::entries()[static_cast<size_t>(entry)].action == astralia::DesktopMenuAction::settings) {
+        if (app.run_verb)
+            app.run_verb(astralia::ShellVerb::settings);
+    } else if (app.open_wallpaper_select) {
+        app.open_wallpaper_select(mon.output.name, column);
+    }
+}
+
+void WallpaperPerMonitorModule::handle_pointer_move(WaylandState &app, MonitorOutput &, double x, double y) {
+    if (!state_.menu.is_open())
+        return;
+    bool changed = false;
+    if (app.pointer.focused_surface == state_.surface)
+        changed = state_.menu.hover(static_cast<float>(x) - state_.menu.box().x, static_cast<float>(y) - state_.menu.box().y);
+    else if (state_.menu.hovered() >= 0) {
+        state_.menu.clear_hover();
+        changed = true;
+    }
+    if (changed)
+        wallpaper_request_frame(state_);
+}
+
+bool WallpaperPerMonitorModule::wants_pointing_hand_cursor() const {
+    return state_.menu.is_open() && state_.menu.hovered() >= 0;
+}
 
 MediaDecodeStatus WallpaperPerMonitorModule::decode_status(int column_index) const {
     return wallpaper_column_status(state_, column_index);

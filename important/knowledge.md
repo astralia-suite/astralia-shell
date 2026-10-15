@@ -55,6 +55,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - A `sticker()` shadow is drawn in `outline` unless `shadow_color` is passed. The bar passes `palette::shadow` through `BarStyleSpec::shadow_color`, so a bar pill has three tones: pastel `accent_container` fill, `ink` border and the darkest `shadow`. The shadow offset is `metrics::shadow_offset` on both axes and the corners are `metrics::radius_card`, like every card. The sticker box includes its shadow, so the surface height is unchanged. `okinami` has no shadow.
 - Fills under a `sticker()` are opaque. A translucent face shows the hard shadow through it; composite alpha fills over `paper` first.
 - Rank wallpaper seeds by `sqrt(area) * chroma`. A linear area score let the pale majority hide the small vivid hair and petals.
+- The thumbnail cache is keyed by path alone. Request the current wallpaper at the large size first and neighbours small; a path keeps its first size.
 - Draw every selectable control with `selectable()`. One selected look, accent fill with the shadow collapsed, keeps lists, tabs, toggles and tiles consistent.
 - Corners come from `metrics::radius_card` and `radius_widget` only. Per-module radius constants drifted into six unrelated values.
 - Mid-tone `accent` fails contrast as text on `paper`. Use `lavender` for accent-coloured text and `text` for the rest.
@@ -354,6 +355,8 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] A modifier-aware shortcut matches `KeyEvent::base_sym`, not `text`. `Shift`+`1` is `!` in `text`.
 - [wayland] A hover highlight clears on lost surface focus, not only on motion. Stolen focus leaves a stale hovered index.
 - [wayland] A highlight teardown nulls its source indices before recomputing. `logout`'s close re-lit the button through the exit.
+- [wayland] A full-output overlay that paints its own opaque backdrop must paint one empty frame after release. A closed surface keeps its last buffer.
+- [wayland] The desktop menu is drawn on the wallpaper surface itself, after the transitions. Only the wallpaper surface receives a right-click on bare desktop.
 - [wayland] A panel's staged dismissal is coded identically on every path. `Escape` and an outside click once disagreed.
 - [wayland] A generic "click missed" guard excluding a sibling surface pushes the decision onto it. That handler must know every overlay above.
 - [wayland] An overlay opened from a bar widget needs its own `*_here` term in `bar_paint`'s `want_shown`. Opening it steals focus and autohide collapses the bar.
@@ -394,6 +397,9 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [x11] The lock refuses to show when the keyboard grab fails. A lock screen that does not hold input is worse than none.
 - [x11] Read xkb modifiers from each key press's `state` field. Overlays opened by a Shift hotkey miss its release.
 - [x11] Map a popup beside a panel with `show(false)`, never focus. Taking focus fires the panel's focus-out close; its `owner_events` grab still routes clicks.
+- [x11] The desktop right-click lands on a bottom `InputOnly` override-redirect window per output. Only one client may select `ButtonPress` on the root, and the window manager usually holds it.
+- [x11] Reuse the desktop windows on output changes and unmap the extras. `EventLoop` cannot remove a window handler.
+- [x11] The desktop context menu grabs the pointer with `owner_events`. A click in another client's window then closes it instead of reaching that client.
 - [x11] Hide bars for unplugged or disabled outputs, never destroy them. `EventLoop` cannot remove windows or timers, so they would dangle.
 - [x11] Call `EventLoop::reschedule()` when an event moves a timer's deadline earlier. Deadlines are only recomputed after firing.
 - [x11] Drive GLib through an `EventLoop` poll source. Polkit and GDBus use changing fds that fixed fd watches miss.

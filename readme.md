@@ -82,6 +82,7 @@ A backend registers a module or verb only for the capabilities it reports. `astr
 | `logout` | toggle the logout overlay | yes | yes |
 | `overview` | toggle the overview | yes | yes |
 | `settings` | toggle the settings overlay | yes | yes |
+| `wallpaper` | toggle the wallpaper selector | yes | yes |
 | `dashboard` | toggle the dashboard window | yes | yes |
 | `rain` | toggle the rain overlay | yes | yes |
 | `visualizer` | toggle the audio visualizer overlay | yes | yes |

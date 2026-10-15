@@ -15,6 +15,7 @@ void check_shell() {
     }
     check(names.size() == static_cast<size_t>(ShellVerb::count), "every verb has its own name");
     check(std::string(shell_verb_spec(ShellVerb::launcher_global).name) == "launcher global", "the launcher keeps its two-word verb");
+    check(std::string(shell_verb_spec(ShellVerb::wallpaper).name) == "wallpaper" && shell_verb_available(wayland_capabilities(), ShellVerb::wallpaper) && shell_verb_available(x11_capabilities(), ShellVerb::wallpaper), "the wallpaper selector verb is offered on both backends");
 
     Capabilities wayland = wayland_capabilities();
     Capabilities x11 = x11_capabilities();
