@@ -1,12 +1,11 @@
 #pragma once
 
-#include "wayland/app/config.h"
-
 #include <functional>
 #include <utility>
 #include <vector>
 #include <wayland-client.h>
 
+#include "wayland/app/config.h"
 #include "wayland/app/ipc.h"
 
 #include "service/wayland/input_service.h"

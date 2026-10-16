@@ -166,25 +166,8 @@ void CairoCanvas::evict_thumbnails() {
     }
 }
 
-ui::ImageId CairoCanvas::thumbnail(std::string_view path, int px) {
-    std::string key(path);
-    auto found = thumbs_.find(key);
-    if (found != thumbs_.end()) {
-        Thumb &thumb = found->second;
-        if (thumb.id != ui::no_image) {
-            auto order = std::ranges::find(thumb_order_, key);
-            if (order != thumb_order_.end() && order != thumb_order_.begin()) {
-                thumb_order_.erase(order);
-                thumb_order_.push_front(key);
-            }
-        }
-        return thumb.id;
-    }
-    if (in_flight_ >= thumb_in_flight) {
-        return ui::no_image;
-    }
+void CairoCanvas::start_thumbnail(const std::string &key, int px) {
     thumbs_[key].pending = true;
-    thumb_order_.push_front(key);
     ++in_flight_;
     std::weak_ptr<bool> alive = alive_;
     uint64_t generation = generation_;
@@ -194,7 +177,7 @@ ui::ImageId CairoCanvas::thumbnail(std::string_view path, int px) {
         if (surface) {
             *decoded = std::move(*surface);
         }
-        DeferredCall::call_later([this, alive, key, generation, decoded] {
+        DeferredCall::call_later([this, alive, key, px, generation, decoded] {
             if (!alive.lock() || generation != generation_) {
                 return;
             }
@@ -204,8 +187,11 @@ ui::ImageId CairoCanvas::thumbnail(std::string_view path, int px) {
                 return;
             }
             it->second.pending = false;
+            it->second.px = px;
             if (*decoded) {
-                if (!free_slots_.empty()) {
+                if (it->second.id != ui::no_image) {
+                    images_[static_cast<size_t>(it->second.id)] = std::move(*decoded);
+                } else if (!free_slots_.empty()) {
                     it->second.id = free_slots_.back();
                     free_slots_.pop_back();
                     images_[static_cast<size_t>(it->second.id)] = std::move(*decoded);
@@ -220,6 +206,30 @@ ui::ImageId CairoCanvas::thumbnail(std::string_view path, int px) {
             }
         });
     }).detach();
+}
+
+ui::ImageId CairoCanvas::thumbnail(std::string_view path, int px) {
+    std::string key(path);
+    auto found = thumbs_.find(key);
+    if (found != thumbs_.end()) {
+        Thumb &thumb = found->second;
+        if (thumb.id != ui::no_image) {
+            auto order = std::ranges::find(thumb_order_, key);
+            if (order != thumb_order_.end() && order != thumb_order_.begin()) {
+                thumb_order_.erase(order);
+                thumb_order_.push_front(key);
+            }
+            if (px > thumb.px && !thumb.pending && in_flight_ < thumb_in_flight) {
+                start_thumbnail(key, px);
+            }
+        }
+        return thumb.id;
+    }
+    if (in_flight_ >= thumb_in_flight) {
+        return ui::no_image;
+    }
+    thumb_order_.push_front(key);
+    start_thumbnail(key, px);
     return ui::no_image;
 }
 

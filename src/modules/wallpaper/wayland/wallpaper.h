@@ -78,6 +78,7 @@ struct WallpaperColumn {
     int target_h = 0;
 
     std::shared_ptr<int> life = std::make_shared<int>(0);
+    std::function<void()> on_uploaded;
 
     Texture tex_prev;
     WallpaperTransition pending_transition = WallpaperTransition::None;

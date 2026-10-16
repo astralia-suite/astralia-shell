@@ -89,6 +89,7 @@
 - `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow, and `selectable()`, the one idle, hover and selected control look.
 - `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical, for the overview, settings and bar panels.
 - `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade that every scroll opens and closes with.
+- `icons.h`: The Tabler icon glyph codepoints used by every backend.
 - `glyphs.h`: Volume and brightness glyph thresholds over the icon table.
 - `geometry.h`: `Box`, the one rectangle type.
 - `host.h`: The surface and host contract a backend gives a module.
@@ -101,11 +102,11 @@
 
 ## `src/config/`
 
-- `bar_style.h`: `BarStyle` enum with its names and labels.
-- `bar_layout.h`: Bar height, margins, pill gaps, workspace, dock and peek constants shared by both bars.
+- `bar_layout.h`: `BarStyle` enum, bar height, margins, pill gaps, workspace, dock and peek constants shared by both bars.
 - `panel_config.h`: Panel card, scroll, row, slider, typography and per-panel constants.
 - `visualizer_config.h`: Visualizer constants and the `VisualizerParams` stored in the config.
 - `rain_config.h`: Rain constants and the `RainParams` stored in the config.
+- `lock_config.h`: Lock screen card, font, dot and background constants and the layer namespace.
 - `idle_config.h`: Idle activity pulse and screensaver logo constants both hosts use.
 - `dashboard_config.h`: Dashboard window title, id and default size.
 - `launcher_config.h`: Launcher commands, search URLs and limits, row and animation geometry, entrance duration.
@@ -117,7 +118,6 @@
 - `settings_config.h`: Settings window geometry, tab labels and row sizes.
 - `wallpaper_config.h`: Desktop context menu width, padding, row height and text sizes.
 - `wallpaper_select_config.h`: Wallpaper selector card scale, gap, image sizes, label geometry and motion timings.
-- `icons.h`: The Tabler icon glyph codepoints used by every backend.
 
 ## `src/modules/`
 
@@ -192,8 +192,8 @@
 - `wallpaper/view.{h,cpp}`: Paints the desktop menu over the canvas at a given origin.
 - `wallpaper/wayland/`: Per-output background surface; a right-click toggles the menu drawn on that surface and entries run through `WaylandState` hooks.
 - `wallpaper/x11/`: Root pixmap painter, plus one bottom `InputOnly` desktop window per output that catches the right-click and opens the menu window.
-- `wallpaper_select/model.{h,cpp}`: Image or video listing, selection, wheel accumulation, zoom and step tweens, card hit tests and apply to one output column.
-- `wallpaper_select/view.{h,cpp}`: Paints the current wallpaper as a card with neighbours, label and hit boxes, clipped to its column.
+- `wallpaper_select/model.{h,cpp}`: Image or video listing, selection, wheel, zoom and step tweens, reveal wait, card fade, apply handoff and hit tests.
+- `wallpaper_select/view.{h,cpp}`: Paints the current wallpaper as a card with neighbours, label and hit boxes, requesting thumbnails nearest-first.
 - `wallpaper_select/wayland/`: Full-output overlay with exclusive keyboard, retargeted to the output it opens on.
 - `wallpaper_select/x11/`: Override-redirect window with keyboard focus, painted through cairo.
 

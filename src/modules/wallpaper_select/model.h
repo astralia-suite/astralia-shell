@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "core/animation.h"
@@ -20,6 +21,7 @@ namespace astralia {
 struct WallpaperSelectHooks {
     std::function<const Config &()> config;
     std::function<void(const std::function<void(Config &)> &)> update;
+    std::function<bool()> settled;
 };
 
 struct WallpaperCard {
@@ -37,8 +39,11 @@ class WallpaperSelectModel {
     bool available() const;
     void open(const std::string &monitor, int column);
     void close();
-    void tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
-    void begin_frame() { cards_.clear(); }
+    void tick(std::chrono::steady_clock::time_point now);
+    void begin_frame() {
+        cards_.clear();
+        fading_ = false;
+    }
     void add_card(const ui::Box &box, int index) { cards_.push_back({box, index}); }
 
     void click(double x, double y);
@@ -47,16 +52,22 @@ class WallpaperSelectModel {
     void step(int delta);
     void select(int index);
     void apply();
+    void reveal();
+    void reveal_if_overdue(std::chrono::steady_clock::time_point now);
+    void wallpaper_settled(const std::string &monitor, int column);
+    float fade(const std::string &path, bool ready);
     bool clickable(double x, double y) const;
 
     bool is_open() const { return open_; }
     bool closing() const { return closing_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool waiting() const { return waiting_; }
+    bool animating() const { return animations_.hasActive() || waiting_ || holding_ || fading_; }
     bool scanning() const { return scanning_; }
     float zoom() const { return zoom_; }
     float position() const { return position_; }
     int selected() const { return selected_; }
     const std::string &current() const { return current_; }
+    const std::string &target() const { return applying_ ? target_ : current_; }
     const std::string &directory() const { return directory_; }
     const std::string &monitor() const { return monitor_; }
     int column() const { return column_; }
@@ -66,11 +77,14 @@ class WallpaperSelectModel {
 
     std::function<void()> on_close_requested;
     std::function<void()> on_closed;
+    std::function<void()> on_revealed;
     std::function<void()> on_changed;
 
   private:
     void changed();
     void scan();
+    void start_zoom();
+    void finish_close();
     void request_close();
     const WallpaperCard *card_at(double x, double y) const;
 
@@ -83,6 +97,11 @@ class WallpaperSelectModel {
     std::vector<std::string> files_;
     std::string monitor_;
     std::string current_;
+    std::string target_;
+    std::unordered_map<std::string, std::chrono::steady_clock::time_point> seen_;
+    std::chrono::steady_clock::time_point opened_at_{};
+    std::chrono::steady_clock::time_point hold_deadline_{};
+    std::chrono::steady_clock::time_point settled_at_{};
     std::string directory_;
     int column_ = 0;
     int selected_ = 0;
@@ -93,6 +112,11 @@ class WallpaperSelectModel {
     bool open_ = false;
     bool closing_ = false;
     bool scanning_ = false;
+    bool waiting_ = false;
+    bool applying_ = false;
+    bool settled_ = false;
+    bool holding_ = false;
+    bool fading_ = false;
 };
 
 } // namespace astralia

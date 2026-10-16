@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "render/canvas.h"
@@ -31,6 +32,7 @@ class RecordingCanvas final : public astralia::ui::Canvas {
     float glyph_w = 9;
     float glyph_h = 20;
     astralia::ui::ImageId image_id = 0;
+    std::vector<std::pair<std::string, int>> thumbnails;
 
     void rect(const astralia::ui::Box &box, const astralia::Color &fill) override {
         ops.push_back({Op::Kind::rect, box, 0, 0, "", fill});
@@ -58,7 +60,10 @@ class RecordingCanvas final : public astralia::ui::Canvas {
         ops.push_back({Op::Kind::text, {x, y, 0, 0}, 0, 0, std::string(text), color});
     }
     astralia::ui::ImageId image(std::string_view, int) override { return image_id; }
-    astralia::ui::ImageId thumbnail(std::string_view, int) override { return image_id; }
+    astralia::ui::ImageId thumbnail(std::string_view path, int px) override {
+        thumbnails.emplace_back(std::string(path), px);
+        return image_id;
+    }
     astralia::ui::TextSize image_size(astralia::ui::ImageId) override { return {64, 64}; }
     void draw_image(astralia::ui::ImageId, const astralia::ui::Box &box, const astralia::Color &tint) override {
         ops.push_back({Op::Kind::image, box, 0, 0, "", tint});

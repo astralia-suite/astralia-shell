@@ -137,32 +137,15 @@ void GlCanvas::evict_thumbnails() {
     }
 }
 
-ui::ImageId GlCanvas::thumbnail(std::string_view path, int px) {
-    std::string key(path);
-    auto found = thumbs_.find(key);
-    if (found != thumbs_.end()) {
-        Thumb &thumb = found->second;
-        if (thumb.id != ui::no_image) {
-            auto order = std::ranges::find(thumb_order_, key);
-            if (order != thumb_order_.end() && order != thumb_order_.begin()) {
-                thumb_order_.erase(order);
-                thumb_order_.push_front(key);
-            }
-        }
-        return thumb.id;
-    }
-    if (in_flight_ >= kThumbInFlight) {
-        return ui::no_image;
-    }
+void GlCanvas::start_thumbnail(const std::string &key, int px) {
     thumbs_[key].pending = true;
-    thumb_order_.push_front(key);
     ++in_flight_;
     std::weak_ptr<bool> alive = alive_;
     std::thread([this, alive, key, px] {
         int w = 0;
         int h = 0;
         unsigned char *data = animate_decode_scaled(key, px, px, w, h);
-        astralia::DeferredCall::call_later([this, alive, key, data, w, h] {
+        astralia::DeferredCall::call_later([this, alive, key, px, data, w, h] {
             if (!alive.lock()) {
                 delete[] data;
                 return;
@@ -174,19 +157,22 @@ ui::ImageId GlCanvas::thumbnail(std::string_view path, int px) {
                 return;
             }
             it->second.pending = false;
+            it->second.px = px;
             if (data != nullptr) {
                 if (make_current_) {
                     make_current_();
                 }
                 auto texture = std::make_unique<Texture>(make_texture_rgba(w, h, data, true));
                 delete[] data;
-                if (!free_slots_.empty()) {
+                if (it->second.id != astralia::ui::no_image) {
+                    images_[static_cast<size_t>(it->second.id)] = std::move(texture);
+                } else if (!free_slots_.empty()) {
                     it->second.id = free_slots_.back();
                     free_slots_.pop_back();
                     images_[static_cast<size_t>(it->second.id)] = std::move(texture);
                 } else {
                     images_.push_back(std::move(texture));
-                    it->second.id = static_cast<ui::ImageId>(images_.size() - 1);
+                    it->second.id = static_cast<astralia::ui::ImageId>(images_.size() - 1);
                 }
                 evict_thumbnails();
             }
@@ -195,6 +181,30 @@ ui::ImageId GlCanvas::thumbnail(std::string_view path, int px) {
             }
         });
     }).detach();
+}
+
+ui::ImageId GlCanvas::thumbnail(std::string_view path, int px) {
+    std::string key(path);
+    auto found = thumbs_.find(key);
+    if (found != thumbs_.end()) {
+        Thumb &thumb = found->second;
+        if (thumb.id != ui::no_image) {
+            auto order = std::ranges::find(thumb_order_, key);
+            if (order != thumb_order_.end() && order != thumb_order_.begin()) {
+                thumb_order_.erase(order);
+                thumb_order_.push_front(key);
+            }
+            if (px > thumb.px && !thumb.pending && in_flight_ < kThumbInFlight) {
+                start_thumbnail(key, px);
+            }
+        }
+        return thumb.id;
+    }
+    if (in_flight_ >= kThumbInFlight) {
+        return ui::no_image;
+    }
+    thumb_order_.push_front(key);
+    start_thumbnail(key, px);
     return ui::no_image;
 }
 

@@ -65,10 +65,12 @@ class GlCanvas final : public astralia::ui::Canvas {
     std::unordered_map<std::string, astralia::ui::ImageId> image_ids_;
     struct Thumb {
         astralia::ui::ImageId id = astralia::ui::no_image;
+        int px = 0;
         bool pending = false;
     };
 
     void evict_thumbnails();
+    void start_thumbnail(const std::string &key, int px);
 
     std::unordered_map<std::string, Thumb> thumbs_;
     std::deque<std::string> thumb_order_;

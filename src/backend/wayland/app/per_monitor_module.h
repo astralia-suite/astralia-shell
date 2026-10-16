@@ -1,10 +1,9 @@
 #pragma once
 
-#include "wayland/app/config.h"
-
 #include <vector>
 #include <wayland-client.h>
 
+#include "wayland/app/config.h"
 #include "wayland/app/ipc.h"
 
 struct WaylandState;

@@ -1,7 +1,10 @@
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
+#include <numeric>
 #include <string>
+#include <vector>
 
 #include "config/wallpaper_select_config.h"
 
@@ -22,30 +25,29 @@ float lerp(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
-void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, const std::string &path, int px, int fallback_px) {
-    ui::ImageId image = canvas.thumbnail(path, px);
-    if (image == ui::no_image && fallback_px != px) {
-        image = canvas.thumbnail(path, fallback_px);
-    }
+void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, ui::ImageId image, float reveal) {
     canvas.begin_group(inner, {.clip = true, .radius = radius});
     ui::TextSize size = image == ui::no_image ? ui::TextSize{} : canvas.image_size(image);
+    if (reveal < 1.0f || size.w <= 0.0f || size.h <= 0.0f) {
+        canvas.rect({0.0f, 0.0f, inner.w, inner.h}, palette::surface);
+    }
     if (size.w > 0.0f && size.h > 0.0f) {
         float scale = std::max(inner.w / size.w, inner.h / size.h);
         float w = size.w * scale;
         float h = size.h * scale;
-        canvas.draw_image(image, {(inner.w - w) / 2.0f, (inner.h - h) / 2.0f, w, h}, palette::white);
-    } else {
-        canvas.rect({0.0f, 0.0f, inner.w, inner.h}, palette::surface);
+        Color tint = palette::white;
+        tint.a = reveal;
+        canvas.draw_image(image, {(inner.w - w) / 2.0f, (inner.h - h) / 2.0f, w, h}, tint);
     }
     canvas.end_group();
 }
 
-void draw_card(ui::Canvas &canvas, const ui::Box &box, float zoom, const std::string &path, int px, int fallback_px) {
+void draw_card(ui::Canvas &canvas, const ui::Box &box, float zoom, ui::ImageId image, float reveal) {
     float radius = metrics::radius_card * zoom;
     float border = metrics::border_thick * zoom;
     sticker(canvas, box, radius, palette::paper, palette::ink, border, metrics::shadow_offset * zoom);
     ui::Box inner{box.x + border, box.y + border, std::max(0.0f, box.w - border * 2.0f), std::max(0.0f, box.h - border * 2.0f)};
-    draw_cover(canvas, inner, std::max(0.0f, radius - border), path, px, fallback_px);
+    draw_cover(canvas, inner, std::max(0.0f, radius - border), image, reveal);
 }
 
 float neighbour_scale(float distance) {
@@ -69,12 +71,25 @@ void centred_text(ui::Canvas &canvas, const std::string &text, float cx, float y
 
 void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width, float height) {
     model.begin_frame();
-    float zoom = std::clamp(model.zoom(), 0.0f, 1.0f);
     canvas.set_opacity(1.0f);
     float columns = static_cast<float>(model.column_count());
     float x0 = std::floor(width * static_cast<float>(model.column()) / columns);
     float x1 = std::floor(width * static_cast<float>(model.column() + 1) / columns);
     width = x1 - x0;
+    int centre_px = std::min(cfg::centre_px, static_cast<int>(std::max(width, height)));
+
+    if (model.waiting()) {
+        if (canvas.thumbnail(model.current(), centre_px) != ui::no_image) {
+            model.reveal();
+        } else {
+            model.reveal_if_overdue(std::chrono::steady_clock::now());
+        }
+        if (model.waiting()) {
+            return;
+        }
+    }
+
+    float zoom = std::clamp(model.zoom(), 0.0f, 1.0f);
     canvas.rect({x0, 0.0f, width, height}, palette::base);
 
     const std::vector<std::string> &files = model.files();
@@ -94,11 +109,20 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     float cx = x0 + width / 2.0f;
     float cy = lerp(height / 2.0f, target_cy, zoom);
 
-    int centre_px = std::min(cfg::centre_px, static_cast<int>(std::max(width, height)));
-    int near_px = cfg::neighbour_px;
     float position = model.position();
     int first = std::max(0, static_cast<int>(std::floor(position)) - cfg::visible_neighbours);
     int last = std::min(static_cast<int>(files.size()) - 1, static_cast<int>(std::ceil(position)) + cfg::visible_neighbours);
+
+    std::vector<int> request_order(static_cast<size_t>(last - first + 1));
+    std::iota(request_order.begin(), request_order.end(), first);
+    std::ranges::sort(request_order, {}, [position](int index) { return std::abs(static_cast<float>(index) - position); });
+    bool settled = std::abs(position - static_cast<float>(model.selected())) < 0.01f;
+    std::vector<ui::ImageId> images(request_order.size(), ui::no_image);
+    for (int index : request_order) {
+        const std::string &path = files[static_cast<size_t>(index)];
+        bool sharp = path == model.target() || (settled && index == model.selected());
+        images[static_cast<size_t>(index - first)] = canvas.thumbnail(path, sharp ? centre_px : cfg::neighbour_px);
+    }
 
     canvas.begin_group({x0, 0.0f, width, height}, {.clip = true});
     for (int ring = cfg::visible_neighbours + 1; ring >= 0; --ring) {
@@ -113,9 +137,9 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
             ui::Box box{cx + centre_offset(distance, card_w) - w / 2.0f, cy - h / 2.0f, w, h};
             float fade = std::abs(distance) <= 1.0f ? 1.0f : std::max(0.0f, 1.0f - (std::abs(distance) - 1.0f) * cfg::neighbour_fade);
             canvas.set_opacity(fade);
-            const std::string &path = files[static_cast<size_t>(index)];
-            bool current = path == model.current();
-            draw_card(canvas, {box.x - x0, box.y, box.w, box.h}, zoom, path, current ? centre_px : near_px, near_px);
+            ui::ImageId image = images[static_cast<size_t>(index - first)];
+            float reveal = model.fade(files[static_cast<size_t>(index)], image != ui::no_image);
+            draw_card(canvas, {box.x - x0, box.y, box.w, box.h}, zoom, image, reveal);
             model.add_card(box, index);
         }
     }

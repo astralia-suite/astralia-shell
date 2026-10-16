@@ -98,6 +98,8 @@ struct WaylandState {
     std::vector<std::unique_ptr<MonitorOutput>> outputs;
     std::function<void(astralia::ShellVerb)> run_verb;
     std::function<void(const std::string &, int)> open_wallpaper_select;
+    std::function<void(const std::string &, int)> on_wallpaper_uploaded;
+    bool suppress_wallpaper_transition = false;
 };
 
 inline bool compositor_available(const WaylandState &app) { return std::strcmp(app.desktop->name(), "none") != 0; }

@@ -30,7 +30,8 @@ WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, 
       keyboard_(x.conn()),
       model_(WallpaperSelectHooks{
                  [&services]() -> const Config & { return services.settings.config(); },
-                 [&services](const std::function<void(Config &)> &edit) { services.settings.update(edit); }},
+                 [&services](const std::function<void(Config &)> &edit) { services.settings.update(edit); },
+                 {}},
              x11_capabilities().animated_wallpaper) {
     repaint_timer_ = loop.add_timer([this] { return repaint_pending_ ? repaint_batch : std::chrono::milliseconds(std::chrono::hours(1)); },
                                     [this] {
@@ -80,9 +81,9 @@ void WallpaperSelect::open_on(const std::string &monitor, int column) {
     window_.place(found->geometry);
     keyboard_.reload();
     open_ = true;
+    shown_ = false;
     model_.open(found->name, column);
     paint();
-    window_.show(true);
     log::info("wallpaper-select: open on {}", found->name);
 }
 
@@ -96,6 +97,7 @@ void WallpaperSelect::close() {
 void WallpaperSelect::closed() {
     open_ = false;
     repaint_pending_ = false;
+    shown_ = false;
     window_.set_cursor(CursorShape::arrow);
     window_.hide();
     canvas_.release_images();
@@ -156,7 +158,15 @@ void WallpaperSelect::paint() {
     window_.clear();
     canvas_.bind(window_.cr());
     paint_wallpaper_select(canvas_, model_, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    if (model_.waiting()) {
+        schedule_paint();
+        return;
+    }
     window_.present();
+    if (!shown_ && open_) {
+        shown_ = true;
+        window_.show(true);
+    }
 }
 
 } // namespace astralia

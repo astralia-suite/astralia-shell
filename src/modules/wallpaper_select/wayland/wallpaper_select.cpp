@@ -57,8 +57,11 @@ class WallpaperSelectModule final : public Module {
             hooks.update = [&app](const std::function<void(Config &)> &edit) {
                 Config updated = app.cfg;
                 edit(updated);
+                app.suppress_wallpaper_transition = true;
                 app_detail::save_and_apply_config_update(app, updated);
+                app.suppress_wallpaper_transition = false;
             };
+            hooks.settled = [] { return false; };
             model_ = std::make_unique<astralia::WallpaperSelectModel>(std::move(hooks), app.capabilities.animated_wallpaper);
             model_->on_close_requested = [this] { toggle(); };
             model_->on_closed = [this] { overlay_panel_release(base_); };
@@ -66,6 +69,10 @@ class WallpaperSelectModule final : public Module {
         }
         bound_output_ = output_;
         enabled_ = true;
+        app.on_wallpaper_uploaded = [this](const std::string &monitor, int column) {
+            if (model_)
+                model_->wallpaper_settled(monitor, column);
+        };
         app.open_wallpaper_select = [this, &app](const std::string &monitor, int column) {
             for (auto &mon : app.outputs)
                 if (mon->output.name == monitor) {

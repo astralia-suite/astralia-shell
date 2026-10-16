@@ -197,6 +197,8 @@ void wallpaper_column_upload_pending(WallpaperColumn &col, const WallpaperColumn
         col.pending_pixels = nullptr;
         if (gl.request_frame)
             gl.request_frame();
+        if (col.on_uploaded)
+            col.on_uploaded();
         return;
     }
     update_texture_rgba(col.tex, col.pending_width, col.pending_height, col.pending_pixels, !animated, col.pending_stride);
@@ -204,6 +206,8 @@ void wallpaper_column_upload_pending(WallpaperColumn &col, const WallpaperColumn
     col.pending_pixels = nullptr;
     if (gl.request_frame)
         gl.request_frame();
+    if (col.on_uploaded)
+        col.on_uploaded();
     float ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
     if (ms > 5.0f)
         klog("wallpaper: cpu upload %.1fms", ms);
@@ -593,7 +597,13 @@ void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg, const std
                 continue;
             wallpaper_column_set_animated(col, wp.gl, path, sz.w, sz.h, mode);
         } else {
+            col.on_uploaded = [&wp, i] {
+                if (wp.app && wp.app->on_wallpaper_uploaded)
+                    wp.app->on_wallpaper_uploaded(wp.output_name, i);
+            };
             wallpaper_column_set_static(col, wp.gl, path, sz.w, sz.h, mode);
+            if (wp.app && wp.app->suppress_wallpaper_transition)
+                col.pending_transition = WallpaperTransition::None;
         }
     }
 }

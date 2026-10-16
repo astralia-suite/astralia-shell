@@ -38,6 +38,7 @@ class WallpaperSelect {
     CairoCanvas canvas_;
     WallpaperSelectModel model_;
     bool open_ = false;
+    bool shown_ = false;
     bool repaint_pending_ = false;
     int repaint_timer_ = 0;
     std::string bound_output_;
