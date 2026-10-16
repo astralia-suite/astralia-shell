@@ -1,4 +1,4 @@
-g#include <algorithm>
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <string>
