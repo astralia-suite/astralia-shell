@@ -85,15 +85,32 @@ void enter(LockMotion &m, float card_w, float card_h) {
     m.content_scale = kLockScaleHidden;
 
     AnimationManager &a = m.animations;
-    a.animate(kLockScaleHidden, kLockScaleFull, kLockAnimSpinMs, Easing::EaseOutBack, [&m](float v) { m.panel_scale = v; }, {}, kLockOwnerPanelScale);
-    a.animate(0.0f, 360.0f, kLockAnimSpinMs, Easing::EaseInOutCubic, [&m](float v) { m.panel_rotation = v; }, [&m, card_w, card_h] {
+    a.animate(
+        kLockScaleHidden, kLockScaleFull, kLockAnimSpinMs, Easing::EaseOutBack,
+        [&m](float v) { m.panel_scale = v; }, {}, kLockOwnerPanelScale);
+    a.animate(
+        0.0f, 360.0f, kLockAnimSpinMs, Easing::EaseInOutCubic,
+        [&m](float v) { m.panel_rotation = v; },
+        [&m, card_w, card_h] {
             m.panel_rotation = 0.0f;
             AnimationManager &b = m.animations;
-            b.animate(m.panel_w, card_w, kLockAnimExpandMs, Easing::EaseOutCubic, [&m](float v) { m.panel_w = v; }, {}, kLockOwnerPanelWidth);
-            b.animate(m.panel_h, card_h, kLockAnimExpandMs, Easing::EaseOutCubic, [&m](float v) { m.panel_h = v; }, {}, kLockOwnerPanelHeight);
-            b.animate(1.0f, 0.0f, kLockAnimIconFadeOutMs, Easing::EaseOutCubic, [&m](float v) { m.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
-            b.animate(0.0f, 1.0f, kLockAnimContentFadeInMs, Easing::EaseOutCubic, [&m](float v) { m.content_alpha = v; }, {}, kLockOwnerContentAlpha);
-            b.animate(kLockScaleHidden, kLockScaleFull, kLockAnimContentScaleInMs, Easing::EaseOutBack, [&m](float v) { m.content_scale = v; }, {}, kLockOwnerContentScale); }, kLockOwnerPanelRotation);
+            b.animate(
+                m.panel_w, card_w, kLockAnimExpandMs, Easing::EaseOutCubic,
+                [&m](float v) { m.panel_w = v; }, {}, kLockOwnerPanelWidth);
+            b.animate(
+                m.panel_h, card_h, kLockAnimExpandMs, Easing::EaseOutCubic,
+                [&m](float v) { m.panel_h = v; }, {}, kLockOwnerPanelHeight);
+            b.animate(
+                1.0f, 0.0f, kLockAnimIconFadeOutMs, Easing::EaseOutCubic,
+                [&m](float v) { m.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
+            b.animate(
+                0.0f, 1.0f, kLockAnimContentFadeInMs, Easing::EaseOutCubic,
+                [&m](float v) { m.content_alpha = v; }, {}, kLockOwnerContentAlpha);
+            b.animate(
+                kLockScaleHidden, kLockScaleFull, kLockAnimContentScaleInMs, Easing::EaseOutBack,
+                [&m](float v) { m.content_scale = v; }, {}, kLockOwnerContentScale);
+        },
+        kLockOwnerPanelRotation);
 }
 
 } // namespace
@@ -112,15 +129,33 @@ void lock_motion_exit(LockMotion &motion, std::function<void()> done) {
     m.unlocking = true;
     float box = lock_icon_box_size();
     AnimationManager &a = m.animations;
-    a.animate(m.panel_w, box, kLockAnimShrinkMs, Easing::EaseInCubic, [&m](float v) { m.panel_w = v; }, {}, kLockOwnerPanelWidth);
-    a.animate(m.panel_h, box, kLockAnimShrinkMs, Easing::EaseInCubic, [&m](float v) { m.panel_h = v; }, {}, kLockOwnerPanelHeight);
-    a.animate(m.icon_alpha, 1.0f, kLockAnimIconFadeInMs, Easing::EaseInCubic, [&m](float v) { m.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
-    a.animate(m.content_alpha, 0.0f, kLockAnimContentFadeOutMs, Easing::EaseInCubic, [&m](float v) { m.content_alpha = v; }, {}, kLockOwnerContentAlpha);
-    a.animate(m.content_scale, kLockScaleHidden, kLockAnimContentScaleOutMs, Easing::EaseInBack, [&m](float v) { m.content_scale = v; }, {}, kLockOwnerContentScale);
-    a.animate(0.0f, 1.0f, kLockAnimShrinkMs, Easing::Linear, [](float) {}, [&m, done = std::move(done)] {
+    a.animate(
+        m.panel_w, box, kLockAnimShrinkMs, Easing::EaseInCubic, [&m](float v) { m.panel_w = v; },
+        {}, kLockOwnerPanelWidth);
+    a.animate(
+        m.panel_h, box, kLockAnimShrinkMs, Easing::EaseInCubic, [&m](float v) { m.panel_h = v; },
+        {}, kLockOwnerPanelHeight);
+    a.animate(
+        m.icon_alpha, 1.0f, kLockAnimIconFadeInMs, Easing::EaseInCubic,
+        [&m](float v) { m.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
+    a.animate(
+        m.content_alpha, 0.0f, kLockAnimContentFadeOutMs, Easing::EaseInCubic,
+        [&m](float v) { m.content_alpha = v; }, {}, kLockOwnerContentAlpha);
+    a.animate(
+        m.content_scale, kLockScaleHidden, kLockAnimContentScaleOutMs, Easing::EaseInBack,
+        [&m](float v) { m.content_scale = v; }, {}, kLockOwnerContentScale);
+    a.animate(
+        0.0f, 1.0f, kLockAnimShrinkMs, Easing::Linear, [](float) {},
+        [&m, done = std::move(done)] {
             AnimationManager &b = m.animations;
-            b.animate(m.panel_scale, kLockScaleHidden, kLockAnimSpinMs, Easing::EaseInBack, [&m](float v) { m.panel_scale = v; }, {}, kLockOwnerPanelScale);
-            b.animate(0.0f, -360.0f, kLockAnimSpinMs, Easing::EaseInOutCubic, [&m](float v) { m.panel_rotation = v; }, done, kLockOwnerPanelRotation); }, kLockOwnerSequence);
+            b.animate(
+                m.panel_scale, kLockScaleHidden, kLockAnimSpinMs, Easing::EaseInBack,
+                [&m](float v) { m.panel_scale = v; }, {}, kLockOwnerPanelScale);
+            b.animate(
+                0.0f, -360.0f, kLockAnimSpinMs, Easing::EaseInOutCubic,
+                [&m](float v) { m.panel_rotation = v; }, done, kLockOwnerPanelRotation);
+        },
+        kLockOwnerSequence);
 }
 
 void lock_motion_type(LockMotion &motion, const std::string &password) {

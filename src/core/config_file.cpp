@@ -35,8 +35,7 @@ std::string_view entry_key(std::string_view line) {
     return trim(line.substr(0, equals));
 }
 
-template <typename Visit>
-void for_each_line(std::string_view text, Visit visit) {
+template <typename Visit> void for_each_line(std::string_view text, Visit visit) {
     while (!text.empty()) {
         std::size_t end = text.find('\n');
         visit(text.substr(0, end));

@@ -41,7 +41,8 @@ void check_runtime_path() {
               "/run/user/1000/astralia-wayland-1.sock",
           "wayland socket name names the socket");
     check(runtime_path("/tmp/launch/org:0", "", ".log") == "/tmp/astralia-_tmp_launch_org0.log",
-          "slashes become underscores and an empty runtime dir falls back to /tmp");
+          "slashes become underscores and an empty runtime dir falls back to "
+          "/tmp");
     check(runtime_path("", "/run/user/1000", ".sock") == "/run/user/1000/astralia.sock",
           "unset session drops the suffix");
 }

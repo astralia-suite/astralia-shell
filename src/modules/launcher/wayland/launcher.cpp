@@ -21,7 +21,8 @@ namespace {
 constexpr uint64_t kEntranceOwner = 2;
 constexpr float kEntranceBoltGain = 1.3f;
 
-void launcher_layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial, uint32_t width, uint32_t height) {
+void launcher_layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface,
+                                      uint32_t serial, uint32_t width, uint32_t height) {
     auto *state = static_cast<LauncherState *>(data);
     zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
     state->width = static_cast<int32_t>(width);
@@ -44,8 +45,13 @@ void launcher_start_entrance(LauncherState &state) {
     state.animations.cancelForOwner(kOverlayFadeOwner);
     state.entrance_active = true;
     state.entrance_t = 0.0f;
-    state.entrance_seed = static_cast<float>(std::chrono::steady_clock::now().time_since_epoch().count() % 4096) / 64.0f;
-    state.animations.animate(0.0f, 1.0f, astralia::launcher_config::entrance_ms, astralia::Easing::Linear, [&state](float v) { state.entrance_t = v; }, [&state] { state.entrance_active = false; }, kEntranceOwner);
+    state.entrance_seed =
+        static_cast<float>(std::chrono::steady_clock::now().time_since_epoch().count() % 4096) /
+        64.0f;
+    state.animations.animate(
+        0.0f, 1.0f, astralia::launcher_config::entrance_ms, astralia::Easing::Linear,
+        [&state](float v) { state.entrance_t = v; }, [&state] { state.entrance_active = false; },
+        kEntranceOwner);
 }
 
 void launcher_draw_entrance(LauncherState &state) {
@@ -98,15 +104,17 @@ void launcher_update_input_region(LauncherState &state) {
 
 } // namespace
 
-bool launcher_create_surface(LauncherState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
+bool launcher_create_surface(LauncherState &state, wl_compositor *compositor,
+                             zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
     state.compositor = compositor;
     LayerSurfaceConfig cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
         .name_space = "astralia-shell-launcher",
-        .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+        .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
+                  ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
     };
-    state.layer_surface =
-        layer_surface_create(state.surface, compositor, layer_shell, cfg, &launcher_layer_surface_listener, &state, output);
+    state.layer_surface = layer_surface_create(state.surface, compositor, layer_shell, cfg,
+                                               &launcher_layer_surface_listener, &state, output);
     if (!state.layer_surface)
         return false;
     state.output_scale.on_change = [&state](int32_t scale) {
@@ -122,14 +130,17 @@ bool launcher_create_surface(LauncherState &state, wl_compositor *compositor, zw
     return true;
 }
 
-bool launcher_init_egl(LauncherState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool launcher_init_egl(LauncherState &state, Renderer &renderer, EGLDisplay display,
+                       EGLConfig config, EGLContext context) {
     state.renderer = &renderer;
     state.canvas.bind(renderer);
     state.egl_display = display;
     state.egl_context = context;
     int32_t scale = state.output_scale.scale;
-    state.egl_window = wl_egl_window_create(state.surface, state.width * scale, state.height * scale);
-    state.egl_surface = eglCreateWindowSurface(display, config, reinterpret_cast<EGLNativeWindowType>(state.egl_window), nullptr);
+    state.egl_window =
+        wl_egl_window_create(state.surface, state.width * scale, state.height * scale);
+    state.egl_surface = eglCreateWindowSurface(
+        display, config, reinterpret_cast<EGLNativeWindowType>(state.egl_window), nullptr);
     if (state.egl_surface == EGL_NO_SURFACE)
         return false;
     if (!gl_make_current(display, state.egl_surface, context))
@@ -172,9 +183,13 @@ void launcher_destroy_surface(LauncherState &state) {
     state.configured = false;
 }
 
-void launcher_retarget(LauncherState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name) {
+void launcher_retarget(LauncherState &state, wl_compositor *compositor,
+                       zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
+                       EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
+                       wl_output *target_output, const char *target_name) {
     wl_output *previous_output = state.bound_output;
-    klog("panel: launcher retargeting from output=%p to '%s'", static_cast<void *>(previous_output), target_name);
+    klog("panel: launcher retargeting from output=%p to '%s'", static_cast<void *>(previous_output),
+         target_name);
 
     launcher_destroy_surface(state);
     state.open = false;
@@ -212,29 +227,38 @@ void launcher_toggle(LauncherState &state, bool global) {
         launcher_request_frame(state);
         state.animations.cancelForOwner(kEntranceOwner);
         state.entrance_active = false;
-        state.animations.animate(state.opacity, 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&state](float v) { state.opacity = v; }, [&state] {
+        state.animations.animate(
+            state.opacity, 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+            [&state](float v) { state.opacity = v; },
+            [&state] {
                 state.open = false;
                 state.model->close();
-                zwlr_layer_surface_v1_set_keyboard_interactivity(state.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+                zwlr_layer_surface_v1_set_keyboard_interactivity(
+                    state.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
                 launcher_update_input_region(state);
                 wl_surface_commit(state.surface);
                 astralia::DeferredCall::call_later([&state] {
                     if (!state.open)
                         launcher_destroy_surface(state);
-                }); }, kOverlayFadeOwner);
+                });
+            },
+            kOverlayFadeOwner);
         return;
     }
 
     klog("launcher: OPEN (global=%d)", global);
     state.model->open(global);
     state.open = true;
-    zwlr_layer_surface_v1_set_keyboard_interactivity(state.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
+    zwlr_layer_surface_v1_set_keyboard_interactivity(
+        state.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
     launcher_update_input_region(state);
     wl_surface_commit(state.surface);
     if (state.lightning)
         launcher_start_entrance(state);
     else
-        state.animations.animate(state.opacity, 1.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&state](float v) { state.opacity = v; }, {}, kOverlayFadeOwner);
+        state.animations.animate(
+            state.opacity, 1.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+            [&state](float v) { state.opacity = v; }, {}, kOverlayFadeOwner);
     launcher_request_frame(state);
     if (state.sync_text_input_focus)
         state.sync_text_input_focus(true);
@@ -266,7 +290,8 @@ void launcher_handle_click(LauncherState &state, double px, double py) {
         return;
     }
     if (astralia::launcher_field_hit(state.frame, px, py)) {
-        state.model->pointer_down(astralia::launcher_field_column(state.frame, px), std::chrono::steady_clock::now());
+        state.model->pointer_down(astralia::launcher_field_column(state.frame, px),
+                                  std::chrono::steady_clock::now());
         return;
     }
     const astralia::ui::Box &r = state.frame.box;
@@ -275,7 +300,8 @@ void launcher_handle_click(LauncherState &state, double px, double py) {
         launcher_toggle(state, false);
 }
 
-void launcher_handle_pointer_move(LauncherState &state, wl_surface *focused_surface, double px, double py) {
+void launcher_handle_pointer_move(LauncherState &state, wl_surface *focused_surface, double px,
+                                  double py) {
     if (!state.model)
         return;
     int row = !state.open || focused_surface != state.surface ? -1 : launcher_row_at(state, px, py);
@@ -314,7 +340,9 @@ void launcher_paint(LauncherState &state) {
     astralia::EntranceState entrance{state.entrance_t, state.entrance_seed};
     bool entering = state.entrance_active && state.open && state.model;
     if (state.open && state.model)
-        state.frame = astralia::paint_launcher(state.canvas, *state.model, static_cast<float>(state.width), static_cast<float>(state.height), entering ? &entrance : nullptr);
+        state.frame = astralia::paint_launcher(
+            state.canvas, *state.model, static_cast<float>(state.width),
+            static_cast<float>(state.height), entering ? &entrance : nullptr);
     state.canvas.flush();
     if (entering)
         launcher_draw_entrance(state);
@@ -359,7 +387,8 @@ class LauncherModule final : public Module, public TextInputClient {
     }
 
     bool init_egl(WaylandState &app) override {
-        if (!launcher_init_egl(state_, app.renderer, app.egl_display, app.egl_config, app.egl_context))
+        if (!launcher_init_egl(state_, app.renderer, app.egl_display, app.egl_config,
+                               app.egl_context))
             return false;
         state_.bound_output = output_;
         if (!state_.model) {
@@ -381,9 +410,7 @@ class LauncherModule final : public Module, public TextInputClient {
         return true;
     }
 
-    TextInputState text_input_state() const override {
-        return launcher_text_input_state(state_);
-    }
+    TextInputState text_input_state() const override { return launcher_text_input_state(state_); }
     void text_input_apply_edit(const TextInputEdit &edit) override {
         launcher_text_input_apply_edit(state_, edit);
         request_frame();
@@ -413,12 +440,11 @@ class LauncherModule final : public Module, public TextInputClient {
     void handle_click(WaylandState &, double x, double y) override {
         launcher_handle_click(state_, x, y);
     }
-    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x, double y) override {
+    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x,
+                             double y) override {
         launcher_handle_pointer_move(state_, focused_surface, x, y);
     }
-    void handle_pointer_release() override {
-        launcher_handle_pointer_release(state_);
-    }
+    void handle_pointer_release() override { launcher_handle_pointer_release(state_); }
     bool wants_pointing_hand_cursor() const override {
         return state_.open && state_.model && state_.model->hovered() >= 0;
     }
@@ -444,14 +470,18 @@ class LauncherModule final : public Module, public TextInputClient {
             if (!state_.open) {
                 MonitorOutput *target = app_detail::active_target_monitor(app);
                 if (target && (target->output.wl != state_.bound_output || !state_.layer_surface))
-                    launcher_retarget(state_, app.compositor, app.layer_shell, app.display, app.renderer, app.egl_display, app.egl_config, app.egl_context, target->output.wl, target->output.name.c_str());
+                    launcher_retarget(state_, app.compositor, app.layer_shell, app.display,
+                                      app.renderer, app.egl_display, app.egl_config,
+                                      app.egl_context, target->output.wl,
+                                      target->output.name.c_str());
             }
             state_.lightning = app.cfg.launcher_lightning;
             launcher_toggle(state_, global);
         };
         return {
             {astralia::ShellVerb::launcher, [toggle_retargeted] { toggle_retargeted(false); }},
-            {astralia::ShellVerb::launcher_global, [toggle_retargeted] { toggle_retargeted(true); }},
+            {astralia::ShellVerb::launcher_global,
+             [toggle_retargeted] { toggle_retargeted(true); }},
         };
     }
 
@@ -463,6 +493,4 @@ class LauncherModule final : public Module, public TextInputClient {
 
 } // namespace
 
-std::unique_ptr<Module> make_launcher_module() {
-    return std::make_unique<LauncherModule>();
-}
+std::unique_ptr<Module> make_launcher_module() { return std::make_unique<LauncherModule>(); }

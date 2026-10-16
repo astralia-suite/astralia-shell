@@ -23,7 +23,9 @@ class ResourcePanel final : public PanelContent {
     void opened() override { refresh(); }
     float content_height(ui::Canvas &canvas) override;
     void paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) override;
-    std::chrono::milliseconds refresh_interval() const override { return std::chrono::milliseconds(panel_config::resource_poll_ms); }
+    std::chrono::milliseconds refresh_interval() const override {
+        return std::chrono::milliseconds(panel_config::resource_poll_ms);
+    }
     void refresh() override;
 
   private:

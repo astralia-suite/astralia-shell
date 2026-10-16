@@ -33,8 +33,10 @@ inline constexpr float dialog_top_margin = 6.0f;
 inline constexpr float dialog_button = 28.0f;
 inline constexpr float dialog_button_pad = 16.0f;
 inline constexpr float dialog_label_chars = 32.0f;
-inline constexpr float confirm_dialog_height = dialog_spacer + dialog_label + row_gap + dialog_button + row_gap + 2.0f * padding;
-inline constexpr float field_dialog_height = dialog_spacer + dialog_button + row_gap + dialog_button + row_gap + 2.0f * padding;
+inline constexpr float confirm_dialog_height =
+    dialog_spacer + dialog_label + row_gap + dialog_button + row_gap + 2.0f * padding;
+inline constexpr float field_dialog_height =
+    dialog_spacer + dialog_button + row_gap + dialog_button + row_gap + 2.0f * padding;
 
 // Slider
 inline constexpr float slider_track = 6.0f;
@@ -68,7 +70,8 @@ inline constexpr float battery_text_row = 18.0f;
 inline constexpr float battery_bar_height = 6.0f;
 inline constexpr float battery_bar_top_gap = 12.0f;
 inline constexpr float battery_row_bottom_pad = 14.0f;
-inline constexpr float battery_row = battery_text_row + battery_bar_top_gap + battery_bar_height + battery_row_bottom_pad;
+inline constexpr float battery_row =
+    battery_text_row + battery_bar_top_gap + battery_bar_height + battery_row_bottom_pad;
 
 // Media
 inline constexpr float media_thumb = 72.0f;
@@ -112,7 +115,8 @@ inline constexpr float volume_app_gap = 4.0f;
 inline constexpr float volume_app_slider = 16.0f;
 inline constexpr float volume_app_track = 5.0f;
 inline constexpr float volume_app_pad = 8.0f;
-inline constexpr float volume_app_row = volume_text_row + volume_app_gap + volume_app_slider + volume_app_pad;
+inline constexpr float volume_app_row =
+    volume_text_row + volume_app_gap + volume_app_slider + volume_app_pad;
 inline constexpr float volume_device_row = volume_text_row + 6.0f;
 inline constexpr float volume_percent_width = 40.0f;
 inline constexpr float volume_slider_gap = 8.0f;

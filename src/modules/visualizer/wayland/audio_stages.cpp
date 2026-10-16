@@ -19,16 +19,14 @@
 
 namespace {
 
-constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0,
-                                    1, 1, 0, 1, -1, 0, -1, 1, 0};
+constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
 
 void quantize(std::vector<uint16_t> &out, const float *data, int size) {
     out.resize(static_cast<size_t>(size));
     for (int i = 0; i < size; ++i) {
         float v = data ? data[i] : 0.0f;
         v = v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
-        out[static_cast<size_t>(i)] =
-            static_cast<uint16_t>(v * 65535.0f + 0.5f);
+        out[static_cast<size_t>(i)] = static_cast<uint16_t>(v * 65535.0f + 0.5f);
     }
 }
 
@@ -38,10 +36,14 @@ bool VisualizerAudioStages::init() {
     if (ready_)
         return true;
 
-    pass_prog_ = gl_compile_program_files("visualizer/fullscreen.vert", "visualizer/audio_pass.frag", "visualizer_audio_pass");
-    gravity_prog_ = gl_compile_program_files("visualizer/fullscreen.vert", "visualizer/audio_gravity.frag", "visualizer_audio_gravity");
-    average_prog_ = gl_compile_program_files("visualizer/fullscreen.vert", "visualizer/audio_average.frag", "visualizer_audio_average");
-    smooth_prog_ = gl_compile_program_files("visualizer/fullscreen.vert", "visualizer/audio_smooth.frag", "visualizer_audio_smooth");
+    pass_prog_ = gl_compile_program_files("visualizer/fullscreen.vert",
+                                          "visualizer/audio_pass.frag", "visualizer_audio_pass");
+    gravity_prog_ = gl_compile_program_files(
+        "visualizer/fullscreen.vert", "visualizer/audio_gravity.frag", "visualizer_audio_gravity");
+    average_prog_ = gl_compile_program_files(
+        "visualizer/fullscreen.vert", "visualizer/audio_average.frag", "visualizer_audio_average");
+    smooth_prog_ = gl_compile_program_files(
+        "visualizer/fullscreen.vert", "visualizer/audio_smooth.frag", "visualizer_audio_smooth");
     if (!pass_prog_ || !gravity_prog_ || !average_prog_ || !smooth_prog_) {
         klog("visualizer_audio_stages: shader compile failed");
         return false;
@@ -76,7 +78,8 @@ bool VisualizerAudioStages::init() {
 
     glUseProgram(smooth_prog_);
     glUniform1i(glGetUniformLocation(smooth_prog_, "sample_mode"), kVisualizerSampleMode);
-    glUniform1f(glGetUniformLocation(smooth_prog_, "sample_hybrid_weight"), kVisualizerSampleHybridWeight);
+    glUniform1f(glGetUniformLocation(smooth_prog_, "sample_hybrid_weight"),
+                kVisualizerSampleHybridWeight);
     glUniform1f(glGetUniformLocation(smooth_prog_, "sample_scale"), kVisualizerSampleScale);
     glUniform1f(glGetUniformLocation(smooth_prog_, "sample_range"), kVisualizerSampleRange);
     glUniform1f(glGetUniformLocation(smooth_prog_, "smooth_factor"), kVisualizerSmoothFactor);
@@ -93,7 +96,8 @@ void VisualizerAudioStages::destroy() {
             glDeleteProgram(p);
     pass_prog_ = gravity_prog_ = average_prog_ = smooth_prog_ = 0;
 
-    GLuint texs[] = {raw_l_, raw_r_, pass_.tex_l, pass_.tex_r, average_.tex_l, average_.tex_r, smooth_.tex_l, smooth_.tex_r};
+    GLuint texs[] = {raw_l_,         raw_r_,         pass_.tex_l,   pass_.tex_r,
+                     average_.tex_l, average_.tex_r, smooth_.tex_l, smooth_.tex_r};
     for (GLuint t : texs)
         if (t)
             glDeleteTextures(1, &t);
@@ -180,7 +184,8 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     glActiveTexture(GL_TEXTURE0 + offset);
     glBindTexture(GL_TEXTURE_2D, pass_tex);
     glUniform1i(glGetUniformLocation(gravity_prog_, "audioR"), offset);
-    glUniform1f(glGetUniformLocation(gravity_prog_, "diff"), kVisualizerGravityStep / static_cast<float>(fps_));
+    glUniform1f(glGetUniformLocation(gravity_prog_, "diff"),
+                kVisualizerGravityStep / static_cast<float>(fps_));
     glUniform1f(glGetUniformLocation(gravity_prog_, "u_texWidth"), static_cast<float>(size));
     glViewport(0, 0, size, 1);
     draw_quad();
@@ -218,7 +223,8 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     glViewport(0, 0, size, 1);
     glUseProgram(smooth_prog_);
     glUniform1i(glGetUniformLocation(smooth_prog_, "audioRSize"), size);
-    glUniform1i(glGetUniformLocation(smooth_prog_, "adjacentSampleNums"), kVisualizerAdjacentSampleNums);
+    glUniform1i(glGetUniformLocation(smooth_prog_, "adjacentSampleNums"),
+                kVisualizerAdjacentSampleNums);
     glActiveTexture(GL_TEXTURE0 + offset);
     glBindTexture(GL_TEXTURE_2D, (offset == 1) ? average_.tex_r : average_.tex_l);
     glUniform1i(glGetUniformLocation(smooth_prog_, "audioR"), offset);
@@ -229,7 +235,8 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     glUseProgram(0);
 }
 
-bool VisualizerAudioStages::run(int size, const std::vector<float> &l, const std::vector<float> &r, int fps) {
+bool VisualizerAudioStages::run(int size, const std::vector<float> &l, const std::vector<float> &r,
+                                int fps) {
     if (!ready_ || size <= 0)
         return false;
     if (static_cast<int>(l.size()) < size || static_cast<int>(r.size()) < size)
@@ -247,7 +254,8 @@ bool VisualizerAudioStages::run(int size, const std::vector<float> &l, const std
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, size, 1, 0, GL_RED_EXT, GL_UNSIGNED_SHORT, zeros.data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, size, 1, 0, GL_RED_EXT, GL_UNSIGNED_SHORT,
+                         zeros.data());
         }
         glBindTexture(GL_TEXTURE_2D, 0);
     }

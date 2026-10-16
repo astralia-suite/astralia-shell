@@ -21,14 +21,16 @@
 astralia::ui::Box logout_detail_button_rect(int index, float center_x, float center_y) {
     astralia::Point c = astralia::logout_button_center(index, {center_x, center_y});
     float half = kLogoutButtonSize / 2.0f;
-    return {static_cast<float>(c.x) - half, static_cast<float>(c.y) - half, kLogoutButtonSize, kLogoutButtonSize};
+    return {static_cast<float>(c.x) - half, static_cast<float>(c.y) - half, kLogoutButtonSize,
+            kLogoutButtonSize};
 }
 
 namespace {
 
 void finish_close(LogoutState &state) {
     state.base.open = false;
-    zwlr_layer_surface_v1_set_keyboard_interactivity(state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+    zwlr_layer_surface_v1_set_keyboard_interactivity(
+        state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
     overlay_panel_update_input_region(state.base);
     wl_surface_commit(state.base.surface);
 }
@@ -39,11 +41,14 @@ int star_vertex(int step_index) {
 
 } // namespace
 
-bool logout_create_surface(LogoutState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
-    return overlay_panel_create_surface(state.base, compositor, layer_shell, "astralia-shell-logout", output);
+bool logout_create_surface(LogoutState &state, wl_compositor *compositor,
+                           zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
+    return overlay_panel_create_surface(state.base, compositor, layer_shell,
+                                        "astralia-shell-logout", output);
 }
 
-bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+                     EGLContext context) {
     state.renderer = &renderer;
     if (!overlay_panel_init_egl(state.base, display, config, context))
         return false;
@@ -54,15 +59,19 @@ bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display,
     return true;
 }
 
-void logout_retarget(LogoutState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name) {
-    wl_output *bound = overlay_panel_retarget(state.base, display, state.bound_output, target_output, target_name, [&](wl_output *out) { return logout_create_surface(state, compositor, layer_shell, out); }, [&] { return logout_init_egl(state, renderer, egl_display, egl_config, egl_context); });
+void logout_retarget(LogoutState &state, wl_compositor *compositor,
+                     zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
+                     EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
+                     wl_output *target_output, const char *target_name) {
+    wl_output *bound = overlay_panel_retarget(
+        state.base, display, state.bound_output, target_output, target_name,
+        [&](wl_output *out) { return logout_create_surface(state, compositor, layer_shell, out); },
+        [&] { return logout_init_egl(state, renderer, egl_display, egl_config, egl_context); });
     if (bound)
         state.bound_output = bound;
 }
 
-void logout_request_frame(LogoutState &state) {
-    overlay_panel_request_frame(state.base);
-}
+void logout_request_frame(LogoutState &state) { overlay_panel_request_frame(state.base); }
 
 void logout_toggle(LogoutState &state, bool by_widget) {
     if (!state.base.layer_surface || state.base.egl_surface == EGL_NO_SURFACE)
@@ -73,7 +82,8 @@ void logout_toggle(LogoutState &state, bool by_widget) {
     if (opening) {
         state.base.open = true;
         state.base.opacity = 1.0f;
-        zwlr_layer_surface_v1_set_keyboard_interactivity(state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
+        zwlr_layer_surface_v1_set_keyboard_interactivity(
+            state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
         overlay_panel_update_input_region(state.base);
         wl_surface_commit(state.base.surface);
         state.opened_by_widget = by_widget;
@@ -84,14 +94,19 @@ void logout_toggle(LogoutState &state, bool by_widget) {
     overlay_panel_request_frame(state.base);
 }
 
-std::vector<astralia::ShellBinding> logout_shell_bindings(LogoutState &logout, WaylandState &state) {
+std::vector<astralia::ShellBinding> logout_shell_bindings(LogoutState &logout,
+                                                          WaylandState &state) {
     return {
         {astralia::ShellVerb::logout,
          [&logout, &state] {
              if (!logout.base.open) {
                  MonitorOutput *target = app_detail::active_target_monitor(state);
-                 if (target && (target->output.wl != logout.bound_output || !logout.base.layer_surface))
-                     logout_retarget(logout, state.compositor, state.layer_shell, state.display, state.renderer, state.egl_display, state.egl_config, state.egl_context, target->output.wl, target->output.name.c_str());
+                 if (target &&
+                     (target->output.wl != logout.bound_output || !logout.base.layer_surface))
+                     logout_retarget(logout, state.compositor, state.layer_shell, state.display,
+                                     state.renderer, state.egl_display, state.egl_config,
+                                     state.egl_context, target->output.wl,
+                                     target->output.name.c_str());
              }
              logout_toggle(logout);
          }},
@@ -112,9 +127,7 @@ void logout_handle_hover(LogoutState &state, double px, double py) {
     state.model.hover(px, py, state.base.width, state.base.height);
 }
 
-void logout_clear_hover(LogoutState &state) {
-    state.model.clear_hover();
-}
+void logout_clear_hover(LogoutState &state) { state.model.clear_hover(); }
 
 void logout_paint(LogoutState &state) {
     if (state.base.egl_surface == EGL_NO_SURFACE)
@@ -130,15 +143,15 @@ void logout_paint(LogoutState &state) {
     state.canvas.begin(state.base.output_scale.scale);
     state.canvas.set_opacity(state.base.opacity);
     if (state.base.open) {
-        astralia::paint_logout(state.canvas, state.model, static_cast<float>(state.base.width), static_cast<float>(state.base.height));
+        astralia::paint_logout(state.canvas, state.model, static_cast<float>(state.base.width),
+                               static_cast<float>(state.base.height));
     }
     state.canvas.flush();
 
     if (state.base.open) {
         float cx = static_cast<float>(state.base.width) / 2.0f;
         float cy = static_cast<float>(state.base.height) / 2.0f;
-        float time_s =
-            std::chrono::duration<float>(now - state.model.burst_started()).count();
+        float time_s = std::chrono::duration<float>(now - state.model.burst_started()).count();
         astralia::Color core = astralia::with_alpha(astralia::palette::white, 1.0f);
         astralia::Color glow = astralia::with_alpha(astralia::palette::electro, 1.0f);
 
@@ -199,14 +212,12 @@ void logout_paint(LogoutState &state) {
 
             if (sweep >= 1.0f) {
                 float head_end = 1.0f / kLogoutFinishSweep;
-                float linger =
-                    1.0f - (burst - head_end) / (1.0f - head_end);
+                float linger = 1.0f - (burst - head_end) / (1.0f - head_end);
                 linger = linger < 0.0f ? 0.0f : linger;
-                float crackle = 0.55f + 0.45f * std::sin(time_s * 71.0f) *
-                                            std::sin(time_s * 127.0f);
+                float crackle =
+                    0.55f + 0.45f * std::sin(time_s * 71.0f) * std::sin(time_s * 127.0f);
                 p.progress = 1.0f;
-                p.intensity =
-                    linger * linger * kLogoutFinishLingerIntensity * crackle;
+                p.intensity = linger * linger * kLogoutFinishLingerIntensity * crackle;
                 p.seed = 53.0f;
                 p.amp = kLogoutBoltAmp * 1.5f;
                 p.thick = kLogoutFinishThick * 0.55f;
@@ -237,22 +248,22 @@ class LogoutModule final : public Module {
     }
 
     bool init_egl(WaylandState &app) override {
-        if (!logout_init_egl(state_, app.renderer, app.egl_display, app.egl_config, app.egl_context))
+        if (!logout_init_egl(state_, app.renderer, app.egl_display, app.egl_config,
+                             app.egl_context))
             return false;
         state_.bound_output = output_;
         request_frame();
         return true;
     }
 
-    bool configured() const override {
-        return !want_ || state_.base.configured;
-    }
+    bool configured() const override { return !want_ || state_.base.configured; }
     wl_surface *surface() const override { return state_.base.surface; }
     void request_frame() override { logout_request_frame(state_); }
 
     bool timer_tick(WaylandState &) override { return false; }
 
-    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x, double y) override {
+    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x,
+                             double y) override {
         if (!state_.base.open)
             return;
         if (focused_surface == state_.base.surface)
@@ -288,7 +299,9 @@ class LogoutModule final : public Module {
         if (!state_.base.open) {
             MonitorOutput *target = app_detail::active_target_monitor(app);
             if (target && (target->output.wl != state_.bound_output || !state_.base.layer_surface))
-                logout_retarget(state_, app.compositor, app.layer_shell, app.display, app.renderer, app.egl_display, app.egl_config, app.egl_context, target->output.wl, target->output.name.c_str());
+                logout_retarget(state_, app.compositor, app.layer_shell, app.display, app.renderer,
+                                app.egl_display, app.egl_config, app.egl_context, target->output.wl,
+                                target->output.name.c_str());
         }
         logout_toggle(state_, true);
     }
@@ -301,6 +314,4 @@ class LogoutModule final : public Module {
 
 } // namespace
 
-std::unique_ptr<Module> make_logout_module() {
-    return std::make_unique<LogoutModule>();
-}
+std::unique_ptr<Module> make_logout_module() { return std::make_unique<LogoutModule>(); }

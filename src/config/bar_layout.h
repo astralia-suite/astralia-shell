@@ -50,9 +50,7 @@ inline constexpr const char *clock_format = "%a %Y-%m-%d %H:%M:%S";
 
 namespace astralia {
 
-enum class BarStyle : std::size_t { islands,
-                                    okinami,
-                                    continuous };
+enum class BarStyle : std::size_t { islands, okinami, continuous };
 
 namespace bar_style {
 

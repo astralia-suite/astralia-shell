@@ -11,8 +11,7 @@
 
 namespace astralia {
 
-enum class BusKind { system,
-                     session };
+enum class BusKind { system, session };
 
 class SystemBus {
   public:

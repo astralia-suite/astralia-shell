@@ -31,6 +31,7 @@ struct LockInfo {
     const std::vector<Notification> *notifications = nullptr;
 };
 
-void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info, float width, float height);
+void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info,
+                float width, float height);
 
 } // namespace astralia

@@ -13,9 +13,7 @@
 
 namespace astralia {
 
-enum class MediaPlayback { stopped,
-                           paused,
-                           playing };
+enum class MediaPlayback { stopped, paused, playing };
 
 struct MediaTrack {
     std::string title;

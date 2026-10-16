@@ -20,10 +20,7 @@ struct PolkitPrompt {
     bool info_is_error = false;
 };
 
-enum class PolkitKey { none,
-                       changed,
-                       submit,
-                       cancel };
+enum class PolkitKey { none, changed, submit, cancel };
 
 PolkitPrompt polkit_prompt(const PolkitService &service);
 

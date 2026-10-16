@@ -38,10 +38,11 @@ void check_async_process() {
         astralia::AsyncProcess proc(reactor);
         std::string output;
         bool done = false;
-        check(proc.start({"echo", "hello"}, [&](std::string text) {
-            output = std::move(text);
-            done = true;
-        }),
+        check(proc.start({"echo", "hello"},
+                         [&](std::string text) {
+                             output = std::move(text);
+                             done = true;
+                         }),
               "echo starts");
         check(proc.running(), "a started process is running");
         check(test::pump_until(reactor, [&] { return done; }), "echo finishes");
@@ -73,12 +74,14 @@ void check_async_process() {
         astralia::AsyncProcess proc(reactor);
         std::string output;
         for (int i = 0; i < 10; ++i) {
-            check(proc.start({"sleep", "1"}, [&](std::string) { output = "stale"; }), "slow job starts");
+            check(proc.start({"sleep", "1"}, [&](std::string) { output = "stale"; }),
+                  "slow job starts");
             bool done = false;
-            check(proc.start({"echo", "fresh"}, [&](std::string text) {
-                output = std::move(text);
-                done = true;
-            }),
+            check(proc.start({"echo", "fresh"},
+                             [&](std::string text) {
+                                 output = std::move(text);
+                                 done = true;
+                             }),
                   "restart cancels the previous job");
             check(test::pump_until(reactor, [&] { return done; }), "restarted job finishes");
             check(output == "fresh\n", "only the newest job reports");

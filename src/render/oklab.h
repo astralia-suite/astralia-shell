@@ -54,7 +54,8 @@ inline LinearRgb linear_from_oklab(const Oklab &lab) {
 
 inline bool in_gamut(const LinearRgb &c) {
     constexpr float eps = 1e-4f;
-    return c.r >= -eps && c.r <= 1.0f + eps && c.g >= -eps && c.g <= 1.0f + eps && c.b >= -eps && c.b <= 1.0f + eps;
+    return c.r >= -eps && c.r <= 1.0f + eps && c.g >= -eps && c.g <= 1.0f + eps && c.b >= -eps &&
+           c.b <= 1.0f + eps;
 }
 
 inline Color color_from_linear(const LinearRgb &c, float alpha = 1.0f) {
@@ -92,7 +93,8 @@ inline Color color_from_oklch(const Oklch &lch, float alpha = 1.0f) {
 }
 
 inline float relative_luminance(const Color &c) {
-    return 0.2126f * srgb_to_linear(c.r) + 0.7152f * srgb_to_linear(c.g) + 0.0722f * srgb_to_linear(c.b);
+    return 0.2126f * srgb_to_linear(c.r) + 0.7152f * srgb_to_linear(c.g) +
+           0.0722f * srgb_to_linear(c.b);
 }
 
 inline float contrast_ratio(const Color &a, const Color &b) {

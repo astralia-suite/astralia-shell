@@ -6,6 +6,7 @@
 
 namespace astralia {
 
-void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width, float height);
+void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width,
+                            float height);
 
 } // namespace astralia

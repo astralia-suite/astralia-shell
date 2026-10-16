@@ -52,7 +52,8 @@ const Plugin &plugin() {
         }
         p.stream = reinterpret_cast<StreamFn>(dlsym(lib, "astralia_shell_media_plugin_stream"));
         p.frames = reinterpret_cast<FramesFn>(dlsym(lib, "astralia_shell_media_plugin_frames"));
-        p.release_drm_frame = reinterpret_cast<ReleaseDrmFrameFn>(dlsym(lib, "astralia_shell_media_plugin_release_drm_frame"));
+        p.release_drm_frame = reinterpret_cast<ReleaseDrmFrameFn>(
+            dlsym(lib, "astralia_shell_media_plugin_release_drm_frame"));
         if (!p.stream || !p.frames || !p.release_drm_frame) {
             klog("media_decode: plugin missing expected symbols (%s); animated "
                  "content disabled",
@@ -78,7 +79,8 @@ std::string rgba_cache_dir() {
 }
 
 std::string rgba_cache_path(const std::string &path, time_t mtime, int target_w, int target_h) {
-    std::string key = path + ":" + std::to_string(mtime) + ":" + std::to_string(target_w) + "x" + std::to_string(target_h);
+    std::string key = path + ":" + std::to_string(mtime) + ":" + std::to_string(target_w) + "x" +
+                      std::to_string(target_h);
     size_t hash = std::hash<std::string>{}(key);
     return rgba_cache_dir() + "/" + std::to_string(hash) + ".rgba";
 }
@@ -96,7 +98,8 @@ unsigned char *rgba_read(const std::string &cache_path, int &out_width, int &out
     int height = static_cast<int>(header[1]);
     size_t pixel_bytes = static_cast<size_t>(width) * height * 4;
     struct stat st{};
-    if (width <= 0 || height <= 0 || fstat(fileno(fp), &st) != 0 || static_cast<size_t>(st.st_size) != sizeof(header) + pixel_bytes) {
+    if (width <= 0 || height <= 0 || fstat(fileno(fp), &st) != 0 ||
+        static_cast<size_t>(st.st_size) != sizeof(header) + pixel_bytes) {
         fclose(fp);
         return nullptr;
     }
@@ -122,7 +125,8 @@ void rgba_write(const std::string &cache_path, int width, int height, const unsi
     fclose(fp);
 }
 
-void box_downsample_rgba(const unsigned char *src, int sw, int sh, unsigned char *dst, int dw, int dh) {
+void box_downsample_rgba(const unsigned char *src, int sw, int sh, unsigned char *dst, int dw,
+                         int dh) {
     for (int y = 0; y < dh; ++y) {
         int y0 = static_cast<int>(static_cast<int64_t>(y) * sh / dh);
         int y1 = static_cast<int>(static_cast<int64_t>(y + 1) * sh / dh);
@@ -134,8 +138,7 @@ void box_downsample_rgba(const unsigned char *src, int sw, int sh, unsigned char
             long sum[4] = {0, 0, 0, 0};
             int count = 0;
             for (int sy = y0; sy < y1 && sy < sh; ++sy) {
-                const unsigned char *row =
-                    src + static_cast<size_t>(sy) * sw * 4;
+                const unsigned char *row = src + static_cast<size_t>(sy) * sw * 4;
                 for (int sx = x0; sx < x1 && sx < sw; ++sx) {
                     const unsigned char *px = row + static_cast<size_t>(sx) * 4;
                     sum[0] += px[0];
@@ -155,13 +158,15 @@ void box_downsample_rgba(const unsigned char *src, int sw, int sh, unsigned char
     }
 }
 
-unsigned char *decode_first_frame(const std::string &path, int &w, int &h, int target_w = 0, int target_h = 0) {
+unsigned char *decode_first_frame(const std::string &path, int &w, int &h, int target_w = 0,
+                                  int target_h = 0) {
     unsigned char *data = load_image_decode(path, w, h, 0, target_w, target_h);
     if (data)
         return data;
     std::string filter = "format=rgba";
     if (target_w > 0 && target_h > 0)
-        filter = "scale=" + std::to_string(target_w) + ":" + std::to_string(target_h) + ":force_original_aspect_ratio=increase,format=rgba";
+        filter = "scale=" + std::to_string(target_w) + ":" + std::to_string(target_h) +
+                 ":force_original_aspect_ratio=increase,format=rgba";
     std::vector<MediaFrame> frames = media_decode_frames(path, filter, 1);
     if (frames.empty() || frames[0].rgba.empty())
         return nullptr;
@@ -174,13 +179,18 @@ unsigned char *decode_first_frame(const std::string &path, int &w, int &h, int t
 
 } // namespace
 
-MediaDecodePlayback media_decode_stream(const std::string &path, const std::string &filter_desc, int fps, bool supports_row_length, MediaDecodeFrameCallback on_frame, MediaDecodeDrmFrameCallback on_drm_frame) {
+MediaDecodePlayback media_decode_stream(const std::string &path, const std::string &filter_desc,
+                                        int fps, bool supports_row_length,
+                                        MediaDecodeFrameCallback on_frame,
+                                        MediaDecodeDrmFrameCallback on_drm_frame) {
     if (!plugin().stream)
         return {};
-    return plugin().stream(path, filter_desc, fps, supports_row_length, std::move(on_frame), std::move(on_drm_frame));
+    return plugin().stream(path, filter_desc, fps, supports_row_length, std::move(on_frame),
+                           std::move(on_drm_frame));
 }
 
-std::vector<MediaFrame> media_decode_frames(const std::string &path, const std::string &filter_desc, int max_frames) {
+std::vector<MediaFrame> media_decode_frames(const std::string &path, const std::string &filter_desc,
+                                            int max_frames) {
     if (!plugin().frames)
         return {};
     return plugin().frames(path, filter_desc, max_frames);
@@ -229,22 +239,23 @@ AnimateSize animate_decode_size(int target_w, int target_h, int max_height) {
     if (target_w <= 0 || target_h <= 0 || max_height <= 0 || target_h <= max_height)
         return {std::max(target_w, 0), std::max(target_h, 0)};
     double ratio = static_cast<double>(max_height) / target_h;
-    return {std::max(1, static_cast<int>(std::lround(target_w * ratio))),
-            max_height};
+    return {std::max(1, static_cast<int>(std::lround(target_w * ratio))), max_height};
 }
 
 std::string animate_scale_filter(int w, int h, AnimateFit fit) {
     std::string ws = std::to_string(w);
     std::string hs = std::to_string(h);
     if (fit == AnimateFit::Fit)
-        return "scale=" + ws + ":" + hs + ":force_original_aspect_ratio=decrease,pad=" + ws + ":" + hs + ":(ow-iw)/2:(oh-ih)/2:color=black,format=rgba";
-    return "scale=" + ws + ":" + hs + ":force_original_aspect_ratio=increase,crop=" + ws + ":" + hs + ",format=rgba";
+        return "scale=" + ws + ":" + hs + ":force_original_aspect_ratio=decrease,pad=" + ws + ":" +
+               hs + ":(ow-iw)/2:(oh-ih)/2:color=black,format=rgba";
+    return "scale=" + ws + ":" + hs + ":force_original_aspect_ratio=increase,crop=" + ws + ":" +
+           hs + ",format=rgba";
 }
 
-unsigned char *animate_decode_scaled(const std::string &path, int target_w, int target_h, int &out_width, int &out_height) {
+unsigned char *animate_decode_scaled(const std::string &path, int target_w, int target_h,
+                                     int &out_width, int &out_height) {
     struct stat st{};
-    bool cacheable =
-        target_w > 0 && target_h > 0 && stat(path.c_str(), &st) == 0;
+    bool cacheable = target_w > 0 && target_h > 0 && stat(path.c_str(), &st) == 0;
     std::string cache_path;
     if (cacheable) {
         cache_path = rgba_cache_path(path, st.st_mtime, target_w, target_h);
@@ -254,13 +265,13 @@ unsigned char *animate_decode_scaled(const std::string &path, int target_w, int 
         }
     }
 
-    unsigned char *data =
-        decode_first_frame(path, out_width, out_height, target_w, target_h);
+    unsigned char *data = decode_first_frame(path, out_width, out_height, target_w, target_h);
     if (!data)
         return nullptr;
     if (target_w <= 0 || target_h <= 0)
         return data;
-    float scale = std::max(static_cast<float>(target_w) / out_width, static_cast<float>(target_h) / out_height);
+    float scale = std::max(static_cast<float>(target_w) / out_width,
+                           static_cast<float>(target_h) / out_height);
     unsigned char *result = data;
     if (scale < 1.0f) {
         int dw = std::max(1, static_cast<int>(std::lround(out_width * scale)));

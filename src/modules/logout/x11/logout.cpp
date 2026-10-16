@@ -12,7 +12,11 @@
 namespace astralia {
 
 Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
-    : x_(x), services_(services), window_(x, "astralia-logout", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
+    : x_(x), services_(services),
+      window_(x, "astralia-logout",
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW |
+                  XCB_EVENT_MASK_KEY_PRESS),
       keyboard_(x.conn()), model_(logout_commands(true)) {
     model_.on_execute = [](const std::string &command) { spawn_detached(command); };
     model_.on_closed = [this] { closed(); };
@@ -21,7 +25,8 @@ Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services
             return;
         }
         const std::vector<Output> &outputs = services_.outputs.outputs();
-        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+        if (std::ranges::none_of(
+                outputs, [this](const Output &output) { return output.name == bound_output_; })) {
             model_.toggle();
         }
     });
@@ -107,7 +112,8 @@ void Logout::paint() {
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     canvas_.bind(cr);
-    paint_logout(canvas_, model_, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    paint_logout(canvas_, model_, static_cast<float>(window_.geometry().width),
+                 static_cast<float>(window_.geometry().height));
     window_.present();
 }
 

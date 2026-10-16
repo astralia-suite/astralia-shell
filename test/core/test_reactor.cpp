@@ -32,7 +32,8 @@ void check_reactor() {
         ++reads;
     });
     (void)!write(fds[1], "x", 1);
-    check(test::pump_until(reactor, [&] { return reads == 1; }), "an fd handler runs when readable");
+    check(test::pump_until(reactor, [&] { return reads == 1; }),
+          "an fd handler runs when readable");
     reactor.remove_fd(fds[0]);
     (void)!write(fds[1], "x", 1);
     reactor.run_once(30);
@@ -51,7 +52,8 @@ void check_reactor() {
                 ++dispatched;
             }
         });
-    check(test::pump_until(reactor, [&] { return dispatched >= 1; }), "a poll source is prepared and dispatched");
+    check(test::pump_until(reactor, [&] { return dispatched >= 1; }),
+          "a poll source is prepared and dispatched");
     check(prepared >= 1, "prepare runs before every poll");
     reactor.remove_poll_source(source);
     int before = prepared;

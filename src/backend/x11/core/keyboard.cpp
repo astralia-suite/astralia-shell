@@ -43,9 +43,12 @@ KeyEvent Keyboard::press(xcb_keycode_t keycode, uint16_t modifiers) {
     }
     xkb_state_update_mask(state_.get(), modifiers & 0xFF, 0, 0, 0, 0, (modifiers >> 13) & 0x3);
     KeyEvent event;
-    event.shift = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) > 0;
-    event.alt = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE) > 0;
-    event.ctrl = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0;
+    event.shift = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_SHIFT,
+                                               XKB_STATE_MODS_EFFECTIVE) > 0;
+    event.alt =
+        xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE) > 0;
+    event.ctrl =
+        xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0;
     switch (xkb_state_key_get_one_sym(state_.get(), keycode)) {
     case XKB_KEY_BackSpace:
         event.kind = KeyKind::backspace;
@@ -93,7 +96,8 @@ KeyEvent Keyboard::press(xcb_keycode_t keycode, uint16_t modifiers) {
         int size = xkb_state_key_get_utf8(state_.get(), keycode, buf.data(), buf.size());
         auto first = static_cast<unsigned char>(buf[0]);
         const xkb_keysym_t *base_syms = nullptr;
-        int base_count = xkb_keymap_key_get_syms_by_level(keymap_.get(), keycode, xkb_state_key_get_layout(state_.get(), keycode), 0, &base_syms);
+        int base_count = xkb_keymap_key_get_syms_by_level(
+            keymap_.get(), keycode, xkb_state_key_get_layout(state_.get(), keycode), 0, &base_syms);
         event.base_sym = base_count > 0 ? base_syms[0] : XKB_KEY_NoSymbol;
         if (size > 0 && first >= 0x20 && first != 0x7F) {
             event.kind = KeyKind::text;

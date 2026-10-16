@@ -29,7 +29,8 @@ void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
     ui::TextSize icon_size = canvas.measure(model.glyph(), icon_style);
     bool has_icon = icon_size.w > 0.0f;
     if (has_icon) {
-        canvas.text(model.glyph(), icon_style, cfg::content_margin, (height - icon_size.h) / 2.0f, lerp_color(palette::text, palette::text_muted, model.icon_mix()));
+        canvas.text(model.glyph(), icon_style, cfg::content_margin, (height - icon_size.h) / 2.0f,
+                    lerp_color(palette::text, palette::text_muted, model.icon_mix()));
     }
 
     float track_x = cfg::content_margin + (has_icon ? cfg::icon_px + cfg::bar_margin : 0.0f);
@@ -37,16 +38,21 @@ void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
     float track_y = (height - cfg::track_height) / 2.0f;
     float radius = cfg::track_height / 2.0f;
     float border = metrics::border_thin;
-    canvas.rounded({track_x, track_y, track_w, cfg::track_height}, radius, palette::surface_alt, border, palette::ink);
+    canvas.rounded({track_x, track_y, track_w, cfg::track_height}, radius, palette::surface_alt,
+                   border, palette::ink);
     float fill_w = track_w * std::clamp(model.bar_fill(), 0.0f, 1.0f);
     if (fill_w > border) {
-        canvas.rounded({track_x + border, track_y + border, fill_w - border, cfg::track_height - 2.0f * border}, std::max(0.0f, radius - border), model.muted() ? palette::text_muted : palette::pop_c);
+        canvas.rounded({track_x + border, track_y + border, fill_w - border,
+                        cfg::track_height - 2.0f * border},
+                       std::max(0.0f, radius - border),
+                       model.muted() ? palette::text_muted : palette::pop_c);
     }
 
     ui::TextStyle label_style{ui::FontFamily::text, cfg::label_px, false, cfg::label_width};
     std::string label = model.label();
     ui::TextSize label_size = canvas.measure(label, label_style);
-    canvas.text(label, label_style, width - cfg::content_margin - label_size.w, (height - label_size.h) / 2.0f, palette::text);
+    canvas.text(label, label_style, width - cfg::content_margin - label_size.w,
+                (height - label_size.h) / 2.0f, palette::text);
 }
 
 } // namespace astralia

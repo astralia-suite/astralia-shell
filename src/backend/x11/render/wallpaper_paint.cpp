@@ -17,7 +17,8 @@ constexpr const char *fit_mode = "fit";
 
 }
 
-void paint_wallpaper(cairo_t *cr, const Config &config, const std::string &output_name, double x, double y, int width, int height) {
+void paint_wallpaper(cairo_t *cr, const Config &config, const std::string &output_name, double x,
+                     double y, int width, int height) {
     cairo_save(cr);
     cairo_rectangle(cr, x, y, width, height);
     cairo_clip(cr);
@@ -32,7 +33,8 @@ void paint_wallpaper(cairo_t *cr, const Config &config, const std::string &outpu
         int left = width * i / columns;
         int cell_width = width * (i + 1) / columns - left;
         bool contained = wallpaper_fill_mode(config, output_name, i, false) == fit_mode;
-        auto image = contained ? load_contained(path, cell_width, height) : load_cover(path, cell_width, height);
+        auto image = contained ? load_contained(path, cell_width, height)
+                               : load_cover(path, cell_width, height);
         if (!image) {
             log::error("wallpaper {} for {}: {}", path, output_name, image.error());
             continue;
@@ -50,7 +52,8 @@ std::string wallpaper_signature(const Config &config, const std::string &output_
     int columns = std::max(1, wallpaper_column_count(config, output_name, false));
     std::string signature = std::format("{}:{}", output_name, columns);
     for (int i = 0; i < columns; ++i) {
-        signature += std::format("|{}@{}", wallpaper_column_path(config, output_name, i, false), wallpaper_fill_mode(config, output_name, i, false));
+        signature += std::format("|{}@{}", wallpaper_column_path(config, output_name, i, false),
+                                 wallpaper_fill_mode(config, output_name, i, false));
     }
     return signature;
 }

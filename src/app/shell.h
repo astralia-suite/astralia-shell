@@ -64,7 +64,8 @@ struct ShellBinding {
 
 class Shell {
   public:
-    Shell(std::string backend, Capabilities capabilities) : backend_(std::move(backend)), capabilities_(capabilities) {}
+    Shell(std::string backend, Capabilities capabilities)
+        : backend_(std::move(backend)), capabilities_(capabilities) {}
 
     const Capabilities &capabilities() const { return capabilities_; }
 

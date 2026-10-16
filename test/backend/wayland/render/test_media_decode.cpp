@@ -14,8 +14,10 @@ void test_media_decode() {
     assert(tall.h == kAnimateMaxDecodeDim);
     assert(tall.w == 360);
 
-    assert(animate_scale_filter(200, 200, AnimateFit::Crop) == "scale=200:200:force_original_aspect_ratio=increase,crop=200:200,"
-                                                               "format=rgba");
-    assert(animate_scale_filter(320, 180, AnimateFit::Fit) == "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:"
-                                                              "(ow-iw)/2:(oh-ih)/2:color=black,format=rgba");
+    assert(animate_scale_filter(200, 200, AnimateFit::Crop) ==
+           "scale=200:200:force_original_aspect_ratio=increase,crop=200:200,"
+           "format=rgba");
+    assert(animate_scale_filter(320, 180, AnimateFit::Fit) ==
+           "scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:"
+           "(ow-iw)/2:(oh-ih)/2:color=black,format=rgba");
 }

@@ -23,7 +23,12 @@ struct LayerSurfaceConfig {
     bool empty_input_region = false;
 };
 
-zwlr_layer_surface_v1 *
-layer_surface_create(wl_surface *&out_surface, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, const LayerSurfaceConfig &cfg, const zwlr_layer_surface_v1_listener *listener, void *listener_data, wl_output *output = nullptr);
+zwlr_layer_surface_v1 *layer_surface_create(wl_surface *&out_surface, wl_compositor *compositor,
+                                            zwlr_layer_shell_v1 *layer_shell,
+                                            const LayerSurfaceConfig &cfg,
+                                            const zwlr_layer_surface_v1_listener *listener,
+                                            void *listener_data, wl_output *output = nullptr);
 
-void destroy_layer_surface(EGLDisplay display, wl_surface *&surface, zwlr_layer_surface_v1 *&layer_surface, wl_egl_window *&egl_window, EGLSurface &egl_surface, FrameClock *frame_clock = nullptr);
+void destroy_layer_surface(EGLDisplay display, wl_surface *&surface,
+                           zwlr_layer_surface_v1 *&layer_surface, wl_egl_window *&egl_window,
+                           EGLSurface &egl_surface, FrameClock *frame_clock = nullptr);

@@ -53,13 +53,18 @@ struct LauncherState {
     wl_output *bound_output = nullptr;
 };
 
-bool launcher_create_surface(LauncherState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool launcher_create_surface(LauncherState &state, wl_compositor *compositor,
+                             zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
 
-bool launcher_init_egl(LauncherState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool launcher_init_egl(LauncherState &state, Renderer &renderer, EGLDisplay display,
+                       EGLConfig config, EGLContext context);
 
 void launcher_destroy_surface(LauncherState &state);
 
-void launcher_retarget(LauncherState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name);
+void launcher_retarget(LauncherState &state, wl_compositor *compositor,
+                       zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
+                       EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
+                       wl_output *target_output, const char *target_name);
 
 void launcher_request_frame(LauncherState &state);
 
@@ -69,7 +74,8 @@ void launcher_handle_key_event(LauncherState &state, const KeyEvent &event);
 
 void launcher_handle_click(LauncherState &state, double px, double py);
 
-void launcher_handle_pointer_move(LauncherState &state, wl_surface *focused_surface, double px, double py);
+void launcher_handle_pointer_move(LauncherState &state, wl_surface *focused_surface, double px,
+                                  double py);
 
 void launcher_handle_pointer_release(LauncherState &state);
 

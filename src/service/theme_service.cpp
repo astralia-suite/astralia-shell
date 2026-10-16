@@ -24,7 +24,8 @@ bool seed_differs(const Seed &a, const Seed &b) {
     return std::fabs(a.hue - b.hue) > same_hue_epsilon;
 }
 
-std::optional<Extraction> extract_from_video(const std::string &path, const ThemeService::VideoFrameDecoder &decoder) {
+std::optional<Extraction> extract_from_video(const std::string &path,
+                                             const ThemeService::VideoFrameDecoder &decoder) {
     int w = 0;
     int h = 0;
     std::unique_ptr<unsigned char[]> data(decoder ? decoder(path, w, h) : nullptr);
@@ -36,19 +37,23 @@ std::optional<Extraction> extract_from_video(const std::string &path, const Them
     return extraction.found ? std::optional<Extraction>(extraction) : std::nullopt;
 }
 
-std::optional<Extraction> extract_from_file(const std::string &path, const ThemeService::VideoFrameDecoder &decoder) {
+std::optional<Extraction> extract_from_file(const std::string &path,
+                                            const ThemeService::VideoFrameDecoder &decoder) {
     if (path.empty()) {
         return std::nullopt;
     }
     if (wallpaper_is_video(path)) {
         return extract_from_video(path, decoder);
     }
-    auto pixels = decode_pixels(path, [](int w, int h) { return static_cast<double>(sample_side) / std::max(1, std::max(w, h)); });
+    auto pixels = decode_pixels(path, [](int w, int h) {
+        return static_cast<double>(sample_side) / std::max(1, std::max(w, h));
+    });
     if (!pixels) {
         log::info("theme: could not decode {}", path);
         return std::nullopt;
     }
-    Extraction extraction = extract_seeds(pixels->data.get(), pixels->width, pixels->height, pixels->premultiplied);
+    Extraction extraction =
+        extract_seeds(pixels->data.get(), pixels->width, pixels->height, pixels->premultiplied);
     if (!extraction.found) {
         log::info("theme: no usable colour in {}", path);
         return std::nullopt;
@@ -56,7 +61,8 @@ std::optional<Extraction> extract_from_file(const std::string &path, const Theme
     return extraction;
 }
 
-std::optional<Extraction> resolve_theme(const std::string &path, const ThemeService::VideoFrameDecoder &decoder) {
+std::optional<Extraction> resolve_theme(const std::string &path,
+                                        const ThemeService::VideoFrameDecoder &decoder) {
     if (std::optional<Extraction> extraction = extract_from_file(path, decoder)) {
         return extraction;
     }
@@ -97,7 +103,9 @@ ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
     std::error_code ec;
     auto modified = std::filesystem::last_write_time(source.path, ec);
     if (!ec) {
-        source.modified = std::chrono::duration_cast<std::chrono::nanoseconds>(modified.time_since_epoch()).count();
+        source.modified =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(modified.time_since_epoch())
+                .count();
     }
     return source;
 }

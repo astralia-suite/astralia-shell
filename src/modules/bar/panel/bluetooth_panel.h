@@ -10,9 +10,7 @@
 namespace astralia {
 
 struct BluetoothRow {
-    enum class Kind { message,
-                      section,
-                      device } kind;
+    enum class Kind { message, section, device } kind;
     float height;
     std::string text;
     const BluetoothDevice *device = nullptr;

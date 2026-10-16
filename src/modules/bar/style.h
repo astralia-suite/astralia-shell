@@ -54,8 +54,10 @@ struct BarFrame {
     std::vector<Fillet> fillets;
 };
 
-IslandShape bar_island_shape(const BarStyleSpec &spec, float left, float right, bool flush_left, bool flush_right);
-BarFrame bar_frame(const BarStyleSpec &spec, std::optional<float> left_end, std::optional<IslandSpan> center, std::optional<float> right_start, float width);
+IslandShape bar_island_shape(const BarStyleSpec &spec, float left, float right, bool flush_left,
+                             bool flush_right);
+BarFrame bar_frame(const BarStyleSpec &spec, std::optional<float> left_end,
+                   std::optional<IslandSpan> center, std::optional<float> right_start, float width);
 
 struct BarGeometry {
     int height;
@@ -63,6 +65,7 @@ struct BarGeometry {
     int exclusive_zone;
 };
 
-BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin, int hug_radius);
+BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin,
+                                  int hug_radius);
 
 } // namespace astralia

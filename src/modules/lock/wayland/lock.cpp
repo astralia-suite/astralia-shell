@@ -97,7 +97,8 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     t_make = clk::now();
     step("begin_frame");
     r.begin_frame(los.width, los.height, los.output_scale.scale);
-    glClearColor(astralia::palette::base.r, astralia::palette::base.g, astralia::palette::base.b, 1.0f);
+    glClearColor(astralia::palette::base.r, astralia::palette::base.g, astralia::palette::base.b,
+                 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     auto now = clk::now();
@@ -114,7 +115,8 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     if (!los.panel_gated) {
         float oh = static_cast<float>(los.height);
         astralia::lock_motion_fit(los.motion, lock_card_width(oh), lock_card_height(oh));
-        astralia::paint_lock(los.canvas, st.model, los.motion, lock_info(st), static_cast<float>(los.width), oh);
+        astralia::paint_lock(los.canvas, st.model, los.motion, lock_info(st),
+                             static_cast<float>(los.width), oh);
         los.hits = st.model.hits();
     }
     los.canvas.flush();
@@ -123,7 +125,8 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     t_draw = clk::now();
     step("eglSwapBuffers");
     if (!eglSwapBuffers(st.app->egl_display, los.egl_surface))
-        klog("lock: eglSwapBuffers failed on '%s', egl error 0x%04x", los.output_name.c_str(), eglGetError());
+        klog("lock: eglSwapBuffers failed on '%s', egl error 0x%04x", los.output_name.c_str(),
+             eglGetError());
     t_swap = clk::now();
     step("swapped");
 
@@ -133,17 +136,20 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     if (ms(t_begin, t_swap) > 50.0f)
         klog("lock: SLOW frame #%d '%s' make=%.1f wallpaper=%.1f panel=%.1f "
              "draw=%.1f swap=%.1f",
-             f, los.output_name.c_str(), ms(t_begin, t_make), ms(t_make, t_wallpaper), ms(t_wallpaper, t_panel), ms(t_panel, t_draw), ms(t_draw, t_swap));
+             f, los.output_name.c_str(), ms(t_begin, t_make), ms(t_make, t_wallpaper),
+             ms(t_wallpaper, t_panel), ms(t_panel, t_draw), ms(t_draw, t_swap));
     else if (f % 30 == 0)
         klog("lock: paint #%d '%s' locked=%d unlocking=%d gated=%d "
              "scale=%.2f content=%.2f",
-             f, los.output_name.c_str(), st.locked, st.unlocking, los.panel_gated, los.motion.panel_scale, los.motion.content_alpha);
+             f, los.output_name.c_str(), st.locked, st.unlocking, los.panel_gated,
+             los.motion.panel_scale, los.motion.content_alpha);
 
     if (los.motion.animations.hasActive())
         request_frame(los.frame_clock);
 }
 
-void surface_configure(void *data, ext_session_lock_surface_v1 *s, uint32_t serial, uint32_t w, uint32_t h) {
+void surface_configure(void *data, ext_session_lock_surface_v1 *s, uint32_t serial, uint32_t w,
+                       uint32_t h) {
     auto *los = static_cast<LockOutputSurface *>(data);
     ext_session_lock_surface_v1_ack_configure(s, serial);
 
@@ -154,8 +160,11 @@ void surface_configure(void *data, ext_session_lock_surface_v1 *s, uint32_t seri
     los->height = static_cast<int32_t>(h);
 
     if (first) {
-        los->egl_window = wl_egl_window_create(los->surface, los->width * scale, los->height * scale);
-        los->egl_surface = eglCreateWindowSurface(st->app->egl_display, st->app->egl_config, reinterpret_cast<EGLNativeWindowType>(los->egl_window), nullptr);
+        los->egl_window =
+            wl_egl_window_create(los->surface, los->width * scale, los->height * scale);
+        los->egl_surface =
+            eglCreateWindowSurface(st->app->egl_display, st->app->egl_config,
+                                   reinterpret_cast<EGLNativeWindowType>(los->egl_window), nullptr);
         if (los->egl_surface == EGL_NO_SURFACE) {
             klog("lock: eglCreateWindowSurface failed on '%s'", los->output_name.c_str());
             return;
@@ -184,7 +193,8 @@ void handle_locked(void *data, ext_session_lock_v1 *) {
         st->app->session_locked = true;
     klog("lock: session locked, %zu surface(s)", st->surfaces.size());
     for (auto &up : st->surfaces)
-        klog("lock:   '%s' configured=%d egl=%d %dx%d", up->output_name.c_str(), up->configured, up->egl_surface != EGL_NO_SURFACE, up->width, up->height);
+        klog("lock:   '%s' configured=%d egl=%d %dx%d", up->output_name.c_str(), up->configured,
+             up->egl_surface != EGL_NO_SURFACE, up->width, up->height);
     request_all(*st);
 }
 
@@ -228,7 +238,8 @@ void try_authenticate(LockState &st) {
     std::string pw = st.model.begin_auth();
     uint64_t gen = st.model.generation();
     std::thread([&st, gen, pw = std::move(pw)]() mutable {
-        pam_auth::Result res = pam_auth::authenticate(user_info::username(), pw, ASTRALIA_SHELL_PAM_DIR);
+        pam_auth::Result res =
+            pam_auth::authenticate(user_info::username(), pw, ASTRALIA_SHELL_PAM_DIR);
         pam_auth::secure_clear(pw);
         astralia::DeferredCall::call_later([&st, gen, res] { deliver_auth(st, gen, res); });
     }).detach();
@@ -241,8 +252,7 @@ void create_output_surface(LockState &st, wl_output *output, const std::string &
     los->output = output;
     los->output_name = name;
     los->surface = wl_compositor_create_surface(st.app->compositor);
-    los->lock_surface =
-        ext_session_lock_v1_get_lock_surface(st.lock, los->surface, output);
+    los->lock_surface = ext_session_lock_v1_get_lock_surface(st.lock, los->surface, output);
     if (!los->lock_surface) {
         klog("lock: get_lock_surface failed on '%s'", name.c_str());
         wl_surface_destroy(los->surface);
@@ -428,8 +438,9 @@ void lock_hotplug_add(LockState &st, wl_output *output, const char *name) {
 void lock_hotplug_remove(LockState &st, wl_output *output) {
     if (!st.active)
         return;
-    auto it =
-        std::find_if(st.surfaces.begin(), st.surfaces.end(), [output](const std::unique_ptr<LockOutputSurface> &u) { return u->output == output; });
+    auto it = std::find_if(
+        st.surfaces.begin(), st.surfaces.end(),
+        [output](const std::unique_ptr<LockOutputSurface> &u) { return u->output == output; });
     if (it == st.surfaces.end())
         return;
     destroy_output_surface(st, **it);
@@ -460,7 +471,8 @@ namespace {
 
 class LockModule final : public Module {
   public:
-    explicit LockModule(LockWallpaperDrawFn draw_wallpaper) : draw_wallpaper_(std::move(draw_wallpaper)) {}
+    explicit LockModule(LockWallpaperDrawFn draw_wallpaper)
+        : draw_wallpaper_(std::move(draw_wallpaper)) {}
 
     LockState &state() { return state_; }
 
@@ -471,7 +483,8 @@ class LockModule final : public Module {
 
     bool init_egl(WaylandState &app) override {
         state_.app = &app;
-        state_.draw_wallpaper = [this, &app](const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h) {
+        state_.draw_wallpaper = [this, &app](const std::string &output_name, GlCanvas &canvas,
+                                             int32_t w, int32_t h) {
             if (draw_wallpaper_)
                 draw_wallpaper_(app, output_name, canvas, w, h);
         };
@@ -482,12 +495,8 @@ class LockModule final : public Module {
     }
 
     bool configured() const override { return true; }
-    wl_surface *surface() const override {
-        return lock_focused_surface(state_);
-    }
-    bool owns_surface(wl_surface *s) const override {
-        return lock_owns_surface(state_, s);
-    }
+    wl_surface *surface() const override { return lock_focused_surface(state_); }
+    bool owns_surface(wl_surface *s) const override { return lock_owns_surface(state_, s); }
     void request_frame() override {}
 
     bool timer_tick(WaylandState &app) override {
@@ -496,7 +505,8 @@ class LockModule final : public Module {
         ++poll_tick_;
         astralia::cpu_temp_poll(app.cpu_temp);
         astralia::system_stats_poll(app.system_stats);
-        if (poll_tick_ % 5 == 0 || (app.gpu_temp.nvidia_smi_proc && app.gpu_temp.nvidia_smi_proc->running()))
+        if (poll_tick_ % 5 == 0 ||
+            (app.gpu_temp.nvidia_smi_proc && app.gpu_temp.nvidia_smi_proc->running()))
             astralia::gpu_temp_poll(app.gpu_temp);
         lock_timer_tick(state_);
         return true;
@@ -510,8 +520,7 @@ class LockModule final : public Module {
     }
 
     std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override {
-        return {{astralia::ShellVerb::lock,
-                 [this, &app] {
+        return {{astralia::ShellVerb::lock, [this, &app] {
                      astralia::cpu_temp_poll(app.cpu_temp);
                      astralia::system_stats_poll(app.system_stats);
                      astralia::gpu_temp_poll(app.gpu_temp);

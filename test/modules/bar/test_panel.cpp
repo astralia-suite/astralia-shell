@@ -62,11 +62,15 @@ class FakeContent final : public PanelContent {
         hover_a = a;
         return changed;
     }
-    void paint_popup(astralia::ui::Canvas &, const astralia::ui::Box &box, PanelPaint &paint) override { paint.region({box.x + 4, box.y + 4, 100, 28}, 9, 1); }
+    void paint_popup(astralia::ui::Canvas &, const astralia::ui::Box &box,
+                     PanelPaint &paint) override {
+        paint.region({box.x + 4, box.y + 4, 100, 28}, 9, 1);
+    }
     void opened() override { ++opened_count; }
     void closed() override { ++closed_count; }
     float content_height(astralia::ui::Canvas &) override { return height; }
-    void paint(astralia::ui::Canvas &, const astralia::ui::Box &view, float scroll, PanelPaint &paint) override {
+    void paint(astralia::ui::Canvas &, const astralia::ui::Box &view, float scroll,
+               PanelPaint &paint) override {
         paint.region({view.x, view.y - scroll, 50, 20}, 7, 3, 4, false);
         paint.region({view.x, view.y - scroll + 30, 100, 20}, 8, 0, 0, true);
     }
@@ -112,24 +116,32 @@ struct Harness {
 void check_panel_framework() {
     Instant instant;
     Harness h;
-    test::check(!h.panel->is_open() && h.panel->paint(h.canvas, 1000, 50).w == 0, "a closed panel paints nothing");
+    test::check(!h.panel->is_open() && h.panel->paint(h.canvas, 1000, 50).w == 0,
+                "a closed panel paints nothing");
     h.panel->open();
     test::check(h.panel->is_open() && h.content->opened_count == 1, "open calls the content");
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
     float rod = Panel::inset().y;
-    test::check(card.w == 400 && card.x == 580 && card.y == 50 + rod, "the card sits at the right margin under the upper roller");
+    test::check(card.w == 400 && card.x == 580 && card.y == 50 + rod,
+                "the card sits at the right margin under the upper roller");
     float chrome = 20 + 32 + 4 + 1 + 8 + 20;
     test::check(card.h == chrome + 100, "the card height is chrome plus content");
-    test::check(h.panel->contains(card.x + 20, card.y + 10) && !h.panel->contains(10, 10) && !h.panel->contains(card.x + 20, 50), "contains covers the card only");
+    test::check(h.panel->contains(card.x + 20, card.y + 10) && !h.panel->contains(10, 10) &&
+                    !h.panel->contains(card.x + 20, 50),
+                "contains covers the card only");
 
     double bx = card.x + 20 + 5;
     double by = card.y + 20 + 32 + 4 + 1 + 8 + 5;
-    test::check(h.panel->clickable(bx, by) && !h.panel->clickable(card.x + 1, card.y + 1), "clickable follows regions");
-    test::check(h.panel->press(bx, by) && h.content->activated == 1 && h.content->last_id == 7, "press activates the region under the pointer");
+    test::check(h.panel->clickable(bx, by) && !h.panel->clickable(card.x + 1, card.y + 1),
+                "clickable follows regions");
+    test::check(h.panel->press(bx, by) && h.content->activated == 1 && h.content->last_id == 7,
+                "press activates the region under the pointer");
 
-    test::check(h.panel->hover(bx, by) && h.content->body_hover == 7, "hovering a card region reports its id");
+    test::check(h.panel->hover(bx, by) && h.content->body_hover == 7,
+                "hovering a card region reports its id");
     test::check(!h.panel->hover(bx + 1, by + 1), "hovering the same region changes nothing");
-    test::check(h.panel->hover(card.x + 1, card.y + 1) && h.content->body_hover == -1, "hovering empty card space clears the hover");
+    test::check(h.panel->hover(card.x + 1, card.y + 1) && h.content->body_hover == -1,
+                "hovering empty card space clears the hover");
     double dx = card.x + 20 + 5;
     double dy = by + 30;
     h.panel->press(dx, dy);
@@ -140,15 +152,19 @@ void check_panel_framework() {
     test::check(!h.panel->dragging() && h.content->dropped == 1, "release drops");
     test::check(!h.panel->move(0, 0) && !h.panel->release(), "no drag, no move");
 
-    test::check(!h.panel->press(card.x - 200, card.y + 2000, astralia::input::Button::Middle), "middle clicks are ignored");
+    test::check(!h.panel->press(card.x - 200, card.y + 2000, astralia::input::Button::Middle),
+                "middle clicks are ignored");
     h.content->dialog = 40.0f;
     h.panel->paint(h.canvas, 1000, 50);
-    test::check(h.panel->contains(card.x + 5, card.y + card.h + rod + 8 + 5), "contains covers the dialog card");
+    test::check(h.panel->contains(card.x + 5, card.y + card.h + rod + 8 + 5),
+                "contains covers the dialog card");
     h.panel->press(5, 5);
-    test::check(h.content->dismissed == 1 && h.panel->is_open(), "an outside press dismisses the dialog first");
+    test::check(h.content->dismissed == 1 && h.panel->is_open(),
+                "an outside press dismisses the dialog first");
     h.panel->paint(h.canvas, 1000, 50);
     h.panel->press(5, 5);
-    test::check(!h.panel->is_open() && h.closed == 1 && h.content->closed_count == 1, "an outside press closes the panel");
+    test::check(!h.panel->is_open() && h.closed == 1 && h.content->closed_count == 1,
+                "an outside press closes the panel");
 
     h.panel->open();
     h.panel->paint(h.canvas, 1000, 50);
@@ -171,7 +187,8 @@ void check_panel_headerless() {
     test::check(card.h == 20 + 100 + 20, "a headerless card is the content between two paddings");
     double bx = card.x + 20 + 5;
     double by = card.y + 20 + 5;
-    test::check(h.panel->press(bx, by) && h.content->last_id == 7, "headerless content starts at the top padding");
+    test::check(h.panel->press(bx, by) && h.content->last_id == 7,
+                "headerless content starts at the top padding");
     astralia::input::KeyEvent escape;
     escape.kind = astralia::input::KeyKind::Escape;
     test::check(h.panel->key(escape) && !h.panel->is_open(), "escape closes a headerless card");
@@ -184,17 +201,26 @@ void check_panel_popup() {
     test::check(!h.panel->popup_wanted(), "no popup without content for it");
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
     h.content->popup = 90.0f;
-    test::check(h.panel->popup_wanted() && h.panel->popup_width() == 220 && h.panel->popup_height() == 90, "the popup follows the content");
+    test::check(h.panel->popup_wanted() && h.panel->popup_width() == 220 &&
+                    h.panel->popup_height() == 90,
+                "the popup follows the content");
     astralia::ui::Box anchor = h.panel->popup_anchor();
-    test::check(anchor.x == card.x + 10 && anchor.y == card.y + 20 && anchor.w == 40, "the anchor is moved to surface coordinates");
+    test::check(anchor.x == card.x + 10 && anchor.y == card.y + 20 && anchor.w == 40,
+                "the anchor is moved to surface coordinates");
     h.panel->paint_popup(h.canvas);
-    test::check(h.panel->popup_clickable(10, 10) && !h.panel->popup_clickable(150, 10), "popup regions are clickable");
-    test::check(h.panel->press_popup(10, 10) && h.content->activated == 1 && h.content->last_id == 9, "a popup press activates its region");
-    test::check(h.panel->hover_popup(10, 10) && h.content->hover_id == 9 && h.content->hover_a == 1, "hovering a popup region reports its id");
+    test::check(h.panel->popup_clickable(10, 10) && !h.panel->popup_clickable(150, 10),
+                "popup regions are clickable");
+    test::check(h.panel->press_popup(10, 10) && h.content->activated == 1 &&
+                    h.content->last_id == 9,
+                "a popup press activates its region");
+    test::check(h.panel->hover_popup(10, 10) && h.content->hover_id == 9 && h.content->hover_a == 1,
+                "hovering a popup region reports its id");
     test::check(!h.panel->hover_popup(11, 11), "hovering the same region changes nothing");
-    test::check(h.panel->hover_popup(200, 80) && h.content->hover_id == -1, "leaving the regions clears the hover");
+    test::check(h.panel->hover_popup(200, 80) && h.content->hover_id == -1,
+                "leaving the regions clears the hover");
     int before = h.content->activated;
-    test::check(h.panel->press_popup(200, 80) && h.content->activated == before, "a popup press outside any region does nothing");
+    test::check(h.panel->press_popup(200, 80) && h.content->activated == before,
+                "a popup press outside any region does nothing");
     h.panel->close();
     test::check(!h.panel->popup_wanted(), "a closing panel has no popup");
 }
@@ -202,14 +228,20 @@ void check_panel_popup() {
 void check_panel_set_lookup() {
     Harness h;
     astralia::PanelSet set(h.reactor);
-    test::check(set.find(astralia::PanelId::count) == nullptr && set.find(set.active_id()) == nullptr, "an empty set has no active panel to find");
+    test::check(set.find(astralia::PanelId::count) == nullptr &&
+                    set.find(set.active_id()) == nullptr,
+                "an empty set has no active panel to find");
     set.add(astralia::PanelId::clock, std::make_unique<FakeContent>());
-    test::check(set.find(astralia::PanelId::clock) != nullptr && set.find(astralia::PanelId::tray) == nullptr, "find returns only the panels that were added");
+    test::check(set.find(astralia::PanelId::clock) != nullptr &&
+                    set.find(astralia::PanelId::tray) == nullptr,
+                "find returns only the panels that were added");
 }
 
 void check_dialog_heights() {
-    test::check(astralia::panel_config::confirm_dialog_height == 114.0f, "the confirm dialog is 114 high");
-    test::check(astralia::panel_config::field_dialog_height == 122.0f, "the password dialog is 122 high");
+    test::check(astralia::panel_config::confirm_dialog_height == 114.0f,
+                "the confirm dialog is 114 high");
+    test::check(astralia::panel_config::field_dialog_height == 122.0f,
+                "the password dialog is 122 high");
 }
 
 void check_panel_scroll() {
@@ -236,7 +268,8 @@ void check_panel_animation() {
     h.panel->open();
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
     test::check(h.panel->animating(), "the scroll animates in");
-    test::check(!h.panel->press(card.x + 25, card.y + 80) && h.content->activated == 0, "the card ignores presses until the scroll is open");
+    test::check(!h.panel->press(card.x + 25, card.y + 80) && h.content->activated == 0,
+                "the card ignores presses until the scroll is open");
     test::check(h.canvas.count(test::Op::Kind::text) == 0, "the content waits for the open scroll");
     h.panel->tick(steady_clock::now() + seconds(1));
     h.panel->tick(steady_clock::now() + seconds(2));
@@ -244,12 +277,17 @@ void check_panel_animation() {
     test::check(!h.panel->animating(), "the stages finish");
     h.canvas.ops.clear();
     h.panel->paint(h.canvas, 1000, 50);
-    test::check(h.canvas.count(test::Op::Kind::text) > 0, "the content shows once the scroll is open");
-    test::check(h.panel->press(card.x + 25, card.y + 20 + 32 + 4 + 1 + 8 + 5) && h.content->activated == 1, "and the card takes presses");
+    test::check(h.canvas.count(test::Op::Kind::text) > 0,
+                "the content shows once the scroll is open");
+    test::check(h.panel->press(card.x + 25, card.y + 20 + 32 + 4 + 1 + 8 + 5) &&
+                    h.content->activated == 1,
+                "and the card takes presses");
     h.panel->close();
-    test::check(h.panel->is_open() && h.panel->animating() && h.panel->closing(), "closing keeps the card until the scroll has slid out");
+    test::check(h.panel->is_open() && h.panel->animating() && h.panel->closing(),
+                "closing keeps the card until the scroll has slid out");
     h.panel->tick(steady_clock::now() + seconds(4));
-    test::check(h.panel->is_open() && h.closed == 0, "the content fades before the scroll rolls up");
+    test::check(h.panel->is_open() && h.closed == 0,
+                "the content fades before the scroll rolls up");
     h.panel->tick(steady_clock::now() + seconds(5));
     h.panel->tick(steady_clock::now() + seconds(6));
     test::check(!h.panel->is_open() && h.closed == 1, "the panel closes after the slide");
@@ -277,9 +315,12 @@ void check_panel_entry() {
     };
     constexpr float width = 1000.0f;
     const Case cases[] = {
-        {PanelAnchor::left, [](const astralia::ui::Box &b) { return b.x + b.w <= 0.0f; }, "a left panel's scroll starts off the left edge"},
-        {PanelAnchor::right, [](const astralia::ui::Box &b) { return b.x >= width; }, "a right panel's scroll starts off the right edge"},
-        {PanelAnchor::center, [](const astralia::ui::Box &b) { return b.y + b.h <= 0.0f; }, "a centre panel's scroll starts above the top edge"},
+        {PanelAnchor::left, [](const astralia::ui::Box &b) { return b.x + b.w <= 0.0f; },
+         "a left panel's scroll starts off the left edge"},
+        {PanelAnchor::right, [](const astralia::ui::Box &b) { return b.x >= width; },
+         "a right panel's scroll starts off the right edge"},
+        {PanelAnchor::center, [](const astralia::ui::Box &b) { return b.y + b.h <= 0.0f; },
+         "a centre panel's scroll starts above the top edge"},
     };
     for (const Case &c : cases) {
         Harness h;
@@ -297,18 +338,23 @@ void check_panel_resting_scroll() {
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
     astralia::ui::Box extent = h.panel->extent();
     Panel::Inset inset = Panel::inset();
-    test::check(extent.x == card.x - inset.x && extent.y == 50 && extent.w == card.w + 2.0f * inset.x && extent.h == card.h + 2.0f * inset.y, "the extent wraps the card and both rollers");
+    test::check(extent.x == card.x - inset.x && extent.y == 50 &&
+                    extent.w == card.w + 2.0f * inset.x && extent.h == card.h + 2.0f * inset.y,
+                "the extent wraps the card and both rollers");
     test::check(h.panel->card().y == 50 + inset.y, "the card box is where the paper rests");
 }
 
 void check_calendar() {
     using astralia::CalendarDay;
     std::array<CalendarDay, 42> oct = astralia::clock_panel_cells(2026, 9);
-    test::check(oct[0].year == 2026 && oct[0].month == 8 && oct[0].day == 28 && !oct[0].in_month, "October 2026 grid starts on Monday 28 September");
-    test::check(oct[3].month == 9 && oct[3].day == 1 && oct[3].in_month, "1 October 2026 is a Thursday");
+    test::check(oct[0].year == 2026 && oct[0].month == 8 && oct[0].day == 28 && !oct[0].in_month,
+                "October 2026 grid starts on Monday 28 September");
+    test::check(oct[3].month == 9 && oct[3].day == 1 && oct[3].in_month,
+                "1 October 2026 is a Thursday");
     test::check(oct[41].month == 10 && oct[41].day == 8, "grid ends on 8 November");
     std::array<CalendarDay, 42> jun = astralia::clock_panel_cells(2026, 5);
-    test::check(jun[0].day == 1 && jun[0].in_month, "a month starting on Monday has no leading days");
+    test::check(jun[0].day == 1 && jun[0].in_month,
+                "a month starting on Monday has no leading days");
     test::check(astralia::clock_panel_same_day(oct[3], 2026, 9, 1), "same day matches");
     test::check(!astralia::clock_panel_same_day(oct[0], 2026, 9, 28), "same day needs the month");
     astralia::CalendarMonth back = astralia::clock_panel_month_shifted(2026, 0, -1);
@@ -316,8 +362,10 @@ void check_calendar() {
     astralia::CalendarMonth ahead = astralia::clock_panel_month_shifted(2026, 11, 13);
     test::check(ahead.year == 2028 && ahead.month == 0, "December plus 13 is January two years on");
     test::check(astralia::clock_panel_iso_week(2026, 0, 1) == 1, "1 January 2026 is week 1");
-    test::check(astralia::clock_panel_iso_week(2027, 0, 1) == 53, "1 January 2027 is week 53 of 2026");
-    test::check(astralia::clock_panel_iso_week(2024, 11, 30) == 1, "30 December 2024 is week 1 of 2025");
+    test::check(astralia::clock_panel_iso_week(2027, 0, 1) == 53,
+                "1 January 2027 is week 53 of 2026");
+    test::check(astralia::clock_panel_iso_week(2024, 11, 30) == 1,
+                "30 December 2024 is week 1 of 2025");
     test::check(astralia::clock_panel_iso_week(2026, 9, 4) == 40, "4 October 2026 is week 40");
 }
 
@@ -350,15 +398,22 @@ void check_tray_menu() {
 
     test::check(astralia::tray_menu_level(&root, {}) == &root, "the empty path is the root");
     const std::vector<TrayMenuEntry> *deep = astralia::tray_menu_level(&root, {4});
-    test::check(deep != nullptr && deep->size() == 1 && (*deep)[0].id == 5, "a path walks into a submenu");
-    test::check(astralia::tray_menu_level(&root, {99}) == nullptr && astralia::tray_menu_level(nullptr, {}) == nullptr, "a stale path has no level");
+    test::check(deep != nullptr && deep->size() == 1 && (*deep)[0].id == 5,
+                "a path walks into a submenu");
+    test::check(astralia::tray_menu_level(&root, {99}) == nullptr &&
+                    astralia::tray_menu_level(nullptr, {}) == nullptr,
+                "a stale path has no level");
 
     std::vector<TrayMenuRow> rows = astralia::tray_menu_rows(&root, false);
-    test::check(rows.size() == 3 && rows[0].kind == TrayMenuRow::Kind::entry && rows[1].kind == TrayMenuRow::Kind::separator && rows[1].height < rows[0].height, "hidden entries are skipped and separators are thin");
+    test::check(rows.size() == 3 && rows[0].kind == TrayMenuRow::Kind::entry &&
+                    rows[1].kind == TrayMenuRow::Kind::separator && rows[1].height < rows[0].height,
+                "hidden entries are skipped and separators are thin");
     rows = astralia::tray_menu_rows(deep, true);
-    test::check(rows.size() == 2 && rows[0].kind == TrayMenuRow::Kind::back, "a submenu starts with a back row");
+    test::check(rows.size() == 2 && rows[0].kind == TrayMenuRow::Kind::back,
+                "a submenu starts with a back row");
     rows = astralia::tray_menu_rows(nullptr, false);
-    test::check(rows.size() == 1 && rows[0].kind == TrayMenuRow::Kind::loading, "a missing menu is loading");
+    test::check(rows.size() == 1 && rows[0].kind == TrayMenuRow::Kind::loading,
+                "a missing menu is loading");
     test::check(astralia::tray_columns(400) == 8, "the tray grid fits eight columns");
 }
 
@@ -389,17 +444,26 @@ void check_network_rows() {
             order.push_back(row.info->ssid);
         }
     }
-    test::check(order == std::vector<std::string>({"Home", "Office", "Hotel", "Cafe"}), "connected, then known in range, then available by signal; out of range saved ones are hidden");
-    test::check(rows.front().kind == NetworkRow::Kind::section_connected && rows.back().kind == NetworkRow::Kind::spacer, "sections open the list and a spacer closes it");
+    test::check(order == std::vector<std::string>({"Home", "Office", "Hotel", "Cafe"}),
+                "connected, then known in range, then available by signal; out of "
+                "range saved ones are hidden");
+    test::check(rows.front().kind == NetworkRow::Kind::section_connected &&
+                    rows.back().kind == NetworkRow::Kind::spacer,
+                "sections open the list and a spacer closes it");
 
     astralia::NetworkMap empty;
     rows = astralia::network_rows({empty, true, true, true, true});
-    test::check(rows[0].kind == NetworkRow::Kind::error && rows[1].kind == NetworkRow::Kind::ethernet && rows[2].kind == NetworkRow::Kind::scanning, "banners come first, then the scanning state");
+    test::check(rows[0].kind == NetworkRow::Kind::error &&
+                    rows[1].kind == NetworkRow::Kind::ethernet &&
+                    rows[2].kind == NetworkRow::Kind::scanning,
+                "banners come first, then the scanning state");
     rows = astralia::network_rows({empty, false, false, false, false});
     test::check(rows[0].kind == NetworkRow::Kind::no_adapter, "no adapter");
     rows = astralia::network_rows({empty, false, false, true, false});
     test::check(rows[0].kind == NetworkRow::Kind::disabled, "wifi disabled");
-    test::check(std::string(astralia::network_signal_glyph(90)) != astralia::network_signal_glyph(10), "signal glyphs differ by band");
+    test::check(std::string(astralia::network_signal_glyph(90)) !=
+                    astralia::network_signal_glyph(10),
+                "signal glyphs differ by band");
 }
 
 } // namespace

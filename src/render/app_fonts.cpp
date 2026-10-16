@@ -11,7 +11,8 @@ namespace astralia {
 namespace {
 
 bool add_font(const char *name) {
-    constexpr std::array<const char *, 2> dirs{ASTRALIA_ASSET_DIR "/fonts", ASTRALIA_SOURCE_ASSET_DIR "/fonts"};
+    constexpr std::array<const char *, 2> dirs{ASTRALIA_ASSET_DIR "/fonts",
+                                               ASTRALIA_SOURCE_ASSET_DIR "/fonts"};
     for (const char *dir : dirs) {
         std::string path = std::string(dir) + "/" + name;
         if (FcConfigAppFontAddFile(nullptr, reinterpret_cast<const FcChar8 *>(path.c_str()))) {

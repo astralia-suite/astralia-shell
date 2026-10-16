@@ -15,9 +15,7 @@ namespace {
 
 namespace cfg = panel_config;
 
-enum Action { slider = 1,
-              mute,
-              device };
+enum Action { slider = 1, mute, device };
 
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
@@ -26,10 +24,13 @@ const char *node_icon(const AudioNode &node) {
     return icon::volume_threshold(node.muted, node.percent);
 }
 
-void add_device_slider(std::vector<VolumeRow> &rows, const AudioService &audio, const char *title, uint32_t id) {
+void add_device_slider(std::vector<VolumeRow> &rows, const AudioService &audio, const char *title,
+                       uint32_t id) {
     std::optional<AudioNode> node = audio.node(id);
-    rows.push_back({VolumeRow::Kind::label, cfg::volume_label_row, title, node ? node->label : std::string()});
-    rows.push_back({VolumeRow::Kind::slider, cfg::volume_slider_row, {}, {}, node.value_or(AudioNode{})});
+    rows.push_back(
+        {VolumeRow::Kind::label, cfg::volume_label_row, title, node ? node->label : std::string()});
+    rows.push_back(
+        {VolumeRow::Kind::slider, cfg::volume_slider_row, {}, {}, node.value_or(AudioNode{})});
 }
 
 } // namespace
@@ -47,7 +48,12 @@ std::vector<VolumeRow> volume_rows(const AudioService &audio) {
     auto add_devices = [&](const char *title, AudioNodeKind kind, uint32_t selected) {
         rows.push_back({VolumeRow::Kind::section, cfg::volume_section_row, title});
         for (const AudioNode &node : audio.nodes(kind)) {
-            rows.push_back({VolumeRow::Kind::device, cfg::volume_device_row, node.label, {}, node, node.id == selected});
+            rows.push_back({VolumeRow::Kind::device,
+                            cfg::volume_device_row,
+                            node.label,
+                            {},
+                            node,
+                            node.id == selected});
         }
     };
     add_devices("Output Device", AudioNodeKind::sink, audio.sink_id());
@@ -104,20 +110,30 @@ void VolumePanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, P
             if (!row.detail.empty()) {
                 ui::TextStyle clipped = text_style;
                 clipped.max_width = static_cast<int>(cfg::volume_label_cap);
-                panel_widgets::text_in_row(canvas, "\xE2\x80\x94 " + row.detail, clipped, box.x + title.w + cfg::tight_gap, box, palette::text_dim);
+                panel_widgets::text_in_row(canvas, "\xE2\x80\x94 " + row.detail, clipped,
+                                           box.x + title.w + cfg::tight_gap, box,
+                                           palette::text_dim);
             }
             break;
         }
         case VolumeRow::Kind::slider: {
             const AudioNode &node = row.node;
-            ui::Box button{box.x + box.w - cfg::volume_button, box.y + (box.h - cfg::volume_button) / 2.0f, cfg::volume_button, cfg::volume_button};
+            ui::Box button{box.x + box.w - cfg::volume_button,
+                           box.y + (box.h - cfg::volume_button) / 2.0f, cfg::volume_button,
+                           cfg::volume_button};
             panel_widgets::icon_button(canvas, button, node_icon(node), palette::text);
             paint.region(button, mute, static_cast<int>(node.id));
             float percent_right = button.x - cfg::row_gap;
-            std::string percent = node.muted ? std::string("muted") : std::format("{}%", node.percent);
-            panel_widgets::right_text(canvas, percent, text_style, percent_right, box, palette::text_dim);
-            ui::Box track{box.x, box.y, percent_right - cfg::volume_percent_width - cfg::volume_slider_gap - box.x, box.h};
-            panel_widgets::slider(canvas, track, node.muted ? 0.0f : static_cast<float>(node.percent) / 100.0f, node.muted, node.id == selected_ || node.id == hovered_ || node.id == dragging_);
+            std::string percent =
+                node.muted ? std::string("muted") : std::format("{}%", node.percent);
+            panel_widgets::right_text(canvas, percent, text_style, percent_right, box,
+                                      palette::text_dim);
+            ui::Box track{
+                box.x, box.y,
+                percent_right - cfg::volume_percent_width - cfg::volume_slider_gap - box.x, box.h};
+            panel_widgets::slider(
+                canvas, track, node.muted ? 0.0f : static_cast<float>(node.percent) / 100.0f,
+                node.muted, node.id == selected_ || node.id == hovered_ || node.id == dragging_);
             paint.region(track, slider, static_cast<int>(node.id), 0, true);
             break;
         }
@@ -132,34 +148,44 @@ void VolumePanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, P
             break;
         case VolumeRow::Kind::app: {
             const AudioNode &node = row.node;
-            ui::Box button{box.x + box.w - cfg::volume_button, box.y, cfg::volume_button, cfg::volume_button};
+            ui::Box button{box.x + box.w - cfg::volume_button, box.y, cfg::volume_button,
+                           cfg::volume_button};
             panel_widgets::icon_button(canvas, button, node_icon(node), palette::text);
             paint.region(button, mute, static_cast<int>(node.id));
             float percent_right = button.x - cfg::row_gap;
-            std::string percent = node.muted ? std::string("muted") : std::format("{}%", node.percent);
+            std::string percent =
+                node.muted ? std::string("muted") : std::format("{}%", node.percent);
             ui::TextSize percent_size = canvas.measure(percent, text_style);
-            canvas.text(percent, text_style, percent_right - percent_size.w, box.y, palette::text_dim);
+            canvas.text(percent, text_style, percent_right - percent_size.w, box.y,
+                        palette::text_dim);
             float name_right = percent_right - cfg::volume_percent_width - cfg::row_gap;
             ui::TextStyle clipped = text_style;
             clipped.max_width = static_cast<int>(std::max(0.0f, name_right - box.x));
             canvas.text(row.text, clipped, box.x, box.y, palette::text);
-            ui::Box track{box.x, box.y + cfg::volume_text_row + cfg::volume_app_gap, name_right - box.x, cfg::volume_app_slider};
-            panel_widgets::slider(canvas, track, node.muted ? 0.0f : static_cast<float>(node.percent) / 100.0f, node.muted, node.id == selected_ || node.id == hovered_ || node.id == dragging_, cfg::volume_app_track);
+            ui::Box track{box.x, box.y + cfg::volume_text_row + cfg::volume_app_gap,
+                          name_right - box.x, cfg::volume_app_slider};
+            panel_widgets::slider(
+                canvas, track, node.muted ? 0.0f : static_cast<float>(node.percent) / 100.0f,
+                node.muted, node.id == selected_ || node.id == hovered_ || node.id == dragging_,
+                cfg::volume_app_track);
             paint.region(track, slider, static_cast<int>(node.id), 0, true);
             break;
         }
         case VolumeRow::Kind::device: {
             float dot = cfg::volume_indicator;
             float cy = box.y + box.h / 2.0f;
-            canvas.rounded({box.x, cy - dot / 2.0f, dot, dot}, dot / 2.0f, row.selected ? palette::accent : palette::text_alpha20);
+            canvas.rounded({box.x, cy - dot / 2.0f, dot, dot}, dot / 2.0f,
+                           row.selected ? palette::accent : palette::text_alpha20);
             if (row.selected) {
                 float inner = cfg::volume_indicator_dot;
-                canvas.rounded({box.x + (dot - inner) / 2.0f, cy - inner / 2.0f, inner, inner}, inner / 2.0f, palette::text);
+                canvas.rounded({box.x + (dot - inner) / 2.0f, cy - inner / 2.0f, inner, inner},
+                               inner / 2.0f, palette::text);
             }
             float text_x = box.x + dot + cfg::row_icon_gap;
             ui::TextStyle clipped = text_style;
             clipped.max_width = static_cast<int>(std::max(0.0f, box.x + box.w - text_x));
-            panel_widgets::text_in_row(canvas, row.text, clipped, text_x, box, row.selected ? palette::accent : palette::text);
+            panel_widgets::text_in_row(canvas, row.text, clipped, text_x, box,
+                                       row.selected ? palette::accent : palette::text);
             paint.region(box, device, static_cast<int>(row.node.id));
             break;
         }
@@ -186,7 +212,8 @@ bool VolumePanel::activate(const PanelRegion &region, double x, double) {
     case slider:
         selected_ = id;
         dragging_ = id;
-        set_percent(id, static_cast<int>(std::lround(panel_widgets::slider_value(region.box, x) * 100.0f)));
+        set_percent(
+            id, static_cast<int>(std::lround(panel_widgets::slider_value(region.box, x) * 100.0f)));
         return true;
     case mute:
         if (std::optional<AudioNode> node = audio_.node(id)) {
@@ -205,20 +232,20 @@ bool VolumePanel::drag(const PanelRegion &region, double x, double) {
     if (region.id != slider) {
         return false;
     }
-    set_percent(static_cast<uint32_t>(region.a), static_cast<int>(std::lround(panel_widgets::slider_value(region.box, x) * 100.0f)));
+    set_percent(static_cast<uint32_t>(region.a),
+                static_cast<int>(std::lround(panel_widgets::slider_value(region.box, x) * 100.0f)));
     return true;
 }
 
 bool VolumePanel::key(const input::KeyEvent &event) {
-    if (selected_ != 0 && (event.kind == input::KeyKind::Left || event.kind == input::KeyKind::Right)) {
+    if (selected_ != 0 &&
+        (event.kind == input::KeyKind::Left || event.kind == input::KeyKind::Right)) {
         step(selected_, event.kind == input::KeyKind::Right ? 1 : -1);
         return true;
     }
     return false;
 }
 
-bool VolumePanel::wheel(double, double, double) {
-    return false;
-}
+bool VolumePanel::wheel(double, double, double) { return false; }
 
 } // namespace astralia

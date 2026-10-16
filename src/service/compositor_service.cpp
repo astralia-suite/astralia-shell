@@ -14,14 +14,17 @@ WorkArea compositor_work_area(const CompositorMonitor &monitor) {
     double logical_width = (rotated ? monitor.height : monitor.width) / scale;
     double logical_height = (rotated ? monitor.width : monitor.height) / scale;
     return {monitor.x + monitor.reserved[0], monitor.y + monitor.reserved[1],
-            logical_width - (rotated ? monitor.reserved[1] : monitor.reserved[0]) - (rotated ? monitor.reserved[3] : monitor.reserved[2]),
-            logical_height - (rotated ? monitor.reserved[0] : monitor.reserved[1]) - (rotated ? monitor.reserved[2] : monitor.reserved[3])};
+            logical_width - (rotated ? monitor.reserved[1] : monitor.reserved[0]) -
+                (rotated ? monitor.reserved[3] : monitor.reserved[2]),
+            logical_height - (rotated ? monitor.reserved[0] : monitor.reserved[1]) -
+                (rotated ? monitor.reserved[2] : monitor.reserved[3])};
 }
 
 std::array<double, 2> compositor_logical_size(const CompositorMonitor &monitor) {
     bool rotated = monitor.transform % 2 == 1;
     double scale = monitor.scale > 0.0 ? monitor.scale : 1.0;
-    return {(rotated ? monitor.height : monitor.width) / scale, (rotated ? monitor.width : monitor.height) / scale};
+    return {(rotated ? monitor.height : monitor.width) / scale,
+            (rotated ? monitor.width : monitor.height) / scale};
 }
 
 const CompositorMonitor *compositor_monitor(const CompositorState &state, const std::string &name) {

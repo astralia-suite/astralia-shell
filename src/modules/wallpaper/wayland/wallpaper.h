@@ -46,8 +46,7 @@ inline constexpr float kWallpaperTransitionSmoothness = 0.3f;
 class Renderer;
 struct WaylandState;
 
-enum class FillMode { Crop,
-                      Fit };
+enum class FillMode { Crop, Fit };
 
 struct WallpaperColumnGl {
     EGLDisplay display = nullptr;
@@ -123,17 +122,21 @@ struct WallpaperState {
     std::function<void()> on_resize;
 };
 
-bool wallpaper_create_surface(WallpaperState &wp, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool wallpaper_create_surface(WallpaperState &wp, wl_compositor *compositor,
+                              zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
 
-bool wallpaper_init_egl(WallpaperState &wp, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool wallpaper_init_egl(WallpaperState &wp, Renderer &renderer, EGLDisplay display,
+                        EGLConfig config, EGLContext context);
 
 void wallpaper_request_frame(WallpaperState &wp);
 
 void wallpaper_wake(WallpaperState &wp);
 
-void wallpaper_draw_columns(const WallpaperState &wp, GlCanvas &canvas, int32_t width, int32_t height);
+void wallpaper_draw_columns(const WallpaperState &wp, GlCanvas &canvas, int32_t width,
+                            int32_t height);
 
-void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg, const std::string &monitor_name, bool animated);
+void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg,
+                                const std::string &monitor_name, bool animated);
 
 void wallpaper_columns_stop_all(WallpaperState &wp);
 void wallpaper_columns_pause_all(WallpaperState &wp);
@@ -152,7 +155,8 @@ class WallpaperPerMonitorModule final : public PerMonitorModule {
 
     void apply_config(WaylandState &app, MonitorOutput &mon, const Config &new_cfg) override;
 
-    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t serial) override;
+    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button,
+                      double x, double y, uint32_t serial) override;
     void handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) override;
     bool wants_pointing_hand_cursor() const override;
 

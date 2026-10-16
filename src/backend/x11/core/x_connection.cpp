@@ -15,8 +15,7 @@ struct Free {
     void operator()(void *reply) const { std::free(reply); }
 };
 
-template <typename T>
-std::unique_ptr<T, Free> owned(T *reply) {
+template <typename T> std::unique_ptr<T, Free> owned(T *reply) {
     return std::unique_ptr<T, Free>(reply);
 }
 
@@ -76,7 +75,9 @@ void XConnection::WipeEwmh::operator()(xcb_ewmh_connection_t *ewmh) const {
     delete ewmh;
 }
 
-void XConnection::FreeCursorContext::operator()(xcb_cursor_context_t *context) const { xcb_cursor_context_free(context); }
+void XConnection::FreeCursorContext::operator()(xcb_cursor_context_t *context) const {
+    xcb_cursor_context_free(context);
+}
 
 XConnection::XConnection(ConnPtr conn, EwmhPtr ewmh, xcb_screen_t *screen, xcb_visualtype_t *visual)
     : conn_(std::move(conn)), ewmh_(std::move(ewmh)), screen_(screen), visual_(visual),

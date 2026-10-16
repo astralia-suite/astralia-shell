@@ -9,10 +9,7 @@
 
 namespace astralia {
 
-enum class BatteryRowKind { empty_plugged_in,
-                            empty_no_battery,
-                            device,
-                            spacer };
+enum class BatteryRowKind { empty_plugged_in, empty_no_battery, device, spacer };
 
 struct BatteryRow {
     BatteryRowKind kind;

@@ -22,7 +22,8 @@ void check_deferred_call() {
     int result = 0;
     std::thread worker([&] { DeferredCall::call_later([&] { result = 42; }); });
     worker.join();
-    check(test::pump_until(reactor, [&] { return result == 42; }), "a call from another thread runs on the reactor");
+    check(test::pump_until(reactor, [&] { return result == 42; }),
+          "a call from another thread runs on the reactor");
 
     std::vector<int> order;
     DeferredCall::call_later([&] { order.push_back(1); });

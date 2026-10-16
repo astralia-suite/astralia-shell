@@ -20,7 +20,8 @@ XWindow::XWindow(XConnection &x, std::string_view name, uint32_t event_mask, boo
     colormap_ = xcb_generate_id(conn);
     xcb_create_colormap(conn, XCB_COLORMAP_ALLOC_NONE, colormap_, x_.root(), visual_->visual_id);
     window_ = xcb_generate_id(conn);
-    std::array<uint32_t, 5> values{XCB_BACK_PIXMAP_NONE, 0, override_redirect ? 1u : 0u, event_mask, colormap_};
+    std::array<uint32_t, 5> values{XCB_BACK_PIXMAP_NONE, 0, override_redirect ? 1u : 0u, event_mask,
+                                   colormap_};
     xcb_create_window(conn, depth_, window_, x_.root(), geometry_.x, geometry_.y, geometry_.width,
                       geometry_.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, visual_->visual_id,
                       XCB_CW_BACK_PIXMAP | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT |
@@ -66,7 +67,8 @@ bool XWindow::is_delete_message(const xcb_generic_event_t &event) {
 }
 
 void XWindow::make_click_through() {
-    xcb_shape_rectangles(x_.conn(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, XCB_CLIP_ORDERING_UNSORTED, window_, 0, 0, 0, nullptr);
+    xcb_shape_rectangles(x_.conn(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT,
+                         XCB_CLIP_ORDERING_UNSORTED, window_, 0, 0, 0, nullptr);
     xcb_flush(x_.conn());
 }
 
@@ -93,7 +95,8 @@ bool XWindow::apply_configure(const xcb_configure_notify_event_t &event) {
     return resized;
 }
 
-void XWindow::place(const OutputGeometry &geometry, uint16_t backing_width, uint16_t backing_height) {
+void XWindow::place(const OutputGeometry &geometry, uint16_t backing_width,
+                    uint16_t backing_height) {
     xcb_connection_t *conn = x_.conn();
     uint16_t width = backing_width > 0 ? backing_width : geometry.width;
     uint16_t height = backing_height > 0 ? backing_height : geometry.height;

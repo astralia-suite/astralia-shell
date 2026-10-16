@@ -11,7 +11,11 @@
 namespace astralia {
 
 Dashboard::Dashboard(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
-    : x_(x), services_(services), window_(x, kDashboardTitle, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY, false), keyboard_(x.conn()) {
+    : x_(x), services_(services),
+      window_(x, kDashboardTitle,
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+              false),
+      keyboard_(x.conn()) {
     window_.make_managed(kDashboardDefaultWidth, kDashboardDefaultHeight);
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     shell.track("dashboard", [this] { return open_; });
@@ -60,7 +64,8 @@ void Dashboard::handle(const xcb_generic_event_t &event) {
         window_.present();
         break;
     case XCB_CONFIGURE_NOTIFY:
-        if (window_.apply_configure(reinterpret_cast<const xcb_configure_notify_event_t &>(event))) {
+        if (window_.apply_configure(
+                reinterpret_cast<const xcb_configure_notify_event_t &>(event))) {
             paint();
         }
         break;
@@ -83,7 +88,9 @@ void Dashboard::paint() {
     cairo_t *cr = window_.cr();
     window_.clear();
     canvas_.bind(cr);
-    canvas_.rect({0.0f, 0.0f, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height)}, palette::window_backdrop);
+    canvas_.rect({0.0f, 0.0f, static_cast<float>(window_.geometry().width),
+                  static_cast<float>(window_.geometry().height)},
+                 palette::window_backdrop);
     window_.present();
 }
 

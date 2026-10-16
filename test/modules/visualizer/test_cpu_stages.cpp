@@ -23,7 +23,8 @@ void check_visualizer_cpu_stages() {
     constexpr int size = 256;
     std::vector<float> loud(size, 0.8f);
     std::vector<float> quiet(size, 0.0f);
-    check(stages.run(size, loud, quiet, 60) && stages.ready() && stages.size() == size, "a full input runs");
+    check(stages.run(size, loud, quiet, 60) && stages.ready() && stages.size() == size,
+          "a full input runs");
     float first = stages.smooth_texel(0, size / 4);
     check(first > 0.0f && first < 0.8f, "the newest frame carries the smallest weight");
     check(stages.smooth_texel(1, size / 4) == 0.0f, "a silent channel stays at zero");
@@ -46,14 +47,20 @@ void check_visualizer_cpu_stages() {
     check(settled == 0.0f && peak > 0.0f, "gravity pulls a silent input back to zero");
 
     stages.run(size, loud, loud, 60);
-    check(stages.smooth_texel(-5, 0) == stages.smooth_texel(0, 0) && stages.smooth_texel(9, size + 10) == stages.smooth_texel(1, size - 1), "channel and index clamp into range");
+    check(stages.smooth_texel(-5, 0) == stages.smooth_texel(0, 0) &&
+              stages.smooth_texel(9, size + 10) == stages.smooth_texel(1, size - 1),
+          "channel and index clamp into range");
     check_visualizer_bars();
 }
 
 void check_visualizer_bars() {
     using namespace astralia;
     using test::check;
-    check(visualizer_bar_count(0.0f) == 1 && visualizer_bar_count(1000.0f) == static_cast<int>((1000.0f - kVisualizerBarSpacing) / (kVisualizerBarWidth + kVisualizerBarSpacing)), "the bar count follows the slot width and never drops below one");
+    check(visualizer_bar_count(0.0f) == 1 &&
+              visualizer_bar_count(1000.0f) ==
+                  static_cast<int>((1000.0f - kVisualizerBarSpacing) /
+                                   (kVisualizerBarWidth + kVisualizerBarSpacing)),
+          "the bar count follows the slot width and never drops below one");
     int last = -1;
     bool rising = true;
     for (int i = 0; i < 40; ++i) {
@@ -63,5 +70,7 @@ void check_visualizer_bars() {
     }
     check(rising && last < 4096 / 2, "bars sample the lower half of the spectrum, rising");
     check(visualizer_bar_texel(0, 0, 0) == 0, "an empty spectrum maps to the first texel");
-    check(visualizer_bar_height(0.0f, 800.0f) == kVisualizerBarMinHeight && visualizer_bar_height(2.0f, 800.0f) == kVisualizerBarHeightRatio * 800.0f, "a bar has a minimum height and clamps at the ratio");
+    check(visualizer_bar_height(0.0f, 800.0f) == kVisualizerBarMinHeight &&
+              visualizer_bar_height(2.0f, 800.0f) == kVisualizerBarHeightRatio * 800.0f,
+          "a bar has a minimum height and clamps at the ratio");
 }

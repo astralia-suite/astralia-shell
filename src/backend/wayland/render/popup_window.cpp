@@ -3,13 +3,19 @@
 
 namespace {
 
-xdg_positioner *make_positioner(xdg_wm_base *wm_base, const astralia::ui::Box &anchor_rect, int32_t w, int32_t h) {
+xdg_positioner *make_positioner(xdg_wm_base *wm_base, const astralia::ui::Box &anchor_rect,
+                                int32_t w, int32_t h) {
     xdg_positioner *p = xdg_wm_base_create_positioner(wm_base);
     xdg_positioner_set_size(p, w, h);
-    xdg_positioner_set_anchor_rect(p, static_cast<int32_t>(anchor_rect.x), static_cast<int32_t>(anchor_rect.y), static_cast<int32_t>(anchor_rect.w > 1.0f ? anchor_rect.w : 1.0f), static_cast<int32_t>(anchor_rect.h > 1.0f ? anchor_rect.h : 1.0f));
+    xdg_positioner_set_anchor_rect(
+        p, static_cast<int32_t>(anchor_rect.x), static_cast<int32_t>(anchor_rect.y),
+        static_cast<int32_t>(anchor_rect.w > 1.0f ? anchor_rect.w : 1.0f),
+        static_cast<int32_t>(anchor_rect.h > 1.0f ? anchor_rect.h : 1.0f));
     xdg_positioner_set_anchor(p, XDG_POSITIONER_ANCHOR_BOTTOM_LEFT);
     xdg_positioner_set_gravity(p, XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
-    xdg_positioner_set_constraint_adjustment(p, XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y);
+    xdg_positioner_set_constraint_adjustment(p, XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X |
+                                                    XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
+                                                    XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y);
     return p;
 }
 
@@ -54,7 +60,9 @@ const xdg_popup_listener xdg_popup_listener_impl = {
 
 } // namespace
 
-bool popup_window_create(PopupWindowBase &base, wl_compositor *compositor, xdg_wm_base *wm_base, zwlr_layer_surface_v1 *parent_layer, const astralia::ui::Box &anchor_rect, int32_t w, int32_t h, wl_seat *seat, uint32_t grab_serial) {
+bool popup_window_create(PopupWindowBase &base, wl_compositor *compositor, xdg_wm_base *wm_base,
+                         zwlr_layer_surface_v1 *parent_layer, const astralia::ui::Box &anchor_rect,
+                         int32_t w, int32_t h, wl_seat *seat, uint32_t grab_serial) {
     base.compositor = compositor;
     base.width = w;
     base.height = h;
@@ -98,7 +106,8 @@ bool popup_window_create(PopupWindowBase &base, wl_compositor *compositor, xdg_w
     return true;
 }
 
-bool popup_window_init_egl(PopupWindowBase &base, wl_display *display, EGLDisplay egl_display, EGLConfig config, EGLContext context) {
+bool popup_window_init_egl(PopupWindowBase &base, wl_display *display, EGLDisplay egl_display,
+                           EGLConfig config, EGLContext context) {
     while (!base.configured)
         wl_display_dispatch(display);
 
@@ -106,7 +115,8 @@ bool popup_window_init_egl(PopupWindowBase &base, wl_display *display, EGLDispla
     base.egl_context = context;
     int32_t scale = base.output_scale.scale;
     base.egl_window = wl_egl_window_create(base.surface, base.width * scale, base.height * scale);
-    base.egl_surface = eglCreateWindowSurface(egl_display, config, reinterpret_cast<EGLNativeWindowType>(base.egl_window), nullptr);
+    base.egl_surface = eglCreateWindowSurface(
+        egl_display, config, reinterpret_cast<EGLNativeWindowType>(base.egl_window), nullptr);
     if (base.egl_surface == EGL_NO_SURFACE)
         return false;
     if (!gl_make_current(egl_display, base.egl_surface, context))
@@ -115,7 +125,8 @@ bool popup_window_init_egl(PopupWindowBase &base, wl_display *display, EGLDispla
     return true;
 }
 
-void popup_window_reposition(PopupWindowBase &base, xdg_wm_base *wm_base, const astralia::ui::Box &anchor_rect, int32_t w, int32_t h) {
+void popup_window_reposition(PopupWindowBase &base, xdg_wm_base *wm_base,
+                             const astralia::ui::Box &anchor_rect, int32_t w, int32_t h) {
     if (!base.popup)
         return;
     base.width = w;

@@ -25,16 +25,20 @@ uint32_t premultiply(uint8_t channel, uint8_t alpha) { return (channel * alpha +
 SurfacePtr adopt(Pixels pixels) {
     auto *words = reinterpret_cast<uint32_t *>(pixels.data.get());
     const uint8_t *in = pixels.data.get();
-    for (size_t i = 0, count = static_cast<size_t>(pixels.width) * pixels.height; i < count; ++i, in += 4) {
+    for (size_t i = 0, count = static_cast<size_t>(pixels.width) * pixels.height; i < count;
+         ++i, in += 4) {
         uint8_t alpha = in[3];
         uint32_t r = pixels.premultiplied ? in[0] : premultiply(in[0], alpha);
         uint32_t g = pixels.premultiplied ? in[1] : premultiply(in[1], alpha);
         uint32_t b = pixels.premultiplied ? in[2] : premultiply(in[2], alpha);
         words[i] = static_cast<uint32_t>(alpha) << 24 | r << 16 | g << 8 | b;
     }
-    SurfacePtr surface(cairo_image_surface_create_for_data(pixels.data.get(), CAIRO_FORMAT_ARGB32, pixels.width, pixels.height, pixels.width * 4));
+    SurfacePtr surface(cairo_image_surface_create_for_data(
+        pixels.data.get(), CAIRO_FORMAT_ARGB32, pixels.width, pixels.height, pixels.width * 4));
     static cairo_user_data_key_t key;
-    if (cairo_surface_set_user_data(surface.get(), &key, pixels.data.get(), [](void *data) { delete[] static_cast<uint8_t *>(data); }) == CAIRO_STATUS_SUCCESS) {
+    if (cairo_surface_set_user_data(surface.get(), &key, pixels.data.get(), [](void *data) {
+            delete[] static_cast<uint8_t *>(data);
+        }) == CAIRO_STATUS_SUCCESS) {
         pixels.data.release();
     }
     return surface;
@@ -67,22 +71,31 @@ SurfacePtr scaled(SurfacePtr source, int fit_size) {
 } // namespace
 
 std::expected<SurfacePtr, std::string> decode_image(const std::string &path, int fit_size) {
-    auto pixels = decode_pixels(path, [fit_size](int width, int height) { return fit_scale(width, height, fit_size); }, fit_size, fit_size);
+    auto pixels = decode_pixels(
+        path, [fit_size](int width, int height) { return fit_scale(width, height, fit_size); },
+        fit_size, fit_size);
     if (!pixels) {
         return std::unexpected(pixels.error());
     }
     return scaled(adopt(std::move(*pixels)), fit_size);
 }
 
-std::expected<SurfacePtr, std::string> decode_cover(const std::string &path, int width, int height) {
+std::expected<SurfacePtr, std::string> decode_cover(const std::string &path, int width,
+                                                    int height) {
     int svg_size = 2 * std::max(width, height);
-    auto pixels = decode_pixels(path, [width, height](int image_width, int image_height) { return cover(image_width, image_height, width, height).scale; }, svg_size, svg_size);
+    auto pixels = decode_pixels(
+        path,
+        [width, height](int image_width, int image_height) {
+            return cover(image_width, image_height, width, height).scale;
+        },
+        svg_size, svg_size);
     if (!pixels) {
         return std::unexpected(pixels.error());
     }
     SurfacePtr source = adopt(std::move(*pixels));
     cairo_surface_t *image = source.get();
-    Placement placement = cover(cairo_image_surface_get_width(image), cairo_image_surface_get_height(image), width, height);
+    Placement placement = cover(cairo_image_surface_get_width(image),
+                                cairo_image_surface_get_height(image), width, height);
     SurfacePtr target(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height));
     cairo_t *cr = cairo_create(target.get());
     cairo_translate(cr, placement.x, placement.y);
@@ -94,8 +107,14 @@ std::expected<SurfacePtr, std::string> decode_cover(const std::string &path, int
     return target;
 }
 
-std::expected<SurfacePtr, std::string> decode_contain(const std::string &path, int width, int height) {
-    auto pixels = decode_pixels(path, [width, height](int image_width, int image_height) { return contain(image_width, image_height, width, height).scale; }, width, height);
+std::expected<SurfacePtr, std::string> decode_contain(const std::string &path, int width,
+                                                      int height) {
+    auto pixels = decode_pixels(
+        path,
+        [width, height](int image_width, int image_height) {
+            return contain(image_width, image_height, width, height).scale;
+        },
+        width, height);
     if (!pixels) {
         return std::unexpected(pixels.error());
     }
@@ -104,11 +123,14 @@ std::expected<SurfacePtr, std::string> decode_contain(const std::string &path, i
     int image_width = cairo_image_surface_get_width(image);
     int image_height = cairo_image_surface_get_height(image);
     Placement placement = contain(image_width, image_height, width, height);
-    int target_width = std::clamp(static_cast<int>(std::lround(image_width * placement.scale)), 1, width);
-    int target_height = std::clamp(static_cast<int>(std::lround(image_height * placement.scale)), 1, height);
+    int target_width =
+        std::clamp(static_cast<int>(std::lround(image_width * placement.scale)), 1, width);
+    int target_height =
+        std::clamp(static_cast<int>(std::lround(image_height * placement.scale)), 1, height);
     SurfacePtr target(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, target_width, target_height));
     cairo_t *cr = cairo_create(target.get());
-    cairo_scale(cr, static_cast<double>(target_width) / image_width, static_cast<double>(target_height) / image_height);
+    cairo_scale(cr, static_cast<double>(target_width) / image_width,
+                static_cast<double>(target_height) / image_height);
     cairo_set_source_surface(cr, image, 0, 0);
     cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
     cairo_paint(cr);
@@ -123,7 +145,8 @@ bool surface_opaque(cairo_surface_t *surface) {
     int stride = cairo_image_surface_get_stride(surface);
     const uint8_t *pixels = cairo_image_surface_get_data(surface);
     for (int y = 0; y < height; ++y) {
-        const auto *row = reinterpret_cast<const uint32_t *>(pixels + static_cast<std::size_t>(y) * stride);
+        const auto *row =
+            reinterpret_cast<const uint32_t *>(pixels + static_cast<std::size_t>(y) * stride);
         for (int x = 0; x < width; ++x) {
             if (row[x] >> 24 != 0xff) {
                 return false;
@@ -142,7 +165,9 @@ bool write_jpeg(cairo_surface_t *surface, const char *path, int quality) {
     jpeg_compress_struct encoder;
     JpegError error;
     encoder.err = jpeg_std_error(&error.manager);
-    error.manager.error_exit = [](j_common_ptr info) { std::longjmp(reinterpret_cast<JpegError *>(info->err)->jump, 1); };
+    error.manager.error_exit = [](j_common_ptr info) {
+        std::longjmp(reinterpret_cast<JpegError *>(info->err)->jump, 1);
+    };
     error.manager.output_message = [](j_common_ptr) {};
     if (setjmp(error.jump) != 0) {
         jpeg_destroy_compress(&encoder);

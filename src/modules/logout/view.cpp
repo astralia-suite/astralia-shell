@@ -44,20 +44,27 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
         float bx = cx + (fx - cx) * t;
         float by = cy + (fy - cy) * t;
 
-        float highlight = 1.0f + (static_cast<float>(cfg::highlight_scale) - 1.0f) * model.highlight_scale()[idx];
+        float highlight =
+            1.0f + (static_cast<float>(cfg::highlight_scale) - 1.0f) * model.highlight_scale()[idx];
         float scale = (model.exiting() ? 1.0f : t) * highlight;
         float w = size * scale;
 
-        Color fill = with_alpha(lerp_color(palette::paper, palette::accent_alt, model.highlight_border()[idx]), visible);
-        sticker(canvas, {bx - w / 2.0f, by - w / 2.0f, w, w}, metrics::radius_card * scale, fill, with_alpha(palette::ink, visible), metrics::border_thick, metrics::shadow_offset * scale);
+        Color fill = with_alpha(
+            lerp_color(palette::paper, palette::accent_alt, model.highlight_border()[idx]),
+            visible);
+        sticker(canvas, {bx - w / 2.0f, by - w / 2.0f, w, w}, metrics::radius_card * scale, fill,
+                with_alpha(palette::ink, visible), metrics::border_thick,
+                metrics::shadow_offset * scale);
 
         const char *glyph = cfg::actions[idx].glyph;
         ui::TextSize extent = canvas.measure(glyph, glyph_style);
-        canvas.text(glyph, glyph_style, bx - extent.w / 2.0f, by - extent.h / 2.0f, with_alpha(palette::text, visible));
+        canvas.text(glyph, glyph_style, bx - extent.w / 2.0f, by - extent.h / 2.0f,
+                    with_alpha(palette::text, visible));
     }
 
     constexpr float logo_size = cfg::logo_size;
-    canvas.begin_group({cx - logo_size / 2.0f, cy - logo_size / 2.0f, logo_size, logo_size}, {model.logo_scale(), false});
+    canvas.begin_group({cx - logo_size / 2.0f, cy - logo_size / 2.0f, logo_size, logo_size},
+                       {model.logo_scale(), false});
     ui::ImageId logo = canvas.image(cfg::logo_asset, cfg::logo_size);
     if (logo != ui::no_image) {
         ui::TextSize extent = canvas.image_size(logo);
@@ -65,12 +72,14 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
         float w = extent.w * fit;
         float h = extent.h * fit;
         float alpha = model.exiting() ? model.exit_fade() : 1.0f;
-        canvas.draw_image(logo, {(logo_size - w) / 2.0f, (logo_size - h) / 2.0f, w, h}, with_alpha(palette::white, alpha));
+        canvas.draw_image(logo, {(logo_size - w) / 2.0f, (logo_size - h) / 2.0f, w, h},
+                          with_alpha(palette::white, alpha));
     }
     canvas.end_group();
 
     if (model.flash() > 0.0f) {
-        canvas.rect({0.0f, 0.0f, width, height}, with_alpha(palette::accent_container, model.flash()));
+        canvas.rect({0.0f, 0.0f, width, height},
+                    with_alpha(palette::accent_container, model.flash()));
     }
 }
 

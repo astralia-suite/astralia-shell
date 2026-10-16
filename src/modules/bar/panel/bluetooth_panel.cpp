@@ -12,19 +12,13 @@ namespace {
 
 namespace cfg = panel_config;
 
-enum Action { power = 1,
-              device,
-              forget,
-              cancel,
-              confirm };
+enum Action { power = 1, device, forget, cancel, confirm };
 
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
 } // namespace
 
-const char *bluetooth_kind_glyph(BluetoothDeviceKind) {
-    return icon::bluetooth_device;
-}
+const char *bluetooth_kind_glyph(BluetoothDeviceKind) { return icon::bluetooth_device; }
 
 std::vector<BluetoothRow> bluetooth_rows(const BluetoothService &bluetooth) {
     const BluetoothStatus &status = bluetooth.status();
@@ -53,7 +47,9 @@ std::vector<BluetoothRow> bluetooth_rows(const BluetoothService &bluetooth) {
         bucket("Nearby", bluetooth_is_nearby);
     }
     if (rows.empty()) {
-        rows.push_back({BluetoothRow::Kind::message, cfg::empty_height, status.scanning ? "Searching for devices\xE2\x80\xA6" : "No paired devices"});
+        rows.push_back(
+            {BluetoothRow::Kind::message, cfg::empty_height,
+             status.scanning ? "Searching for devices\xE2\x80\xA6" : "No paired devices"});
     }
     rows.push_back({BluetoothRow::Kind::message, cfg::trailing_spacer, ""});
     return rows;
@@ -86,12 +82,15 @@ void BluetoothPanel::paint_header(ui::Canvas &canvas, const ui::Box &area, Panel
     if (!bluetooth_.status().present) {
         return;
     }
-    ui::Box toggle{area.x + area.w - cfg::toggle_width, area.y + (area.h - cfg::toggle_height) / 2.0f, cfg::toggle_width, cfg::toggle_height};
+    ui::Box toggle{area.x + area.w - cfg::toggle_width,
+                   area.y + (area.h - cfg::toggle_height) / 2.0f, cfg::toggle_width,
+                   cfg::toggle_height};
     panel_widgets::toggle(canvas, toggle, bluetooth_.status().powered);
     paint.region(toggle, power);
 }
 
-void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) {
+void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll,
+                           PanelPaint &paint) {
     std::vector<BluetoothRow> rows = bluetooth_rows(bluetooth_);
     float y = view.y - scroll;
     for (size_t i = 0; i < rows.size(); ++i) {
@@ -116,21 +115,25 @@ void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll
             continue;
         }
         const BluetoothDevice &d = *row.device;
-        std::string subtitle = d.connecting ? "Connecting\xE2\x80\xA6" : d.battery >= 0 ? std::to_string(d.battery) + "%"
-                                                                                        : std::string();
+        std::string subtitle = d.connecting     ? "Connecting\xE2\x80\xA6"
+                               : d.battery >= 0 ? std::to_string(d.battery) + "%"
+                                                : std::string();
         panel_widgets::DeviceRow device_row;
         device_row.glyph = icon::bluetooth_device;
         device_row.title = d.name;
         device_row.subtitle = subtitle;
-        device_row.background = d.connected ? palette::accent_alpha25 : d.connecting ? palette::accent_alpha12
-                                                                                     : palette::text_alpha06;
+        device_row.background = d.connected    ? palette::accent_alpha25
+                                : d.connecting ? palette::accent_alpha12
+                                               : palette::text_alpha06;
         device_row.glyph_color = d.connected ? palette::text : palette::text_dim;
         device_row.title_color = d.connected ? palette::accent : palette::text;
         device_row.subtitle_color = palette::text_dim;
         device_row.connected = d.connected;
         device_row.busy = d.connecting;
         device_row.can_forget = (d.paired || d.trusted) && !d.connected && !d.connecting;
-        int index = static_cast<int>(std::ranges::find(bluetooth_.devices(), d.path, &BluetoothDevice::path) - bluetooth_.devices().begin());
+        int index = static_cast<int>(
+            std::ranges::find(bluetooth_.devices(), d.path, &BluetoothDevice::path) -
+            bluetooth_.devices().begin());
         panel_widgets::device_row(canvas, box, device_row, paint, device, forget, index);
     }
 }
@@ -156,7 +159,9 @@ void BluetoothPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelP
         return;
     }
     bool disconnecting = dialog_action_ == device;
-    panel_widgets::confirm_dialog(canvas, box, target->name, disconnecting ? "Disconnect?" : "Forget?", disconnecting ? "Disconnect" : "Forget", paint, cancel, confirm);
+    panel_widgets::confirm_dialog(canvas, box, target->name,
+                                  disconnecting ? "Disconnect?" : "Forget?",
+                                  disconnecting ? "Disconnect" : "Forget", paint, cancel, confirm);
 }
 
 bool BluetoothPanel::dismiss_dialog() {
@@ -170,7 +175,9 @@ bool BluetoothPanel::dismiss_dialog() {
 bool BluetoothPanel::activate(const PanelRegion &region, double, double) {
     const std::vector<BluetoothDevice> &devices = bluetooth_.devices();
     auto device_at = [&](int index) -> const BluetoothDevice * {
-        return index >= 0 && static_cast<size_t>(index) < devices.size() ? &devices[static_cast<size_t>(index)] : nullptr;
+        return index >= 0 && static_cast<size_t>(index) < devices.size()
+                   ? &devices[static_cast<size_t>(index)]
+                   : nullptr;
     };
     switch (region.id) {
     case power:

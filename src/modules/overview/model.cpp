@@ -37,19 +37,24 @@ struct Block {
 };
 
 Block make_block(double work_w, double work_h, int group, float scale, float x, float y) {
-    return {group, x, y, std::round(static_cast<float>(std::max(1.0, work_w) * scale)), std::round(static_cast<float>(std::max(1.0, work_h) * scale))};
+    return {group, x, y, std::round(static_cast<float>(std::max(1.0, work_w) * scale)),
+            std::round(static_cast<float>(std::max(1.0, work_h) * scale))};
 }
 
-std::vector<float> separation_steps(const std::vector<CompositorMonitor> &monitors, double CompositorMonitor::*position, int extent_index) {
+std::vector<float> separation_steps(const std::vector<CompositorMonitor> &monitors,
+                                    double CompositorMonitor::*position, int extent_index) {
     std::vector<size_t> order(monitors.size());
     std::iota(order.begin(), order.end(), size_t{0});
-    std::ranges::sort(order, [&](size_t a, size_t b) { return monitors[a].*position < monitors[b].*position; });
+    std::ranges::sort(
+        order, [&](size_t a, size_t b) { return monitors[a].*position < monitors[b].*position; });
     std::vector<float> steps(monitors.size(), 0.0f);
     for (size_t i = 1; i < order.size(); ++i) {
         for (size_t j = 0; j < i; ++j) {
             const CompositorMonitor &before = monitors[order[j]];
             const CompositorMonitor &after = monitors[order[i]];
-            if (before.*position + compositor_logical_size(before)[static_cast<size_t>(extent_index)] <= after.*position + 0.5) {
+            if (before.*position +
+                    compositor_logical_size(before)[static_cast<size_t>(extent_index)] <=
+                after.*position + 0.5) {
                 steps[order[i]] = std::max(steps[order[i]], steps[order[j]] + 1.0f);
             }
         }
@@ -143,8 +148,10 @@ void OverviewModel::compute_layout(float width, float height) {
     float pad = cfg::padding;
 
     if (global_mode_ && !state.monitors.empty()) {
-        float gap_x = spacing * (cfg::columns - 1) + pad * 2.0f + cfg::global_block_spacing + scroll_style.roller_w * 2.0f;
-        float gap_y = spacing * (cfg::rows - 1) + pad * 2.0f + cfg::global_block_spacing + scroll_style.overhang * 2.0f;
+        float gap_x = spacing * (cfg::columns - 1) + pad * 2.0f + cfg::global_block_spacing +
+                      scroll_style.roller_w * 2.0f;
+        float gap_y = spacing * (cfg::rows - 1) + pad * 2.0f + cfg::global_block_spacing +
+                      scroll_style.overhang * 2.0f;
         float frame_x = 2.0f * (pad + cfg::margin + scroll_style.roller_w);
         float frame_y = 2.0f * (pad + cfg::margin);
         const std::vector<CompositorMonitor> &ms = state.monitors;
@@ -161,17 +168,23 @@ void OverviewModel::compute_layout(float width, float height) {
             WorkArea area = compositor_work_area(ms[i]);
             float fixed_x = steps_x[i] * gap_x + spacing * (cfg::columns - 1) + frame_x;
             float fixed_y = steps_y[i] * gap_y + spacing * (cfg::rows - 1) + frame_y;
-            float per_x = static_cast<float>((ms[i].x - min_x + std::max(1.0, area.width)) * cfg::columns);
-            float per_y = static_cast<float>((ms[i].y - min_y + std::max(1.0, area.height)) * cfg::rows);
+            float per_x =
+                static_cast<float>((ms[i].x - min_x + std::max(1.0, area.width)) * cfg::columns);
+            float per_y =
+                static_cast<float>((ms[i].y - min_y + std::max(1.0, area.height)) * cfg::rows);
             scale = std::min({scale, (width - fixed_x) / per_x, (height - fixed_y) / per_y});
         }
         scale = std::max(scale, 0.01f);
         layout_.scale = scale;
         for (size_t i = 0; i < ms.size(); ++i) {
             WorkArea area = compositor_work_area(ms[i]);
-            float x = static_cast<float>((ms[i].x - min_x) * cfg::columns * scale) + steps_x[i] * gap_x;
-            float y = static_cast<float>((ms[i].y - min_y) * cfg::rows * scale) + steps_y[i] * gap_y;
-            blocks.push_back(make_block(area.width, area.height, overview_page_of(grid, active_workspace(ms[i].name)), scale, x, y));
+            float x =
+                static_cast<float>((ms[i].x - min_x) * cfg::columns * scale) + steps_x[i] * gap_x;
+            float y =
+                static_cast<float>((ms[i].y - min_y) * cfg::rows * scale) + steps_y[i] * gap_y;
+            blocks.push_back(make_block(area.width, area.height,
+                                        overview_page_of(grid, active_workspace(ms[i].name)), scale,
+                                        x, y));
         }
     } else {
         double work_w = width;
@@ -187,8 +200,10 @@ void OverviewModel::compute_layout(float width, float height) {
         work_h = std::max(1.0, work_h);
         float frame_x = 2.0f * (pad + cfg::margin + scroll_style.roller_w);
         float frame_y = 2.0f * (pad + cfg::margin);
-        float fit_x = (width - frame_x - spacing * (cfg::columns - 1)) / (static_cast<float>(work_w) * cfg::columns);
-        float fit_y = (height - frame_y - spacing * (cfg::rows - 1)) / (static_cast<float>(work_h) * cfg::rows);
+        float fit_x = (width - frame_x - spacing * (cfg::columns - 1)) /
+                      (static_cast<float>(work_w) * cfg::columns);
+        float fit_y = (height - frame_y - spacing * (cfg::rows - 1)) /
+                      (static_cast<float>(work_h) * cfg::rows);
         layout_.scale = std::max(0.01f, std::min({cfg::scale, fit_x, fit_y}));
         blocks.push_back(make_block(work_w, work_h, group_, layout_.scale, 0.0f, 0.0f));
     }
@@ -205,10 +220,17 @@ void OverviewModel::compute_layout(float width, float height) {
     float origin_y = std::round((height - root_h) / 2.0f) + slide_y() + cfg::margin;
 
     for (const Block &b : blocks) {
-        layout_.panels.push_back({origin_x + b.x, origin_y + b.y, b.cell_w * cfg::columns + spacing * (cfg::columns - 1) + pad * 2.0f, b.cell_h * cfg::rows + spacing * (cfg::rows - 1) + pad * 2.0f});
+        layout_.panels.push_back(
+            {origin_x + b.x, origin_y + b.y,
+             b.cell_w * cfg::columns + spacing * (cfg::columns - 1) + pad * 2.0f,
+             b.cell_h * cfg::rows + spacing * (cfg::rows - 1) + pad * 2.0f});
         for (int row = 0; row < cfg::rows; ++row) {
             for (int col = 0; col < cfg::columns; ++col) {
-                layout_.cells.push_back({overview_workspace_at(grid, b.group, row, col), {origin_x + b.x + pad + static_cast<float>(col) * (b.cell_w + spacing), origin_y + b.y + pad + static_cast<float>(row) * (b.cell_h + spacing), b.cell_w, b.cell_h}});
+                layout_.cells.push_back(
+                    {overview_workspace_at(grid, b.group, row, col),
+                     {origin_x + b.x + pad + static_cast<float>(col) * (b.cell_w + spacing),
+                      origin_y + b.y + pad + static_cast<float>(row) * (b.cell_h + spacing),
+                      b.cell_w, b.cell_h}});
             }
         }
     }
@@ -245,7 +267,8 @@ void OverviewModel::rebuild_tiles() {
         if (source == nullptr) {
             source = fallback;
         }
-        WorkArea area = source != nullptr ? compositor_work_area(*source) : WorkArea{0.0, 0.0, width_, height_};
+        WorkArea area =
+            source != nullptr ? compositor_work_area(*source) : WorkArea{0.0, 0.0, width_, height_};
         area.width = std::max(1.0, area.width);
         area.height = std::max(1.0, area.height);
         ui::Box cell = find_cell(client->workspace_id)->rect;
@@ -254,13 +277,16 @@ void OverviewModel::rebuild_tiles() {
         double raw_h = std::max(1.0, client->size[1] * scale);
         double w = std::min(raw_w, static_cast<double>(cell.w));
         double h = std::min(raw_h, static_cast<double>(cell.h));
-        double x = std::clamp(std::max((client->at[0] - area.x) * scale, 0.0), 0.0, std::max(0.0, cell.w - w));
-        double y = std::clamp(std::max((client->at[1] - area.y) * scale, 0.0), 0.0, std::max(0.0, cell.h - h));
+        double x = std::clamp(std::max((client->at[0] - area.x) * scale, 0.0), 0.0,
+                              std::max(0.0, cell.w - w));
+        double y = std::clamp(std::max((client->at[1] - area.y) * scale, 0.0), 0.0,
+                              std::max(0.0, cell.h - h));
         OverviewTile tile;
         tile.address = client->address;
         tile.window_class = client->window_class;
         tile.workspace = client->workspace_id;
-        tile.rect = {static_cast<float>(cell.x + x), static_cast<float>(cell.y + y), static_cast<float>(w), static_cast<float>(h)};
+        tile.rect = {static_cast<float>(cell.x + x), static_cast<float>(cell.y + y),
+                     static_cast<float>(w), static_cast<float>(h)};
         tiles_.push_back(tile);
 
         auto [it, fresh] = tile_anim_.try_emplace(tile.address);
@@ -270,7 +296,10 @@ void OverviewModel::rebuild_tiles() {
         } else if (!(anim.target == tile.rect)) {
             const std::string address = tile.address;
             auto animate = [&](int component, float from, float to, float ui::Box::*field) {
-                animations_.animate(from, to, cfg::anim_ms, astralia::Easing::EaseOutCubic, [this, address, field](float v) { tile_anim_[address].current.*field = v; }, {}, tile_owner(address, component));
+                animations_.animate(
+                    from, to, cfg::anim_ms, astralia::Easing::EaseOutCubic,
+                    [this, address, field](float v) { tile_anim_[address].current.*field = v; }, {},
+                    tile_owner(address, component));
             };
             animate(0, anim.target.x, tile.rect.x, &ui::Box::x);
             animate(1, anim.target.y, tile.rect.y, &ui::Box::y);
@@ -280,17 +309,20 @@ void OverviewModel::rebuild_tiles() {
         }
     }
     for (auto it = tile_anim_.begin(); it != tile_anim_.end();) {
-        bool live = std::ranges::any_of(tiles_, [&](const OverviewTile &t) { return t.address == it->first; });
+        bool live = std::ranges::any_of(
+            tiles_, [&](const OverviewTile &t) { return t.address == it->first; });
         it = live ? std::next(it) : tile_anim_.erase(it);
     }
     if (dragging_) {
-        std::ranges::stable_partition(tiles_, [this](const OverviewTile &t) { return t.address != drag_address_; });
+        std::ranges::stable_partition(
+            tiles_, [this](const OverviewTile &t) { return t.address != drag_address_; });
     }
 }
 
 void OverviewModel::update_indicator() {
     indicator_visible_ = false;
-    int active = active_workspace(global_mode_ ? compositor_.state().focused_monitor : output_name_);
+    int active =
+        active_workspace(global_mode_ ? compositor_.state().focused_monitor : output_name_);
     int page = overview_page_of(grid, active);
     const OverviewCell *cell = find_cell(active);
     if (cell == nullptr) {
@@ -306,8 +338,12 @@ void OverviewModel::update_indicator() {
         indicator_tracking_ = true;
         indicator_page_ = page;
     } else if (indicator_target_.x != rect.x || indicator_target_.y != rect.y) {
-        animations_.animate(indicator_.x, rect.x, cfg::anim_ms, astralia::Easing::EaseOutCubic, [this](float v) { indicator_.x = v; }, {}, owner_indicator_x);
-        animations_.animate(indicator_.y, rect.y, cfg::anim_ms, astralia::Easing::EaseOutCubic, [this](float v) { indicator_.y = v; }, {}, owner_indicator_y);
+        animations_.animate(
+            indicator_.x, rect.x, cfg::anim_ms, astralia::Easing::EaseOutCubic,
+            [this](float v) { indicator_.x = v; }, {}, owner_indicator_x);
+        animations_.animate(
+            indicator_.y, rect.y, cfg::anim_ms, astralia::Easing::EaseOutCubic,
+            [this](float v) { indicator_.y = v; }, {}, owner_indicator_y);
         indicator_target_ = rect;
     }
     indicator_.w = rect.w;
@@ -357,16 +393,20 @@ bool OverviewModel::key(const input::KeyEvent &event) {
     if (global_mode_) {
         group_ = overview_page_of(grid, selected_);
     }
-    uint32_t sym = event.base_sym != 0 ? event.base_sym : (event.text.size() == 1 ? static_cast<unsigned char>(event.text[0]) : 0u);
+    uint32_t sym = event.base_sym != 0
+                       ? event.base_sym
+                       : (event.text.size() == 1 ? static_cast<unsigned char>(event.text[0]) : 0u);
     switch (event.kind) {
     case input::KeyKind::Left:
     case input::KeyKind::Right:
     case input::KeyKind::Up:
     case input::KeyKind::Down: {
-        int d_col = event.kind == input::KeyKind::Left ? -1 : event.kind == input::KeyKind::Right ? 1
-                                                                                                  : 0;
-        int d_row = event.kind == input::KeyKind::Up ? -1 : event.kind == input::KeyKind::Down ? 1
-                                                                                               : 0;
+        int d_col = event.kind == input::KeyKind::Left    ? -1
+                    : event.kind == input::KeyKind::Right ? 1
+                                                          : 0;
+        int d_row = event.kind == input::KeyKind::Up     ? -1
+                    : event.kind == input::KeyKind::Down ? 1
+                                                         : 0;
         select(overview_step(grid, group_, selected_, d_col, d_row), event.shift, event.alt);
         return true;
     }
@@ -441,7 +481,9 @@ void OverviewModel::press(double x, double y) {
         return;
     }
     constexpr float m = cfg::margin;
-    bool near_panel = std::ranges::any_of(layout_.panels, [&](const ui::Box &p) { return inside({p.x - m, p.y - m, p.w + 2.0f * m, p.h + 2.0f * m}, x, y); });
+    bool near_panel = std::ranges::any_of(layout_.panels, [&](const ui::Box &p) {
+        return inside({p.x - m, p.y - m, p.w + 2.0f * m, p.h + 2.0f * m}, x, y);
+    });
     if (!near_panel && on_close_requested) {
         on_close_requested();
     }

@@ -41,7 +41,8 @@ class NotificationService {
 
     const std::vector<Notification> &list() const { return list_; }
     void dismiss(uint32_t id);
-    uint32_t post(std::string app, std::string summary, std::string body, int32_t expire_timeout = -1);
+    uint32_t post(std::string app, std::string summary, std::string body,
+                  int32_t expire_timeout = -1);
 
     Signal<> changed;
 

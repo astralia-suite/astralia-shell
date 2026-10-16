@@ -61,7 +61,8 @@ void check_modes_and_layout() {
     model.set_apps({{"firefox.desktop", "Firefox", "firefox", "", false, false, false}});
 
     type(model, "gg cats");
-    test::check(model.mode() == LauncherMode::google && model.field().text == "gg cats", "a prefix switches the mode");
+    test::check(model.mode() == LauncherMode::google && model.field().text == "gg cats",
+                "a prefix switches the mode");
     test::check(changes == 7, "each key reports a change");
     model.key(key(KeyKind::Backspace));
     model.key(key(KeyKind::Backspace));
@@ -73,13 +74,18 @@ void check_modes_and_layout() {
     test::check(model.hovered() == -1, "a key press clears the hover");
 
     model.sync_layout();
-    test::check(model.box_height() == astralia::launcher_content_height(0), "an empty list shows only the search row");
-    test::check(astralia::launcher_content_height(6) == cfg::menu_pad * 2 + cfg::search_height + cfg::list_gap + 6 * cfg::row_height + 5 * cfg::row_spacing, "full list height");
+    test::check(model.box_height() == astralia::launcher_content_height(0),
+                "an empty list shows only the search row");
+    test::check(astralia::launcher_content_height(6) == cfg::menu_pad * 2 + cfg::search_height +
+                                                            cfg::list_gap + 6 * cfg::row_height +
+                                                            5 * cfg::row_spacing,
+                "full list height");
 
     model.set_preedit("ni");
     test::check(model.field().preedit == "ni", "preedit is kept apart from the text");
     model.commit_text("x");
-    test::check(model.field().text == "gg cax" && model.field().preedit.empty(), "committing appends and drops the preedit");
+    test::check(model.field().text == "gg cax" && model.field().preedit.empty(),
+                "committing appends and drops the preedit");
     model.delete_before(2);
     test::check(model.field().text == "gg c", "deleting before the cursor removes characters");
     model.toggle_caret();
@@ -101,7 +107,8 @@ void check_search_flow() {
         return;
     }
     Instant instant;
-    std::filesystem::path root = std::filesystem::temp_directory_path() / ("astralia_test_model_" + std::to_string(getpid()));
+    std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                 ("astralia_test_model_" + std::to_string(getpid()));
     std::filesystem::create_directories(root / "firefoxdir");
     std::ofstream(root / "firefox_notes.txt").put('x');
 
@@ -115,16 +122,25 @@ void check_search_flow() {
 
     type(model, "firefox");
     changed = false;
-    test::check(test::pump_until(reactor, [&] { return !model.searching() && model.results().size() == 3; }), "the search finishes");
+    test::check(test::pump_until(reactor,
+                                 [&] { return !model.searching() && model.results().size() == 3; }),
+                "the search finishes");
     test::check(changed, "finishing the search reports a change");
     const auto &results = model.results();
-    test::check(results.size() == 3 && results[0].kind == astralia::DrunResult::Kind::app, "the app comes first");
-    test::check(results[1].kind == astralia::DrunResult::Kind::dir && results[1].file.name == "firefoxdir", "then the directory");
-    test::check(results[2].kind == astralia::DrunResult::Kind::file && results[2].file.name == "firefox_notes.txt", "then the file");
+    test::check(results.size() == 3 && results[0].kind == astralia::DrunResult::Kind::app,
+                "the app comes first");
+    test::check(results[1].kind == astralia::DrunResult::Kind::dir &&
+                    results[1].file.name == "firefoxdir",
+                "then the directory");
+    test::check(results[2].kind == astralia::DrunResult::Kind::file &&
+                    results[2].file.name == "firefox_notes.txt",
+                "then the file");
     test::check(model.selected() == 0, "the first result is selected");
 
     std::vector<astralia::LauncherRow> rows = model.rows();
-    test::check(rows.size() == 3 && rows[0].label == "Firefox" && rows[1].subtitle.find("firefoxdir") != std::string::npos, "rows describe the results");
+    test::check(rows.size() == 3 && rows[0].label == "Firefox" &&
+                    rows[1].subtitle.find("firefoxdir") != std::string::npos,
+                "rows describe the results");
 
     model.key(key(KeyKind::Down));
     model.key(key(KeyKind::Down));
@@ -133,23 +149,31 @@ void check_search_flow() {
     model.key(key(KeyKind::Up));
     test::check(model.selected() == 1, "up moves back");
     model.key(key(KeyKind::Enter));
-    test::check(model.submenu().screen == astralia::SubmenuScreen::browse && model.selected() == 0, "enter on a directory opens it");
+    test::check(model.submenu().screen == astralia::SubmenuScreen::browse && model.selected() == 0,
+                "enter on a directory opens it");
     test::check(!model.submenu().items.empty(), "the directory listing has entries");
     model.key(key(KeyKind::Escape));
-    test::check(model.submenu().screen == astralia::SubmenuScreen::search && model.selected() == 0, "escape goes back to the results");
+    test::check(model.submenu().screen == astralia::SubmenuScreen::search && model.selected() == 0,
+                "escape goes back to the results");
     model.click_row(2);
-    test::check(model.submenu().screen == astralia::SubmenuScreen::file_actions && model.selected() == 0, "clicking a file opens its actions");
+    test::check(model.submenu().screen == astralia::SubmenuScreen::file_actions &&
+                    model.selected() == 0,
+                "clicking a file opens its actions");
     model.key(key(KeyKind::Text, "z"));
-    test::check(model.submenu().screen == astralia::SubmenuScreen::search, "typing leaves the submenu");
+    test::check(model.submenu().screen == astralia::SubmenuScreen::search,
+                "typing leaves the submenu");
 
     for (int i = 0; i < 8; ++i) {
         model.key(key(KeyKind::Backspace));
     }
-    test::check(test::pump_until(reactor, [&] { return model.results().empty(); }), "an empty query clears the results");
+    test::check(test::pump_until(reactor, [&] { return model.results().empty(); }),
+                "an empty query clears the results");
     test::check(model.selected() == -1, "and the selection");
 
     model.close();
-    test::check(!model.is_open() && model.field().text.empty() && model.results().empty() && model.submenu().screen == astralia::SubmenuScreen::search, "closing resets everything");
+    test::check(!model.is_open() && model.field().text.empty() && model.results().empty() &&
+                    model.submenu().screen == astralia::SubmenuScreen::search,
+                "closing resets everything");
     std::filesystem::remove_all(root);
 }
 
@@ -160,7 +184,8 @@ void check_layout_animation() {
     model.sync_layout();
     float closed = model.box_height();
     test::check(closed == astralia::launcher_content_height(0), "starts at the search row");
-    test::check(model.highlight_offset() == 0.0f && model.scroll_offset() == 0.0f, "nothing selected, nothing offset");
+    test::check(model.highlight_offset() == 0.0f && model.scroll_offset() == 0.0f,
+                "nothing selected, nothing offset");
 }
 
 void check_view() {
@@ -174,9 +199,13 @@ void check_view() {
     model.sync_layout();
     test::RecordingCanvas canvas;
     astralia::LauncherFrame frame = astralia::paint_launcher(canvas, model, 1920, 1200);
-    test::check(frame.box.w == cfg::width && frame.box.x == (1920 - cfg::width) / 2 && frame.rows.empty(), "the card is centered and has no rows");
+    test::check(frame.box.w == cfg::width && frame.box.x == (1920 - cfg::width) / 2 &&
+                    frame.rows.empty(),
+                "the card is centered and has no rows");
     test::check(frame.caret.w == cfg::caret_width, "the caret is reported for input methods");
-    test::check(canvas.count(Kind::begin_group) == canvas.count(Kind::end_group) && canvas.count(Kind::begin_group) >= 2, "groups are balanced");
+    test::check(canvas.count(Kind::begin_group) == canvas.count(Kind::end_group) &&
+                    canvas.count(Kind::begin_group) >= 2,
+                "groups are balanced");
     bool query = false;
     for (const test::Op &op : canvas.ops) {
         query = query || (op.kind == Kind::text && op.text == "xy");
@@ -199,14 +228,19 @@ void check_view() {
     std::vector<test::Op> actual = plain(animated);
     bool identical = expected.size() == actual.size() && done.box.y == frame.box.y;
     for (std::size_t i = 0; identical && i < expected.size(); ++i) {
-        identical = expected[i].kind == actual[i].kind && expected[i].box.x == actual[i].box.x && expected[i].box.y == actual[i].box.y && expected[i].text == actual[i].text;
+        identical = expected[i].kind == actual[i].kind && expected[i].box.x == actual[i].box.x &&
+                    expected[i].box.y == actual[i].box.y && expected[i].text == actual[i].text;
     }
     test::check(identical, "a finished entrance paints the same card as none");
 
     astralia::EntranceState tracing{0.2f, 3.0f};
     test::RecordingCanvas start;
     astralia::LauncherFrame early = astralia::paint_launcher(start, model, 1920, 1200, &tracing);
-    test::check(early.box.y == frame.box.y && early.entrance.opacity == 0.0f && !early.entrance.bolts.empty() && start.count(Kind::rect) == canvas.count(Kind::rect) + 1, "the card is hidden in place under a dimmed backdrop while the outline is traced");
+    test::check(early.box.y == frame.box.y && early.entrance.opacity == 0.0f &&
+                    !early.entrance.bolts.empty() &&
+                    start.count(Kind::rect) == canvas.count(Kind::rect) + 1,
+                "the card is hidden in place under a dimmed backdrop while the "
+                "outline is traced");
     model.close();
 }
 
@@ -257,13 +291,17 @@ void check_caret_editing() {
     type(model, "hello");
     model.key(key(KeyKind::Left));
     model.key(key(KeyKind::Left));
-    test::check(model.cursor().pos == 3 && !model.cursor().has_selection(), "left moves the caret back");
+    test::check(model.cursor().pos == 3 && !model.cursor().has_selection(),
+                "left moves the caret back");
     type(model, "X");
-    test::check(model.field().text == "helXlo" && model.cursor().pos == 4, "typing inserts at the caret");
+    test::check(model.field().text == "helXlo" && model.cursor().pos == 4,
+                "typing inserts at the caret");
     model.key(key(KeyKind::Backspace));
-    test::check(model.field().text == "hello" && model.cursor().pos == 3, "backspace removes before the caret");
+    test::check(model.field().text == "hello" && model.cursor().pos == 3,
+                "backspace removes before the caret");
     model.key(key(KeyKind::Delete));
-    test::check(model.field().text == "helo" && model.cursor().pos == 3, "delete removes after the caret");
+    test::check(model.field().text == "helo" && model.cursor().pos == 3,
+                "delete removes after the caret");
     model.key(key(KeyKind::Home));
     test::check(model.cursor().pos == 0, "home goes to the start");
     model.key(key(KeyKind::Backspace));
@@ -277,19 +315,23 @@ void check_caret_editing() {
 
     model.key(chord(KeyKind::Left, true));
     model.key(chord(KeyKind::Left, true));
-    test::check(selected(model) == "lo" && model.cursor().pos == 2, "shift and left extend the selection");
+    test::check(selected(model) == "lo" && model.cursor().pos == 2,
+                "shift and left extend the selection");
     model.key(chord(KeyKind::Right, true));
     test::check(selected(model) == "o", "shift and right shrink the selection");
     model.key(chord(KeyKind::Left, true));
     model.key(key(KeyKind::Left));
-    test::check(!model.cursor().has_selection() && model.cursor().pos == 2, "left collapses a selection to its start");
+    test::check(!model.cursor().has_selection() && model.cursor().pos == 2,
+                "left collapses a selection to its start");
     model.key(chord(KeyKind::End, true));
     test::check(selected(model) == "lo", "shift and end select to the end");
     model.key(key(KeyKind::Right));
-    test::check(!model.cursor().has_selection() && model.cursor().pos == 4, "right collapses a selection to its end");
+    test::check(!model.cursor().has_selection() && model.cursor().pos == 4,
+                "right collapses a selection to its end");
     model.key(chord(KeyKind::Home, true));
     type(model, "go");
-    test::check(model.field().text == "go" && model.cursor().pos == 2, "typing replaces the selection");
+    test::check(model.field().text == "go" && model.cursor().pos == 2,
+                "typing replaces the selection");
     model.key(key(KeyKind::Left));
     model.key(chord(KeyKind::Right, true));
     model.key(key(KeyKind::Backspace));
@@ -306,7 +348,8 @@ void check_caret_editing() {
     words.key(chord(KeyKind::Right, false, true));
     test::check(words.cursor().pos == 3, "ctrl and right jump to the word end");
     words.key(chord(KeyKind::Right, true, true));
-    test::check(selected(words) == " bar" && words.cursor().pos == 7, "ctrl, shift and right select by word");
+    test::check(selected(words) == " bar" && words.cursor().pos == 7,
+                "ctrl, shift and right select by word");
 
     LauncherModel utf(reactor);
     utf.open(false);
@@ -321,8 +364,10 @@ void check_caret_editing() {
     utf.key(key(KeyKind::Delete));
     test::check(utf.field().text == "ab", "delete removes a whole character");
     utf.key(key(KeyKind::Backspace));
-    test::check(utf.field().text == "b" && utf.cursor().pos == 0, "backspace removes a whole character");
-    test::check(utf.query_anim().chars.size() == 1, "the typing animation follows edits in the middle");
+    test::check(utf.field().text == "b" && utf.cursor().pos == 0,
+                "backspace removes a whole character");
+    test::check(utf.query_anim().chars.size() == 1,
+                "the typing animation follows edits in the middle");
 }
 
 void check_clipboard_keys() {
@@ -337,19 +382,23 @@ void check_clipboard_keys() {
 
     type(model, "hello world");
     model.key(shortcut('c'));
-    test::check(clipboard.stored.empty() && model.field().text == "hello world", "copy without a selection does nothing and inserts no text");
+    test::check(clipboard.stored.empty() && model.field().text == "hello world",
+                "copy without a selection does nothing and inserts no text");
     model.key(shortcut('a'));
     test::check(selected(model) == "hello world", "ctrl and a select everything");
     model.key(shortcut('c'));
-    test::check(clipboard.stored == "hello world" && model.field().text == "hello world", "ctrl and c copy the selection");
+    test::check(clipboard.stored == "hello world" && model.field().text == "hello world",
+                "ctrl and c copy the selection");
 
     model.key(key(KeyKind::Right));
     model.key(shortcut('v'));
-    test::check(model.field().text == "hello worldhello world" && model.cursor().pos == 22, "ctrl and v paste at the caret");
+    test::check(model.field().text == "hello worldhello world" && model.cursor().pos == 22,
+                "ctrl and v paste at the caret");
 
     model.key(chord(KeyKind::Home, true));
     model.key(shortcut('x'));
-    test::check(model.field().text.empty() && clipboard.stored == "hello worldhello world", "ctrl and x cut the selection");
+    test::check(model.field().text.empty() && clipboard.stored == "hello worldhello world",
+                "ctrl and x cut the selection");
     clipboard.stored = "a\nb\tc";
     model.key(shortcut('v'));
     test::check(model.field().text == "a b c", "pasted line breaks become spaces");
@@ -395,14 +444,16 @@ void check_pointer_editing() {
 
     Clock::time_point t0 = Clock::now();
     model.pointer_down(2.2f, t0);
-    test::check(model.cursor().pos == 2 && !model.cursor().has_selection(), "a click places the caret on the nearest boundary");
+    test::check(model.cursor().pos == 2 && !model.cursor().has_selection(),
+                "a click places the caret on the nearest boundary");
     model.pointer_drag(5.4f);
     test::check(selected(model) == "llo", "dragging selects");
     model.pointer_up();
     model.pointer_drag(9.0f);
     test::check(selected(model) == "llo", "moving without the button leaves the selection alone");
     model.pointer_down(40.0f, t0 + std::chrono::seconds(2));
-    test::check(model.cursor().pos == 11 && !model.cursor().has_selection(), "a click past the text goes to the end");
+    test::check(model.cursor().pos == 11 && !model.cursor().has_selection(),
+                "a click past the text goes to the end");
     model.pointer_up();
 
     Clock::time_point t1 = t0 + std::chrono::seconds(10);
@@ -442,21 +493,28 @@ void check_field_paint() {
 
     test::RecordingCanvas plain;
     astralia::LauncherFrame frame = astralia::paint_launcher(plain, model, 1920, 1200);
-    test::check(frame.field.w > 0.0f && astralia::launcher_field_hit(frame, frame.field.x + 1.0f, frame.field.y + 1.0f), "the field is reported for pointer hits");
-    test::check(!astralia::launcher_field_hit(frame, frame.field.x - 1.0f, frame.field.y + 1.0f), "points outside the field miss");
-    test::check(astralia::launcher_field_column(frame, frame.text_x) == 0.0f && astralia::launcher_field_column(frame, frame.text_x - 50.0f) == 0.0f, "columns start at the text origin");
+    test::check(frame.field.w > 0.0f &&
+                    astralia::launcher_field_hit(frame, frame.field.x + 1.0f, frame.field.y + 1.0f),
+                "the field is reported for pointer hits");
+    test::check(!astralia::launcher_field_hit(frame, frame.field.x - 1.0f, frame.field.y + 1.0f),
+                "points outside the field miss");
+    test::check(astralia::launcher_field_column(frame, frame.text_x) == 0.0f &&
+                    astralia::launcher_field_column(frame, frame.text_x - 50.0f) == 0.0f,
+                "columns start at the text origin");
     float caret_at_end = frame.caret.x;
 
     model.key(key(KeyKind::Left));
     test::RecordingCanvas moved;
     astralia::LauncherFrame left = astralia::paint_launcher(moved, model, 1920, 1200);
     test::check(left.caret.x < caret_at_end, "the caret follows the cursor");
-    test::check(moved.count(Kind::rect) == plain.count(Kind::rect), "no selection draws no highlight");
+    test::check(moved.count(Kind::rect) == plain.count(Kind::rect),
+                "no selection draws no highlight");
 
     model.key(chord(KeyKind::Left, true));
     test::RecordingCanvas highlighted;
     astralia::paint_launcher(highlighted, model, 1920, 1200);
-    test::check(highlighted.count(Kind::rect) == plain.count(Kind::rect) + 1, "a selection draws one highlight");
+    test::check(highlighted.count(Kind::rect) == plain.count(Kind::rect) + 1,
+                "a selection draws one highlight");
     model.close();
 }
 

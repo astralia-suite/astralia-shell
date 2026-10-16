@@ -39,19 +39,25 @@ float sky_intensity(const EntranceFrame &frame) {
 
 void check_ends() {
     EntranceFrame start = at(0.0f);
-    test::check(start.opacity == 0.0f && start.bolts.empty() && start.bursts.empty() && start.scrim == 0.0f && start.flash == 0.0f, "the entrance starts empty and hidden");
+    test::check(start.opacity == 0.0f && start.bolts.empty() && start.bursts.empty() &&
+                    start.scrim == 0.0f && start.flash == 0.0f,
+                "the entrance starts empty and hidden");
     EntranceFrame done = at(astralia::launcher_config::entrance_ms);
-    test::check(done.opacity == 1.0f && done.bolts.empty() && done.bursts.empty() && done.scrim == 0.0f && done.flash == 0.0f, "the entrance ends on the plain card");
+    test::check(done.opacity == 1.0f && done.bolts.empty() && done.bursts.empty() &&
+                    done.scrim == 0.0f && done.flash == 0.0f,
+                "the entrance ends on the plain card");
 }
 
 void check_trace() {
     EntranceFrame tracing = at(200.0f);
     bool on_border = !tracing.bolts.empty();
     for (const astralia::EntranceBolt &bolt : tracing.bolts) {
-        on_border = on_border && bolt.ax >= box.x - 25.0f && bolt.ax <= box.x + box.w + 25.0f && bolt.ay >= box.y - 25.0f && bolt.ay <= box.y + box.h + 25.0f;
+        on_border = on_border && bolt.ax >= box.x - 25.0f && bolt.ax <= box.x + box.w + 25.0f &&
+                    bolt.ay >= box.y - 25.0f && bolt.ay <= box.y + box.h + 25.0f;
     }
     test::check(on_border, "the bolt stays on the card outline");
-    test::check(tracing.opacity == 0.0f && tracing.bursts.empty() && tracing.flash == 0.0f, "the card stays hidden and nothing flashes while the bolt traces it");
+    test::check(tracing.opacity == 0.0f && tracing.bursts.empty() && tracing.flash == 0.0f,
+                "the card stays hidden and nothing flashes while the bolt traces it");
 
     float last = 0.0f;
     bool grows = true;
@@ -77,7 +83,9 @@ void check_trace() {
         before = lit;
     }
     test::check(widest < 0.12f, "the trace never jumps between frames");
-    test::check(lit_fraction(at(38.0f)) < 0.01f && lit_fraction(at(380.0f)) - lit_fraction(at(372.0f)) < 0.03f, "the trace eases in and eases out");
+    test::check(lit_fraction(at(38.0f)) < 0.01f &&
+                    lit_fraction(at(380.0f)) - lit_fraction(at(372.0f)) < 0.03f,
+                "the trace eases in and eases out");
 
     bool stitched = true;
     for (const astralia::EntranceBolt &bolt : at(250.0f).bolts) {
@@ -128,31 +136,42 @@ void check_fall() {
     bool falling = false;
     for (const astralia::EntranceBolt &bolt : fall.bolts) {
         charged = charged || (bolt.amp == 4.0f && bolt.intensity > 1.0f);
-        falling = falling || (bolt.amp == 22.0f && bolt.ay < 0.0f && bolt.by == box.y && bolt.progress > 0.0f && bolt.progress < 1.0f);
+        falling = falling || (bolt.amp == 22.0f && bolt.ay < 0.0f && bolt.by == box.y &&
+                              bolt.progress > 0.0f && bolt.progress < 1.0f);
     }
-    test::check(fall.opacity == 0.0f && fall.bursts.empty() && fall.flash == 0.0f, "the card and the flash wait for the strike");
-    test::check(charged && falling, "a bolt falls from the top onto the card while the outline charges");
+    test::check(fall.opacity == 0.0f && fall.bursts.empty() && fall.flash == 0.0f,
+                "the card and the flash wait for the strike");
+    test::check(charged && falling,
+                "a bolt falls from the top onto the card while the outline charges");
 }
 
 void check_strike() {
     EntranceFrame before = at(480.0f);
-    test::check(before.opacity == 0.0f && before.flash == 0.0f, "nothing lands before the bolt arrives");
+    test::check(before.opacity == 0.0f && before.flash == 0.0f,
+                "nothing lands before the bolt arrives");
     EntranceFrame strike = at(500.0f);
-    test::check(strike.opacity == 1.0f && strike.flash > 0.4f, "the card snaps in whole under a bright flash on impact");
+    test::check(strike.opacity == 1.0f && strike.flash > 0.4f,
+                "the card snaps in whole under a bright flash on impact");
     bool landed = false;
     for (const astralia::EntranceBolt &bolt : strike.bolts) {
         landed = landed || (bolt.amp == 22.0f && bolt.progress == 1.0f && bolt.by == box.y);
     }
     test::check(landed, "the bolt has reached the card top");
-    test::check(at(560.0f).flash < strike.flash && at(650.0f).flash == 0.0f, "the flash decays quickly");
-    test::check(sky_intensity(at(700.0f)) < sky_intensity(strike), "the sky bolt fades after the strike");
+    test::check(at(560.0f).flash < strike.flash && at(650.0f).flash == 0.0f,
+                "the flash decays quickly");
+    test::check(sky_intensity(at(700.0f)) < sky_intensity(strike),
+                "the sky bolt fades after the strike");
 }
 
 void check_blast() {
     EntranceFrame blast = at(500.0f);
-    test::check(blast.bursts.size() == 1 && blast.bursts[0].box.x == box.x && blast.bursts[0].box.w == box.w && blast.bursts[0].box.h == box.h && blast.bursts[0].reach > 0.0f, "the burst follows the card rectangle and reaches past it");
+    test::check(blast.bursts.size() == 1 && blast.bursts[0].box.x == box.x &&
+                    blast.bursts[0].box.w == box.w && blast.bursts[0].box.h == box.h &&
+                    blast.bursts[0].reach > 0.0f,
+                "the burst follows the card rectangle and reaches past it");
     EntranceFrame later = at(600.0f);
-    test::check(later.bursts.size() == 1 && later.bursts[0].progress > blast.bursts[0].progress, "there is a single burst and it keeps spreading");
+    test::check(later.bursts.size() == 1 && later.bursts[0].progress > blast.bursts[0].progress,
+                "there is a single burst and it keeps spreading");
     test::check(at(540.0f).bursts[0].progress > 0.1f, "the burst moves quickly");
     test::check(at(780.0f).bursts.empty(), "the burst is over before the entrance ends");
 }
@@ -175,9 +194,12 @@ void check_ranges() {
     bool sane = true;
     for (float ms = 0.0f; ms <= astralia::launcher_config::entrance_ms; ms += 5.0f) {
         EntranceFrame f = at(ms);
-        sane = sane && (f.opacity == 0.0f || f.opacity == 1.0f) && f.flash >= 0.0f && f.flash <= 1.0f;
+        sane =
+            sane && (f.opacity == 0.0f || f.opacity == 1.0f) && f.flash >= 0.0f && f.flash <= 1.0f;
         for (const astralia::EntranceBolt &bolt : f.bolts) {
-            sane = sane && std::isfinite(bolt.ax) && std::isfinite(bolt.by) && bolt.progress > 0.0f && bolt.progress <= 1.0f && bolt.intensity > 0.0f && bolt.intensity <= 1.5f;
+            sane = sane && std::isfinite(bolt.ax) && std::isfinite(bolt.by) &&
+                   bolt.progress > 0.0f && bolt.progress <= 1.0f && bolt.intensity > 0.0f &&
+                   bolt.intensity <= 1.5f;
         }
         for (const astralia::EntranceBurst &burst : f.bursts) {
             sane = sane && burst.reach > 0.0f && burst.progress >= 0.0f && burst.progress < 1.0f;

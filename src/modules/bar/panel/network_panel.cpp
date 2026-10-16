@@ -13,13 +13,7 @@ namespace {
 
 namespace cfg = panel_config;
 
-enum Action { wifi = 1,
-              rescan,
-              dismiss_error,
-              connect,
-              forget,
-              cancel,
-              confirm };
+enum Action { wifi = 1, rescan, dismiss_error, connect, forget, cancel, confirm };
 
 constexpr uint64_t anim_owner = 10000;
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
@@ -47,9 +41,7 @@ std::vector<const NetworkInfo *> by_signal(std::vector<const NetworkInfo *> list
     return list;
 }
 
-bool secured(const NetworkInfo &info) {
-    return !info.security.empty() && info.security != "--";
-}
+bool secured(const NetworkInfo &info) { return !info.security.empty() && info.security != "--"; }
 
 constexpr Color captive_background{1.0f, 0.76f, 0.03f, 0.15f};
 constexpr Color captive_foreground{1.0f, 0.7569f, 0.0275f, 1.0f};
@@ -119,7 +111,8 @@ std::vector<NetworkRow> network_rows(const NetworkRowsInput &in) {
 }
 
 NetworkRowsInput NetworkPanel::rows_input() const {
-    return {network_.networks(), !network_.last_error().empty(), network_.ethernet_connected(), network_.wifi_available(), network_.wifi_enabled()};
+    return {network_.networks(), !network_.last_error().empty(), network_.ethernet_connected(),
+            network_.wifi_available(), network_.wifi_enabled()};
 }
 
 NetworkPanel::NetworkPanel(NetworkService &network) : network_(network) {
@@ -160,12 +153,15 @@ void NetworkPanel::paint_header(ui::Canvas &canvas, const ui::Box &area, PanelPa
     if (!network_.wifi_available()) {
         return;
     }
-    ui::Box toggle{area.x + area.w - cfg::toggle_width, area.y + (area.h - cfg::toggle_height) / 2.0f, cfg::toggle_width, cfg::toggle_height};
+    ui::Box toggle{area.x + area.w - cfg::toggle_width,
+                   area.y + (area.h - cfg::toggle_height) / 2.0f, cfg::toggle_width,
+                   cfg::toggle_height};
     panel_widgets::toggle(canvas, toggle, network_.wifi_enabled());
     paint.region(toggle, wifi);
     float size = cfg::close_button;
     ui::Box scan{toggle.x - cfg::row_gap - size, area.y + (area.h - size) / 2.0f, size, size};
-    panel_widgets::icon_button(canvas, scan, icon::refresh, network_.scanning() ? palette::accent : palette::text);
+    panel_widgets::icon_button(canvas, scan, icon::refresh,
+                               network_.scanning() ? palette::accent : palette::text);
     paint.region(scan, rescan);
 }
 
@@ -195,11 +191,15 @@ void NetworkPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
             canvas.rounded(box, metrics::radius_widget, palette::critical_alpha15);
             ui::TextSize glyph = canvas.measure(icon::alert_triangle, icon_style);
             float text_x = box.x + cfg::row_icon_gap;
-            canvas.text(icon::alert_triangle, icon_style, text_x, box.y + (box.h - glyph.h) / 2.0f, palette::critical);
+            canvas.text(icon::alert_triangle, icon_style, text_x, box.y + (box.h - glyph.h) / 2.0f,
+                        palette::critical);
             text_x += glyph.w + cfg::row_gap;
-            panel_widgets::text_in_row(canvas, elide(network_.last_error(), cfg::network_error_chars), text_style, text_x, box, palette::critical);
+            panel_widgets::text_in_row(canvas,
+                                       elide(network_.last_error(), cfg::network_error_chars),
+                                       text_style, text_x, box, palette::critical);
             float size = cfg::network_banner_close;
-            ui::Box close{box.x + box.w - cfg::row_icon_gap - size, box.y + (box.h - size) / 2.0f, size, size};
+            ui::Box close{box.x + box.w - cfg::row_icon_gap - size, box.y + (box.h - size) / 2.0f,
+                          size, size};
             panel_widgets::centered_text(canvas, icon::close, icon_style, close, palette::critical);
             paint.region(close, dismiss_error);
             break;
@@ -209,46 +209,54 @@ void NetworkPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
             panel_widgets::centered_text(canvas, "Ethernet", text_style, box, palette::text);
             break;
         case Kind::no_adapter:
-            panel_widgets::centered_text(canvas, "No Wi-Fi adapter found", text_style, box, palette::text_dim);
+            panel_widgets::centered_text(canvas, "No Wi-Fi adapter found", text_style, box,
+                                         palette::text_dim);
             break;
         case Kind::disabled:
-            panel_widgets::centered_text(canvas, "WiFi is disabled", text_style, box, palette::text_dim);
+            panel_widgets::centered_text(canvas, "WiFi is disabled", text_style, box,
+                                         palette::text_dim);
             break;
         case Kind::scanning:
-            panel_widgets::centered_text(canvas, "Scanning\xE2\x80\xA6", text_style, box, palette::text_dim);
+            panel_widgets::centered_text(canvas, "Scanning\xE2\x80\xA6", text_style, box,
+                                         palette::text_dim);
             break;
         case Kind::section_connected:
         case Kind::section_known:
         case Kind::section_available: {
-            const char *label = row.kind == Kind::section_connected ? "Connected" : row.kind == Kind::section_known ? "Known"
-                                                                                                                    : "Available";
+            const char *label = row.kind == Kind::section_connected ? "Connected"
+                                : row.kind == Kind::section_known   ? "Known"
+                                                                    : "Available";
             ui::TextSize size = canvas.measure(label, text_style);
             canvas.text(label, text_style, box.x, box.y + box.h - size.h, palette::text_dim);
             break;
         }
         case Kind::network: {
             const NetworkInfo &info = *row.info;
-            bool portal = info.connected && (network_.connectivity() == "portal" || network_.status().portal);
+            bool portal =
+                info.connected && (network_.connectivity() == "portal" || network_.status().portal);
             bool busy = network_.connecting_to() == info.ssid;
             panel_widgets::DeviceRow device;
             device.glyph = network_signal_glyph(info.signal);
             device.title = info.ssid;
-            device.subtitle = portal ? "Sign in required" : secured(info) ? info.security
-                                                                          : "Open";
-            device.background = portal ? captive_background : info.connected ? palette::accent_alpha25
-                                                          : busy             ? palette::accent_alpha12
-                                                                             : palette::text_alpha06;
-            device.glyph_color = portal ? captive_foreground : info.connected ? palette::accent
-                                                                              : palette::text_dim;
-            device.title_color = portal ? captive_foreground : info.connected ? palette::accent
-                                                                              : palette::text;
+            device.subtitle = portal ? "Sign in required" : secured(info) ? info.security : "Open";
+            device.background = portal           ? captive_background
+                                : info.connected ? palette::accent_alpha25
+                                : busy           ? palette::accent_alpha12
+                                                 : palette::text_alpha06;
+            device.glyph_color = portal           ? captive_foreground
+                                 : info.connected ? palette::accent
+                                                  : palette::text_dim;
+            device.title_color = portal           ? captive_foreground
+                                 : info.connected ? palette::accent
+                                                  : palette::text;
             device.subtitle_color = portal ? captive_foreground : palette::text_dim;
             device.connected = info.connected;
             device.busy = busy;
             device.can_forget = info.existing && !info.connected && !busy;
             device.marquee = &marquees_[info.ssid];
             device.animations = &animations();
-            int index = static_cast<int>(std::ranges::distance(network_.networks().begin(), network_.networks().find(info.ssid)));
+            int index = static_cast<int>(std::ranges::distance(
+                network_.networks().begin(), network_.networks().find(info.ssid)));
             panel_widgets::device_row(canvas, box, device, paint, connect, forget, index);
             break;
         }
@@ -268,7 +276,8 @@ float NetworkPanel::dialog_height() {
 void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPaint &paint) {
     if (dialog_ == Dialog::disconnect || dialog_ == Dialog::forget) {
         bool leaving = dialog_ == Dialog::disconnect;
-        panel_widgets::confirm_dialog(canvas, box, ssid_, leaving ? "Disconnect?" : "Forget?", leaving ? "Disconnect" : "Forget", paint, cancel, confirm);
+        panel_widgets::confirm_dialog(canvas, box, ssid_, leaving ? "Disconnect?" : "Forget?",
+                                      leaving ? "Disconnect" : "Forget", paint, cancel, confirm);
         return;
     }
     if (dialog_ != Dialog::password) {
@@ -279,25 +288,33 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
     float width = box.w - 2.0f * cfg::padding;
     float y = box.y + cfg::padding + cfg::dialog_spacer;
     ui::Box field{x, y, width, cfg::network_field_height};
-    canvas.rounded(field, metrics::radius_widget, palette::text_alpha08, 1.0f, palette::text_alpha15);
+    canvas.rounded(field, metrics::radius_widget, palette::text_alpha08, 1.0f,
+                   palette::text_alpha15);
     constexpr float dot = 8.0f;
     constexpr float gap = 4.0f;
     float cy = field.y + field.h / 2.0f;
     size_t count = text_field_utf8_len(password_.text);
     if (count == 0 && password_.preedit.empty()) {
-        panel_widgets::centered_text(canvas, "Password\xE2\x80\xA6", text_style, field, palette::text_dim);
+        panel_widgets::centered_text(canvas, "Password\xE2\x80\xA6", text_style, field,
+                                     palette::text_dim);
     } else {
         ui::ImageId echo = canvas.image(polkit_config::echo_file_path, static_cast<int>(dot));
-        size_t visible = std::min(count, static_cast<size_t>(std::max(1.0f, (width - 2.0f * cfg::row_icon_gap + gap) / (dot + gap))));
-        float row = static_cast<float>(visible) * dot + static_cast<float>(visible > 0 ? visible - 1 : 0) * gap;
+        size_t visible =
+            std::min(count, static_cast<size_t>(std::max(
+                                1.0f, (width - 2.0f * cfg::row_icon_gap + gap) / (dot + gap))));
+        float row = static_cast<float>(visible) * dot +
+                    static_cast<float>(visible > 0 ? visible - 1 : 0) * gap;
         float dx = field.x + (field.w - row) / 2.0f;
         size_t first = count - visible;
         for (size_t i = 0; i < visible; ++i) {
             size_t index = first + i;
-            float scale = index < password_anim_.chars.size() ? password_anim_.chars[index].scale : 1.0f;
-            float slide = index < password_anim_.chars.size() ? password_anim_.chars[index].slide_x : 0.0f;
+            float scale =
+                index < password_anim_.chars.size() ? password_anim_.chars[index].scale : 1.0f;
+            float slide =
+                index < password_anim_.chars.size() ? password_anim_.chars[index].slide_x : 0.0f;
             float size = dot * scale;
-            ui::Box d{dx + static_cast<float>(i) * (dot + gap) + (dot - size) / 2.0f + slide, cy - size / 2.0f, size, size};
+            ui::Box d{dx + static_cast<float>(i) * (dot + gap) + (dot - size) / 2.0f + slide,
+                      cy - size / 2.0f, size, size};
             if (echo != ui::no_image) {
                 canvas.draw_image(echo, d, palette::white);
             } else {
@@ -306,14 +323,16 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
         }
         if (!password_.preedit.empty()) {
             ui::TextSize size = canvas.measure(password_.preedit, text_style);
-            canvas.text(password_.preedit, text_style, field.x + (field.w - size.w) / 2.0f, field.y + field.h + 10.0f, palette::text_dim);
+            canvas.text(password_.preedit, text_style, field.x + (field.w - size.w) / 2.0f,
+                        field.y + field.h + 10.0f, palette::text_dim);
         }
     }
     y += cfg::network_field_height + cfg::row_gap;
     bool ready = count >= static_cast<size_t>(cfg::network_password_min);
     float button_w = canvas.measure("Connect", text_style).w + cfg::dialog_button_pad;
     ui::Box button{x + (width - button_w) / 2.0f, y, button_w, cfg::dialog_button};
-    canvas.rounded(button, metrics::radius_widget, with_alpha(palette::accent, ready ? 1.0f : 0.4f));
+    canvas.rounded(button, metrics::radius_widget,
+                   with_alpha(palette::accent, ready ? 1.0f : 0.4f));
     panel_widgets::centered_text(canvas, "Connect", text_style, button, palette::text);
     if (ready) {
         paint.region(button, confirm);
@@ -322,7 +341,9 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
 
 ui::Box NetworkPanel::cursor() const {
     float width = this->width();
-    return {width / 2.0f, cfg::padding + cfg::dialog_spacer + (cfg::network_field_height - 14.0f) / 2.0f, 1.5f, 14.0f};
+    return {width / 2.0f,
+            cfg::padding + cfg::dialog_spacer + (cfg::network_field_height - 14.0f) / 2.0f, 1.5f,
+            14.0f};
 }
 
 bool NetworkPanel::dismiss_dialog() {

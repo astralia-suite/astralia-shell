@@ -6,8 +6,7 @@
 
 namespace astralia {
 
-template <typename... Args>
-class Signal {
+template <typename... Args> class Signal {
   public:
     void connect(std::function<void(Args...)> slot) { slots_.push_back(std::move(slot)); }
 

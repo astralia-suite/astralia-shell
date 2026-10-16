@@ -46,7 +46,8 @@ std::string image_signature(const Config &config, const std::vector<Output> &out
     return signature;
 }
 
-void draw(XConnection &x, xcb_pixmap_t pixmap, const std::vector<Output> &outputs, const Config &config) {
+void draw(XConnection &x, xcb_pixmap_t pixmap, const std::vector<Output> &outputs,
+          const Config &config) {
     xcb_screen_t *screen = x.screen();
     cairo_surface_t *surface = cairo_xcb_surface_create(
         x.conn(), pixmap, x.visual(), screen->width_in_pixels, screen->height_in_pixels);
@@ -55,8 +56,12 @@ void draw(XConnection &x, xcb_pixmap_t pixmap, const std::vector<Output> &output
     cairo_paint(cr);
     for (const Output &output : outputs) {
         auto start = std::chrono::steady_clock::now();
-        paint_wallpaper(cr, config, output.name, output.geometry.x, output.geometry.y, output.geometry.width, output.geometry.height);
-        log::info("wallpaper for {}: {} ms", output.name, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count());
+        paint_wallpaper(cr, config, output.name, output.geometry.x, output.geometry.y,
+                        output.geometry.width, output.geometry.height);
+        log::info("wallpaper for {}: {} ms", output.name,
+                  std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::steady_clock::now() - start)
+                      .count());
     }
     cairo_destroy(cr);
     cairo_surface_finish(surface);
@@ -68,11 +73,15 @@ void draw(XConnection &x, xcb_pixmap_t pixmap, const std::vector<Output> &output
 
 Wallpaper::Wallpaper(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), loop_(loop), services_(services),
-      menu_window_(x, "astralia-desktop-menu", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW) {
-    loop_.on_window(menu_window_.id(), [this](const xcb_generic_event_t &event) { handle_menu(event); });
+      menu_window_(x, "astralia-desktop-menu",
+                   XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                       XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW) {
+    loop_.on_window(menu_window_.id(),
+                    [this](const xcb_generic_event_t &event) { handle_menu(event); });
     apply(true);
     services_.settings.changed.connect([this] {
-        if (image_signature(services_.settings.config(), services_.outputs.outputs()) != applied_signature_) {
+        if (image_signature(services_.settings.config(), services_.outputs.outputs()) !=
+            applied_signature_) {
             apply(true);
         }
     });
@@ -133,15 +142,24 @@ void Wallpaper::layout_desktop_windows() {
         if (i >= desktop_windows_.size()) {
             xcb_window_t window = xcb_generate_id(conn);
             std::array<uint32_t, 2> values{1u, XCB_EVENT_MASK_BUTTON_PRESS};
-            xcb_create_window(conn, XCB_COPY_FROM_PARENT, window, x_.root(), 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_ONLY, XCB_COPY_FROM_PARENT, XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK, values.data());
+            xcb_create_window(conn, XCB_COPY_FROM_PARENT, window, x_.root(), 0, 0, 1, 1, 0,
+                              XCB_WINDOW_CLASS_INPUT_ONLY, XCB_COPY_FROM_PARENT,
+                              XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK, values.data());
             xcb_atom_t type = x_.atom("_NET_WM_WINDOW_TYPE_DESKTOP");
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, x_.atom("_NET_WM_WINDOW_TYPE"), XCB_ATOM_ATOM, 32, 1, &type);
-            loop_.on_window(window, [this, i](const xcb_generic_event_t &event) { handle_desktop(i, event); });
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, x_.atom("_NET_WM_WINDOW_TYPE"),
+                                XCB_ATOM_ATOM, 32, 1, &type);
+            loop_.on_window(
+                window, [this, i](const xcb_generic_event_t &event) { handle_desktop(i, event); });
             desktop_windows_.push_back(window);
         }
         const OutputGeometry &geometry = applied_[i].geometry;
-        std::array<uint32_t, 5> values{static_cast<uint32_t>(geometry.x), static_cast<uint32_t>(geometry.y), geometry.width, geometry.height, XCB_STACK_MODE_BELOW};
-        xcb_configure_window(conn, desktop_windows_[i], XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE, values.data());
+        std::array<uint32_t, 5> values{static_cast<uint32_t>(geometry.x),
+                                       static_cast<uint32_t>(geometry.y), geometry.width,
+                                       geometry.height, XCB_STACK_MODE_BELOW};
+        xcb_configure_window(conn, desktop_windows_[i],
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
+                                 XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_STACK_MODE,
+                             values.data());
         xcb_map_window(conn, desktop_windows_[i]);
     }
     for (size_t i = applied_.size(); i < desktop_windows_.size(); ++i) {
@@ -167,9 +185,13 @@ void Wallpaper::open_menu(size_t index, int16_t root_x, int16_t root_y, int16_t 
     int columns = wallpaper_column_count(services_.settings.config(), output.name, false);
     int column = std::clamp(event_x / std::max(1, output.geometry.width / columns), 0, columns - 1);
     menu_output_ = index;
-    menu_.open(static_cast<float>(root_x - output.geometry.x), static_cast<float>(root_y - output.geometry.y), output.geometry.width, output.geometry.height, column);
+    menu_.open(static_cast<float>(root_x - output.geometry.x),
+               static_cast<float>(root_y - output.geometry.y), output.geometry.width,
+               output.geometry.height, column);
     const ui::Box &box = menu_.box();
-    OutputGeometry geometry{static_cast<int16_t>(output.geometry.x + static_cast<int>(box.x)), static_cast<int16_t>(output.geometry.y + static_cast<int>(box.y)), static_cast<uint16_t>(box.w), static_cast<uint16_t>(box.h)};
+    OutputGeometry geometry{static_cast<int16_t>(output.geometry.x + static_cast<int>(box.x)),
+                            static_cast<int16_t>(output.geometry.y + static_cast<int>(box.y)),
+                            static_cast<uint16_t>(box.w), static_cast<uint16_t>(box.h)};
     menu_window_.place(geometry, geometry.width, geometry.height);
     paint_menu();
     menu_window_.show(false);
@@ -193,9 +215,13 @@ void Wallpaper::close_menu() {
 }
 
 void Wallpaper::grab_menu() {
-    constexpr uint16_t mask = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION;
+    constexpr uint16_t mask =
+        XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION;
     xcb_grab_pointer_reply_t *reply = xcb_grab_pointer_reply(
-        x_.conn(), xcb_grab_pointer(x_.conn(), 1, menu_window_.id(), mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME), nullptr);
+        x_.conn(),
+        xcb_grab_pointer(x_.conn(), 1, menu_window_.id(), mask, XCB_GRAB_MODE_ASYNC,
+                         XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME),
+        nullptr);
     grabbed_ = reply != nullptr && reply->status == XCB_GRAB_STATUS_SUCCESS;
     std::free(reply);
 }
@@ -235,14 +261,17 @@ void Wallpaper::handle_menu(const xcb_generic_event_t &event) {
         break;
     case XCB_BUTTON_PRESS: {
         const auto &press = reinterpret_cast<const xcb_button_press_event_t &>(event);
-        int entry = press.detail == XCB_BUTTON_INDEX_1 ? menu_.entry_at(press.event_x, press.event_y) : -1;
+        int entry =
+            press.detail == XCB_BUTTON_INDEX_1 ? menu_.entry_at(press.event_x, press.event_y) : -1;
         int column = menu_.column();
-        std::string output = menu_output_ < applied_.size() ? applied_[menu_output_].name : std::string();
+        std::string output =
+            menu_output_ < applied_.size() ? applied_[menu_output_].name : std::string();
         close_menu();
         if (entry < 0) {
             break;
         }
-        if (DesktopMenuModel::entries()[static_cast<size_t>(entry)].action == DesktopMenuAction::settings) {
+        if (DesktopMenuModel::entries()[static_cast<size_t>(entry)].action ==
+            DesktopMenuAction::settings) {
             if (on_settings) {
                 on_settings();
             }

@@ -23,7 +23,8 @@ SettingsCaps x11_caps() {
     caps.autohide = true;
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;
-    caps.bar_styles.assign(bar_config::supported_styles.begin(), bar_config::supported_styles.end());
+    caps.bar_styles.assign(bar_config::supported_styles.begin(),
+                           bar_config::supported_styles.end());
     return caps;
 }
 
@@ -35,38 +36,55 @@ constexpr float wheel_notch = 10.0f;
 
 Settings::Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
-      window_(x, "astralia-settings", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
+      window_(x, "astralia-settings",
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS |
+                  XCB_EVENT_MASK_FOCUS_CHANGE),
       keyboard_(x.conn()),
-      model_(x11_caps(), SettingsHooks{
-                             [&services]() -> const Config & { return services.settings.config(); },
-                             [&services](const std::function<void(Config &)> &edit) { services.settings.update(edit); },
-                             [&services] {
-                                 std::vector<std::string> names;
-                                 for (const Output &output : services.outputs.outputs()) {
-                                     names.push_back(output.name);
-                                 }
-                                 return names;
-                             },
-                             [this, &services] { return bound_output_.empty() ? services.outputs.at_pointer().name : bound_output_; },
-                             {}}) {
-    repaint_timer_ = loop.add_timer([this] { return repaint_pending_ ? repaint_batch : std::chrono::milliseconds(std::chrono::hours(1)); },
-                                    [this] {
-                                        if (!repaint_pending_) {
-                                            return;
-                                        }
-                                        repaint_pending_ = false;
-                                        paint();
-                                    });
+      model_(x11_caps(),
+             SettingsHooks{[&services]() -> const Config & { return services.settings.config(); },
+                           [&services](const std::function<void(Config &)> &edit) {
+                               services.settings.update(edit);
+                           },
+                           [&services] {
+                               std::vector<std::string> names;
+                               for (const Output &output : services.outputs.outputs()) {
+                                   names.push_back(output.name);
+                               }
+                               return names;
+                           },
+                           [this, &services] {
+                               return bound_output_.empty() ? services.outputs.at_pointer().name
+                                                            : bound_output_;
+                           },
+                           {}}) {
+    repaint_timer_ = loop.add_timer(
+        [this] {
+            return repaint_pending_ ? repaint_batch
+                                    : std::chrono::milliseconds(std::chrono::hours(1));
+        },
+        [this] {
+            if (!repaint_pending_) {
+                return;
+            }
+            repaint_pending_ = false;
+            paint();
+        });
     model_.on_close_requested = [this] { close(); };
     model_.on_closed = [this] { closed(); };
     model_.on_changed = [this] { schedule_paint(); };
     canvas_.on_image_ready = [this] { schedule_paint(); };
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
-    caret_timer_ = loop.add_timer([this] { return open_ ? caret_interval : std::chrono::milliseconds(std::chrono::hours(1)); }, [this] {
-        if (open_) {
-            model_.toggle_caret();
-            paint();
-        } });
+    caret_timer_ = loop.add_timer(
+        [this] {
+            return open_ ? caret_interval : std::chrono::milliseconds(std::chrono::hours(1));
+        },
+        [this] {
+            if (open_) {
+                model_.toggle_caret();
+                paint();
+            }
+        });
     shell.track("settings", [this] { return open_; });
     shell.bind(ShellVerb::settings, [this] { toggle(); });
 
@@ -82,7 +100,8 @@ Settings::Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
             return;
         }
         const std::vector<Output> &outputs = services_.outputs.outputs();
-        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+        if (std::ranges::none_of(
+                outputs, [this](const Output &output) { return output.name == bound_output_; })) {
             close();
             return;
         }
@@ -150,14 +169,16 @@ void Settings::handle(const xcb_generic_event_t &event) {
     }
     case XCB_FOCUS_OUT: {
         const auto &focus = reinterpret_cast<const xcb_focus_out_event_t &>(event);
-        if (focus.mode == XCB_NOTIFY_MODE_NORMAL && focus.detail != XCB_NOTIFY_DETAIL_POINTER && std::chrono::steady_clock::now() < refocus_until_) {
+        if (focus.mode == XCB_NOTIFY_MODE_NORMAL && focus.detail != XCB_NOTIFY_DETAIL_POINTER &&
+            std::chrono::steady_clock::now() < refocus_until_) {
             window_.focus();
         }
         break;
     }
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
-        window_.set_cursor(model_.clickable(motion.event_x, motion.event_y) ? CursorShape::hand : CursorShape::arrow);
+        window_.set_cursor(model_.clickable(motion.event_x, motion.event_y) ? CursorShape::hand
+                                                                            : CursorShape::arrow);
         break;
     }
     case XCB_BUTTON_PRESS: {
@@ -199,9 +220,11 @@ void Settings::paint() {
     art.user_name = services_.user.name();
     art.uptime = services_.user.uptime();
     art.face = services_.user.face_path();
-    paint_settings(canvas_, model_, art, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    paint_settings(canvas_, model_, art, static_cast<float>(window_.geometry().width),
+                   static_cast<float>(window_.geometry().height));
     window_.present();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start);
     if (elapsed >= std::chrono::milliseconds(16)) {
         log::info("settings: paint in {} ms", elapsed.count());
     }

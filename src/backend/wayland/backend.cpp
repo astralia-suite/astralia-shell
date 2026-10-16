@@ -192,16 +192,18 @@ int WaylandBackend::run(bool start_locked) {
     std::vector<FnPollSource> fn_sources;
     std::vector<PollSource *> raw_sources;
     std::vector<SourceRange> ranges;
-    reactor->add_timer([] { return std::chrono::seconds(1); }, [&] {
-        for (auto &mon : app.outputs)
-            for (auto &m : mon->modules)
-                m->timer_tick(app, *mon);
-        for (auto &s : app.services)
-            s->timer_tick(app);
-        gl_poll_graphics_reset("timer");
-        for (auto &m : app.overlays)
-            if (m->timer_tick(app))
-                rest_egl_current(); });
+    reactor->add_timer([] { return std::chrono::seconds(1); },
+                       [&] {
+                           for (auto &mon : app.outputs)
+                               for (auto &m : mon->modules)
+                                   m->timer_tick(app, *mon);
+                           for (auto &s : app.services)
+                               s->timer_tick(app);
+                           gl_poll_graphics_reset("timer");
+                           for (auto &m : app.overlays)
+                               if (m->timer_tick(app))
+                                   rest_egl_current();
+                       });
 
     reactor->add_poll_source(
         [&](std::vector<pollfd> &fds) {
@@ -245,9 +247,8 @@ int WaylandBackend::run(bool start_locked) {
                     fn_sources.emplace_back(fd, POLLIN, cb);
 
             if (app.keyboard.repeat_timer_fd >= 0) {
-                fn_sources.emplace_back(app.keyboard.repeat_timer_fd, POLLIN, [&] {
-                    keyboard_repeat_tick(app.keyboard);
-                });
+                fn_sources.emplace_back(app.keyboard.repeat_timer_fd, POLLIN,
+                                        [&] { keyboard_repeat_tick(app.keyboard); });
             }
 
             std::size_t base = fds.size();
@@ -282,24 +283,28 @@ int WaylandBackend::run(bool start_locked) {
                     for (auto &mon : app.outputs)
                         request_all_frames(*mon);
                     for (auto &m : app.overlays)
-                        m->handle_pointer_move(app, app.pointer.focused_surface, app.pointer.x, app.pointer.y);
+                        m->handle_pointer_move(app, app.pointer.focused_surface, app.pointer.x,
+                                               app.pointer.y);
                     if (app.pointer.focused_surface) {
-                        if (MonitorOutput *m = find_monitor_for_surface(app, app.pointer.focused_surface))
+                        if (MonitorOutput *m =
+                                find_monitor_for_surface(app, app.pointer.focused_surface))
                             app.last_pointer_monitor = m;
                     }
                     for (auto &mon : app.outputs)
                         for (auto &pm : mon->modules)
                             pm->handle_pointer_move(app, *mon, app.pointer.x, app.pointer.y);
 
-                    Module *hovered =
-                        find_overlay_for_surface(app, app.pointer.focused_surface);
+                    Module *hovered = find_overlay_for_surface(app, app.pointer.focused_surface);
                     bool hand = hovered && hovered->wants_pointing_hand_cursor();
                     if (!hand && app.pointer.focused_surface)
                         for (auto &mon : app.outputs)
                             for (auto &pm : mon->modules)
-                                if (pm->owns_surface(app.pointer.focused_surface) && pm->wants_pointing_hand_cursor())
+                                if (pm->owns_surface(app.pointer.focused_surface) &&
+                                    pm->wants_pointing_hand_cursor())
                                     hand = true;
-                    pointer_set_cursor_shape(app.pointer, hand ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+                    pointer_set_cursor_shape(app.pointer,
+                                             hand ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER
+                                                  : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
                 }
             }
             for (SourceRange &r : ranges)
@@ -336,7 +341,8 @@ int WaylandBackend::run(bool start_locked) {
                     continue;
                 for (auto &pm : mon->modules) {
                     if (pm->owns_surface(click.surface)) {
-                        pm->handle_click(app, *mon, click.surface, click.button, click.x, click.y, click.serial);
+                        pm->handle_click(app, *mon, click.surface, click.button, click.x, click.y,
+                                         click.serial);
                         break;
                     }
                 }
@@ -368,4 +374,6 @@ int WaylandBackend::run(bool start_locked) {
 
 } // namespace
 
-extern "C" __attribute__((visibility("default"))) astralia::Backend *astralia_backend_create() { return new WaylandBackend(); }
+extern "C" __attribute__((visibility("default"))) astralia::Backend *astralia_backend_create() {
+    return new WaylandBackend();
+}

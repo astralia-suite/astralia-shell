@@ -22,7 +22,8 @@ constexpr uint32_t reason_closed = 3;
 } // namespace
 
 std::chrono::milliseconds notification_timeout(int32_t expire_timeout_ms) {
-    return expire_timeout_ms > 0 ? std::chrono::milliseconds(expire_timeout_ms) : notification_hang_time;
+    return expire_timeout_ms > 0 ? std::chrono::milliseconds(expire_timeout_ms)
+                                 : notification_hang_time;
 }
 
 NotificationService::NotificationService(Reactor &loop)
@@ -40,7 +41,8 @@ NotificationService::NotificationService(Reactor &loop)
                     [this](const std::string &app, uint32_t replaces_id, const std::string &,
                            const std::string &summary, const std::string &body,
                            const std::vector<std::string> &,
-                           const std::map<std::string, sdbus::Variant> &hints, int32_t expire_timeout) {
+                           const std::map<std::string, sdbus::Variant> &hints,
+                           int32_t expire_timeout) {
                         return notify(app, replaces_id, summary, body, hints, expire_timeout);
                     }),
                 sdbus::registerMethod("CloseNotification").implementedAs([this](uint32_t id) {
@@ -64,7 +66,8 @@ NotificationService::NotificationService(Reactor &loop)
 
 void NotificationService::dismiss(uint32_t id) { close(id, reason_dismissed); }
 
-uint32_t NotificationService::post(std::string app, std::string summary, std::string body, int32_t expire_timeout) {
+uint32_t NotificationService::post(std::string app, std::string summary, std::string body,
+                                   int32_t expire_timeout) {
     return notify(std::move(app), 0, std::move(summary), std::move(body), {}, expire_timeout);
 }
 
@@ -73,12 +76,14 @@ uint32_t NotificationService::notify(std::string app, uint32_t replaces_id, std:
                                      const std::map<std::string, sdbus::Variant> &hints,
                                      int32_t expire_timeout) {
     uint8_t urgency = notification_urgency_normal;
-    if (auto hint = hints.find("urgency"); hint != hints.end() && hint->second.containsValueOfType<uint8_t>()) {
+    if (auto hint = hints.find("urgency");
+        hint != hints.end() && hint->second.containsValueOfType<uint8_t>()) {
         urgency = hint->second.get<uint8_t>();
     }
     std::chrono::milliseconds timeout = notification_timeout(expire_timeout);
     auto now = std::chrono::steady_clock::now();
-    Notification entry{0, std::move(app), std::move(summary), std::move(body), urgency, timeout, now, now + timeout};
+    Notification entry{0,   std::move(app), std::move(summary), std::move(body), urgency, timeout,
+                       now, now + timeout};
     auto replaced = std::ranges::find(list_, replaces_id, &Notification::id);
     if (replaces_id != 0 && replaced != list_.end()) {
         entry.id = replaces_id;
@@ -107,7 +112,9 @@ void NotificationService::close(uint32_t id, uint32_t reason) {
     list_.erase(it);
     if (object_) {
         try {
-            object_->emitSignal("NotificationClosed").onInterface(interface).withArguments(id, reason);
+            object_->emitSignal("NotificationClosed")
+                .onInterface(interface)
+                .withArguments(id, reason);
         } catch (const sdbus::Error &error) {
             log::error("notification: cannot emit NotificationClosed: {}", error.what());
         }
@@ -133,7 +140,9 @@ std::chrono::milliseconds NotificationService::until_next() const {
         return std::chrono::hours(1);
     }
     auto earliest = std::ranges::min_element(list_, {}, &Notification::deadline)->deadline;
-    return std::max(std::chrono::ceil<std::chrono::milliseconds>(earliest - std::chrono::steady_clock::now()), std::chrono::milliseconds(0));
+    return std::max(
+        std::chrono::ceil<std::chrono::milliseconds>(earliest - std::chrono::steady_clock::now()),
+        std::chrono::milliseconds(0));
 }
 
 } // namespace astralia

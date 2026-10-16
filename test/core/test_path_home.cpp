@@ -22,6 +22,7 @@ void check_path_home() {
     check(path_expand_home("~foo") == "~foo", "tilde user is kept");
     check(path_expand_home("").empty(), "empty expands to empty");
 
-    check(path_expand_home(path_collapse_home("/home/tester/a/b")) == "/home/tester/a/b", "expand inverts collapse");
+    check(path_expand_home(path_collapse_home("/home/tester/a/b")) == "/home/tester/a/b",
+          "expand inverts collapse");
     check(path_collapse_home(path_expand_home("~/a/b")) == "~/a/b", "collapse inverts expand");
 }

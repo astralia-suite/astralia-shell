@@ -46,13 +46,15 @@ class Canvas {
     virtual ~Canvas() = default;
 
     virtual void rect(const Box &box, const Color &fill) = 0;
-    virtual void rounded(const Box &box, float radius, const Color &fill, float border_width = 0.0f, const Color &border = {}) = 0;
+    virtual void rounded(const Box &box, float radius, const Color &fill, float border_width = 0.0f,
+                         const Color &border = {}) = 0;
     virtual void fillet(const Box &box, bool circle_on_right, const Color &color) = 0;
     virtual void set_erase(bool on) = 0;
 
     virtual TextSize measure(std::string_view text, const TextStyle &style) = 0;
     virtual float advance(const TextStyle &style) = 0;
-    virtual void text(std::string_view text, const TextStyle &style, float x, float y, const Color &color) = 0;
+    virtual void text(std::string_view text, const TextStyle &style, float x, float y,
+                      const Color &color) = 0;
 
     virtual ImageId image(std::string_view asset, int target_px) = 0;
     virtual ImageId thumbnail(std::string_view path, int px) = 0;

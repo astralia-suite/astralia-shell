@@ -21,7 +21,8 @@ class VisualizerAudioCapture {
   private:
     static void on_process(void *data);
     static void on_param_changed(void *data, uint32_t id, const spa_pod *param);
-    static void on_state_changed(void *data, pw_stream_state old_state, pw_stream_state state, const char *error);
+    static void on_state_changed(void *data, pw_stream_state old_state, pw_stream_state state,
+                                 const char *error);
 
     void process_buffer();
 

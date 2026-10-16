@@ -22,14 +22,16 @@
 
 namespace astralia {
 
-enum class SettingsTab : uint8_t { animation,
-                                   bar,
-                                   displays,
-                                   idle,
-                                   launcher,
-                                   rain,
-                                   visualizer,
-                                   wallpaper };
+enum class SettingsTab : uint8_t {
+    animation,
+    bar,
+    displays,
+    idle,
+    launcher,
+    rain,
+    visualizer,
+    wallpaper
+};
 
 struct SettingsTabInfo {
     SettingsTab tab;
@@ -52,17 +54,19 @@ struct SettingsCaps {
 
 SettingsCaps settings_caps(const Capabilities &capabilities);
 
-enum class SettingsField : uint8_t { none,
-                                     wallpaper_dir,
-                                     wallpaper_animated_dir,
-                                     ambient_timeout,
-                                     screensaver_timeout,
-                                     visualizer_fps,
-                                     visualizer_thin,
-                                     visualizer_size,
-                                     visualizer_complexity,
-                                     visualizer_glow_directions,
-                                     visualizer_glow_quality };
+enum class SettingsField : uint8_t {
+    none,
+    wallpaper_dir,
+    wallpaper_animated_dir,
+    ambient_timeout,
+    screensaver_timeout,
+    visualizer_fps,
+    visualizer_thin,
+    visualizer_size,
+    visualizer_complexity,
+    visualizer_glow_directions,
+    visualizer_glow_quality
+};
 
 enum class SettingsAct : uint8_t {
     close,
@@ -124,8 +128,10 @@ struct WallpaperPicker {
 };
 
 const std::vector<SettingsTabInfo> &settings_all_tabs();
-std::string settings_field_text(const Config &config, SettingsField field, const std::string &monitor);
-void settings_apply_field(Config &config, SettingsField field, const std::string &text, const std::string &monitor);
+std::string settings_field_text(const Config &config, SettingsField field,
+                                const std::string &monitor);
+void settings_apply_field(Config &config, SettingsField field, const std::string &text,
+                          const std::string &monitor);
 
 class SettingsModel {
   public:
@@ -139,7 +145,9 @@ class SettingsModel {
     void sync();
     void tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
     void begin_frame() { regions_.clear(); }
-    void add_region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) { regions_.push_back({box, act, a, b}); }
+    void add_region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
+        regions_.push_back({box, act, a, b});
+    }
     void set_panel(const ui::Box &panel) { panel_ = panel; }
 
     void click(double x, double y);
@@ -167,7 +175,9 @@ class SettingsModel {
     const std::string &displays_monitor() const { return displays_monitor_; }
     const std::string &idle_monitor() const { return idle_monitor_; }
     WallpaperPicker &picker(bool animated) { return animated ? animated_picker_ : static_picker_; }
-    bool cpu_fallback(const std::string &monitor, int column) const { return hooks_.cpu_fallback && hooks_.cpu_fallback(monitor, column); }
+    bool cpu_fallback(const std::string &monitor, int column) const {
+        return hooks_.cpu_fallback && hooks_.cpu_fallback(monitor, column);
+    }
     BarStyle effective_bar_style() const;
     void rescan(bool animated);
 

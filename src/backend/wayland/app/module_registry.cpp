@@ -25,7 +25,8 @@ void draw_monitor_wallpaper(MonitorOutput &mon, GlCanvas &canvas, int32_t w, int
         wallpaper_draw_columns(wp->wallpaper_state(), canvas, w, h);
 }
 
-void draw_named_wallpaper(WaylandState &app, const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h) {
+void draw_named_wallpaper(WaylandState &app, const std::string &output_name, GlCanvas &canvas,
+                          int32_t w, int32_t h) {
     for (auto &mon : app.outputs) {
         if (mon->output.name != output_name)
             continue;
@@ -34,7 +35,8 @@ void draw_named_wallpaper(WaylandState &app, const std::string &output_name, GlC
     }
 }
 
-MediaDecodeStatus wallpaper_decode_status(WaylandState &app, const std::string &output_name, int column) {
+MediaDecodeStatus wallpaper_decode_status(WaylandState &app, const std::string &output_name,
+                                          int column) {
     for (auto &mon : app.outputs) {
         if (mon->output.name != output_name)
             continue;
@@ -75,17 +77,17 @@ std::vector<std::unique_ptr<Module>> build_app_modules(const astralia::Capabilit
     return modules;
 }
 
-std::vector<std::unique_ptr<PerMonitorModule>> build_per_monitor_modules(const astralia::Capabilities &capabilities) {
+std::vector<std::unique_ptr<PerMonitorModule>>
+build_per_monitor_modules(const astralia::Capabilities &capabilities) {
     std::vector<std::unique_ptr<PerMonitorModule>> modules;
     modules.push_back(std::make_unique<BarPerMonitorModule>());
     modules.push_back(std::make_unique<WallpaperPerMonitorModule>());
     modules.push_back(make_osd_per_monitor_module());
     modules.push_back(std::make_unique<NotificationViewPerMonitorModule>());
     if (capabilities.idle)
-        modules.push_back(make_idle_per_monitor_module({draw_monitor_wallpaper, set_wallpaper_paused}));
+        modules.push_back(
+            make_idle_per_monitor_module({draw_monitor_wallpaper, set_wallpaper_paused}));
     return modules;
 }
 
-void start_session_lock(WaylandState &app) {
-    lock_start(app);
-}
+void start_session_lock(WaylandState &app) { lock_start(app); }

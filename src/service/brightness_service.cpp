@@ -74,7 +74,8 @@ int BrightnessService::percent() const {
 
 void BrightnessService::set(int percent) const {
     if (available()) {
-        spawn_detached(std::format("brightnessctl -q -d {} set {}%", device_, std::clamp(percent, min_percent, 100)));
+        spawn_detached(std::format("brightnessctl -q -d {} set {}%", device_,
+                                   std::clamp(percent, min_percent, 100)));
     }
 }
 

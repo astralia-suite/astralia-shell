@@ -75,16 +75,17 @@ astralia::input::PointerEvent to_neutral(const PointerClick &click) {
     return {click.x, click.y, button, click.pressed};
 }
 
-astralia::input::ScrollEvent to_neutral(const PointerScroll &scroll) {
-    return {scroll.dy};
-}
+astralia::input::ScrollEvent to_neutral(const PointerScroll &scroll) { return {scroll.dy}; }
 
-std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode, xkb_compose_state *compose) {
+std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode,
+                                      xkb_compose_state *compose) {
     xkb_keycode_t xkb_code = keycode + 8;
     xkb_keysym_t sym = xkb_state_key_get_one_sym(state, xkb_code);
-    bool shift = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) > 0;
+    bool shift =
+        xkb_state_mod_name_is_active(state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) > 0;
     bool alt = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE) > 0;
-    bool ctrl = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0;
+    bool ctrl =
+        xkb_state_mod_name_is_active(state, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0;
 
     if (compose) {
         xkb_compose_state_feed(compose, sym);
@@ -95,8 +96,7 @@ std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode, xkb_co
             xkb_compose_state_reset(compose);
             if (n <= 0)
                 return std::nullopt;
-            return KeyEvent{KeyKind::Text,
-                            std::string(buf, static_cast<size_t>(n))};
+            return KeyEvent{KeyKind::Text, std::string(buf, static_cast<size_t>(n))};
         }
         if (status == XKB_COMPOSE_CANCELLED) {
             xkb_compose_state_reset(compose);
@@ -107,17 +107,16 @@ std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode, xkb_co
             int n = xkb_keysym_to_utf8(sym, buf, sizeof(buf));
             if (n <= 0) {
                 char name[64];
-                if (xkb_keysym_get_name(sym, name, sizeof(name)) > 0 && std::strncmp(name, "dead_", 5) == 0) {
-                    xkb_keysym_t base =
-                        xkb_keysym_from_name(name + 5, XKB_KEYSYM_NO_FLAGS);
+                if (xkb_keysym_get_name(sym, name, sizeof(name)) > 0 &&
+                    std::strncmp(name, "dead_", 5) == 0) {
+                    xkb_keysym_t base = xkb_keysym_from_name(name + 5, XKB_KEYSYM_NO_FLAGS);
                     if (base != XKB_KEY_NoSymbol)
                         n = xkb_keysym_to_utf8(base, buf, sizeof(buf));
                 }
             }
             if (n <= 0)
                 return std::nullopt;
-            return KeyEvent{KeyKind::Preedit,
-                            std::string(buf, static_cast<size_t>(n - 1))};
+            return KeyEvent{KeyKind::Preedit, std::string(buf, static_cast<size_t>(n - 1))};
         }
     }
 
@@ -157,10 +156,12 @@ std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode, xkb_co
     if (n <= 0)
         return std::nullopt;
     const xkb_keysym_t *base_syms = nullptr;
-    int base_count = xkb_keymap_key_get_syms_by_level(xkb_state_get_keymap(state), xkb_code, xkb_state_key_get_layout(state, xkb_code), 0, &base_syms);
+    int base_count =
+        xkb_keymap_key_get_syms_by_level(xkb_state_get_keymap(state), xkb_code,
+                                         xkb_state_key_get_layout(state, xkb_code), 0, &base_syms);
     xkb_keysym_t base_sym = base_count > 0 ? base_syms[0] : XKB_KEY_NoSymbol;
-    return KeyEvent{KeyKind::Text, std::string(buf, static_cast<size_t>(n)),
-                    shift, alt, ctrl, base_sym};
+    return KeyEvent{KeyKind::Text, std::string(buf, static_cast<size_t>(n)), shift, alt, ctrl,
+                    base_sym};
 }
 
 namespace {
@@ -184,7 +185,9 @@ void keymap_cb(void *data, wl_keyboard *, uint32_t format, int32_t fd, uint32_t 
         xkb_state_unref(state->xkb);
     state->xkb = nullptr;
 
-    state->keymap = xkb_keymap_new_from_string(state->ctx, static_cast<const char *>(map), XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    state->keymap =
+        xkb_keymap_new_from_string(state->ctx, static_cast<const char *>(map),
+                                   XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
     munmap(map, size);
     if (!state->keymap) {
         klog("keyboard: failed to compile keymap");
@@ -227,7 +230,8 @@ void leave_cb(void *data, wl_keyboard *, uint32_t, wl_surface *surface) {
         state->on_focus_surface(surface, false);
 }
 
-void key_cb(void *data, wl_keyboard *, uint32_t serial, uint32_t, uint32_t key, uint32_t key_state) {
+void key_cb(void *data, wl_keyboard *, uint32_t serial, uint32_t, uint32_t key,
+            uint32_t key_state) {
     auto *state = static_cast<KeyboardState *>(data);
     if (!state->xkb)
         return;
@@ -254,7 +258,8 @@ void key_cb(void *data, wl_keyboard *, uint32_t serial, uint32_t, uint32_t key, 
     }
 }
 
-void modifiers_cb(void *data, wl_keyboard *, uint32_t, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group) {
+void modifiers_cb(void *data, wl_keyboard *, uint32_t, uint32_t mods_depressed,
+                  uint32_t mods_latched, uint32_t mods_locked, uint32_t group) {
     auto *state = static_cast<KeyboardState *>(data);
     if (!state->xkb)
         return;
@@ -284,7 +289,8 @@ constexpr wl_keyboard_listener kKeyboardListener = {
 
 namespace ptr {
 
-void enter_cb(void *data, wl_pointer *, uint32_t serial, wl_surface *surface, wl_fixed_t sx, wl_fixed_t sy) {
+void enter_cb(void *data, wl_pointer *, uint32_t serial, wl_surface *surface, wl_fixed_t sx,
+              wl_fixed_t sy) {
     auto *state = static_cast<PointerState *>(data);
     state->focused_surface = surface;
     state->x = wl_fixed_to_double(sx);
@@ -309,13 +315,16 @@ void motion_cb(void *data, wl_pointer *, uint32_t, wl_fixed_t sx, wl_fixed_t sy)
     state->dirty = true;
 }
 
-void button_cb(void *data, wl_pointer *, uint32_t serial, uint32_t, uint32_t button, uint32_t button_state) {
+void button_cb(void *data, wl_pointer *, uint32_t serial, uint32_t, uint32_t button,
+               uint32_t button_state) {
     auto *state = static_cast<PointerState *>(data);
     if (button != BTN_LEFT && button != BTN_RIGHT)
         return;
     if (button_state == WL_POINTER_BUTTON_STATE_PRESSED)
         state->last_button_serial = serial;
-    state->pending_clicks.push_back({state->focused_surface, button_state == WL_POINTER_BUTTON_STATE_PRESSED, button, state->x, state->y, serial});
+    state->pending_clicks.push_back({state->focused_surface,
+                                     button_state == WL_POINTER_BUTTON_STATE_PRESSED, button,
+                                     state->x, state->y, serial});
 }
 void axis_cb(void *data, wl_pointer *, uint32_t, uint32_t axis, wl_fixed_t value) {
     if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
@@ -384,13 +393,14 @@ void keyboard_attach_seat(SeatCapabilityState &seat_state, wl_seat *seat) {
         seat_state.keyboard->ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     if (!seat_state.keyboard->compose_table) {
         const char *locale = setlocale(LC_CTYPE, "");
-        seat_state.keyboard->compose_table = xkb_compose_table_new_from_locale(seat_state.keyboard->ctx, locale ? locale : "C", XKB_COMPOSE_COMPILE_NO_FLAGS);
+        seat_state.keyboard->compose_table = xkb_compose_table_new_from_locale(
+            seat_state.keyboard->ctx, locale ? locale : "C", XKB_COMPOSE_COMPILE_NO_FLAGS);
         if (seat_state.keyboard->compose_table)
-            seat_state.keyboard->compose_state = xkb_compose_state_new(seat_state.keyboard->compose_table, XKB_COMPOSE_STATE_NO_FLAGS);
+            seat_state.keyboard->compose_state = xkb_compose_state_new(
+                seat_state.keyboard->compose_table, XKB_COMPOSE_STATE_NO_FLAGS);
     }
     if (seat_state.keyboard->repeat_timer_fd < 0) {
-        seat_state.keyboard->repeat_timer_fd =
-            timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+        seat_state.keyboard->repeat_timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     }
     wl_seat_add_listener(seat, &kSeatListener, &seat_state);
 }
@@ -408,8 +418,7 @@ void keyboard_repeat_tick(KeyboardState &state) {
     ssize_t n = read(state.repeat_timer_fd, &expirations, sizeof(expirations));
     if (n != sizeof(expirations) || !state.repeat_active || !state.xkb)
         return;
-    auto ev =
-        translate_key(state.xkb, state.repeat_keycode, state.compose_state);
+    auto ev = translate_key(state.xkb, state.repeat_keycode, state.compose_state);
     if (!ev)
         return;
     constexpr uint64_t kMaxCatchUp = 8;
@@ -438,7 +447,8 @@ void pointer_set_cursor_shape(PointerState &state, wp_cursor_shape_device_v1_sha
     if (!state.cursor_shape_manager || !state.pointer)
         return;
     if (!state.cursor_shape_device)
-        state.cursor_shape_device = wp_cursor_shape_manager_v1_get_pointer(state.cursor_shape_manager, state.pointer);
+        state.cursor_shape_device =
+            wp_cursor_shape_manager_v1_get_pointer(state.cursor_shape_manager, state.pointer);
     wp_cursor_shape_device_v1_set_shape(state.cursor_shape_device, state.last_enter_serial, shape);
 }
 

@@ -66,8 +66,10 @@ class BarPerMonitorModule final : public PerMonitorModule {
     void tick(WaylandState &app, MonitorOutput &mon) override;
     void timer_tick(WaylandState &app, MonitorOutput &mon) override;
     bool is_open() const override;
-    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t serial) override;
-    void handle_scroll(WaylandState &app, MonitorOutput &mon, wl_surface *surface, double dy) override;
+    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button,
+                      double x, double y, uint32_t serial) override;
+    void handle_scroll(WaylandState &app, MonitorOutput &mon, wl_surface *surface,
+                       double dy) override;
     void handle_key_event(WaylandState &app, MonitorOutput &mon, const KeyEvent &event) override;
     void handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) override;
     void handle_pointer_release() override;
@@ -99,7 +101,8 @@ void toggle_panel(MonitorOutput &mon, astralia::BarItem item);
 
 int32_t bar_current_height(const MonitorOutput &mon);
 
-void bar_autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed, const astralia::BarStyleSpec &style);
+void bar_autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed,
+                                 const astralia::BarStyleSpec &style);
 
 void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const astralia::BarStyleSpec &style);
 
@@ -107,5 +110,6 @@ void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const astralia::Ba
 
 void bar_paint(MonitorOutput &mon);
 void bar_request_frame(MonitorOutput &mon);
-bool bar_init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool bar_init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config,
+                  EGLContext context);
 void dispatch_bar_click(MonitorOutput &mon, double click_x, double click_y);

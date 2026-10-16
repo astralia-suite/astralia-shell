@@ -13,9 +13,7 @@
 
 namespace astralia {
 
-enum class LockKey { none,
-                     changed,
-                     submit };
+enum class LockKey { none, changed, submit };
 
 struct LockHits {
     ui::Box pill_button{};

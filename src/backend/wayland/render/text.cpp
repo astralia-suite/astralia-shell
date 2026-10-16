@@ -13,15 +13,13 @@ RasterizedText surface_to_rgba(cairo_surface_t *surface, int width, int height) 
     for (int y = 0; y < height; ++y) {
         const uint8_t *row = src + y * stride;
         for (int x = 0; x < width; ++x) {
-            uint8_t b = row[x * 4 + 0], g = row[x * 4 + 1], r = row[x * 4 + 2],
-                    a = row[x * 4 + 3];
+            uint8_t b = row[x * 4 + 0], g = row[x * 4 + 1], r = row[x * 4 + 2], a = row[x * 4 + 3];
             if (a > 0 && a < 255) {
                 r = static_cast<uint8_t>(std::min(255, (r * 255 + a / 2) / a));
                 g = static_cast<uint8_t>(std::min(255, (g * 255 + a / 2) / a));
                 b = static_cast<uint8_t>(std::min(255, (b * 255 + a / 2) / a));
             }
-            uint8_t *out =
-                &result.rgba[(static_cast<size_t>(y) * width + x) * 4];
+            uint8_t *out = &result.rgba[(static_cast<size_t>(y) * width + x) * 4];
             out[0] = r;
             out[1] = g;
             out[2] = b;
@@ -55,8 +53,7 @@ namespace {
 void font_ascent_descent(PangoFontDescription *desc, int &ascent, int &descent) {
     PangoFontMap *font_map = pango_cairo_font_map_get_default();
     PangoContext *context = pango_font_map_create_context(font_map);
-    PangoFontMetrics *metrics =
-        pango_context_get_metrics(context, desc, nullptr);
+    PangoFontMetrics *metrics = pango_context_get_metrics(context, desc, nullptr);
     ascent = pango_font_metrics_get_ascent(metrics) / PANGO_SCALE;
     descent = pango_font_metrics_get_descent(metrics) / PANGO_SCALE;
     pango_font_metrics_unref(metrics);
@@ -92,9 +89,9 @@ float text_advance_px(int px, bool bold) {
 
 namespace {
 
-RasterizedText rasterize_text_with(const std::string &text, PangoFontDescription *desc, int32_t scale, int max_width_px, bool wrap) {
-    cairo_surface_t *measure_surface =
-        cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
+RasterizedText rasterize_text_with(const std::string &text, PangoFontDescription *desc,
+                                   int32_t scale, int max_width_px, bool wrap) {
+    cairo_surface_t *measure_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
     cairo_t *measure_cr = cairo_create(measure_surface);
     cairo_set_font_options(measure_cr, astralia_shell_font_options());
     PangoLayout *measure_layout = pango_cairo_create_layout(measure_cr);
@@ -117,7 +114,8 @@ RasterizedText rasterize_text_with(const std::string &text, PangoFontDescription
     int ascent, descent;
     font_ascent_descent(desc, ascent, descent);
 
-    int width = ink_rect.width, height = wrap ? std::max(ascent + descent, logical_rect.height) : ascent + descent;
+    int width = ink_rect.width,
+        height = wrap ? std::max(ascent + descent, logical_rect.height) : ascent + descent;
     RasterizedText result;
     if (width <= 0 || height <= 0) {
         return result;
@@ -125,7 +123,8 @@ RasterizedText rasterize_text_with(const std::string &text, PangoFontDescription
     scale = scale > 0 ? scale : 1;
     int pixel_width = width * scale, pixel_height = height * scale;
 
-    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, pixel_width, pixel_height);
+    cairo_surface_t *surface =
+        cairo_image_surface_create(CAIRO_FORMAT_ARGB32, pixel_width, pixel_height);
     cairo_t *cr = cairo_create(surface);
     cairo_scale(cr, scale, scale);
     cairo_set_font_options(cr, astralia_shell_font_options());
@@ -156,9 +155,9 @@ RasterizedText rasterize_text_with(const std::string &text, PangoFontDescription
 
 } // namespace
 
-RasterizedText rasterize_text_px(const std::string &text, int px, bool bold, int32_t scale, int max_width_px, bool wrap) {
-    PangoFontDescription *desc =
-        pango_font_description_from_string("ComicShannsMono Nerd Font");
+RasterizedText rasterize_text_px(const std::string &text, int px, bool bold, int32_t scale,
+                                 int max_width_px, bool wrap) {
+    PangoFontDescription *desc = pango_font_description_from_string("ComicShannsMono Nerd Font");
     pango_font_description_set_weight(desc, bold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
     pango_font_description_set_absolute_size(desc, static_cast<double>(px) * PANGO_SCALE);
     RasterizedText out = rasterize_text_with(text, desc, scale, max_width_px, wrap);

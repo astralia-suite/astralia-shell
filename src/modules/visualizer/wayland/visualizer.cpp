@@ -23,7 +23,8 @@ namespace {
 void clear_backbuffer(VisualizerState &state, int width, int height) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, width, height);
-    glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g, astralia::palette::window_backdrop.b, astralia::palette::window_backdrop.a);
+    glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g,
+                 astralia::palette::window_backdrop.b, astralia::palette::window_backdrop.a);
     glClear(GL_COLOR_BUFFER_BIT);
     if (!eglSwapBuffers(state.base.egl_display, state.base.egl_surface))
         klog("visualizer: eglSwapBuffers failed 0x%x", eglGetError());
@@ -35,7 +36,8 @@ void render_thread_main(VisualizerState *state) {
         return;
     }
     glEnable(GL_BLEND);
-    klog("visualizer: render thread current %dx%d scale %d", state->base.width, state->base.height, state->base.output_scale.scale);
+    klog("visualizer: render thread current %dx%d scale %d", state->base.width, state->base.height,
+         state->base.output_scale.scale);
 
     auto stages = std::make_unique<VisualizerAudioStages>();
     auto sphere = std::make_unique<SphereVisualizer>();
@@ -71,9 +73,9 @@ void render_thread_main(VisualizerState *state) {
             params = ts.params;
         }
         auto now = std::chrono::steady_clock::now();
-        bool want_sphere =
-            params.visualizer_shape == VisualizerShape::Sphere;
-        int fps = std::clamp(want_sphere ? params.fps : kVisualizerBarFps, kVisualizerFpsMin, kVisualizerFpsMax);
+        bool want_sphere = params.visualizer_shape == VisualizerShape::Sphere;
+        int fps = std::clamp(want_sphere ? params.fps : kVisualizerBarFps, kVisualizerFpsMin,
+                             kVisualizerFpsMax);
         next += std::chrono::nanoseconds(1'000'000'000 / fps);
         if (next < now)
             next = now;
@@ -97,11 +99,14 @@ void render_thread_main(VisualizerState *state) {
 
         bool modified = false;
         state->capture.take(audio_l, audio_r, modified);
-        if (modified && static_cast<int>(audio_l.size()) >= kVisualizerFragmentSize && static_cast<int>(audio_r.size()) >= kVisualizerFragmentSize) {
+        if (modified && static_cast<int>(audio_l.size()) >= kVisualizerFragmentSize &&
+            static_cast<int>(audio_r.size()) >= kVisualizerFragmentSize) {
             fft_l = audio_l;
             fft_r = audio_r;
-            astralia::visualizer_fft(fft_l.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
-            astralia::visualizer_fft(fft_r.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
+            astralia::visualizer_fft(fft_l.data(), kVisualizerFragmentSize, kVisualizerFftScale,
+                                     kVisualizerFftCutOff);
+            astralia::visualizer_fft(fft_r.data(), kVisualizerFragmentSize, kVisualizerFftScale,
+                                     kVisualizerFftCutOff);
             if (audio_size == 0)
                 klog("visualizer: first audio at frame %d", tick);
             audio_size = kVisualizerFragmentSize;
@@ -123,8 +128,7 @@ void render_thread_main(VisualizerState *state) {
         glFinish();
         auto t2 = std::chrono::steady_clock::now();
 
-        float render_ms =
-            std::chrono::duration<float, std::milli>(t2 - t0).count();
+        float render_ms = std::chrono::duration<float, std::milli>(t2 - t0).count();
 
         if (!eglSwapBuffers(state->base.egl_display, state->base.egl_surface))
             klog("visualizer: eglSwapBuffers failed 0x%x", eglGetError());
@@ -137,7 +141,10 @@ void render_thread_main(VisualizerState *state) {
 
         if (trace) {
             gl_check("visualizer render");
-            klog("visualizer: frame %d stages=%.1fms draw=%.1fms swap=%.1fms", tick, std::chrono::duration<float, std::milli>(t1 - t0).count(), std::chrono::duration<float, std::milli>(t2 - t1).count(), std::chrono::duration<float, std::milli>(t3 - t2).count());
+            klog("visualizer: frame %d stages=%.1fms draw=%.1fms swap=%.1fms", tick,
+                 std::chrono::duration<float, std::milli>(t1 - t0).count(),
+                 std::chrono::duration<float, std::milli>(t2 - t1).count(),
+                 std::chrono::duration<float, std::milli>(t3 - t2).count());
             ++logged_frames;
         }
 
@@ -147,7 +154,10 @@ void render_thread_main(VisualizerState *state) {
         if (t3 - last_heartbeat >= std::chrono::seconds(1)) {
             klog("visualizer: heartbeat tick=%d frames=%d fps=%.1f "
                  "worst=%.1fms %dx%d",
-                 tick, heartbeat_frames, static_cast<float>(heartbeat_frames) / std::chrono::duration<float>(t3 - last_heartbeat).count(), heartbeat_draw_ms, width, height);
+                 tick, heartbeat_frames,
+                 static_cast<float>(heartbeat_frames) /
+                     std::chrono::duration<float>(t3 - last_heartbeat).count(),
+                 heartbeat_draw_ms, width, height);
             last_heartbeat = t3;
             heartbeat_frames = 0;
             heartbeat_draw_ms = 0.0f;
@@ -163,9 +173,10 @@ void render_thread_main(VisualizerState *state) {
     gl_make_current(state->base.egl_display, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 
-void visualizer_render_thread_start(VisualizerState &state, const VisualizerParams &params, const std::vector<EGLint> &context_attribs) {
-    state.render_context =
-        eglCreateContext(state.base.egl_display, state.egl_config, state.base.egl_context, context_attribs.data());
+void visualizer_render_thread_start(VisualizerState &state, const VisualizerParams &params,
+                                    const std::vector<EGLint> &context_attribs) {
+    state.render_context = eglCreateContext(state.base.egl_display, state.egl_config,
+                                            state.base.egl_context, context_attribs.data());
     if (state.render_context == EGL_NO_CONTEXT) {
         klog("visualizer: eglCreateContext failed 0x%x", eglGetError());
         return;
@@ -208,18 +219,19 @@ void visualizer_shutdown(VisualizerState &state) {
 
 void visualizer_toggle(VisualizerState &state, WaylandState &app) {
     if (state.base.egl_surface == EGL_NO_SURFACE) {
-        if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, "Visualizer", "astralia-shell-visualizer", kVisualizerDefaultWindow, kVisualizerDefaultWindow))
+        if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, "Visualizer",
+                                            "astralia-shell-visualizer", kVisualizerDefaultWindow,
+                                            kVisualizerDefaultWindow))
             return;
         while (!state.base.configured)
             wl_display_dispatch(app.display);
-        if (!toplevel_window_init_egl(state.base, app.egl_display, app.egl_config, app.egl_context)) {
+        if (!toplevel_window_init_egl(state.base, app.egl_display, app.egl_config,
+                                      app.egl_context)) {
             toplevel_window_destroy_surface(state.base);
             return;
         }
         state.base.frame_clock.surface = nullptr;
-        state.base.on_close_request = [&state, &app] {
-            visualizer_toggle(state, app);
-        };
+        state.base.on_close_request = [&state, &app] { visualizer_toggle(state, app); };
         app_detail::rest_egl_current(app);
 
         state.egl_config = app.egl_config;
@@ -240,9 +252,11 @@ void visualizer_handle_key_event(VisualizerState &state, WaylandState &app, cons
         visualizer_toggle(state, app);
 }
 
-std::vector<astralia::ShellBinding> visualizer_shell_bindings(VisualizerState &visualizer, WaylandState &state) {
+std::vector<astralia::ShellBinding> visualizer_shell_bindings(VisualizerState &visualizer,
+                                                              WaylandState &state) {
     return {
-        {astralia::ShellVerb::visualizer, [&visualizer, &state] { visualizer_toggle(visualizer, state); }},
+        {astralia::ShellVerb::visualizer,
+         [&visualizer, &state] { visualizer_toggle(visualizer, state); }},
     };
 }
 
@@ -279,6 +293,4 @@ class VisualizerModule final : public Module {
 
 } // namespace
 
-std::unique_ptr<Module> make_visualizer_module() {
-    return std::make_unique<VisualizerModule>();
-}
+std::unique_ptr<Module> make_visualizer_module() { return std::make_unique<VisualizerModule>(); }

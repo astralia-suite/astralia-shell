@@ -23,4 +23,5 @@ cairo_font_options_t *astralia_shell_font_options();
 
 float text_advance_px(int px, bool bold = false);
 
-RasterizedText rasterize_text_px(const std::string &text, int px, bool bold = false, int32_t scale = 1, int max_width_px = 0, bool wrap = false);
+RasterizedText rasterize_text_px(const std::string &text, int px, bool bold = false,
+                                 int32_t scale = 1, int max_width_px = 0, bool wrap = false);

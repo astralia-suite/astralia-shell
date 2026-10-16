@@ -34,7 +34,9 @@ Theme theme_from_seed(const Extraction &extraction) {
     const std::vector<Seed> &seeds = extraction.seeds;
     float hue = seeds.empty() ? fallback_hue : seeds[0].hue;
     float chroma = seeds.empty() ? dusty_chroma : seeds[0].chroma;
-    auto seed_hue = [&](size_t index, float offset) { return index < seeds.size() ? seeds[index].hue : wrap_hue(hue + offset); };
+    auto seed_hue = [&](size_t index, float offset) {
+        return index < seeds.size() ? seeds[index].hue : wrap_hue(hue + offset);
+    };
     float alt_hue = seed_hue(1, alt_hue_offset);
 
     float vivid = std::clamp((chroma - dusty_chroma) / (candy_chroma - dusty_chroma), 0.0f, 1.0f);

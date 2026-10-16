@@ -26,7 +26,8 @@ class PerMonitorModule {
     virtual void timer_tick(WaylandState &, MonitorOutput &) {}
     virtual bool is_open() const { return false; }
     virtual std::vector<astralia::ShellBinding> shell_bindings(WaylandState &) { return {}; }
-    virtual void handle_click(WaylandState &, MonitorOutput &, wl_surface *, int, double, double, uint32_t) {}
+    virtual void handle_click(WaylandState &, MonitorOutput &, wl_surface *, int, double, double,
+                              uint32_t) {}
     virtual void handle_scroll(WaylandState &, MonitorOutput &, wl_surface *, double) {}
     virtual void handle_key_event(WaylandState &, MonitorOutput &, const KeyEvent &) {}
     virtual void handle_pointer_move(WaylandState &, MonitorOutput &, double, double) {}

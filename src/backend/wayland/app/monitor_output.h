@@ -18,8 +18,7 @@ struct MonitorOutput {
     bool activated = false;
     std::vector<std::unique_ptr<PerMonitorModule>> modules;
 
-    template <typename T>
-    T *module() const {
+    template <typename T> T *module() const {
         for (auto &m : modules)
             if (T *t = dynamic_cast<T *>(m.get()))
                 return t;

@@ -18,9 +18,7 @@
 
 namespace astralia {
 
-enum class PanelAnchor { left,
-                         center,
-                         right };
+enum class PanelAnchor { left, center, right };
 
 struct PanelRegion {
     ui::Box box;
@@ -34,7 +32,9 @@ class PanelPaint {
   public:
     explicit PanelPaint(std::vector<PanelRegion> &regions) : regions_(regions) {}
 
-    void region(const ui::Box &box, int id, int a = 0, int b = 0, bool drag = false) { regions_.push_back({box, id, a, b, drag}); }
+    void region(const ui::Box &box, int id, int a = 0, int b = 0, bool drag = false) {
+        regions_.push_back({box, id, a, b, drag});
+    }
 
   private:
     std::vector<PanelRegion> &regions_;
@@ -53,7 +53,8 @@ class PanelContent {
     virtual void opened() {}
     virtual void closed() {}
     virtual float content_height(ui::Canvas &canvas) = 0;
-    virtual void paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) = 0;
+    virtual void paint(ui::Canvas &canvas, const ui::Box &view, float scroll,
+                       PanelPaint &paint) = 0;
     virtual bool activate(const PanelRegion &, double, double) { return false; }
     virtual bool drag(const PanelRegion &, double, double) { return false; }
     virtual void drop(const PanelRegion &) {}
@@ -72,7 +73,9 @@ class PanelContent {
     virtual float popup_height() const { return 0.0f; }
     virtual void paint_popup(ui::Canvas &, const ui::Box &, PanelPaint &) {}
     virtual bool popup_hover(int, int) { return false; }
-    virtual std::chrono::milliseconds refresh_interval() const { return std::chrono::milliseconds(0); }
+    virtual std::chrono::milliseconds refresh_interval() const {
+        return std::chrono::milliseconds(0);
+    }
     virtual void refresh() {}
 
     AnimationManager &animations() { return animations_; }
@@ -129,7 +132,9 @@ class Panel {
     const PanelContent &content() const { return *content_; }
     const ui::Box &card() const { return card_; }
 
-    bool popup_wanted() const { return open_ && !closing() && sequence_.settled() && content_->popup_height() > 0.0f; }
+    bool popup_wanted() const {
+        return open_ && !closing() && sequence_.settled() && content_->popup_height() > 0.0f;
+    }
     float popup_width() const { return content_->popup_width(); }
     float popup_height() const { return content_->popup_height(); }
     ui::Box popup_anchor() const;
@@ -140,7 +145,9 @@ class Panel {
     void dismiss_popup();
 
     float card_x(float surface_width) const;
-    ui::Box paint(ui::Canvas &canvas, float surface_width, float top) { return paint_at(canvas, card_x(surface_width), top, surface_width); }
+    ui::Box paint(ui::Canvas &canvas, float surface_width, float top) {
+        return paint_at(canvas, card_x(surface_width), top, surface_width);
+    }
     ui::Box paint_at(ui::Canvas &canvas, float x, float top, float surface_width = 0.0f);
     ui::Box extent() const;
 

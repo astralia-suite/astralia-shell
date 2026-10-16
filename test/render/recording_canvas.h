@@ -9,15 +9,17 @@
 namespace test {
 
 struct Op {
-    enum class Kind { rect,
-                      rounded,
-                      fillet,
-                      erase,
-                      text,
-                      image,
-                      begin_group,
-                      end_group,
-                      opacity } kind;
+    enum class Kind {
+        rect,
+        rounded,
+        fillet,
+        erase,
+        text,
+        image,
+        begin_group,
+        end_group,
+        opacity
+    } kind;
     astralia::ui::Box box;
     float radius = 0;
     float border_width = 0;
@@ -37,16 +39,19 @@ class RecordingCanvas final : public astralia::ui::Canvas {
     void rect(const astralia::ui::Box &box, const astralia::Color &fill) override {
         ops.push_back({Op::Kind::rect, box, 0, 0, "", fill});
     }
-    void rounded(const astralia::ui::Box &box, float radius, const astralia::Color &fill, float border_width, const astralia::Color &) override {
+    void rounded(const astralia::ui::Box &box, float radius, const astralia::Color &fill,
+                 float border_width, const astralia::Color &) override {
         ops.push_back({Op::Kind::rounded, box, radius, border_width, "", fill});
     }
-    void fillet(const astralia::ui::Box &box, bool circle_on_right, const astralia::Color &color) override {
+    void fillet(const astralia::ui::Box &box, bool circle_on_right,
+                const astralia::Color &color) override {
         ops.push_back({Op::Kind::fillet, box, 0, 0, "", color, circle_on_right ? 1.0f : 0.0f});
     }
     void set_erase(bool on) override {
         ops.push_back({Op::Kind::erase, {}, 0, 0, "", {}, on ? 1.0f : 0.0f});
     }
-    astralia::ui::TextSize measure(std::string_view text, const astralia::ui::TextStyle &style) override {
+    astralia::ui::TextSize measure(std::string_view text,
+                                   const astralia::ui::TextStyle &style) override {
         if (text.empty()) {
             return {};
         }
@@ -56,7 +61,8 @@ class RecordingCanvas final : public astralia::ui::Canvas {
         return {glyph_w * static_cast<float>(text.size()), glyph_h};
     }
     float advance(const astralia::ui::TextStyle &) override { return glyph_w; }
-    void text(std::string_view text, const astralia::ui::TextStyle &, float x, float y, const astralia::Color &color) override {
+    void text(std::string_view text, const astralia::ui::TextStyle &, float x, float y,
+              const astralia::Color &color) override {
         ops.push_back({Op::Kind::text, {x, y, 0, 0}, 0, 0, std::string(text), color});
     }
     astralia::ui::ImageId image(std::string_view, int) override { return image_id; }
@@ -65,14 +71,18 @@ class RecordingCanvas final : public astralia::ui::Canvas {
         return image_id;
     }
     astralia::ui::TextSize image_size(astralia::ui::ImageId) override { return {64, 64}; }
-    void draw_image(astralia::ui::ImageId, const astralia::ui::Box &box, const astralia::Color &tint) override {
+    void draw_image(astralia::ui::ImageId, const astralia::ui::Box &box,
+                    const astralia::Color &tint) override {
         ops.push_back({Op::Kind::image, box, 0, 0, "", tint});
     }
-    void begin_group(const astralia::ui::Box &box, const astralia::ui::GroupOptions &options) override {
+    void begin_group(const astralia::ui::Box &box,
+                     const astralia::ui::GroupOptions &options) override {
         ops.push_back({Op::Kind::begin_group, box, 0, 0, "", {}, options.scale});
     }
     void end_group() override { ops.push_back({Op::Kind::end_group, {}, 0, 0, "", {}}); }
-    void set_opacity(float opacity) override { ops.push_back({Op::Kind::opacity, {}, 0, 0, "", {}, opacity}); }
+    void set_opacity(float opacity) override {
+        ops.push_back({Op::Kind::opacity, {}, 0, 0, "", {}, opacity});
+    }
 
     size_t count(Op::Kind kind) const {
         size_t n = 0;

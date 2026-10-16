@@ -6,7 +6,8 @@
 
 namespace {
 
-void overlay_panel_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial, uint32_t width, uint32_t height) {
+void overlay_panel_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial,
+                             uint32_t width, uint32_t height) {
     auto *base = static_cast<OverlayPanelBase *>(data);
     zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
     base->width = static_cast<int32_t>(width);
@@ -36,16 +37,19 @@ void overlay_panel_update_input_region(OverlayPanelBase &base) {
     wl_region_destroy(empty_region);
 }
 
-bool overlay_panel_create_surface(OverlayPanelBase &base, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, const char *name_space, wl_output *output) {
+bool overlay_panel_create_surface(OverlayPanelBase &base, wl_compositor *compositor,
+                                  zwlr_layer_shell_v1 *layer_shell, const char *name_space,
+                                  wl_output *output) {
     base.compositor = compositor;
     base.name_space = name_space;
     LayerSurfaceConfig cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
         .name_space = name_space,
-        .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+        .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
+                  ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
     };
-    base.layer_surface =
-        layer_surface_create(base.surface, compositor, layer_shell, cfg, &overlay_panel_listener, &base, output);
+    base.layer_surface = layer_surface_create(base.surface, compositor, layer_shell, cfg,
+                                              &overlay_panel_listener, &base, output);
     if (!base.layer_surface)
         return false;
 
@@ -61,12 +65,14 @@ bool overlay_panel_create_surface(OverlayPanelBase &base, wl_compositor *composi
     return true;
 }
 
-bool overlay_panel_init_egl(OverlayPanelBase &base, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool overlay_panel_init_egl(OverlayPanelBase &base, EGLDisplay display, EGLConfig config,
+                            EGLContext context) {
     base.egl_display = display;
     base.egl_context = context;
     int32_t scale = base.output_scale.scale;
     base.egl_window = wl_egl_window_create(base.surface, base.width * scale, base.height * scale);
-    base.egl_surface = eglCreateWindowSurface(display, config, reinterpret_cast<EGLNativeWindowType>(base.egl_window), nullptr);
+    base.egl_surface = eglCreateWindowSurface(
+        display, config, reinterpret_cast<EGLNativeWindowType>(base.egl_window), nullptr);
     if (base.egl_surface == EGL_NO_SURFACE)
         return false;
     if (!gl_make_current(display, base.egl_surface, context))
@@ -113,10 +119,12 @@ void overlay_panel_release(OverlayPanelBase &base) {
     base.open = false;
     if (!base.layer_surface)
         return;
-    zwlr_layer_surface_v1_set_keyboard_interactivity(base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+    zwlr_layer_surface_v1_set_keyboard_interactivity(
+        base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
     overlay_panel_update_input_region(base);
     wl_surface_commit(base.surface);
-    klog("panel: %s released exclusive keyboard interactivity", base.name_space ? base.name_space : "?");
+    klog("panel: %s released exclusive keyboard interactivity",
+         base.name_space ? base.name_space : "?");
 }
 
 void overlay_panel_toggle(OverlayPanelBase &base, bool fade) {
@@ -126,10 +134,12 @@ void overlay_panel_toggle(OverlayPanelBase &base, bool fade) {
     bool opening = !base.open;
     if (opening) {
         base.open = true;
-        zwlr_layer_surface_v1_set_keyboard_interactivity(base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
+        zwlr_layer_surface_v1_set_keyboard_interactivity(
+            base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
         overlay_panel_update_input_region(base);
         wl_surface_commit(base.surface);
-        klog("panel: %s acquired exclusive keyboard interactivity", base.name_space ? base.name_space : "?");
+        klog("panel: %s acquired exclusive keyboard interactivity",
+             base.name_space ? base.name_space : "?");
     }
 
     overlay_panel_request_frame(base);
@@ -139,9 +149,14 @@ void overlay_panel_toggle(OverlayPanelBase &base, bool fade) {
             base.opacity = 1.0f;
         return;
     }
-    base.animations.animate(base.opacity, opening ? 1.0f : 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&base](float v) { base.opacity = v; }, [&base, opening] {
+    base.animations.animate(
+        base.opacity, opening ? 1.0f : 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+        [&base](float v) { base.opacity = v; },
+        [&base, opening] {
             if (!opening)
-                overlay_panel_release(base); }, kOverlayFadeOwner);
+                overlay_panel_release(base);
+        },
+        kOverlayFadeOwner);
 }
 
 void panel_reveal_open(PanelHeightReveal &r) {
@@ -157,20 +172,30 @@ float panel_reveal_tick(PanelHeightReveal &r, OverlayPanelBase &base, float targ
     if (r.visible_height < 0.0f) {
         r.visible_height = 0.0f;
         r.target = target_h;
-        base.animations.animate(r.visible_height, target_h, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&r](float v) { r.visible_height = v; }, {}, kPanelHeightAnimOwner);
+        base.animations.animate(
+            r.visible_height, target_h, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+            [&r](float v) { r.visible_height = v; }, {}, kPanelHeightAnimOwner);
     } else if (std::fabs(target_h - r.target) > 0.5f) {
         r.target = target_h;
-        base.animations.animate(r.visible_height, target_h, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&r](float v) { r.visible_height = v; }, {}, kPanelHeightAnimOwner);
+        base.animations.animate(
+            r.visible_height, target_h, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+            [&r](float v) { r.visible_height = v; }, {}, kPanelHeightAnimOwner);
     }
     return r.visible_height;
 }
 
-void panel_reveal_close(PanelHeightReveal &r, OverlayPanelBase &base, std::function<void()> on_done) {
+void panel_reveal_close(PanelHeightReveal &r, OverlayPanelBase &base,
+                        std::function<void()> on_done) {
     r.closing = true;
-    base.animations.animate(r.visible_height, 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic, [&r](float v) { r.visible_height = v; }, [&r, on_done = std::move(on_done)] {
+    base.animations.animate(
+        r.visible_height, 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+        [&r](float v) { r.visible_height = v; },
+        [&r, on_done = std::move(on_done)] {
             r.visible_height = -1.0f;
             r.target = -1.0f;
             r.closing = false;
             if (on_done)
-                on_done(); }, kPanelHeightAnimOwner);
+                on_done();
+        },
+        kPanelHeightAnimOwner);
 }

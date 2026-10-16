@@ -31,7 +31,8 @@ const Json *section(const Json &root, std::string_view key, std::string_view leg
     if (const Json *found = root.find(key); found != nullptr && found->type == Json::Type::object) {
         return found;
     }
-    if (const Json *found = root.find(legacy_key); found != nullptr && found->type == Json::Type::object) {
+    if (const Json *found = root.find(legacy_key);
+        found != nullptr && found->type == Json::Type::object) {
         return found;
     }
     return nullptr;
@@ -47,14 +48,18 @@ bool flag(const Json *object, std::string_view key, std::string_view legacy_key,
     return object->boolean_or(legacy_key, fallback);
 }
 
-bool flag(const Json *object, std::string_view key, bool fallback) { return flag(object, key, key, fallback); }
+bool flag(const Json *object, std::string_view key, bool fallback) {
+    return flag(object, key, key, fallback);
+}
 
 int integer(const Json *object, std::string_view key, int fallback) {
     return object == nullptr ? fallback : static_cast<int>(object->number_or(key, fallback));
 }
 
 uint32_t seconds(const Json *object, std::string_view key, uint32_t fallback) {
-    return object == nullptr ? fallback : static_cast<uint32_t>(std::max(0.0, object->number_or(key, fallback)));
+    return object == nullptr
+               ? fallback
+               : static_cast<uint32_t>(std::max(0.0, object->number_or(key, fallback)));
 }
 
 float real(const Json *object, std::string_view key, float fallback) {
@@ -75,7 +80,8 @@ std::vector<std::string> strings(const Json &array) {
     return out;
 }
 
-void read_columns(const Json *wallpaper, std::string_view key, std::map<std::string, std::vector<std::string>> &out, bool expand) {
+void read_columns(const Json *wallpaper, std::string_view key,
+                  std::map<std::string, std::vector<std::string>> &out, bool expand) {
     const Json *map = wallpaper == nullptr ? nullptr : wallpaper->find(key);
     if (map == nullptr || map->type != Json::Type::object) {
         return;
@@ -217,7 +223,8 @@ bool screensaver_effective_enabled(const Config &cfg, const std::string &monitor
 
 uint32_t screensaver_effective_timeout_seconds(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->screensaver_timeout_seconds : cfg.screensaver_timeout_seconds;
+    return override != nullptr ? override->screensaver_timeout_seconds
+                               : cfg.screensaver_timeout_seconds;
 }
 
 bool lock_effective_enabled(const Config &cfg, const std::string &monitor_name) {
@@ -245,8 +252,10 @@ Config parse_config(std::string_view source) {
     read_columns(wallpaper, "columns", cfg.wallpaper_columns, true);
     read_counts(wallpaper, "columnCounts", cfg.wallpaper_column_counts);
     read_columns(wallpaper, "fillModes", cfg.wallpaper_fill_modes, false);
-    cfg.wallpaper_animated_enabled = flag(wallpaper, "animatedEnabled", cfg.wallpaper_animated_enabled);
-    cfg.wallpaper_animated_dir = path_expand_home(text(wallpaper, "animatedDir", cfg.wallpaper_animated_dir));
+    cfg.wallpaper_animated_enabled =
+        flag(wallpaper, "animatedEnabled", cfg.wallpaper_animated_enabled);
+    cfg.wallpaper_animated_dir =
+        path_expand_home(text(wallpaper, "animatedDir", cfg.wallpaper_animated_dir));
     read_columns(wallpaper, "animatedColumns", cfg.wallpaper_animated_columns, true);
     read_counts(wallpaper, "animatedColumnCounts", cfg.wallpaper_animated_column_counts);
     read_columns(wallpaper, "animatedFillModes", cfg.wallpaper_animated_fill_modes, false);
@@ -256,9 +265,12 @@ Config parse_config(std::string_view source) {
         displays = nullptr;
     }
     cfg.default_osd_enabled = flag(displays, "defaultOsd", "defaultSpark", cfg.default_osd_enabled);
-    cfg.default_notifications_enabled = flag(displays, "defaultNotifications", "defaultHeralds", cfg.default_notifications_enabled);
-    cfg.default_wallpaper_enabled = flag(displays, "defaultWallpaper", "defaultExpanse", cfg.default_wallpaper_enabled);
-    cfg.default_lock_panel_enabled = flag(displays, "defaultLock", "defaultPenance", cfg.default_lock_panel_enabled);
+    cfg.default_notifications_enabled =
+        flag(displays, "defaultNotifications", "defaultHeralds", cfg.default_notifications_enabled);
+    cfg.default_wallpaper_enabled =
+        flag(displays, "defaultWallpaper", "defaultExpanse", cfg.default_wallpaper_enabled);
+    cfg.default_lock_panel_enabled =
+        flag(displays, "defaultLock", "defaultPenance", cfg.default_lock_panel_enabled);
     if (displays != nullptr) {
         for (const Json::Member &member : displays->object) {
             if (is_reserved_displays_key(member.key) || member.value.type != Json::Type::object) {
@@ -271,9 +283,11 @@ Config parse_config(std::string_view source) {
             mo.notifications = flag(value, "notifications", "heralds", mo.notifications);
             mo.autohide = flag(value, "autohide", mo.autohide);
             mo.ambient_enabled = flag(value, "ambientEnabled", mo.ambient_enabled);
-            mo.ambient_timeout_seconds = seconds(value, "ambientTimeoutSeconds", mo.ambient_timeout_seconds);
+            mo.ambient_timeout_seconds =
+                seconds(value, "ambientTimeoutSeconds", mo.ambient_timeout_seconds);
             mo.screensaver_enabled = flag(value, "screensaverEnabled", mo.screensaver_enabled);
-            mo.screensaver_timeout_seconds = seconds(value, "screensaverTimeoutSeconds", mo.screensaver_timeout_seconds);
+            mo.screensaver_timeout_seconds =
+                seconds(value, "screensaverTimeoutSeconds", mo.screensaver_timeout_seconds);
             mo.lock = flag(value, "lock", "penance", mo.lock);
             cfg.monitor_overrides[member.key] = mo;
         }
@@ -288,24 +302,38 @@ Config parse_config(std::string_view source) {
     const Json *idle = section(root, "idle", "blink");
     cfg.idle_management_enabled = flag(idle, "enabled", cfg.idle_management_enabled);
     cfg.ambient_enabled = flag(idle, "ambientEnabled", cfg.ambient_enabled);
-    cfg.ambient_timeout_seconds = seconds(idle, "ambientTimeoutSeconds", cfg.ambient_timeout_seconds);
+    cfg.ambient_timeout_seconds =
+        seconds(idle, "ambientTimeoutSeconds", cfg.ambient_timeout_seconds);
     cfg.screensaver_enabled = flag(idle, "screensaverEnabled", cfg.screensaver_enabled);
-    cfg.screensaver_timeout_seconds = seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout_seconds);
+    cfg.screensaver_timeout_seconds =
+        seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout_seconds);
 
     const Json *visualizer = section(root, "visualizer", "resonance");
-    cfg.visualizer.fps = std::clamp(integer(visualizer, "fps", cfg.visualizer.fps), kVisualizerFpsMin, kVisualizerFpsMax);
-    cfg.visualizer.particle_thin = std::clamp(real(visualizer, "particleThin", cfg.visualizer.particle_thin), kVisualizerParticleThinMin, kVisualizerParticleThinMax);
+    cfg.visualizer.fps = std::clamp(integer(visualizer, "fps", cfg.visualizer.fps),
+                                    kVisualizerFpsMin, kVisualizerFpsMax);
+    cfg.visualizer.particle_thin =
+        std::clamp(real(visualizer, "particleThin", cfg.visualizer.particle_thin),
+                   kVisualizerParticleThinMin, kVisualizerParticleThinMax);
     cfg.visualizer.particle_size = kVisualizerParticleSize;
-    cfg.visualizer.fractal_complexity = std::clamp(integer(visualizer, "fractalComplexity", cfg.visualizer.fractal_complexity), kVisualizerComplexityMin, kVisualizerComplexityMax);
-    cfg.visualizer.glow_directions = std::clamp(real(visualizer, "glowDirections", cfg.visualizer.glow_directions), kVisualizerGlowDirectionsMin, kVisualizerGlowDirectionsMax);
-    cfg.visualizer.glow_quality = std::clamp(real(visualizer, "glowQuality", cfg.visualizer.glow_quality), kVisualizerGlowQualityMin, kVisualizerGlowQualityMax);
-    cfg.visualizer.visualizer_shape = text(visualizer, "visualizerShape", "bar") == "sphere" ? VisualizerShape::Sphere : VisualizerShape::Bar;
+    cfg.visualizer.fractal_complexity =
+        std::clamp(integer(visualizer, "fractalComplexity", cfg.visualizer.fractal_complexity),
+                   kVisualizerComplexityMin, kVisualizerComplexityMax);
+    cfg.visualizer.glow_directions =
+        std::clamp(real(visualizer, "glowDirections", cfg.visualizer.glow_directions),
+                   kVisualizerGlowDirectionsMin, kVisualizerGlowDirectionsMax);
+    cfg.visualizer.glow_quality =
+        std::clamp(real(visualizer, "glowQuality", cfg.visualizer.glow_quality),
+                   kVisualizerGlowQualityMin, kVisualizerGlowQualityMax);
+    cfg.visualizer.visualizer_shape = text(visualizer, "visualizerShape", "bar") == "sphere"
+                                          ? VisualizerShape::Sphere
+                                          : VisualizerShape::Bar;
 
     const Json *rain = root.find("rain");
     if (rain != nullptr && rain->type != Json::Type::object) {
         rain = nullptr;
     }
-    cfg.rain.mode = text(rain, "mode", "matrix") == "stiletto" ? RainMode::Stiletto : RainMode::Matrix;
+    cfg.rain.mode =
+        text(rain, "mode", "matrix") == "stiletto" ? RainMode::Stiletto : RainMode::Matrix;
     cfg.rain.async_speed = flag(rain, "asyncSpeed", false);
     return cfg;
 }
@@ -356,15 +384,20 @@ std::string serialize_config(const Config &cfg) {
     visualizer.set("fractalComplexity", Json::from_number(cfg.visualizer.fractal_complexity));
     visualizer.set("glowDirections", from_float(cfg.visualizer.glow_directions));
     visualizer.set("glowQuality", from_float(cfg.visualizer.glow_quality));
-    visualizer.set("visualizerShape", Json::from_string(cfg.visualizer.visualizer_shape == VisualizerShape::Sphere ? "sphere" : "bar"));
+    visualizer.set("visualizerShape",
+                   Json::from_string(cfg.visualizer.visualizer_shape == VisualizerShape::Sphere
+                                         ? "sphere"
+                                         : "bar"));
 
     Json rain = Json::make_object();
-    rain.set("mode", Json::from_string(cfg.rain.mode == RainMode::Stiletto ? "stiletto" : "matrix"));
+    rain.set("mode",
+             Json::from_string(cfg.rain.mode == RainMode::Stiletto ? "stiletto" : "matrix"));
     rain.set("asyncSpeed", Json::from_bool(cfg.rain.async_speed));
 
     Json bar = Json::make_object();
     bar.set("autohideEnabled", Json::from_bool(cfg.autohide));
-    bar.set("style", Json::from_string(std::string(bar_style::names[static_cast<std::size_t>(cfg.bar_style)])));
+    bar.set("style", Json::from_string(
+                         std::string(bar_style::names[static_cast<std::size_t>(cfg.bar_style)])));
 
     Json launcher = Json::make_object();
     launcher.set("lightning", Json::from_bool(cfg.launcher_lightning));

@@ -11,9 +11,7 @@ namespace {
 
 constexpr double kTwoPi = 6.28318530718;
 
-double hann(double t, double sz) {
-    return 0.53836 - (0.46164 * std::cos(kTwoPi * t / sz));
-}
+double hann(double t, double sz) { return 0.53836 - (0.46164 * std::cos(kTwoPi * t / sz)); }
 
 } // namespace
 
@@ -26,7 +24,8 @@ void visualizer_fft(float *samples, int n_samples, float fft_scale, float fft_cu
     float tempr, tempi;
 
     for (i = 0; i < static_cast<unsigned long>(n_samples); ++i)
-        data[i] *= static_cast<float>(hann(static_cast<double>(i), static_cast<double>(n_samples - 1)));
+        data[i] *=
+            static_cast<float>(hann(static_cast<double>(i), static_cast<double>(n_samples - 1)));
 
     n = nn << 1;
     j = 1;
@@ -76,7 +75,9 @@ void visualizer_fft(float *samples, int n_samples, float fft_scale, float fft_cu
 
         data[n] = std::sqrt(data[n] * data[n] + data[n + 1] * data[n + 1]);
         data[n] = std::log(data[n] + 1.0f) / 3.0f;
-        data[n] *= std::max((static_cast<float>(n) / static_cast<float>(n_samples) * fft_scale) + (1.0f - fft_cutoff), 1.0f);
+        data[n] *= std::max((static_cast<float>(n) / static_cast<float>(n_samples) * fft_scale) +
+                                (1.0f - fft_cutoff),
+                            1.0f);
 
         data[n + 1] = data[n];
     }

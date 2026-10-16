@@ -18,8 +18,8 @@ void check_config_file() {
     check(astralia::expand_home("/a/~b.png", "/home/u") == "/a/~b.png", "inner ~ is kept");
 
     astralia::ConfigLines lines = astralia::parse_config_lines("# c\n a = 1 \nbad\n=x\nb=\n");
-    check(lines.entries.size() == 1 && lines.entries[0].key == "a" && lines.entries[0].value == "1" &&
-              lines.entries[0].line == 2,
+    check(lines.entries.size() == 1 && lines.entries[0].key == "a" &&
+              lines.entries[0].value == "1" && lines.entries[0].line == 2,
           "entries are trimmed and numbered");
     check(lines.invalid == std::vector<std::size_t>{3, 4, 5}, "bad lines are reported");
 

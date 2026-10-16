@@ -102,7 +102,9 @@ struct WaylandState {
     bool suppress_wallpaper_transition = false;
 };
 
-inline bool compositor_available(const WaylandState &app) { return std::strcmp(app.desktop->name(), "none") != 0; }
+inline bool compositor_available(const WaylandState &app) {
+    return std::strcmp(app.desktop->name(), "none") != 0;
+}
 
 inline Module *find_overlay_by_name(WaylandState &app, const char *name) {
     for (auto &m : app.overlays)

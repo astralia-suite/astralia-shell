@@ -13,7 +13,9 @@ class MatrixRain {
     void rebuild(int width, int height, bool async_speed);
     void tick();
 
-    RainFrame frame() const { return buffer_.empty() ? RainFrame{} : RainFrame{buffer_.data(), width_, height_, stride_}; }
+    RainFrame frame() const {
+        return buffer_.empty() ? RainFrame{} : RainFrame{buffer_.data(), width_, height_, stride_};
+    }
 
   private:
     struct Column {

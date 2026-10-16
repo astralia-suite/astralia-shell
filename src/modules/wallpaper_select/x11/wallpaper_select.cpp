@@ -26,21 +26,29 @@ constexpr std::chrono::milliseconds repaint_batch{50};
 
 WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
-      window_(x, "astralia-wallpaper-select", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS),
+      window_(x, "astralia-wallpaper-select",
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS),
       keyboard_(x.conn()),
       model_(WallpaperSelectHooks{
                  [&services]() -> const Config & { return services.settings.config(); },
-                 [&services](const std::function<void(Config &)> &edit) { services.settings.update(edit); },
+                 [&services](const std::function<void(Config &)> &edit) {
+                     services.settings.update(edit);
+                 },
                  {}},
              x11_capabilities().animated_wallpaper) {
-    repaint_timer_ = loop.add_timer([this] { return repaint_pending_ ? repaint_batch : std::chrono::milliseconds(std::chrono::hours(1)); },
-                                    [this] {
-                                        if (!repaint_pending_) {
-                                            return;
-                                        }
-                                        repaint_pending_ = false;
-                                        paint();
-                                    });
+    repaint_timer_ = loop.add_timer(
+        [this] {
+            return repaint_pending_ ? repaint_batch
+                                    : std::chrono::milliseconds(std::chrono::hours(1));
+        },
+        [this] {
+            if (!repaint_pending_) {
+                return;
+            }
+            repaint_pending_ = false;
+            paint();
+        });
     model_.on_close_requested = [this] { close(); };
     model_.on_closed = [this] { closed(); };
     model_.on_changed = [this] { schedule_paint(); };
@@ -54,7 +62,8 @@ WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, 
             return;
         }
         const std::vector<Output> &outputs = services_.outputs.outputs();
-        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+        if (std::ranges::none_of(
+                outputs, [this](const Output &output) { return output.name == bound_output_; })) {
             close();
         }
     });
@@ -73,7 +82,8 @@ void WallpaperSelect::open_on(const std::string &monitor, int column) {
         return;
     }
     const std::vector<Output> &outputs = services_.outputs.outputs();
-    auto found = std::ranges::find_if(outputs, [&](const Output &output) { return output.name == monitor; });
+    auto found =
+        std::ranges::find_if(outputs, [&](const Output &output) { return output.name == monitor; });
     if (found == outputs.end()) {
         return;
     }
@@ -122,7 +132,8 @@ void WallpaperSelect::handle(const xcb_generic_event_t &event) {
     }
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
-        window_.set_cursor(model_.clickable(motion.event_x, motion.event_y) ? CursorShape::hand : CursorShape::arrow);
+        window_.set_cursor(model_.clickable(motion.event_x, motion.event_y) ? CursorShape::hand
+                                                                            : CursorShape::arrow);
         break;
     }
     case XCB_BUTTON_PRESS: {
@@ -157,7 +168,8 @@ void WallpaperSelect::paint() {
     repaint_pending_ = false;
     window_.clear();
     canvas_.bind(window_.cr());
-    paint_wallpaper_select(canvas_, model_, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    paint_wallpaper_select(canvas_, model_, static_cast<float>(window_.geometry().width),
+                           static_cast<float>(window_.geometry().height));
     if (model_.waiting()) {
         schedule_paint();
         return;

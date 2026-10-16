@@ -42,10 +42,13 @@ void check_palette_extract() {
 
     Image solid(40, 30, color("#E0405A"));
     Extraction a = extract_seeds(solid.data.data(), solid.width, solid.height, false);
-    check(a.found && hue_distance(a.seeds.front().hue, hue_of("#E0405A")) < 2.0f, "a solid colour seeds its own hue");
+    check(a.found && hue_distance(a.seeds.front().hue, hue_of("#E0405A")) < 2.0f,
+          "a solid colour seeds its own hue");
     check(a.seeds.size() == 1, "a solid colour has no further seed");
     Extraction again = extract_seeds(solid.data.data(), solid.width, solid.height, false);
-    check(again.seeds.front().hue == a.seeds.front().hue && again.seeds.front().chroma == a.seeds.front().chroma, "extraction is deterministic");
+    check(again.seeds.front().hue == a.seeds.front().hue &&
+              again.seeds.front().chroma == a.seeds.front().chroma,
+          "extraction is deterministic");
 
     Image split(200, 100, color("#2060E0"));
     for (int y = 0; y < split.height; ++y) {
@@ -54,8 +57,10 @@ void check_palette_extract() {
         }
     }
     Extraction b = extract_seeds(split.data.data(), split.width, split.height, false);
-    check(b.found && hue_distance(b.seeds.front().hue, hue_of("#2060E0")) < 3.0f, "the larger of two colours wins");
-    check(b.seeds.size() == 2 && hue_distance(b.seeds[1].hue, hue_of("#E0A020")) < 3.0f, "the smaller colour becomes the second seed");
+    check(b.found && hue_distance(b.seeds.front().hue, hue_of("#2060E0")) < 3.0f,
+          "the larger of two colours wins");
+    check(b.seeds.size() == 2 && hue_distance(b.seeds[1].hue, hue_of("#E0A020")) < 3.0f,
+          "the smaller colour becomes the second seed");
 
     Image trio(300, 100, color("#2060E0"));
     for (int y = 0; y < trio.height; ++y) {
@@ -68,7 +73,8 @@ void check_palette_extract() {
     }
     Extraction t3 = extract_seeds(trio.data.data(), trio.width, trio.height, false);
     float gap = t3.seeds.size() > 1 ? hue_distance(t3.seeds[1].hue, t3.seeds[0].hue) : 0.0f;
-    check(t3.seeds.size() == 3 && gap >= 40.0f && gap <= 90.0f, "the second seed prefers a neighbouring hue and the third follows");
+    check(t3.seeds.size() == 3 && gap >= 40.0f && gap <= 90.0f,
+          "the second seed prefers a neighbouring hue and the third follows");
     bool apart = true;
     for (size_t i = 0; i < t3.seeds.size(); ++i) {
         for (size_t j = i + 1; j < t3.seeds.size(); ++j) {
@@ -105,7 +111,8 @@ void check_palette_extract() {
         }
     }
     Extraction c = extract_seeds(grey.data.data(), grey.width, grey.height, false);
-    check(c.found && hue_distance(c.seeds.front().hue, hue_of("#D01040")) < 3.0f, "a grey background cannot beat a saturated patch");
+    check(c.found && hue_distance(c.seeds.front().hue, hue_of("#D01040")) < 3.0f,
+          "a grey background cannot beat a saturated patch");
 
     Image plain(50, 50, color("#707070"));
     Extraction d = extract_seeds(plain.data.data(), plain.width, plain.height, false);
@@ -127,5 +134,6 @@ void check_palette_extract() {
         p[3] = 204;
     }
     Extraction g = extract_seeds(half.data.data(), half.width, half.height, true);
-    check(g.found && hue_distance(g.seeds.front().hue, hue_of("#E0405A")) < 3.0f, "premultiplied pixels are read back to the same hue");
+    check(g.found && hue_distance(g.seeds.front().hue, hue_of("#E0405A")) < 3.0f,
+          "premultiplied pixels are read back to the same hue");
 }

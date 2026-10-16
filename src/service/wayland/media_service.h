@@ -8,7 +8,8 @@
 #include <thread>
 #include <vector>
 
-using MediaDecodeFrameCallback = std::function<void(unsigned char *rgba, int width, int height, int stride_px)>;
+using MediaDecodeFrameCallback =
+    std::function<void(unsigned char *rgba, int width, int height, int stride_px)>;
 
 struct MediaDrmPlane {
     int fd = -1;
@@ -28,9 +29,7 @@ struct MediaDrmFrame {
 
 using MediaDecodeDrmFrameCallback = std::function<void(MediaDrmFrame frame)>;
 
-enum class MediaDecodeStatus { Idle,
-                               ZeroCopy,
-                               CpuFallback };
+enum class MediaDecodeStatus { Idle, ZeroCopy, CpuFallback };
 
 struct MediaDecodePlayback {
     std::thread worker;
@@ -65,7 +64,10 @@ struct MediaDecodePlayback {
     }
 };
 
-MediaDecodePlayback media_decode_stream(const std::string &path, const std::string &filter_desc, int fps, bool supports_row_length, MediaDecodeFrameCallback on_frame, MediaDecodeDrmFrameCallback on_drm_frame = nullptr);
+MediaDecodePlayback media_decode_stream(const std::string &path, const std::string &filter_desc,
+                                        int fps, bool supports_row_length,
+                                        MediaDecodeFrameCallback on_frame,
+                                        MediaDecodeDrmFrameCallback on_drm_frame = nullptr);
 
 void media_decode_stop(MediaDecodePlayback &playback);
 void media_decode_pause(MediaDecodePlayback &playback);
@@ -81,13 +83,13 @@ struct MediaFrame {
     std::vector<unsigned char> rgba;
 };
 
-std::vector<MediaFrame> media_decode_frames(const std::string &path, const std::string &filter_desc, int max_frames);
+std::vector<MediaFrame> media_decode_frames(const std::string &path, const std::string &filter_desc,
+                                            int max_frames);
 
 inline constexpr int kAnimateWallpaperFps = 15;
 inline constexpr int kAnimateMaxDecodeDim = 1440;
 
-enum class AnimateFit { Crop,
-                        Fit };
+enum class AnimateFit { Crop, Fit };
 
 std::string animate_cache_home_dir();
 
@@ -100,4 +102,5 @@ AnimateSize animate_decode_size(int target_w, int target_h, int max_height);
 
 std::string animate_scale_filter(int w, int h, AnimateFit fit);
 
-unsigned char *animate_decode_scaled(const std::string &path, int target_w, int target_h, int &out_width, int &out_height);
+unsigned char *animate_decode_scaled(const std::string &path, int target_w, int target_h,
+                                     int &out_width, int &out_height);

@@ -78,11 +78,15 @@ struct NotificationLayout {
     float height = 0.0f;
 };
 
-NotificationLayout layout_notifications(ui::Canvas &canvas, const NotificationModel &model, const NotificationViewState &view, float max_height);
+NotificationLayout layout_notifications(ui::Canvas &canvas, const NotificationModel &model,
+                                        const NotificationViewState &view, float max_height);
 
-std::optional<uint32_t> notification_close_at(const NotificationLayout &layout, const NotificationViewState &view, double x, double y);
+std::optional<uint32_t> notification_close_at(const NotificationLayout &layout,
+                                              const NotificationViewState &view, double x,
+                                              double y);
 
-std::vector<std::pair<uint32_t, ui::Box>> notification_close_boxes(const NotificationLayout &layout, const NotificationViewState &view);
+std::vector<std::pair<uint32_t, ui::Box>>
+notification_close_boxes(const NotificationLayout &layout, const NotificationViewState &view);
 
 float notification_card_height(float header, float summary, float body);
 

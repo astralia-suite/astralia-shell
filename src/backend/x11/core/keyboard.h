@@ -7,19 +7,21 @@
 
 namespace astralia {
 
-enum class KeyKind { none,
-                     text,
-                     backspace,
-                     up,
-                     down,
-                     left,
-                     right,
-                     enter,
-                     escape,
-                     tab,
-                     home,
-                     end,
-                     del };
+enum class KeyKind {
+    none,
+    text,
+    backspace,
+    up,
+    down,
+    left,
+    right,
+    enter,
+    escape,
+    tab,
+    home,
+    end,
+    del
+};
 
 struct KeyEvent {
     KeyKind kind = KeyKind::none;

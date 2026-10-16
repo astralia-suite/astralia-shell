@@ -32,7 +32,8 @@ class ThemeService {
 
     void sync(const Config &cfg, const std::string &monitor_name);
 
-    using VideoFrameDecoder = std::function<unsigned char *(const std::string &path, int &width, int &height)>;
+    using VideoFrameDecoder =
+        std::function<unsigned char *(const std::string &path, int &width, int &height)>;
     VideoFrameDecoder decode_video_frame;
 
     Signal<> changed;

@@ -17,7 +17,8 @@ namespace {
 
 cairo_surface_t *stiletto_sprite() {
     static cairo_surface_t *sprite = []() -> cairo_surface_t * {
-        const char *candidates[] = {ASTRALIA_ASSET_DIR "/stiletto.svg", ASTRALIA_SOURCE_ASSET_DIR "/stiletto.svg"};
+        const char *candidates[] = {ASTRALIA_ASSET_DIR "/stiletto.svg",
+                                    ASTRALIA_SOURCE_ASSET_DIR "/stiletto.svg"};
         const char *path = candidates[1];
         for (const char *c : candidates) {
             if (std::filesystem::exists(c)) {
@@ -29,14 +30,16 @@ cairo_surface_t *stiletto_sprite() {
         auto pixels = decode_pixels(path, {}, h * 1000, h);
         if (!pixels)
             return nullptr;
-        cairo_surface_t *s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, pixels->width, pixels->height);
+        cairo_surface_t *s =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, pixels->width, pixels->height);
         uint8_t *dst = cairo_image_surface_get_data(s);
         int stride = cairo_image_surface_get_stride(s);
         const uint8_t *in = pixels->data.get();
         for (int y = 0; y < pixels->height; ++y) {
             auto *row = reinterpret_cast<uint32_t *>(dst + static_cast<size_t>(y) * stride);
             for (int x = 0; x < pixels->width; ++x, in += 4)
-                row[x] = static_cast<uint32_t>(in[3]) << 24 | static_cast<uint32_t>(in[0]) << 16 | static_cast<uint32_t>(in[1]) << 8 | in[2];
+                row[x] = static_cast<uint32_t>(in[3]) << 24 | static_cast<uint32_t>(in[0]) << 16 |
+                         static_cast<uint32_t>(in[1]) << 8 | in[2];
         }
         cairo_surface_mark_dirty(s);
         return s;
@@ -44,7 +47,8 @@ cairo_surface_t *stiletto_sprite() {
     return sprite;
 }
 
-void draw_sprite_centered(cairo_t *cr, cairo_surface_t *sprite, float cx, float y, const Color &color) {
+void draw_sprite_centered(cairo_t *cr, cairo_surface_t *sprite, float cx, float y,
+                          const Color &color) {
     if (!sprite)
         return;
     float sw = static_cast<float>(cairo_image_surface_get_width(sprite));
@@ -71,8 +75,7 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
     width_ = std::max(1, width);
     height_ = std::max(1, height);
 
-    column_count_ =
-        std::max(1, static_cast<int>(width_ / kStilettoRainColumnSpacingPx));
+    column_count_ = std::max(1, static_cast<int>(width_ / kStilettoRainColumnSpacingPx));
     float content_w = (column_count_ - 1) * kStilettoRainColumnSpacingPx;
     origin_x_ = (width_ - content_w) / 2.0f;
 
@@ -91,8 +94,7 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
 }
 
 void StilettoRain::decay() {
-    int alpha_step =
-        std::clamp(static_cast<int>(255.0f * kRainFadeAlpha), 1, 255);
+    int alpha_step = std::clamp(static_cast<int>(255.0f * kRainFadeAlpha), 1, 255);
     for (int y = 0; y < height_; ++y) {
         uint8_t *row = buffer_.data() + static_cast<size_t>(y) * stride_;
         for (int x = 0; x < width_; ++x) {
@@ -121,7 +123,8 @@ void StilettoRain::tick() {
 
     cairo_surface_t *sprite = stiletto_sprite();
 
-    cairo_surface_t *trail = cairo_image_surface_create_for_data(buffer_.data(), CAIRO_FORMAT_ARGB32, width_, height_, stride_);
+    cairo_surface_t *trail = cairo_image_surface_create_for_data(
+        buffer_.data(), CAIRO_FORMAT_ARGB32, width_, height_, stride_);
     cairo_t *tcr = cairo_create(trail);
     for (int i = 0; i < column_count_; ++i) {
         Comet &c = comets_[static_cast<size_t>(i)];
@@ -142,7 +145,8 @@ void StilettoRain::tick() {
     cairo_surface_destroy(trail);
 
     frame_ = buffer_;
-    cairo_surface_t *surface = cairo_image_surface_create_for_data(frame_.data(), CAIRO_FORMAT_ARGB32, width_, height_, stride_);
+    cairo_surface_t *surface = cairo_image_surface_create_for_data(
+        frame_.data(), CAIRO_FORMAT_ARGB32, width_, height_, stride_);
     cairo_t *cr = cairo_create(surface);
     for (int i = 0; i < column_count_; ++i) {
         const Comet &c = comets_[static_cast<size_t>(i)];
@@ -166,7 +170,8 @@ void StilettoRain::tick() {
         for (Comet &c : comets_) {
             c.drop += kStilettoRainStepPx * c.speed;
             if (c.drop > static_cast<float>(height_) && rain_random01() < kRainResetChance) {
-                c.drop = c.ever_reset ? -(rain_random01() * static_cast<float>(height_)) : start_drop();
+                c.drop =
+                    c.ever_reset ? -(rain_random01() * static_cast<float>(height_)) : start_drop();
                 c.ever_reset = true;
                 c.last_valid = false;
             }

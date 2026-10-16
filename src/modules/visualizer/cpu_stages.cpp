@@ -12,11 +12,17 @@ constexpr int max_smooth_iterations = 512;
 
 float clamp01(float value) { return std::clamp(value, 0.0f, 1.0f); }
 
-float hamming(float t, float size) { return 0.53836f - 0.46164f * std::cos(2.0f * std::numbers::pi_v<float> * t / size); }
+float hamming(float t, float size) {
+    return 0.53836f - 0.46164f * std::cos(2.0f * std::numbers::pi_v<float> * t / size);
+}
 
-float sinusoidal(float x) { return 0.5f * std::sin(std::numbers::pi_v<float> * x - std::numbers::pi_v<float> / 2.0f) + 0.5f; }
+float sinusoidal(float x) {
+    return 0.5f * std::sin(std::numbers::pi_v<float> * x - std::numbers::pi_v<float> / 2.0f) + 0.5f;
+}
 
-float scale_audio(float index) { return -std::log(-kVisualizerSampleRange * index + 1.0f) / kVisualizerSampleScale; }
+float scale_audio(float index) {
+    return -std::log(-kVisualizerSampleRange * index + 1.0f) / kVisualizerSampleScale;
+}
 
 float fetch(const std::vector<float> &source, float s) {
     int size = static_cast<int>(source.size());
@@ -41,7 +47,8 @@ float VisualizerCpuStages::smooth_at(const std::vector<float> &source, float u) 
         if (s > smax) {
             break;
         }
-        weight_of_distance = half > 0.0f ? sinusoidal(clamp01((half - std::fabs(middle - s)) / half)) : 0.0f;
+        weight_of_distance =
+            half > 0.0f ? sinusoidal(clamp01((half - std::fabs(middle - s)) / half)) : 0.0f;
         float value = fetch(source, s);
         weight += weight_of_distance;
         total += value * weight_of_distance;
@@ -54,7 +61,8 @@ float VisualizerCpuStages::smooth_at(const std::vector<float> &source, float u) 
     } else if (kVisualizerSampleMode == 1) {
         result = peak;
     } else {
-        result = peak * (1.0f - kVisualizerSampleHybridWeight) + average * kVisualizerSampleHybridWeight;
+        result =
+            peak * (1.0f - kVisualizerSampleHybridWeight) + average * kVisualizerSampleHybridWeight;
     }
     return result / (2.0f * (static_cast<float>(kVisualizerAdjacentSampleNums) - 1.0f) + 1.0f);
 }
@@ -82,15 +90,19 @@ void VisualizerCpuStages::run_channel(Channel &channel, const std::vector<float>
             if (frame < 0) {
                 frame += ring_size;
             }
-            sum += hamming(static_cast<float>(t), static_cast<float>(kVisualizerGravityAverageFrames - 1)) * channel.ring[static_cast<size_t>(frame)][i];
+            sum += hamming(static_cast<float>(t),
+                           static_cast<float>(kVisualizerGravityAverageFrames - 1)) *
+                   channel.ring[static_cast<size_t>(frame)][i];
         }
         channel.average[i] = clamp01(sum / static_cast<float>(kVisualizerGravityAverageFrames));
     }
     channel.ring_index = (channel.ring_index + 1) % ring_size;
 }
 
-bool VisualizerCpuStages::run(int size, const std::vector<float> &left, const std::vector<float> &right, int fps) {
-    if (size <= 0 || fps <= 0 || static_cast<int>(left.size()) < size || static_cast<int>(right.size()) < size) {
+bool VisualizerCpuStages::run(int size, const std::vector<float> &left,
+                              const std::vector<float> &right, int fps) {
+    if (size <= 0 || fps <= 0 || static_cast<int>(left.size()) < size ||
+        static_cast<int>(right.size()) < size) {
         return false;
     }
     size_ = size;
@@ -100,11 +112,13 @@ bool VisualizerCpuStages::run(int size, const std::vector<float> &left, const st
 }
 
 float VisualizerCpuStages::smooth_texel(int channel, int index) const {
-    const std::vector<float> &average = channels_[static_cast<size_t>(std::clamp(channel, 0, 1))].average;
+    const std::vector<float> &average =
+        channels_[static_cast<size_t>(std::clamp(channel, 0, 1))].average;
     if (average.empty()) {
         return 0.0f;
     }
-    float u = (static_cast<float>(std::clamp(index, 0, size_ - 1)) + 0.5f) / static_cast<float>(size_);
+    float u =
+        (static_cast<float>(std::clamp(index, 0, size_ - 1)) + 0.5f) / static_cast<float>(size_);
     return clamp01(smooth_at(average, u));
 }
 

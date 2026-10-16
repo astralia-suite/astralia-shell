@@ -6,9 +6,7 @@
 
 namespace astralia {
 
-enum class Mode { daemon,
-                  debug,
-                  client };
+enum class Mode { daemon, debug, client };
 
 struct Invocation {
     Mode mode;

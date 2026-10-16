@@ -50,7 +50,8 @@ void DeferredCall::drain() {
     for (auto &fn : fns) {
         fn();
     }
-    float ms = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    float ms =
+        std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
     if (ms > 5.0f) {
         log::info("deferred: drain {} callbacks in {:.1f}ms", fns.size(), ms);
     }

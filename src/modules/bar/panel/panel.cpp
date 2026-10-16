@@ -16,7 +16,9 @@ namespace cfg = panel_config;
 
 constexpr uint64_t owner_reveal = 2;
 constexpr int close_id = -1;
-constexpr ScrollMetrics scroll_style{cfg::scroll_roller, cfg::scroll_overhang, cfg::scroll_cap, metrics::radius_card, cfg::scroll_band, ScrollAxis::vertical};
+constexpr ScrollMetrics scroll_style{cfg::scroll_roller, cfg::scroll_overhang,
+                                     cfg::scroll_cap,    metrics::radius_card,
+                                     cfg::scroll_band,   ScrollAxis::vertical};
 constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::title_px, true};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 
@@ -38,19 +40,24 @@ bool inside(const ui::Box &box, double x, double y) {
 
 } // namespace
 
-Panel::Panel(std::unique_ptr<PanelContent> content, Reactor &reactor) : content_(std::move(content)), reactor_(&reactor) {
+Panel::Panel(std::unique_ptr<PanelContent> content, Reactor &reactor)
+    : content_(std::move(content)), reactor_(&reactor) {
     content_->changed = [this] { changed(); };
     std::weak_ptr<bool> alive = alive_;
-    timer_ = reactor.add_timer([this, alive] {
-        auto live = alive.lock();
-        if (!live || !open_ || content_->refresh_interval().count() == 0) {
-            return std::chrono::milliseconds(std::chrono::hours(1));
-        }
-        return content_->refresh_interval(); }, [this, alive] {
-        if (alive.lock() && open_ && !closing() && content_->refresh_interval().count() > 0) {
-            content_->refresh();
-            changed();
-        } });
+    timer_ = reactor.add_timer(
+        [this, alive] {
+            auto live = alive.lock();
+            if (!live || !open_ || content_->refresh_interval().count() == 0) {
+                return std::chrono::milliseconds(std::chrono::hours(1));
+            }
+            return content_->refresh_interval();
+        },
+        [this, alive] {
+            if (alive.lock() && open_ && !closing() && content_->refresh_interval().count() > 0) {
+                content_->refresh();
+                changed();
+            }
+        });
 }
 
 void Panel::changed() {
@@ -111,7 +118,8 @@ bool Panel::clickable(double x, double y) const {
     }
     double lx = x - card_.x;
     double ly = y - card_.y;
-    return std::ranges::any_of(regions_, [&](const PanelRegion &r) { return inside(r.box, lx, ly); });
+    return std::ranges::any_of(regions_,
+                               [&](const PanelRegion &r) { return inside(r.box, lx, ly); });
 }
 
 bool Panel::press(double x, double y, input::Button button) {
@@ -191,7 +199,8 @@ bool Panel::wheel(double x, double y, double dy) {
     if (!content_->scrollable()) {
         return false;
     }
-    float next = std::clamp(scroll_ + static_cast<float>(dy), 0.0f, std::max(0.0f, content_h_ - view_h_));
+    float next =
+        std::clamp(scroll_ + static_cast<float>(dy), 0.0f, std::max(0.0f, content_h_ - view_h_));
     if (next == scroll_) {
         return false;
     }
@@ -228,9 +237,7 @@ float Panel::card_x(float surface_width) const {
     return surface_width - width - cfg::side_margin;
 }
 
-Panel::Inset Panel::inset() {
-    return {scroll_style.overhang, scroll_style.roller_w};
-}
+Panel::Inset Panel::inset() { return {scroll_style.overhang, scroll_style.roller_w}; }
 
 ui::Box Panel::extent() const {
     Inset room = inset();
@@ -253,11 +260,13 @@ ui::Box Panel::popup_anchor() const {
 void Panel::paint_popup(ui::Canvas &canvas) {
     popup_regions_.clear();
     PanelPaint paint(popup_regions_);
-    content_->paint_popup(canvas, {0.0f, 0.0f, content_->popup_width(), content_->popup_height()}, paint);
+    content_->paint_popup(canvas, {0.0f, 0.0f, content_->popup_width(), content_->popup_height()},
+                          paint);
 }
 
 bool Panel::popup_clickable(double x, double y) const {
-    return std::ranges::any_of(popup_regions_, [&](const PanelRegion &r) { return inside(r.box, x, y); });
+    return std::ranges::any_of(popup_regions_,
+                               [&](const PanelRegion &r) { return inside(r.box, x, y); });
 }
 
 bool Panel::hover_popup(double x, double y) {
@@ -307,7 +316,9 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
     float width = content_->width();
     content_h_ = content_->content_height(canvas);
     bool header = content_->has_header();
-    float chrome = header ? cfg::padding + cfg::header_height + cfg::header_divider_gap + 1.0f + cfg::content_gap + cfg::padding : 2.0f * cfg::padding;
+    float chrome = header ? cfg::padding + cfg::header_height + cfg::header_divider_gap + 1.0f +
+                                cfg::content_gap + cfg::padding
+                          : 2.0f * cfg::padding;
     float height = std::min(content_->max_height(), chrome + content_h_);
     if (!closing()) {
         if (reveal_ < 0.0f) {
@@ -315,7 +326,9 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
             target_ = height;
         } else if (std::fabs(height - target_) > 0.5f) {
             target_ = height;
-            animations_.animate(reveal_, height, cfg::reveal_ms, astralia::Easing::EaseOutCubic, [this](float v) { reveal_ = v; }, {}, owner_reveal);
+            animations_.animate(
+                reveal_, height, cfg::reveal_ms, astralia::Easing::EaseOutCubic,
+                [this](float v) { reveal_ = v; }, {}, owner_reveal);
         }
     }
     float full = closing() ? std::max(target_, height) : height;
@@ -323,10 +336,14 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
 
     float rod = scroll_style.roller_w;
     card_ = {x, top + rod, width, full};
-    ScrollOffset slide = scroll_slide_offset(entry_of(content_->anchor()), sequence_.slide(), scroll_bounds(scroll_geometry(card_, 0.0f, scroll_style)), surface_width, 0.0f);
+    ScrollOffset slide = scroll_slide_offset(
+        entry_of(content_->anchor()), sequence_.slide(),
+        scroll_bounds(scroll_geometry(card_, 0.0f, scroll_style)), surface_width, 0.0f);
     float px = x + slide.dx;
     float py = top + rod + slide.dy;
-    paint_scroll(canvas, scroll_geometry({px, py, width, visible}, sequence_.scroll(), scroll_style), scroll_style);
+    paint_scroll(canvas,
+                 scroll_geometry({px, py, width, visible}, sequence_.scroll(), scroll_style),
+                 scroll_style);
 
     regions_.clear();
     dialog_ = {};
@@ -346,23 +363,38 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
     if (header) {
         ui::TextSize title = canvas.measure(content_->title(), title_style);
         float tag_pad = cfg::header_tag_pad;
-        sticker(canvas, {cfg::padding - tag_pad, cfg::padding + (cfg::header_height - title.h) / 2.0f - tag_pad / 2.0f, title.w + 2.0f * tag_pad + metrics::shadow_widget, title.h + tag_pad + metrics::shadow_widget}, metrics::radius_widget, content_->tint(), palette::ink, metrics::border_thin, metrics::shadow_widget);
-        canvas.text(content_->title(), title_style, cfg::padding, cfg::padding + (cfg::header_height - title.h) / 2.0f, palette::text);
-        ui::Box close{width - cfg::padding - cfg::close_button, cfg::padding + (cfg::header_height - cfg::close_button) / 2.0f, cfg::close_button, cfg::close_button};
+        sticker(canvas,
+                {cfg::padding - tag_pad,
+                 cfg::padding + (cfg::header_height - title.h) / 2.0f - tag_pad / 2.0f,
+                 title.w + 2.0f * tag_pad + metrics::shadow_widget,
+                 title.h + tag_pad + metrics::shadow_widget},
+                metrics::radius_widget, content_->tint(), palette::ink, metrics::border_thin,
+                metrics::shadow_widget);
+        canvas.text(content_->title(), title_style, cfg::padding,
+                    cfg::padding + (cfg::header_height - title.h) / 2.0f, palette::text);
+        ui::Box close{width - cfg::padding - cfg::close_button,
+                      cfg::padding + (cfg::header_height - cfg::close_button) / 2.0f,
+                      cfg::close_button, cfg::close_button};
         selectable(canvas, close, metrics::radius_widget, false, false, palette::accent_container);
         ui::TextSize glyph = canvas.measure(icon::close, icon_style);
-        canvas.text(icon::close, icon_style, close.x + (close.w - glyph.w) / 2.0f, close.y + (close.h - glyph.h) / 2.0f, palette::text);
+        canvas.text(icon::close, icon_style, close.x + (close.w - glyph.w) / 2.0f,
+                    close.y + (close.h - glyph.h) / 2.0f, palette::text);
         chrome_paint.region(close, close_id);
-        content_->paint_header(canvas, {cfg::padding, cfg::padding, close.x - cfg::row_gap - cfg::padding, cfg::header_height}, chrome_paint);
+        content_->paint_header(
+            canvas,
+            {cfg::padding, cfg::padding, close.x - cfg::row_gap - cfg::padding, cfg::header_height},
+            chrome_paint);
         float divider_y = cfg::padding + cfg::header_height + cfg::header_divider_gap;
         canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f}, palette::ink);
         view_top = divider_y + 1.0f + cfg::content_gap;
     }
     view_h_ = std::max(0.0f, full - cfg::padding - view_top);
     scroll_ = std::clamp(scroll_, 0.0f, std::max(0.0f, content_h_ - view_h_));
-    canvas.begin_group({cfg::padding, view_top, width - 2.0f * cfg::padding, view_h_}, {1.0f, true});
+    canvas.begin_group({cfg::padding, view_top, width - 2.0f * cfg::padding, view_h_},
+                       {1.0f, true});
     PanelPaint body_paint(body);
-    content_->paint(canvas, {0.0f, 0.0f, width - 2.0f * cfg::padding, view_h_}, scroll_, body_paint);
+    content_->paint(canvas, {0.0f, 0.0f, width - 2.0f * cfg::padding, view_h_}, scroll_,
+                    body_paint);
     canvas.end_group();
     canvas.end_group();
     canvas.set_opacity(1.0f);

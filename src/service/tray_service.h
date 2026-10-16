@@ -37,7 +37,8 @@ struct TrayMenuEntry {
     std::vector<TrayMenuEntry> children;
 };
 
-using TrayMenuLayout = sdbus::Struct<int32_t, std::map<std::string, sdbus::Variant>, std::vector<sdbus::Variant>>;
+using TrayMenuLayout =
+    sdbus::Struct<int32_t, std::map<std::string, sdbus::Variant>, std::vector<sdbus::Variant>>;
 
 TrayMenuEntry tray_parse_menu(const TrayMenuLayout &node);
 std::string tray_item_icon_path(const TrayItem &item);

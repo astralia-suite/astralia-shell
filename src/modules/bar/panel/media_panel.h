@@ -16,7 +16,9 @@ class MediaPanel final : public PanelContent {
     const Color &tint() const override { return palette::pop_a; }
     PanelAnchor anchor() const override { return PanelAnchor::center; }
     void opened() override { media_.poll_position(); }
-    std::chrono::milliseconds refresh_interval() const override { return std::chrono::milliseconds(panel_config::media_poll_ms); }
+    std::chrono::milliseconds refresh_interval() const override {
+        return std::chrono::milliseconds(panel_config::media_poll_ms);
+    }
     void refresh() override { media_.poll_position(); }
     float content_height(ui::Canvas &canvas) override;
     void paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &paint) override;

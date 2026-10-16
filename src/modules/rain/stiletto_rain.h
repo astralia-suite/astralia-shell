@@ -13,7 +13,9 @@ class StilettoRain {
     void rebuild(int width, int height, bool async_speed);
     void tick();
 
-    RainFrame frame() const { return frame_.empty() ? RainFrame{} : RainFrame{frame_.data(), width_, height_, stride_}; }
+    RainFrame frame() const {
+        return frame_.empty() ? RainFrame{} : RainFrame{frame_.data(), width_, height_, stride_};
+    }
 
   private:
     struct Comet {

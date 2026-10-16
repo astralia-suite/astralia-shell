@@ -4,7 +4,8 @@
 
 namespace astralia {
 
-std::vector<DockEntry> dock_entries_for_monitor(const CompositorState &compositor, const std::string &monitor_name) {
+std::vector<DockEntry> dock_entries_for_monitor(const CompositorState &compositor,
+                                                const std::string &monitor_name) {
     auto it = compositor.by_monitor.find(monitor_name);
     if (it == compositor.by_monitor.end() || it->second.active_id < 0) {
         return {};
@@ -16,7 +17,9 @@ std::vector<DockEntry> dock_entries_for_monitor(const CompositorState &composito
             matched.push_back(&client);
         }
     }
-    std::ranges::stable_sort(matched, [](const CompositorClient *a, const CompositorClient *b) { return a->at[0] < b->at[0]; });
+    std::ranges::stable_sort(matched, [](const CompositorClient *a, const CompositorClient *b) {
+        return a->at[0] < b->at[0];
+    });
     std::vector<DockEntry> entries;
     entries.reserve(matched.size());
     for (const CompositorClient *client : matched) {

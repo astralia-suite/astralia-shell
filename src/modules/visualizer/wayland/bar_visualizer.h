@@ -9,7 +9,8 @@ class BarVisualizer {
     bool init();
     void destroy();
 
-    void render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex, int audio_size, const VisualizerParams &params);
+    void render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex,
+                int audio_size, const VisualizerParams &params);
 
   private:
     void draw_quad();

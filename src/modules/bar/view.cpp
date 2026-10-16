@@ -18,9 +18,11 @@ namespace cfg = bar_layout;
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, static_cast<int>(cfg::icon_px)};
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
-void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box, const Color &fill) {
+void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box,
+                        const Color &fill) {
     if (style.has_pill_bg()) {
-        sticker(canvas, {box.x, box.y, box.w, box.h}, style.radius, fill, style.border, style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
+        sticker(canvas, {box.x, box.y, box.w, box.h}, style.radius, fill, style.border,
+                style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
     }
 }
 
@@ -36,7 +38,8 @@ void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView
     canvas.text(view.glyph, icon_style, pad, (local.h - icon.h) / 2.0f, palette::text);
     if (!view.label.empty() && view.expand > 0.0f) {
         ui::TextSize label = canvas.measure(view.label, text_style);
-        canvas.text(view.label, text_style, pad + view.icon_w + cfg::label_gap, (local.h - label.h) / 2.0f, with_alpha(palette::text, view.expand));
+        canvas.text(view.label, text_style, pad + view.icon_w + cfg::label_gap,
+                    (local.h - label.h) / 2.0f, with_alpha(palette::text, view.expand));
     }
     canvas.end_group();
     if (view.alert) {
@@ -52,8 +55,9 @@ void paint_workspaces(ui::Canvas &canvas, const BarModel &model) {
     const BarStyleSpec &style = model.style();
     capsule_background(canvas, style, layout.workspaces, style.bg);
     for (const BarWorkspace &ws : model.workspaces()) {
-        const Color &fill = ws.active ? palette::accent : ws.occupied ? palette::pop_b
-                                                                      : palette::paper;
+        const Color &fill = ws.active     ? palette::accent
+                            : ws.occupied ? palette::pop_b
+                                          : palette::paper;
         canvas.rounded(ws.box, ws.box.h / 2.0f, fill, metrics::border_thin, palette::ink);
     }
     ui::TextSize glyph = canvas.measure(icon::overview, icon_style);
@@ -80,12 +84,17 @@ void paint_dock(ui::Canvas &canvas, const BarModel &model) {
             continue;
         }
         ui::TextSize size = canvas.image_size(image);
-        float scale = size.w > 0.0f && size.h > 0.0f ? std::min(cfg::dock_icon / size.w, cfg::dock_icon / size.h) : 1.0f;
+        float scale = size.w > 0.0f && size.h > 0.0f
+                          ? std::min(cfg::dock_icon / size.w, cfg::dock_icon / size.h)
+                          : 1.0f;
         float w = std::round(size.w * scale);
         float h = std::round(size.h * scale);
         float x = std::round(layout.dock.x + pad + slot.x);
         float alpha = slot.entry.focused ? cfg::dock_focused_alpha : cfg::dock_unfocused_alpha;
-        canvas.draw_image(image, {x + std::round((cfg::dock_icon - w) / 2.0f), y + std::round((cfg::dock_icon - h) / 2.0f), w, h}, with_alpha(palette::white, alpha));
+        canvas.draw_image(image,
+                          {x + std::round((cfg::dock_icon - w) / 2.0f),
+                           y + std::round((cfg::dock_icon - h) / 2.0f), w, h},
+                          with_alpha(palette::white, alpha));
     }
 }
 
@@ -94,7 +103,9 @@ void paint_dock(ui::Canvas &canvas, const BarModel &model) {
 void paint_bar(ui::Canvas &canvas, const BarModel &model, const ui::Box *dirty) {
     const BarLayout &layout = model.layout();
     const BarStyleSpec &style = model.style();
-    auto touches = [&](const ui::Box &box) { return dirty == nullptr || (box.x < dirty->x + dirty->w && box.x + box.w > dirty->x); };
+    auto touches = [&](const ui::Box &box) {
+        return dirty == nullptr || (box.x < dirty->x + dirty->w && box.x + box.w > dirty->x);
+    };
     for (size_t i = 0; i < bar_item_count; ++i) {
         const BarItemView &view = model.item(static_cast<BarItem>(i));
         if (touches(view.box)) {
@@ -112,7 +123,8 @@ void paint_bar(ui::Canvas &canvas, const BarModel &model, const ui::Box *dirty) 
             continue;
         }
         float h = layout.height * cfg::divider_height_ratio;
-        canvas.rect({std::floor(x), (layout.height - h) / 2.0f, cfg::divider_width, h}, palette::text_alpha20);
+        canvas.rect({std::floor(x), (layout.height - h) / 2.0f, cfg::divider_width, h},
+                    palette::text_alpha20);
     }
 }
 

@@ -19,22 +19,30 @@ void paint_roller(ui::Canvas &canvas, const ui::Box &roller, const ScrollMetrics
         float cap_h = std::min(metrics.cap_h, body_h / 2.0f);
         float cap_w = body_w + cap_flare * 2.0f;
         float cap_x = roller.x - cap_flare;
-        canvas.rounded({cap_x, roller.y, cap_w, cap_h}, cap_h / 2.0f, palette::accent_alt, metrics::border_thin, palette::ink);
-        canvas.rounded({cap_x, roller.y + body_h - cap_h, cap_w, cap_h}, cap_h / 2.0f, palette::accent_alt, metrics::border_thin, palette::ink);
+        canvas.rounded({cap_x, roller.y, cap_w, cap_h}, cap_h / 2.0f, palette::accent_alt,
+                       metrics::border_thin, palette::ink);
+        canvas.rounded({cap_x, roller.y + body_h - cap_h, cap_w, cap_h}, cap_h / 2.0f,
+                       palette::accent_alt, metrics::border_thin, palette::ink);
         float strip_h = body_h - cap_h * 2.0f - 4.0f;
         if (strip_h > 0.0f) {
-            canvas.rounded({roller.x + body_w * 0.22f, roller.y + cap_h + 2.0f, body_w * 0.18f, strip_h}, body_w * 0.09f, highlight);
+            canvas.rounded(
+                {roller.x + body_w * 0.22f, roller.y + cap_h + 2.0f, body_w * 0.18f, strip_h},
+                body_w * 0.09f, highlight);
         }
         return;
     }
     float cap_w = std::min(metrics.cap_h, body_w / 2.0f);
     float cap_h = body_h + cap_flare * 2.0f;
     float cap_y = roller.y - cap_flare;
-    canvas.rounded({roller.x, cap_y, cap_w, cap_h}, cap_w / 2.0f, palette::accent_alt, metrics::border_thin, palette::ink);
-    canvas.rounded({roller.x + body_w - cap_w, cap_y, cap_w, cap_h}, cap_w / 2.0f, palette::accent_alt, metrics::border_thin, palette::ink);
+    canvas.rounded({roller.x, cap_y, cap_w, cap_h}, cap_w / 2.0f, palette::accent_alt,
+                   metrics::border_thin, palette::ink);
+    canvas.rounded({roller.x + body_w - cap_w, cap_y, cap_w, cap_h}, cap_w / 2.0f,
+                   palette::accent_alt, metrics::border_thin, palette::ink);
     float strip_w = body_w - cap_w * 2.0f - 4.0f;
     if (strip_w > 0.0f) {
-        canvas.rounded({roller.x + cap_w + 2.0f, roller.y + body_h * 0.22f, strip_w, body_h * 0.18f}, body_h * 0.09f, highlight);
+        canvas.rounded(
+            {roller.x + cap_w + 2.0f, roller.y + body_h * 0.22f, strip_w, body_h * 0.18f},
+            body_h * 0.09f, highlight);
     }
 }
 
@@ -72,7 +80,8 @@ ui::Box scroll_bounds(const ScrollGeometry &geometry) {
     return {left, top, right - left, bottom - top};
 }
 
-ScrollOffset scroll_slide_offset(ScrollEntry entry, float slide, const ui::Box &closed, float surface_w, float surface_h) {
+ScrollOffset scroll_slide_offset(ScrollEntry entry, float slide, const ui::Box &closed,
+                                 float surface_w, float surface_h) {
     switch (entry) {
     case ScrollEntry::from_left:
         return {-(closed.x + closed.w) * slide, 0.0f};
@@ -86,13 +95,17 @@ ScrollOffset scroll_slide_offset(ScrollEntry entry, float slide, const ui::Box &
     return {};
 }
 
-void paint_scroll(ui::Canvas &canvas, const ScrollGeometry &geometry, const ScrollMetrics &metrics) {
+void paint_scroll(ui::Canvas &canvas, const ScrollGeometry &geometry,
+                  const ScrollMetrics &metrics) {
     const ui::Box &p = geometry.paper;
     if (std::min(p.w, p.h) >= metrics::border_thick * 2.0f) {
         sticker(canvas, p, metrics.rounding, palette::accent_container);
-        ui::Box inner{p.x + metrics.band, p.y + metrics.band, p.w - metrics::shadow_offset - metrics.band * 2.0f, p.h - metrics::shadow_offset - metrics.band * 2.0f};
+        ui::Box inner{p.x + metrics.band, p.y + metrics.band,
+                      p.w - metrics::shadow_offset - metrics.band * 2.0f,
+                      p.h - metrics::shadow_offset - metrics.band * 2.0f};
         if (inner.w > 0.0f && inner.h > 0.0f) {
-            canvas.rounded(inner, std::max(0.0f, metrics.rounding - 2.0f), palette::paper, metrics::border_thin, palette::ink);
+            canvas.rounded(inner, std::max(0.0f, metrics.rounding - 2.0f), palette::paper,
+                           metrics::border_thin, palette::ink);
         }
     }
     paint_roller(canvas, geometry.first_roller, metrics);

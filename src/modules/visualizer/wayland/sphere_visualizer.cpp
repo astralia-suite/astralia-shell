@@ -17,8 +17,7 @@
 
 namespace {
 
-constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0,
-                                    1, 1, 0, 1, -1, 0, -1, 1, 0};
+constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
 
 int visualizer_canvas_size(int width, int height) {
     int smaller = width < height ? width : height;
@@ -46,10 +45,13 @@ bool SphereVisualizer::init() {
     std::string glow = visualizer_shaders::glow_fs();
     std::string sphere1_splat_fs = gl_load_shader("visualizer/sphere/sphere1_splat.frag");
 
-    sphere1_prog_ = gl_compile_program(sphere1_vs.c_str(), sphere1_splat_fs.c_str(), "visualizer_sphere1");
-    sphere2_prog_ = gl_compile_program(fullscreen_vs.c_str(), sphere2.c_str(), "visualizer_sphere2");
+    sphere1_prog_ =
+        gl_compile_program(sphere1_vs.c_str(), sphere1_splat_fs.c_str(), "visualizer_sphere1");
+    sphere2_prog_ =
+        gl_compile_program(fullscreen_vs.c_str(), sphere2.c_str(), "visualizer_sphere2");
     glow_prog_ = gl_compile_program(fullscreen_vs.c_str(), glow.c_str(), "visualizer_glow");
-    present_prog_ = gl_compile_program_files("visualizer/sphere/present.vert", "visualizer/sphere/present.frag", "visualizer_present");
+    present_prog_ = gl_compile_program_files(
+        "visualizer/sphere/present.vert", "visualizer/sphere/present.frag", "visualizer_present");
     if (!sphere1_prog_ || !sphere2_prog_ || !glow_prog_ || !present_prog_) {
         klog("visualizer_sphere: shader compile failed");
         return false;
@@ -154,7 +156,8 @@ void SphereVisualizer::ensure_particle_grid(int canvas, float particle_thin) {
     particle_count_ = static_cast<int>(points.size() / 2);
 
     glBindBuffer(GL_ARRAY_BUFFER, particle_vbo_);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(points.size() * sizeof(float)), points.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(points.size() * sizeof(float)),
+                 points.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -166,12 +169,16 @@ void SphereVisualizer::draw_quad() {
     glDisableVertexAttribArray(0);
 }
 
-void SphereVisualizer::set_audio_uniforms(GLuint prog, GLuint audio_l_tex, GLuint audio_r_tex, int audio_size, int tick, int canvas, const VisualizerParams &params) {
-    glUniform2f(glGetUniformLocation(prog, "resolution"), static_cast<float>(canvas), static_cast<float>(canvas));
+void SphereVisualizer::set_audio_uniforms(GLuint prog, GLuint audio_l_tex, GLuint audio_r_tex,
+                                          int audio_size, int tick, int canvas,
+                                          const VisualizerParams &params) {
+    glUniform2f(glGetUniformLocation(prog, "resolution"), static_cast<float>(canvas),
+                static_cast<float>(canvas));
     glUniform1f(glGetUniformLocation(prog, "time"), static_cast<float>(tick));
     glUniform1i(glGetUniformLocation(prog, "audioRSize"), audio_size);
     glUniform1i(glGetUniformLocation(prog, "audioLSize"), audio_size);
-    glUniform3f(glGetUniformLocation(prog, "u_accent"), astralia::palette::accent.r, astralia::palette::accent.g, astralia::palette::accent.b);
+    glUniform3f(glGetUniformLocation(prog, "u_accent"), astralia::palette::accent.r,
+                astralia::palette::accent.g, astralia::palette::accent.b);
     glUniform1i(glGetUniformLocation(prog, "u_particleSize"), params.particle_size);
     glUniform1i(glGetUniformLocation(prog, "u_complexity"), params.fractal_complexity);
     glUniform1f(glGetUniformLocation(prog, "u_glowDirections"), params.glow_directions);
@@ -188,7 +195,8 @@ void SphereVisualizer::set_audio_uniforms(GLuint prog, GLuint audio_l_tex, GLuin
     glActiveTexture(GL_TEXTURE0);
 }
 
-void SphereVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex, int audio_size, const VisualizerParams &params) {
+void SphereVisualizer::render(int width, int height, int tick, GLuint audio_l_tex,
+                              GLuint audio_r_tex, int audio_size, const VisualizerParams &params) {
     if (!ready_ || width <= 0 || height <= 0)
         return;
 
@@ -249,7 +257,8 @@ void SphereVisualizer::present(int width, int height, int canvas) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, width, height);
-    glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g, astralia::palette::window_backdrop.b, astralia::palette::window_backdrop.a);
+    glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g,
+                 astralia::palette::window_backdrop.b, astralia::palette::window_backdrop.a);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glViewport(off_x, off_y, canvas, canvas);

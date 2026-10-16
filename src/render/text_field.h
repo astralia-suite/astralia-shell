@@ -23,8 +23,7 @@ struct TextCursor {
     size_t end() const { return pos < anchor ? anchor : pos; }
 };
 
-enum class CursorDir { Left,
-                       Right };
+enum class CursorDir { Left, Right };
 
 void text_cursor_clamp(const std::string &text, TextCursor &cursor);
 
@@ -64,10 +63,7 @@ struct TextFieldState {
     std::string error_message;
 };
 
-enum class TextFieldResult { None,
-                             Changed,
-                             Committed,
-                             Cancelled };
+enum class TextFieldResult { None, Changed, Committed, Cancelled };
 
 TextFieldResult text_field_handle_key(TextFieldState &field, const input::KeyEvent &event);
 
@@ -96,13 +92,16 @@ struct TextFieldRowSlide {
     bool primed = false;
 };
 
-void text_field_type_anim_sync(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base, const std::string &text);
+void text_field_type_anim_sync(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base,
+                               const std::string &text);
 
-void text_field_type_anim_settle(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base, const std::string &text);
+void text_field_type_anim_settle(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base,
+                                 const std::string &text);
 
 void text_field_type_anim_clear(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base);
 
-float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint64_t owner, float anchor_x);
+float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint64_t owner,
+                           float anchor_x);
 
 void text_field_row_slide_reset(TextFieldRowSlide &slide, AnimationManager &am, uint64_t owner);
 

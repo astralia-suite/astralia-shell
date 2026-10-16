@@ -50,16 +50,18 @@ struct IdleOverlayState {
     bool ambient_active = false;
     bool screensaver_active = false;
 
-    astralia::Bounce bounce{40.0f, 40.0f, astralia::kIdleLogoSpeed, astralia::kIdleLogoSpeed * 0.75f};
-    std::chrono::steady_clock::time_point last_tick =
-        std::chrono::steady_clock::now();
+    astralia::Bounce bounce{40.0f, 40.0f, astralia::kIdleLogoSpeed,
+                            astralia::kIdleLogoSpeed * 0.75f};
+    std::chrono::steady_clock::time_point last_tick = std::chrono::steady_clock::now();
 
     std::function<void(GlCanvas &canvas, float w, float h)> draw_ambient;
 };
 
-bool idle_overlay_create_surface(IdleOverlayState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output);
+bool idle_overlay_create_surface(IdleOverlayState &state, wl_compositor *compositor,
+                                 zwlr_layer_shell_v1 *layer_shell, wl_output *output);
 
-bool idle_overlay_init_egl(IdleOverlayState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool idle_overlay_init_egl(IdleOverlayState &state, Renderer &renderer, EGLDisplay display,
+                           EGLConfig config, EGLContext context);
 
 void idle_overlay_request_frame(IdleOverlayState &state);
 

@@ -26,8 +26,10 @@ const std::vector<DesktopMenuEntry> &DesktopMenuModel::entries() {
 void DesktopMenuModel::open(float x, float y, float bounds_width, float bounds_height, int column) {
     float count = static_cast<float>(entries().size());
     float width = cfg::menu_width;
-    float height = cfg::menu_padding * 2.0f + count * cfg::menu_row_height + (count - 1.0f) * cfg::menu_row_gap + metrics::shadow_offset;
-    box_ = {std::clamp(x, 0.0f, std::max(0.0f, bounds_width - width)), std::clamp(y, 0.0f, std::max(0.0f, bounds_height - height)), width, height};
+    float height = cfg::menu_padding * 2.0f + count * cfg::menu_row_height +
+                   (count - 1.0f) * cfg::menu_row_gap + metrics::shadow_offset;
+    box_ = {std::clamp(x, 0.0f, std::max(0.0f, bounds_width - width)),
+            std::clamp(y, 0.0f, std::max(0.0f, bounds_height - height)), width, height};
     column_ = column;
     hovered_ = -1;
     open_ = true;
@@ -38,7 +40,8 @@ void DesktopMenuModel::close() {
     hovered_ = -1;
 }
 
-bool DesktopMenuModel::toggle(float x, float y, float bounds_width, float bounds_height, int column) {
+bool DesktopMenuModel::toggle(float x, float y, float bounds_width, float bounds_height,
+                              int column) {
     if (open_) {
         close();
     } else {
@@ -48,8 +51,11 @@ bool DesktopMenuModel::toggle(float x, float y, float bounds_width, float bounds
 }
 
 ui::Box DesktopMenuModel::row(int index) const {
-    float top = cfg::menu_padding + static_cast<float>(index) * (cfg::menu_row_height + cfg::menu_row_gap);
-    return {cfg::menu_padding, top, cfg::menu_width - cfg::menu_padding * 2.0f - metrics::shadow_offset, cfg::menu_row_height};
+    float top =
+        cfg::menu_padding + static_cast<float>(index) * (cfg::menu_row_height + cfg::menu_row_gap);
+    return {cfg::menu_padding, top,
+            cfg::menu_width - cfg::menu_padding * 2.0f - metrics::shadow_offset,
+            cfg::menu_row_height};
 }
 
 int DesktopMenuModel::entry_at(float local_x, float local_y) const {
@@ -58,7 +64,8 @@ int DesktopMenuModel::entry_at(float local_x, float local_y) const {
     }
     for (int i = 0; i < static_cast<int>(entries().size()); ++i) {
         ui::Box box = row(i);
-        if (local_x >= box.x && local_x < box.x + box.w && local_y >= box.y && local_y < box.y + box.h) {
+        if (local_x >= box.x && local_x < box.x + box.w && local_y >= box.y &&
+            local_y < box.y + box.h) {
             return i;
         }
     }
@@ -74,8 +81,6 @@ bool DesktopMenuModel::hover(float local_x, float local_y) {
     return true;
 }
 
-void DesktopMenuModel::clear_hover() {
-    hovered_ = -1;
-}
+void DesktopMenuModel::clear_hover() { hovered_ = -1; }
 
 } // namespace astralia

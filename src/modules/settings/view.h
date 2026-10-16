@@ -19,6 +19,7 @@ struct SettingsFrame {
     ui::Box panel;
 };
 
-SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const SettingsArt &art, float width, float height);
+SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const SettingsArt &art,
+                             float width, float height);
 
 } // namespace astralia

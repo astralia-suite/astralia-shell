@@ -27,5 +27,6 @@ void check_spawn_helpers() {
     }
     usleep(50000);
     errno = 0;
-    check(waitpid(-1, nullptr, WNOHANG) == -1 && errno == ECHILD, "spawn_detached leaves no children to reap");
+    check(waitpid(-1, nullptr, WNOHANG) == -1 && errno == ECHILD,
+          "spawn_detached leaves no children to reap");
 }

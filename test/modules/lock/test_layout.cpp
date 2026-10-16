@@ -9,10 +9,12 @@
 static bool near(float a, float b) { return std::fabs(a - b) < 0.01f; }
 
 void check_lock_layout() {
-    test::check(near(lock_icon_box_size(), kLockFontIcon + kLockIconBoxMargin * 4.0f), "lock layout");
+    test::check(near(lock_icon_box_size(), kLockFontIcon + kLockIconBoxMargin * 4.0f),
+                "lock layout");
 
     test::check(near(lock_card_height(1440.0f), 1440.0f * kLockCardHeightMult), "lock layout");
-    test::check(near(lock_card_width(1440.0f), 1440.0f * kLockCardHeightMult * kLockCardRatio), "lock layout");
+    test::check(near(lock_card_width(1440.0f), 1440.0f * kLockCardHeightMult * kLockCardRatio),
+                "lock layout");
 
     test::check(near(lock_center_scale(1440.0f), 1.0f), "lock layout");
     test::check(near(lock_center_scale(720.0f), 0.5f), "lock layout");
@@ -34,10 +36,17 @@ void check_lock_layout() {
     test::check(near(sc * 2.0f + kLockPanelGap, 600.0f), "lock layout");
 
     float h = lock_content_height(120.0f, 34.0f, 20.0f);
-    test::check(near(h, 120.0f + kLockGapClockDate + 34.0f + kLockGapDateAvatar + kLockProfileSize + kLockGapAvatarInput + kLockInputHeight + kLockGapInputMessage + 20.0f), "lock layout");
+    test::check(near(h, 120.0f + kLockGapClockDate + 34.0f + kLockGapDateAvatar + kLockProfileSize +
+                            kLockGapAvatarInput + kLockInputHeight + kLockGapInputMessage + 20.0f),
+                "lock layout");
 
-    test::check(lock_dev_unlock_hit(0.0, 1200.0, 1200.0) && lock_dev_unlock_hit(140.0, 1152.0, 1200.0), "the bottom-left corner unlocks");
-    test::check(!lock_dev_unlock_hit(141.0, 1190.0, 1200.0) && !lock_dev_unlock_hit(10.0, 1151.0, 1200.0) && !lock_dev_unlock_hit(500.0, 600.0, 1200.0), "nothing outside the corner unlocks");
+    test::check(lock_dev_unlock_hit(0.0, 1200.0, 1200.0) &&
+                    lock_dev_unlock_hit(140.0, 1152.0, 1200.0),
+                "the bottom-left corner unlocks");
+    test::check(!lock_dev_unlock_hit(141.0, 1190.0, 1200.0) &&
+                    !lock_dev_unlock_hit(10.0, 1151.0, 1200.0) &&
+                    !lock_dev_unlock_hit(500.0, 600.0, 1200.0),
+                "nothing outside the corner unlocks");
 
     test::check(lock_fetch_colour_count(0.0f, 8) == 0, "lock layout");
     test::check(lock_fetch_colour_count(kLockFetchColorBox, 8) == 1, "lock layout");

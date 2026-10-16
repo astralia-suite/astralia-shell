@@ -9,8 +9,7 @@
 
 namespace {
 
-constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0,
-                                    1, 1, 0, 1, -1, 0, -1, 1, 0};
+constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
 
 } // namespace
 
@@ -18,7 +17,8 @@ bool BarVisualizer::init() {
     if (ready_)
         return true;
 
-    prog_ = gl_compile_program_files("visualizer/fullscreen.vert", "visualizer/bar/bar.frag", "visualizer_bar");
+    prog_ = gl_compile_program_files("visualizer/fullscreen.vert", "visualizer/bar/bar.frag",
+                                     "visualizer_bar");
     if (!prog_) {
         klog("visualizer_bar: shader compile failed");
         return false;
@@ -49,7 +49,8 @@ void BarVisualizer::draw_quad() {
     glDisableVertexAttribArray(0);
 }
 
-void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex, int audio_size, const VisualizerParams &params) {
+void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex,
+                           int audio_size, const VisualizerParams &params) {
     (void)tick;
     (void)audio_size;
     (void)params;
@@ -58,7 +59,8 @@ void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, 
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, width, height);
-    glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g, astralia::palette::window_backdrop.b, astralia::palette::window_backdrop.a);
+    glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g,
+                 astralia::palette::window_backdrop.b, astralia::palette::window_backdrop.a);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glEnable(GL_BLEND);
@@ -69,8 +71,10 @@ void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, 
     int bar_count = static_cast<int>((static_cast<float>(width) - kVisualizerBarSpacing) / slot);
     bar_count = bar_count < 1 ? 1 : bar_count;
 
-    glUniform2f(glGetUniformLocation(prog_, "u_resolution"), static_cast<float>(width), static_cast<float>(height));
-    glUniform3f(glGetUniformLocation(prog_, "u_accent"), astralia::palette::accent.r, astralia::palette::accent.g, astralia::palette::accent.b);
+    glUniform2f(glGetUniformLocation(prog_, "u_resolution"), static_cast<float>(width),
+                static_cast<float>(height));
+    glUniform3f(glGetUniformLocation(prog_, "u_accent"), astralia::palette::accent.r,
+                astralia::palette::accent.g, astralia::palette::accent.b);
     glUniform1i(glGetUniformLocation(prog_, "u_barCount"), bar_count);
     glUniform1f(glGetUniformLocation(prog_, "u_barWidth"), kVisualizerBarWidth);
     glUniform1f(glGetUniformLocation(prog_, "u_barSpacing"), kVisualizerBarSpacing);

@@ -12,9 +12,7 @@
 
 namespace astralia {
 
-enum class AudioKind { sink,
-                       source,
-                       nodes };
+enum class AudioKind { sink, source, nodes };
 
 struct AudioLevel {
     int percent = 0;
@@ -22,10 +20,7 @@ struct AudioLevel {
     bool present = false;
 };
 
-enum class AudioNodeKind { sink,
-                           source,
-                           playback,
-                           capture };
+enum class AudioNodeKind { sink, source, playback, capture };
 
 struct AudioNode {
     uint32_t id = 0;

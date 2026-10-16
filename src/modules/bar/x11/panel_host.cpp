@@ -27,11 +27,16 @@ constexpr double wheel_step = 40.0;
 PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), keyboard_(x.conn()), set_(loop),
       window_(x, "astralia-panel",
-              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
-      popup_(x, "astralia-panel-popup", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW) {
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION |
+                  XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
+      popup_(x, "astralia-panel-popup",
+             XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION |
+                 XCB_EVENT_MASK_LEAVE_WINDOW) {
     output_ = x.primary_output();
     set_.add(PanelId::tray, std::make_unique<TrayPanel>(services.tray));
-    set_.add(PanelId::resource, std::make_unique<ResourcePanel>(services.cpu_temp, services.gpu_temp, services.system_stats));
+    set_.add(PanelId::resource, std::make_unique<ResourcePanel>(
+                                    services.cpu_temp, services.gpu_temp, services.system_stats));
     set_.add(PanelId::network, std::make_unique<NetworkPanel>(services.network));
     set_.add(PanelId::bluetooth, std::make_unique<BluetoothPanel>(services.bluetooth));
     set_.add(PanelId::volume, std::make_unique<VolumePanel>(services.audio));
@@ -79,9 +84,13 @@ void PanelHost::grab() {
     if (grabbed_) {
         return;
     }
-    constexpr uint16_t mask = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_BUTTON_1_MOTION;
+    constexpr uint16_t mask = XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+                              XCB_EVENT_MASK_BUTTON_1_MOTION;
     xcb_grab_pointer_reply_t *reply = xcb_grab_pointer_reply(
-        x_.conn(), xcb_grab_pointer(x_.conn(), 1, window_.id(), mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME), nullptr);
+        x_.conn(),
+        xcb_grab_pointer(x_.conn(), 1, window_.id(), mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+                         XCB_NONE, XCB_NONE, XCB_CURRENT_TIME),
+        nullptr);
     grabbed_ = reply && reply->status == XCB_GRAB_STATUS_SUCCESS;
     free(reply);
 }
@@ -100,7 +109,9 @@ void PanelHost::paint() {
     }
     Panel::Inset inset = Panel::inset();
     float x = panel->card_x(static_cast<float>(output_.width)) - inset.x;
-    OutputGeometry geometry{static_cast<int16_t>(output_.x + static_cast<int>(x)), static_cast<int16_t>(output_.y + top_), static_cast<uint16_t>(panel->content().width() + 2.0f * inset.x), 1};
+    OutputGeometry geometry{static_cast<int16_t>(output_.x + static_cast<int>(x)),
+                            static_cast<int16_t>(output_.y + top_),
+                            static_cast<uint16_t>(panel->content().width() + 2.0f * inset.x), 1};
     if (window_.cr() == nullptr) {
         geometry.height = backing_height;
         window_.place(geometry, backing_width, backing_height);
@@ -109,7 +120,8 @@ void PanelHost::paint() {
     window_.clear();
     panel->paint_at(canvas_, inset.x, 0.0f);
     ui::Box extent = panel->extent();
-    geometry.height = static_cast<uint16_t>(std::clamp(static_cast<int>(extent.h), 1, static_cast<int>(backing_height)));
+    geometry.height = static_cast<uint16_t>(
+        std::clamp(static_cast<int>(extent.h), 1, static_cast<int>(backing_height)));
     if (window_.geometry() != geometry) {
         window_.place(geometry, backing_width, backing_height);
         canvas_.bind(window_.cr());
@@ -132,15 +144,19 @@ void PanelHost::sync_popup() {
         return;
     }
     auto width = static_cast<int>(panel->popup_width());
-    int height = std::clamp(static_cast<int>(panel->popup_height()), 1, static_cast<int>(output_.height));
+    int height =
+        std::clamp(static_cast<int>(panel->popup_height()), 1, static_cast<int>(output_.height));
     ui::Box anchor = panel->popup_anchor();
     const OutputGeometry &parent = window_.geometry();
-    int x = std::clamp(static_cast<int>(parent.x + anchor.x), static_cast<int>(output_.x), std::max(static_cast<int>(output_.x), static_cast<int>(output_.x + output_.width) - width));
+    int x = std::clamp(
+        static_cast<int>(parent.x + anchor.x), static_cast<int>(output_.x),
+        std::max(static_cast<int>(output_.x), static_cast<int>(output_.x + output_.width) - width));
     int y = static_cast<int>(parent.y + anchor.y + anchor.h);
     if (y + height > output_.y + output_.height) {
         y = std::max(static_cast<int>(output_.y), static_cast<int>(parent.y + anchor.y) - height);
     }
-    OutputGeometry geometry{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<uint16_t>(width), static_cast<uint16_t>(height)};
+    OutputGeometry geometry{static_cast<int16_t>(x), static_cast<int16_t>(y),
+                            static_cast<uint16_t>(width), static_cast<uint16_t>(height)};
     popup_.place(geometry, geometry.width, geometry.height);
     popup_canvas_.bind(popup_.cr());
     popup_.clear();
@@ -162,7 +178,8 @@ void PanelHost::handle_popup(const xcb_generic_event_t &event) {
         if (panel == nullptr || scroll_event(press.detail)) {
             break;
         }
-        input::PointerEvent pointer = pointer_event(press.event_x, press.event_y, press.detail, true);
+        input::PointerEvent pointer =
+            pointer_event(press.event_x, press.event_y, press.detail, true);
         panel->press_popup(pointer.x, pointer.y, pointer.button);
         break;
     }
@@ -201,7 +218,8 @@ void PanelHost::handle(const xcb_generic_event_t &event) {
             panel->wheel(press.event_x, press.event_y, scroll->dy * wheel_step);
             break;
         }
-        input::PointerEvent pointer = pointer_event(press.event_x, press.event_y, press.detail, true);
+        input::PointerEvent pointer =
+            pointer_event(press.event_x, press.event_y, press.detail, true);
         panel->press(pointer.x, pointer.y, pointer.button);
         break;
     }

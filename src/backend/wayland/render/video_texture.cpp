@@ -50,23 +50,21 @@ VideoTexture &VideoTexture::operator=(VideoTexture &&other) noexcept {
 
 void video_texture_detect_caps(EGLDisplay display) {
     const char *egl_ext = eglQueryString(display, EGL_EXTENSIONS);
-    const char *gl_ext =
-        reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS));
-    bool have_dma_buf =
-        egl_ext && std::strstr(egl_ext, "EGL_EXT_image_dma_buf_import");
-    bool have_image_base =
-        egl_ext && std::strstr(egl_ext, "EGL_KHR_image_base");
+    const char *gl_ext = reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS));
+    bool have_dma_buf = egl_ext && std::strstr(egl_ext, "EGL_EXT_image_dma_buf_import");
+    bool have_image_base = egl_ext && std::strstr(egl_ext, "EGL_KHR_image_base");
     bool have_oes_image = gl_ext && std::strstr(gl_ext, "GL_OES_EGL_image");
-    bool have_oes_external =
-        gl_ext && std::strstr(gl_ext, "GL_OES_EGL_image_external");
+    bool have_oes_external = gl_ext && std::strstr(gl_ext, "GL_OES_EGL_image_external");
     if (!have_dma_buf || !have_image_base || !have_oes_image || !have_oes_external) {
         g_import_supported.store(false, std::memory_order_relaxed);
         return;
     }
-    g_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
-    g_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
-    g_glEGLImageTargetTexture2DOES =
-        reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(eglGetProcAddress("glEGLImageTargetTexture2DOES"));
+    g_eglCreateImageKHR =
+        reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
+    g_eglDestroyImageKHR =
+        reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
+    g_glEGLImageTargetTexture2DOES = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
+        eglGetProcAddress("glEGLImageTargetTexture2DOES"));
     bool ok = g_eglCreateImageKHR && g_eglDestroyImageKHR && g_glEGLImageTargetTexture2DOES;
     if (!ok)
         klog("video_texture: dma-buf extensions advertised but proc "
@@ -74,9 +72,7 @@ void video_texture_detect_caps(EGLDisplay display) {
     g_import_supported.store(ok, std::memory_order_relaxed);
 }
 
-bool video_texture_import_supported() {
-    return g_import_supported.load(std::memory_order_relaxed);
-}
+bool video_texture_import_supported() { return g_import_supported.load(std::memory_order_relaxed); }
 
 bool video_texture_import(VideoTexture &tex, EGLDisplay display, const DrmFrameImport &frame) {
     if (!video_texture_import_supported() || frame.plane_count != 2)
@@ -120,7 +116,8 @@ bool video_texture_import(VideoTexture &tex, EGLDisplay display, const DrmFrameI
     }
     attribs[n++] = EGL_NONE;
 
-    EGLImageKHR image = g_eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
+    EGLImageKHR image =
+        g_eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
     if (image == EGL_NO_IMAGE_KHR) {
         klog("video_texture: combined nv12 plane import failed");
         return false;

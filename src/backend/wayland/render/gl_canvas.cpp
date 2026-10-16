@@ -18,9 +18,13 @@ namespace ui = astralia::ui;
 
 namespace {
 
-float texture_width(const Texture &tex) { return static_cast<float>(tex.width) / static_cast<float>(tex.scale > 0 ? tex.scale : 1); }
+float texture_width(const Texture &tex) {
+    return static_cast<float>(tex.width) / static_cast<float>(tex.scale > 0 ? tex.scale : 1);
+}
 
-float texture_height(const Texture &tex) { return static_cast<float>(tex.height) / static_cast<float>(tex.scale > 0 ? tex.scale : 1); }
+float texture_height(const Texture &tex) {
+    return static_cast<float>(tex.height) / static_cast<float>(tex.scale > 0 ? tex.scale : 1);
+}
 
 constexpr float kWhite[4] = {1, 1, 1, 1};
 
@@ -43,8 +47,7 @@ void GlCanvas::flush() {
     renderer_->set_opacity(1.0f);
 }
 
-template <typename Draw>
-void GlCanvas::shape(const Draw &draw) {
+template <typename Draw> void GlCanvas::shape(const Draw &draw) {
     if (erase_) {
         renderer_->set_erase_blend(true);
         draw(true);
@@ -54,14 +57,23 @@ void GlCanvas::shape(const Draw &draw) {
 }
 
 void GlCanvas::fillet(const ui::Box &box, bool circle_on_right, const astralia::Color &color) {
-    shape([&](bool erase) { renderer_->draw_fillet(ox() + box.x, oy() + box.y, box.w, circle_on_right, erase ? kWhite : astralia::rgba(color)); });
+    shape([&](bool erase) {
+        renderer_->draw_fillet(ox() + box.x, oy() + box.y, box.w, circle_on_right,
+                               erase ? kWhite : astralia::rgba(color));
+    });
 }
 
 const Texture *GlCanvas::glyphs(std::string_view text, const ui::TextStyle &style) {
     if (text.empty()) {
         return nullptr;
     }
-    std::string key = std::string("cv:") + (style.family == ui::FontFamily::icon ? "i" : (style.family == ui::FontFamily::glyph ? "g" : (style.bold ? "b" : "n"))) + std::to_string(style.px) + ":" + std::to_string(style.max_width) + (style.wrap ? "w:" : ":") + std::string(text);
+    std::string key =
+        std::string("cv:") +
+        (style.family == ui::FontFamily::icon
+             ? "i"
+             : (style.family == ui::FontFamily::glyph ? "g" : (style.bold ? "b" : "n"))) +
+        std::to_string(style.px) + ":" + std::to_string(style.max_width) +
+        (style.wrap ? "w:" : ":") + std::string(text);
     return cache_.get(key, [&] {
         if (style.family == ui::FontFamily::icon) {
             return rasterize_icon(std::string(text), scale_, style.px);
@@ -69,16 +81,25 @@ const Texture *GlCanvas::glyphs(std::string_view text, const ui::TextStyle &styl
         if (style.family == ui::FontFamily::glyph) {
             return rasterize_display_glyph(std::string(text), scale_, style.px);
         }
-        return rasterize_text_px(std::string(text), style.px, style.bold, scale_, style.max_width, style.wrap);
+        return rasterize_text_px(std::string(text), style.px, style.bold, scale_, style.max_width,
+                                 style.wrap);
     });
 }
 
 void GlCanvas::rect(const ui::Box &box, const astralia::Color &fill) {
-    shape([&](bool erase) { renderer_->draw_rect(ox() + box.x, oy() + box.y, box.w, box.h, erase ? kWhite : astralia::rgba(fill)); });
+    shape([&](bool erase) {
+        renderer_->draw_rect(ox() + box.x, oy() + box.y, box.w, box.h,
+                             erase ? kWhite : astralia::rgba(fill));
+    });
 }
 
-void GlCanvas::rounded(const ui::Box &box, float radius, const astralia::Color &fill, float border_width, const astralia::Color &border) {
-    shape([&](bool erase) { renderer_->draw_rounded_rect(ox() + box.x, oy() + box.y, box.w, box.h, radius, border_width, erase ? kWhite : astralia::rgba(fill), erase ? kWhite : astralia::rgba(border)); });
+void GlCanvas::rounded(const ui::Box &box, float radius, const astralia::Color &fill,
+                       float border_width, const astralia::Color &border) {
+    shape([&](bool erase) {
+        renderer_->draw_rounded_rect(ox() + box.x, oy() + box.y, box.w, box.h, radius, border_width,
+                                     erase ? kWhite : astralia::rgba(fill),
+                                     erase ? kWhite : astralia::rgba(border));
+    });
 }
 
 ui::TextSize GlCanvas::measure(std::string_view text, const ui::TextStyle &style) {
@@ -93,7 +114,8 @@ float GlCanvas::advance(const ui::TextStyle &style) {
     return text_advance_px(style.px, style.bold);
 }
 
-void GlCanvas::text(std::string_view text, const ui::TextStyle &style, float x, float y, const astralia::Color &tint) {
+void GlCanvas::text(std::string_view text, const ui::TextStyle &style, float x, float y,
+                    const astralia::Color &tint) {
     const Texture *tex = glyphs(text, style);
     if (tex != nullptr) {
         texture(*tex, {x, y, texture_width(*tex), texture_height(*tex)}, astralia::rgba(tint));
@@ -105,8 +127,10 @@ ui::ImageId GlCanvas::image(std::string_view asset, int target_px) {
     if (auto found = image_ids_.find(name); found != image_ids_.end()) {
         return found->second;
     }
-    std::string installed = name.starts_with('/') ? name : std::string(ASTRALIA_ASSET_DIR) + "/" + name;
-    std::string source = name.starts_with('/') ? name : std::string(ASTRALIA_SOURCE_ASSET_DIR) + "/" + name;
+    std::string installed =
+        name.starts_with('/') ? name : std::string(ASTRALIA_ASSET_DIR) + "/" + name;
+    std::string source =
+        name.starts_with('/') ? name : std::string(ASTRALIA_SOURCE_ASSET_DIR) + "/" + name;
     Texture tex = load_image_texture_first_existing({installed.c_str(), source.c_str()}, target_px);
     ui::ImageId id = ui::no_image;
     if (tex.id != 0) {
@@ -225,7 +249,8 @@ void GlCanvas::draw_image(ui::ImageId id, const ui::Box &box, const astralia::Co
 
 void GlCanvas::gauge(const ui::Box &box, float stroke, float value, const astralia::Color &fill) {
     if (const Texture *tex = cached_arc_gauge(cache_, scale_, box.w, stroke, value, fill)) {
-        texture(*tex, std::round(box.x), std::round(box.y), astralia::rgba(astralia::palette::white));
+        texture(*tex, std::round(box.x), std::round(box.y),
+                astralia::rgba(astralia::palette::white));
     }
 }
 
@@ -235,7 +260,10 @@ void GlCanvas::begin_group(const ui::Box &box, const ui::GroupOptions &options) 
     if (group.transformed) {
         float cx = group.x + box.w * 0.5f;
         float cy = group.y + box.h * 0.5f;
-        renderer_->push_model(Affine2D::translation(cx, cy).compose(Affine2D::scaling(options.scale)).compose(Affine2D::rotation_deg(options.rotation)).compose(Affine2D::translation(-cx, -cy)));
+        renderer_->push_model(Affine2D::translation(cx, cy)
+                                  .compose(Affine2D::scaling(options.scale))
+                                  .compose(Affine2D::rotation_deg(options.rotation))
+                                  .compose(Affine2D::translation(-cx, -cy)));
     }
     group.clip = options.clip && !group.transformed;
     if (group.clip) {
@@ -266,7 +294,8 @@ void GlCanvas::texture(const Texture &tex, const ui::Box &box, const float tint[
     float y = oy() + box.y;
     shape([&](bool erase) {
         if (radius > 0.0f) {
-            renderer_->draw_texture_rect_rounded(x, y, box.w, box.h, radius, tex, erase ? kWhite : tint);
+            renderer_->draw_texture_rect_rounded(x, y, box.w, box.h, radius, tex,
+                                                 erase ? kWhite : tint);
         } else {
             renderer_->draw_texture_rect(x, y, box.w, box.h, tex, erase ? kWhite : tint);
         }

@@ -166,7 +166,8 @@ std::vector<CompositorClient> hypr_parse_clients(std::string_view reply) {
     return clients;
 }
 
-bool hypr_client_order_differs(const std::vector<CompositorClient> &a, const std::vector<CompositorClient> &b) {
+bool hypr_client_order_differs(const std::vector<CompositorClient> &a,
+                               const std::vector<CompositorClient> &b) {
     if (a.size() != b.size()) {
         return true;
     }
@@ -270,9 +271,12 @@ HyprEventKind hypr_apply_event(CompositorState &state, std::string_view line) {
         return HyprEventKind::none;
     }
     static constexpr std::string_view structural[] = {
-        "createworkspacev2", "destroyworkspacev2", "renameworkspace", "moveworkspacev2", "openwindow",
-        "closewindow", "movewindow", "movewindowv2", "pin", "fullscreen", "changefloatingmode",
-        "activewindowv2", "moveintogroup", "moveoutofgroup", "togglegroup", "changegroupactivev2"};
+        "createworkspacev2",  "destroyworkspacev2", "renameworkspace",
+        "moveworkspacev2",    "openwindow",         "closewindow",
+        "movewindow",         "movewindowv2",       "pin",
+        "fullscreen",         "changefloatingmode", "activewindowv2",
+        "moveintogroup",      "moveoutofgroup",     "togglegroup",
+        "changegroupactivev2"};
     return std::ranges::find(structural, event) != std::end(structural) ? HyprEventKind::structural
                                                                         : HyprEventKind::none;
 }
@@ -316,8 +320,9 @@ HyprlandCompositor::HyprlandCompositor(Reactor &loop) : loop_(loop) {
         return;
     }
     refresh();
-    state_.hug_radius_px = hypr_parse_gaps_out(request(request_path_, "j/getoption general:gaps_out")) +
-                           hypr_parse_rounding(request(request_path_, "j/getoption decoration:rounding"));
+    state_.hug_radius_px =
+        hypr_parse_gaps_out(request(request_path_, "j/getoption general:gaps_out")) +
+        hypr_parse_rounding(request(request_path_, "j/getoption decoration:rounding"));
     int fd = connect_socket(event_path_);
     if (fd < 0) {
         log::error("hyprland: cannot connect the event socket: {}", std::strerror(errno));
@@ -326,13 +331,12 @@ HyprlandCompositor::HyprlandCompositor(Reactor &loop) : loop_(loop) {
         event_fd_ = UniqueFd(fd);
         loop_.on_fd(event_fd_.get(), [this] { read_events(); });
     }
-    timer_ = loop_.add_timer(
-        [this] { return watching_ ? client_poll_interval : client_poll_idle; },
-        [this] {
-            if (watching_ && refresh_clients()) {
-                structure_changed.emit();
-            }
-        });
+    timer_ = loop_.add_timer([this] { return watching_ ? client_poll_interval : client_poll_idle; },
+                             [this] {
+                                 if (watching_ && refresh_clients()) {
+                                     structure_changed.emit();
+                                 }
+                             });
 }
 
 HyprlandCompositor::~HyprlandCompositor() {
@@ -399,9 +403,11 @@ void HyprlandCompositor::read_events() {
     HyprEventKind result = HyprEventKind::none;
     std::size_t newline = 0;
     while ((newline = event_buffer_.find('\n')) != std::string::npos) {
-        HyprEventKind kind = hypr_apply_event(state_, std::string_view(event_buffer_).substr(0, newline));
+        HyprEventKind kind =
+            hypr_apply_event(state_, std::string_view(event_buffer_).substr(0, newline));
         event_buffer_.erase(0, newline + 1);
-        if (kind == HyprEventKind::structural || (kind == HyprEventKind::active && result == HyprEventKind::none)) {
+        if (kind == HyprEventKind::structural ||
+            (kind == HyprEventKind::active && result == HyprEventKind::none)) {
             result = kind;
         }
     }
@@ -427,9 +433,11 @@ std::vector<const CompositorClient *> HyprlandCompositor::clients_in(int workspa
     return out;
 }
 
-void HyprlandCompositor::move_all(const std::vector<const CompositorClient *> &windows, const std::string &workspace_lua) {
+void HyprlandCompositor::move_all(const std::vector<const CompositorClient *> &windows,
+                                  const std::string &workspace_lua) {
     for (const CompositorClient *window : windows) {
-        dispatch("hl.dsp.window.move({window='address:" + window->address + "', workspace=" + workspace_lua + ", follow=false})");
+        dispatch("hl.dsp.window.move({window='address:" + window->address +
+                 "', workspace=" + workspace_lua + ", follow=false})");
     }
 }
 
@@ -441,12 +449,15 @@ void HyprlandCompositor::move_window(const std::string &address, int id, bool gl
     dispatch(hypr_lua_move(address, hypr_resolve_workspace(state_, id, global), false));
 }
 
-void HyprlandCompositor::close_window(const std::string &address) { dispatch(hypr_lua_close(address)); }
+void HyprlandCompositor::close_window(const std::string &address) {
+    dispatch(hypr_lua_close(address));
+}
 
 void HyprlandCompositor::close_windows(CloseScope scope, int id) {
     std::vector<std::string> targets;
     for (const CompositorClient &client : state_.clients) {
-        bool match = scope == CloseScope::all || (scope == CloseScope::workspace && client.workspace_id == id) ||
+        bool match = scope == CloseScope::all ||
+                     (scope == CloseScope::workspace && client.workspace_id == id) ||
                      (scope == CloseScope::monitor && client.monitor_id == id);
         if (match) {
             targets.push_back(client.address);

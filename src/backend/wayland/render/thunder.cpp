@@ -9,7 +9,8 @@
 void thunder_burst_draw(ThunderBurst &tb, Renderer &renderer, const ThunderParams &p) {
     if (!tb.bolt_tried) {
         tb.bolt_tried = true;
-        tb.bolt_program = gl_compile_program_files("renderer/quad.vert", "thunder/thunder_burst.frag", "thunder_bolt");
+        tb.bolt_program = gl_compile_program_files("renderer/quad.vert",
+                                                   "thunder/thunder_burst.frag", "thunder_bolt");
         klog("thunder: bolt_program=%u", tb.bolt_program);
     }
     if (!tb.bolt_program || !p.core || !p.glow)
@@ -39,7 +40,9 @@ void thunder_burst_draw(ThunderBurst &tb, Renderer &renderer, const ThunderParam
             loc_logged = true;
             klog("thunder: bolt loc a_pos=%d size=%d a=%d b=%d seed=%d "
                  "time=%d",
-                 glGetAttribLocation(prog, "a_pos"), glGetUniformLocation(prog, "u_size"), glGetUniformLocation(prog, "u_a"), glGetUniformLocation(prog, "u_b"), glGetUniformLocation(prog, "u_seed"), glGetUniformLocation(prog, "u_time"));
+                 glGetAttribLocation(prog, "a_pos"), glGetUniformLocation(prog, "u_size"),
+                 glGetUniformLocation(prog, "u_a"), glGetUniformLocation(prog, "u_b"),
+                 glGetUniformLocation(prog, "u_seed"), glGetUniformLocation(prog, "u_time"));
         }
         glUniform2f(glGetUniformLocation(prog, "u_size"), w, h);
         glUniform2f(glGetUniformLocation(prog, "u_a"), ax, ay);
@@ -59,7 +62,8 @@ void thunder_burst_draw(ThunderBurst &tb, Renderer &renderer, const ThunderParam
 void thunder_shock_draw(ThunderBurst &tb, Renderer &renderer, const ThunderShockParams &p) {
     if (!tb.shock_tried) {
         tb.shock_tried = true;
-        tb.shock_program = gl_compile_program_files("renderer/quad.vert", "logout/thunder_shock.frag", "thunder_shock");
+        tb.shock_program = gl_compile_program_files("renderer/quad.vert",
+                                                    "logout/thunder_shock.frag", "thunder_shock");
         klog("thunder: shock_program=%u", tb.shock_program);
     }
     if (!tb.shock_program || !p.core || !p.glow || p.radius <= 0.0f)
@@ -91,10 +95,12 @@ void thunder_shock_draw(ThunderBurst &tb, Renderer &renderer, const ThunderShock
     });
 }
 
-void thunder_rect_shock_draw(ThunderBurst &tb, Renderer &renderer, const ThunderRectShockParams &p) {
+void thunder_rect_shock_draw(ThunderBurst &tb, Renderer &renderer,
+                             const ThunderRectShockParams &p) {
     if (!tb.rect_tried) {
         tb.rect_tried = true;
-        tb.rect_program = gl_compile_program_files("renderer/quad.vert", "launcher/thunder_rect_shock.frag", "thunder_rect_shock");
+        tb.rect_program = gl_compile_program_files(
+            "renderer/quad.vert", "launcher/thunder_rect_shock.frag", "thunder_rect_shock");
         klog("thunder: rect_program=%u", tb.rect_program);
     }
     if (!tb.rect_program || !p.core || !p.glow || p.half_w <= 0.0f || p.half_h <= 0.0f)

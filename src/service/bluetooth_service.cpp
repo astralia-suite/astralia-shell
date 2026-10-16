@@ -146,7 +146,8 @@ bool set_bluetooth_soft_blocked(bool blocked) {
     int write_errno = errno;
     close(fd);
     if (written != static_cast<ssize_t>(sizeof event)) {
-        log::error("rfkill: write /dev/rfkill: {}", written < 0 ? std::strerror(write_errno) : "short write");
+        log::error("rfkill: write /dev/rfkill: {}",
+                   written < 0 ? std::strerror(write_errno) : "short write");
         return false;
     }
     return true;
@@ -227,10 +228,12 @@ BluetoothDeviceKind bluetooth_classify_class(uint32_t class_of_device) {
     }
 }
 
-BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects, const std::set<std::string> &busy) {
+BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects,
+                                  const std::set<std::string> &busy) {
     BluetoothSnapshot snapshot;
     for (const auto &[path, interfaces] : objects) {
-        if (auto it = interfaces.find(adapter_interface); it != interfaces.end() && !snapshot.status.present) {
+        if (auto it = interfaces.find(adapter_interface);
+            it != interfaces.end() && !snapshot.status.present) {
             snapshot.status.present = true;
             snapshot.status.powered = flag(it->second, "Powered");
             snapshot.status.scanning = flag(it->second, "Discovering");
@@ -254,11 +257,14 @@ BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects, const std::se
         device.trusted = flag(it->second, "Trusted");
         device.connected = flag(it->second, "Connected");
         device.connecting = !device.connected && busy.contains(device.path);
-        device.kind = bluetooth_classify_icon(property<std::string>(it->second, "Icon").value_or(""));
+        device.kind =
+            bluetooth_classify_icon(property<std::string>(it->second, "Icon").value_or(""));
         if (device.kind == BluetoothDeviceKind::unknown) {
-            device.kind = bluetooth_classify_class(property<uint32_t>(it->second, "Class").value_or(0));
+            device.kind =
+                bluetooth_classify_class(property<uint32_t>(it->second, "Class").value_or(0));
         }
-        if (auto battery = interfaces.find(battery_interface); device.connected && battery != interfaces.end()) {
+        if (auto battery = interfaces.find(battery_interface);
+            device.connected && battery != interfaces.end()) {
             if (auto percent = property<uint8_t>(battery->second, "Percentage")) {
                 device.battery = *percent;
             }
@@ -272,7 +278,8 @@ BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects, const std::se
     return snapshot;
 }
 
-std::vector<StatusMessage> bluetooth_changes(const BluetoothStatus &prev, const BluetoothStatus &next) {
+std::vector<StatusMessage> bluetooth_changes(const BluetoothStatus &prev,
+                                             const BluetoothStatus &next) {
     std::string was = connected_device(prev);
     std::string now = connected_device(next);
     if (now == was && prev.connected == next.connected) {
@@ -303,21 +310,23 @@ void BluetoothService::request_refresh() {
     refresh_in_flight_ = true;
     refresh_again_ = false;
     try {
-        refresh_reply_ = root_->callMethodAsync("GetManagedObjects")
-                             .onInterface(object_manager_interface)
-                             .uponReplyInvoke(
-                                 [this](std::optional<sdbus::Error> error, BluetoothObjects objects) {
-                                     refresh_in_flight_ = false;
-                                     if (error) {
-                                         log::error("bluetooth: GetManagedObjects failed: {}", error->getMessage());
-                                     } else {
-                                         apply(objects);
-                                     }
-                                     if (refresh_again_) {
-                                         request_refresh();
-                                     }
-                                 },
-                                 sdbus::return_slot);
+        refresh_reply_ =
+            root_->callMethodAsync("GetManagedObjects")
+                .onInterface(object_manager_interface)
+                .uponReplyInvoke(
+                    [this](std::optional<sdbus::Error> error, BluetoothObjects objects) {
+                        refresh_in_flight_ = false;
+                        if (error) {
+                            log::error("bluetooth: GetManagedObjects failed: {}",
+                                       error->getMessage());
+                        } else {
+                            apply(objects);
+                        }
+                        if (refresh_again_) {
+                            request_refresh();
+                        }
+                    },
+                    sdbus::return_slot);
     } catch (const sdbus::Error &error) {
         refresh_in_flight_ = false;
         log::error("bluetooth: GetManagedObjects dispatch failed: {}", error.getMessage());
@@ -329,7 +338,8 @@ void BluetoothService::apply(const BluetoothObjects &objects) {
     adapter_path_ = next.adapter_path;
     std::erase_if(proxies_, [&](const auto &entry) {
         return entry.first != adapter_path_ &&
-               std::ranges::none_of(next.devices, [&](const BluetoothDevice &d) { return d.path == entry.first; });
+               std::ranges::none_of(
+                   next.devices, [&](const BluetoothDevice &d) { return d.path == entry.first; });
     });
     bool first = !initialized_;
     initialized_ = true;
@@ -373,13 +383,15 @@ void BluetoothService::call_device(const std::string &path, const char *method, 
         changed.emit();
     }
     try {
-        device->callMethodAsync(method).onInterface(device_interface).uponReplyInvoke([this, path, method](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("bluetooth: {} failed: {}", method, error->getMessage());
-            }
-            busy_.erase(path);
-            request_refresh();
-        });
+        device->callMethodAsync(method)
+            .onInterface(device_interface)
+            .uponReplyInvoke([this, path, method](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("bluetooth: {} failed: {}", method, error->getMessage());
+                }
+                busy_.erase(path);
+                request_refresh();
+            });
     } catch (const sdbus::Error &error) {
         busy_.erase(path);
         log::error("bluetooth: {} dispatch failed: {}", method, error.getMessage());
@@ -393,11 +405,13 @@ void BluetoothService::call_adapter(const char *method) {
         return;
     }
     try {
-        adapter->callMethodAsync(method).onInterface(adapter_interface).uponReplyInvoke([method](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("bluetooth: {} failed: {}", method, error->getMessage());
-            }
-        });
+        adapter->callMethodAsync(method)
+            .onInterface(adapter_interface)
+            .uponReplyInvoke([method](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("bluetooth: {} failed: {}", method, error->getMessage());
+                }
+            });
     } catch (const sdbus::Error &error) {
         log::error("bluetooth: {} dispatch failed: {}", method, error.getMessage());
     }
@@ -418,12 +432,15 @@ void BluetoothService::set_powered(bool powered) {
         }
     }
     try {
-        adapter->setPropertyAsync("Powered").onInterface(adapter_interface).toValue(powered).uponReplyInvoke([this](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("bluetooth: cannot set Powered: {}", error->getMessage());
-            }
-            request_refresh();
-        });
+        adapter->setPropertyAsync("Powered")
+            .onInterface(adapter_interface)
+            .toValue(powered)
+            .uponReplyInvoke([this](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("bluetooth: cannot set Powered: {}", error->getMessage());
+                }
+                request_refresh();
+            });
     } catch (const sdbus::Error &error) {
         log::error("bluetooth: cannot set Powered: {}", error.getMessage());
     }
@@ -443,7 +460,9 @@ void BluetoothService::stop_discovery() {
 
 void BluetoothService::connect(const std::string &path) { call_device(path, "Connect", true); }
 
-void BluetoothService::disconnect(const std::string &path) { call_device(path, "Disconnect", false); }
+void BluetoothService::disconnect(const std::string &path) {
+    call_device(path, "Disconnect", false);
+}
 
 void BluetoothService::pair(const std::string &path) { call_device(path, "Pair", true); }
 
@@ -453,12 +472,15 @@ void BluetoothService::forget(const std::string &path) {
         return;
     }
     try {
-        adapter->callMethodAsync("RemoveDevice").onInterface(adapter_interface).withArguments(sdbus::ObjectPath(path)).uponReplyInvoke([this](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("bluetooth: RemoveDevice failed: {}", error->getMessage());
-            }
-            request_refresh();
-        });
+        adapter->callMethodAsync("RemoveDevice")
+            .onInterface(adapter_interface)
+            .withArguments(sdbus::ObjectPath(path))
+            .uponReplyInvoke([this](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("bluetooth: RemoveDevice failed: {}", error->getMessage());
+                }
+                request_refresh();
+            });
     } catch (const sdbus::Error &error) {
         log::error("bluetooth: RemoveDevice dispatch failed: {}", error.getMessage());
     }

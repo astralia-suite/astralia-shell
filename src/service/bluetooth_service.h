@@ -63,8 +63,10 @@ struct BluetoothSnapshot {
 
 BluetoothDeviceKind bluetooth_classify_icon(const std::string &bluez_icon_name);
 BluetoothDeviceKind bluetooth_classify_class(uint32_t class_of_device);
-BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects, const std::set<std::string> &busy);
-std::vector<StatusMessage> bluetooth_changes(const BluetoothStatus &prev, const BluetoothStatus &next);
+BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects,
+                                  const std::set<std::string> &busy);
+std::vector<StatusMessage> bluetooth_changes(const BluetoothStatus &prev,
+                                             const BluetoothStatus &next);
 
 inline bool bluetooth_is_connected(const BluetoothDevice &d) { return d.connected; }
 inline bool bluetooth_is_paired(const BluetoothDevice &d) {

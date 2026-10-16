@@ -69,7 +69,9 @@ class X11Backend final : public Backend {
         Settings settings(*x, *loop, shell, services);
         WallpaperSelect wallpaper_select(*x, *loop, shell, services);
         wallpaper.on_settings = [&shell] { shell.run(ShellVerb::settings); };
-        wallpaper.on_wallpaper = [&wallpaper_select](const std::string &monitor, int column) { wallpaper_select.open_on(monitor, column); };
+        wallpaper.on_wallpaper = [&wallpaper_select](const std::string &monitor, int column) {
+            wallpaper_select.open_on(monitor, column);
+        };
         Dashboard dashboard(*x, *loop, shell, services);
         Rain rain(*x, *loop, shell, services);
         Idle idle(*x, *loop, services);
@@ -86,4 +88,6 @@ class X11Backend final : public Backend {
 
 } // namespace astralia
 
-extern "C" __attribute__((visibility("default"))) astralia::Backend *astralia_backend_create() { return new astralia::X11Backend(); }
+extern "C" __attribute__((visibility("default"))) astralia::Backend *astralia_backend_create() {
+    return new astralia::X11Backend();
+}

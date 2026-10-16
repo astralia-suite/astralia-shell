@@ -41,7 +41,8 @@ void submenu_open_directory_actions(SubmenuState &s, const std::string &path) {
         {"Open Directory in File Manager", path, true, SubmenuIcon::arrow_right,
          Action::dir_open_file_manager},
         {"Open Directory in Editor", path, true, SubmenuIcon::code, Action::dir_open_editor},
-        {"Open Directory in Terminal", path, true, SubmenuIcon::terminal, Action::dir_open_terminal},
+        {"Open Directory in Terminal", path, true, SubmenuIcon::terminal,
+         Action::dir_open_terminal},
     };
 }
 

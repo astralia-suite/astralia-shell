@@ -109,7 +109,8 @@ class I3Compositor final : public Compositor {
     void refresh_active();
     void read_events();
     std::vector<const CompositorClient *> clients_in(int workspace) const;
-    void move_all(const std::vector<const CompositorClient *> &windows, const std::string &workspace);
+    void move_all(const std::vector<const CompositorClient *> &windows,
+                  const std::string &workspace);
 
     Reactor &loop_;
     std::string path_;

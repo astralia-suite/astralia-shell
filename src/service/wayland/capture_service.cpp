@@ -16,7 +16,8 @@ uint32_t parse_handle(const std::string &address) {
     return static_cast<uint32_t>(std::strtoull(address.c_str(), nullptr, 16));
 }
 
-void swizzle_bgra_to_rgba(const uint8_t *src, uint32_t src_stride, uint32_t width, uint32_t height, std::vector<uint8_t> &dst) {
+void swizzle_bgra_to_rgba(const uint8_t *src, uint32_t src_stride, uint32_t width, uint32_t height,
+                          std::vector<uint8_t> &dst) {
     dst.resize(static_cast<size_t>(width) * height * 4);
     for (uint32_t y = 0; y < height; ++y) {
         const uint8_t *row = src + static_cast<size_t>(y) * src_stride;
@@ -40,7 +41,8 @@ void unmap_and_destroy_buffer(ToplevelExportCapture &cap) {
     cap.shm_size = 0;
 }
 
-bool allocate_buffer(ToplevelExportCapture &cap, wl_shm *shm, uint32_t width, uint32_t height, uint32_t stride, uint32_t format) {
+bool allocate_buffer(ToplevelExportCapture &cap, wl_shm *shm, uint32_t width, uint32_t height,
+                     uint32_t stride, uint32_t format) {
     unmap_and_destroy_buffer(cap);
 
     size_t size = static_cast<size_t>(stride) * height;
@@ -67,7 +69,9 @@ bool allocate_buffer(ToplevelExportCapture &cap, wl_shm *shm, uint32_t width, ui
         munmap(data, size);
         return false;
     }
-    cap.buffer = wl_shm_pool_create_buffer(pool, 0, static_cast<int32_t>(width), static_cast<int32_t>(height), static_cast<int32_t>(stride), format);
+    cap.buffer = wl_shm_pool_create_buffer(pool, 0, static_cast<int32_t>(width),
+                                           static_cast<int32_t>(height),
+                                           static_cast<int32_t>(stride), format);
     wl_shm_pool_destroy(pool);
     if (!cap.buffer) {
         munmap(data, size);
@@ -83,7 +87,8 @@ bool allocate_buffer(ToplevelExportCapture &cap, wl_shm *shm, uint32_t width, ui
     return true;
 }
 
-void handle_buffer(void *data, hyprland_toplevel_export_frame_v1 *, uint32_t format, uint32_t width, uint32_t height, uint32_t stride) {
+void handle_buffer(void *data, hyprland_toplevel_export_frame_v1 *, uint32_t format, uint32_t width,
+                   uint32_t height, uint32_t stride) {
     auto *cap = static_cast<ToplevelExportCapture *>(data);
     cap->pending_width = width;
     cap->pending_height = height;
@@ -92,15 +97,16 @@ void handle_buffer(void *data, hyprland_toplevel_export_frame_v1 *, uint32_t for
     cap->have_pending_shm_format = true;
 }
 
-void handle_linux_dmabuf(void *, hyprland_toplevel_export_frame_v1 *, uint32_t, uint32_t, uint32_t) {}
+void handle_linux_dmabuf(void *, hyprland_toplevel_export_frame_v1 *, uint32_t, uint32_t,
+                         uint32_t) {}
 
 void handle_flags(void *data, hyprland_toplevel_export_frame_v1 *, uint32_t flags) {
     auto *cap = static_cast<ToplevelExportCapture *>(data);
-    cap->y_invert =
-        (flags & HYPRLAND_TOPLEVEL_EXPORT_FRAME_V1_FLAGS_Y_INVERT) != 0;
+    cap->y_invert = (flags & HYPRLAND_TOPLEVEL_EXPORT_FRAME_V1_FLAGS_Y_INVERT) != 0;
 }
 
-void handle_damage(void *, hyprland_toplevel_export_frame_v1 *, uint32_t, uint32_t, uint32_t, uint32_t) {}
+void handle_damage(void *, hyprland_toplevel_export_frame_v1 *, uint32_t, uint32_t, uint32_t,
+                   uint32_t) {}
 
 void handle_buffer_done(void *data, hyprland_toplevel_export_frame_v1 *frame) {
     auto *cap = static_cast<ToplevelExportCapture *>(data);
@@ -112,9 +118,13 @@ void handle_buffer_done(void *data, hyprland_toplevel_export_frame_v1 *frame) {
     }
     cap->have_pending_shm_format = false;
 
-    bool need_realloc = !cap->buffer || cap->buf_width != cap->pending_width || cap->buf_height != cap->pending_height || cap->buf_stride != cap->pending_stride || cap->buf_format != cap->pending_format;
+    bool need_realloc = !cap->buffer || cap->buf_width != cap->pending_width ||
+                        cap->buf_height != cap->pending_height ||
+                        cap->buf_stride != cap->pending_stride ||
+                        cap->buf_format != cap->pending_format;
     if (need_realloc) {
-        if (!allocate_buffer(*cap, cap->shm, cap->pending_width, cap->pending_height, cap->pending_stride, cap->pending_format)) {
+        if (!allocate_buffer(*cap, cap->shm, cap->pending_width, cap->pending_height,
+                             cap->pending_stride, cap->pending_format)) {
             hyprland_toplevel_export_frame_v1_destroy(frame);
             cap->frame = nullptr;
             cap->in_flight = false;
@@ -125,16 +135,21 @@ void handle_buffer_done(void *data, hyprland_toplevel_export_frame_v1 *frame) {
     hyprland_toplevel_export_frame_v1_copy(frame, cap->buffer, 1);
 }
 
-void handle_ready(void *data, hyprland_toplevel_export_frame_v1 *frame, uint32_t, uint32_t, uint32_t) {
+void handle_ready(void *data, hyprland_toplevel_export_frame_v1 *frame, uint32_t, uint32_t,
+                  uint32_t) {
     auto *cap = static_cast<ToplevelExportCapture *>(data);
     int stride_px = static_cast<int>(cap->buf_stride / 4);
     bool tight = cap->buf_stride == cap->buf_width * 4;
     if (texture_bgra_supported() && (tight || texture_row_length_supported())) {
-        update_texture_rgba(cap->tex, static_cast<int>(cap->buf_width), static_cast<int>(cap->buf_height), static_cast<const uint8_t *>(cap->shm_data), false, tight ? 0 : stride_px, true);
+        update_texture_rgba(
+            cap->tex, static_cast<int>(cap->buf_width), static_cast<int>(cap->buf_height),
+            static_cast<const uint8_t *>(cap->shm_data), false, tight ? 0 : stride_px, true);
     } else {
         static std::vector<uint8_t> scratch;
-        swizzle_bgra_to_rgba(static_cast<const uint8_t *>(cap->shm_data), cap->buf_stride, cap->buf_width, cap->buf_height, scratch);
-        update_texture_rgba(cap->tex, static_cast<int>(cap->buf_width), static_cast<int>(cap->buf_height), scratch.data());
+        swizzle_bgra_to_rgba(static_cast<const uint8_t *>(cap->shm_data), cap->buf_stride,
+                             cap->buf_width, cap->buf_height, scratch);
+        update_texture_rgba(cap->tex, static_cast<int>(cap->buf_width),
+                            static_cast<int>(cap->buf_height), scratch.data());
     }
     cap->last_capture = std::chrono::steady_clock::now();
     hyprland_toplevel_export_frame_v1_destroy(frame);
@@ -164,7 +179,9 @@ const hyprland_toplevel_export_frame_v1_listener &frame_listener() {
 
 } // namespace
 
-void toplevel_export_request(ToplevelExportState &state, hyprland_toplevel_export_manager_v1 *manager, wl_shm *shm, const std::string &address, int min_interval_ms) {
+void toplevel_export_request(ToplevelExportState &state,
+                             hyprland_toplevel_export_manager_v1 *manager, wl_shm *shm,
+                             const std::string &address, int min_interval_ms) {
     if (!manager || !shm)
         return;
 
@@ -186,14 +203,16 @@ void toplevel_export_request(ToplevelExportState &state, hyprland_toplevel_expor
     hyprland_toplevel_export_frame_v1_add_listener(cap.frame, &frame_listener(), &cap);
 }
 
-const Texture *toplevel_export_texture(const ToplevelExportState &state, const std::string &address) {
+const Texture *toplevel_export_texture(const ToplevelExportState &state,
+                                       const std::string &address) {
     auto it = state.captures.find(address);
     if (it == state.captures.end() || !it->second.tex.id)
         return nullptr;
     return &it->second.tex;
 }
 
-void toplevel_export_prune(ToplevelExportState &state, const std::vector<std::string> &live_addresses) {
+void toplevel_export_prune(ToplevelExportState &state,
+                           const std::vector<std::string> &live_addresses) {
     for (auto it = state.captures.begin(); it != state.captures.end();) {
         bool live = false;
         for (const auto &addr : live_addresses)

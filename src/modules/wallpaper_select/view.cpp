@@ -21,11 +21,10 @@ namespace cfg = wallpaper_select_config;
 
 constexpr ui::TextStyle label_style{ui::FontFamily::text, cfg::label_px, true};
 
-float lerp(float a, float b, float t) {
-    return a + (b - a) * t;
-}
+float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
-void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, ui::ImageId image, float reveal) {
+void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, ui::ImageId image,
+                float reveal) {
     canvas.begin_group(inner, {.clip = true, .radius = radius});
     ui::TextSize size = image == ui::no_image ? ui::TextSize{} : canvas.image_size(image);
     if (reveal < 1.0f || size.w <= 0.0f || size.h <= 0.0f) {
@@ -42,11 +41,14 @@ void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, ui::Imag
     canvas.end_group();
 }
 
-void draw_card(ui::Canvas &canvas, const ui::Box &box, float zoom, ui::ImageId image, float reveal) {
+void draw_card(ui::Canvas &canvas, const ui::Box &box, float zoom, ui::ImageId image,
+               float reveal) {
     float radius = metrics::radius_card * zoom;
     float border = metrics::border_thick * zoom;
-    sticker(canvas, box, radius, palette::paper, palette::ink, border, metrics::shadow_offset * zoom);
-    ui::Box inner{box.x + border, box.y + border, std::max(0.0f, box.w - border * 2.0f), std::max(0.0f, box.h - border * 2.0f)};
+    sticker(canvas, box, radius, palette::paper, palette::ink, border,
+            metrics::shadow_offset * zoom);
+    ui::Box inner{box.x + border, box.y + border, std::max(0.0f, box.w - border * 2.0f),
+                  std::max(0.0f, box.h - border * 2.0f)};
     draw_cover(canvas, inner, std::max(0.0f, radius - border), image, reveal);
 }
 
@@ -62,14 +64,16 @@ float centre_offset(float distance, float width) {
     return distance < 0.0f ? -offset : offset;
 }
 
-void centred_text(ui::Canvas &canvas, const std::string &text, float cx, float y, const Color &color) {
+void centred_text(ui::Canvas &canvas, const std::string &text, float cx, float y,
+                  const Color &color) {
     ui::TextSize size = canvas.measure(text, label_style);
     canvas.text(text, label_style, cx - size.w / 2.0f, y, color);
 }
 
 } // namespace
 
-void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width, float height) {
+void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width,
+                            float height) {
     model.begin_frame();
     canvas.set_opacity(1.0f);
     float columns = static_cast<float>(model.column_count());
@@ -95,7 +99,9 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     const std::vector<std::string> &files = model.files();
     if (files.empty()) {
         if (!model.scanning()) {
-            centred_text(canvas, (model.animated() ? "No videos in " : "No images in ") + model.directory(), x0 + width / 2.0f, height / 2.0f, palette::text);
+            centred_text(canvas,
+                         (model.animated() ? "No videos in " : "No images in ") + model.directory(),
+                         x0 + width / 2.0f, height / 2.0f, palette::text);
         }
         return;
     }
@@ -111,17 +117,21 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
 
     float position = model.position();
     int first = std::max(0, static_cast<int>(std::floor(position)) - cfg::visible_neighbours);
-    int last = std::min(static_cast<int>(files.size()) - 1, static_cast<int>(std::ceil(position)) + cfg::visible_neighbours);
+    int last = std::min(static_cast<int>(files.size()) - 1,
+                        static_cast<int>(std::ceil(position)) + cfg::visible_neighbours);
 
     std::vector<int> request_order(static_cast<size_t>(last - first + 1));
     std::iota(request_order.begin(), request_order.end(), first);
-    std::ranges::sort(request_order, {}, [position](int index) { return std::abs(static_cast<float>(index) - position); });
+    std::ranges::sort(request_order, {}, [position](int index) {
+        return std::abs(static_cast<float>(index) - position);
+    });
     bool settled = std::abs(position - static_cast<float>(model.selected())) < 0.01f;
     std::vector<ui::ImageId> images(request_order.size(), ui::no_image);
     for (int index : request_order) {
         const std::string &path = files[static_cast<size_t>(index)];
         bool sharp = path == model.target() || (settled && index == model.selected());
-        images[static_cast<size_t>(index - first)] = canvas.thumbnail(path, sharp ? centre_px : cfg::neighbour_px);
+        images[static_cast<size_t>(index - first)] =
+            canvas.thumbnail(path, sharp ? centre_px : cfg::neighbour_px);
     }
 
     canvas.begin_group({x0, 0.0f, width, height}, {.clip = true});
@@ -135,7 +145,10 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
             float w = card_w * scale;
             float h = card_h * scale;
             ui::Box box{cx + centre_offset(distance, card_w) - w / 2.0f, cy - h / 2.0f, w, h};
-            float fade = std::abs(distance) <= 1.0f ? 1.0f : std::max(0.0f, 1.0f - (std::abs(distance) - 1.0f) * cfg::neighbour_fade);
+            float fade =
+                std::abs(distance) <= 1.0f
+                    ? 1.0f
+                    : std::max(0.0f, 1.0f - (std::abs(distance) - 1.0f) * cfg::neighbour_fade);
             canvas.set_opacity(fade);
             ui::ImageId image = images[static_cast<size_t>(index - first)];
             float reveal = model.fade(files[static_cast<size_t>(index)], image != ui::no_image);
@@ -149,14 +162,18 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
     if (zoom < 1.0f) {
         return;
     }
-    const std::string name = std::filesystem::path(files[static_cast<size_t>(model.selected())]).filename().string();
-    std::string counter = std::to_string(model.selected() + 1) + " / " + std::to_string(files.size());
+    const std::string name =
+        std::filesystem::path(files[static_cast<size_t>(model.selected())]).filename().string();
+    std::string counter =
+        std::to_string(model.selected() + 1) + " / " + std::to_string(files.size());
     std::string label = name + "   " + counter;
     ui::TextSize size = canvas.measure(label, label_style);
     float label_w = size.w + cfg::label_padding * 2.0f;
     float label_y = target_cy + target_h / 2.0f + cfg::label_gap;
-    sticker(canvas, {cx - label_w / 2.0f, label_y, label_w, cfg::label_height}, metrics::radius_widget, palette::paper);
-    canvas.text(label, label_style, cx - size.w / 2.0f, label_y + (cfg::label_height - size.h) / 2.0f, palette::text);
+    sticker(canvas, {cx - label_w / 2.0f, label_y, label_w, cfg::label_height},
+            metrics::radius_widget, palette::paper);
+    canvas.text(label, label_style, cx - size.w / 2.0f,
+                label_y + (cfg::label_height - size.h) / 2.0f, palette::text);
 }
 
 } // namespace astralia

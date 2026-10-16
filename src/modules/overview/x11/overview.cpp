@@ -15,7 +15,10 @@ namespace cfg = overview_config;
 
 Overview::Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
-      window_(x, "astralia-overview", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
+      window_(x, "astralia-overview",
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION |
+                  XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_FOCUS_CHANGE),
       keyboard_(x.conn()), model_(*services.compositor) {
     model_.on_close_requested = [this] { toggle(); };
     model_.on_closed = [this] { closed(); };
@@ -27,7 +30,8 @@ Overview::Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
             return;
         }
         const std::vector<Output> &outputs = services_.outputs.outputs();
-        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+        if (std::ranges::none_of(
+                outputs, [this](const Output &output) { return output.name == bound_output_; })) {
             model_.close();
         }
     });
@@ -49,7 +53,8 @@ void Overview::open() {
     window_.place(target.geometry);
     keyboard_.reload();
     services_.compositor->refresh();
-    model_.open(target.name, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    model_.open(target.name, static_cast<float>(window_.geometry().width),
+                static_cast<float>(window_.geometry().height));
     paint();
     window_.show(true);
     log::info("overview: open");
@@ -64,7 +69,8 @@ void Overview::closed() {
 }
 
 void Overview::expect_focus_loss() {
-    focus_grace_until_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(cfg::focus_grace_ms);
+    focus_grace_until_ =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(cfg::focus_grace_ms);
 }
 
 void Overview::handle(const xcb_generic_event_t &event) {
@@ -109,13 +115,17 @@ void Overview::handle(const xcb_generic_event_t &event) {
             paint();
         }
         if (open) {
-            window_.set_cursor(model_.clickable(motion.event_x, motion.event_y) ? CursorShape::hand : CursorShape::arrow);
+            window_.set_cursor(model_.clickable(motion.event_x, motion.event_y)
+                                   ? CursorShape::hand
+                                   : CursorShape::arrow);
         }
         break;
     }
     case XCB_FOCUS_OUT: {
         const auto &focus = reinterpret_cast<const xcb_focus_out_event_t &>(event);
-        if (open && focus.mode == XCB_NOTIFY_MODE_NORMAL && focus.detail != XCB_NOTIFY_DETAIL_POINTER && std::chrono::steady_clock::now() < focus_grace_until_) {
+        if (open && focus.mode == XCB_NOTIFY_MODE_NORMAL &&
+            focus.detail != XCB_NOTIFY_DETAIL_POINTER &&
+            std::chrono::steady_clock::now() < focus_grace_until_) {
             window_.focus();
         }
         break;
@@ -134,7 +144,8 @@ void Overview::paint() {
     cairo_set_source_rgba(cr, 0, 0, 0, 0);
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-    model_.sync(static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    model_.sync(static_cast<float>(window_.geometry().width),
+                static_cast<float>(window_.geometry().height));
     canvas_.bind(cr);
     paint_overview(canvas_, model_, {});
     window_.present();

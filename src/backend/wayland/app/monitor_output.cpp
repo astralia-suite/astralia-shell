@@ -107,7 +107,12 @@ void theme_sync(WaylandState &app) {
 
 void apply_config_update(WaylandState &app, Config new_cfg) {
     bool idle_changed =
-        app.cfg.idle_management_enabled != new_cfg.idle_management_enabled || app.cfg.ambient_enabled != new_cfg.ambient_enabled || app.cfg.ambient_timeout_seconds != new_cfg.ambient_timeout_seconds || app.cfg.screensaver_enabled != new_cfg.screensaver_enabled || app.cfg.screensaver_timeout_seconds != new_cfg.screensaver_timeout_seconds || app.cfg.monitor_overrides != new_cfg.monitor_overrides;
+        app.cfg.idle_management_enabled != new_cfg.idle_management_enabled ||
+        app.cfg.ambient_enabled != new_cfg.ambient_enabled ||
+        app.cfg.ambient_timeout_seconds != new_cfg.ambient_timeout_seconds ||
+        app.cfg.screensaver_enabled != new_cfg.screensaver_enabled ||
+        app.cfg.screensaver_timeout_seconds != new_cfg.screensaver_timeout_seconds ||
+        app.cfg.monitor_overrides != new_cfg.monitor_overrides;
     if (idle_changed) {
         std::vector<std::string> names;
         for (auto &mon : app.outputs)
@@ -141,12 +146,10 @@ MonitorOutput *active_target_monitor(WaylandState &app) {
     for (auto &mon : app.outputs)
         outputs.push_back(&mon->output);
     std::string focused_name =
-        compositor_available(app)
-            ? app.desktop->state().focused_monitor
-            : std::string();
-    wl_output *pointer_hint = app.last_pointer_monitor ? app.last_pointer_monitor->output.wl : nullptr;
-    wl_output *target =
-        active_output_select(outputs, focused_name, pointer_hint);
+        compositor_available(app) ? app.desktop->state().focused_monitor : std::string();
+    wl_output *pointer_hint =
+        app.last_pointer_monitor ? app.last_pointer_monitor->output.wl : nullptr;
+    wl_output *target = active_output_select(outputs, focused_name, pointer_hint);
     return target ? find_monitor_by_name_wl(app, target) : nullptr;
 }
 

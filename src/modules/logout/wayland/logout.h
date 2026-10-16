@@ -35,11 +35,16 @@ struct LogoutState {
 
 astralia::ui::Box logout_detail_button_rect(int index, float center_x, float center_y);
 
-bool logout_create_surface(LogoutState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool logout_create_surface(LogoutState &state, wl_compositor *compositor,
+                           zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
 
-bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+                     EGLContext context);
 
-void logout_retarget(LogoutState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name);
+void logout_retarget(LogoutState &state, wl_compositor *compositor,
+                     zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
+                     EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
+                     wl_output *target_output, const char *target_name);
 
 void logout_request_frame(LogoutState &state);
 

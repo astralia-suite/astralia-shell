@@ -12,16 +12,13 @@
 struct Affine2D {
     float a = 1.0f, b = 0.0f, c = 0.0f, d = 1.0f, tx = 0.0f, ty = 0.0f;
 
-    static Affine2D translation(float x, float y) {
-        return {1.0f, 0.0f, 0.0f, 1.0f, x, y};
-    }
+    static Affine2D translation(float x, float y) { return {1.0f, 0.0f, 0.0f, 1.0f, x, y}; }
     static Affine2D scaling(float s) { return {s, 0.0f, 0.0f, s, 0.0f, 0.0f}; }
     static Affine2D rotation_deg(float deg);
 
     Affine2D compose(const Affine2D &l) const {
-        return {a * l.a + b * l.c, a * l.b + b * l.d,
-                c * l.a + d * l.c, c * l.b + d * l.d,
-                a * l.tx + b * l.ty + tx, c * l.tx + d * l.ty + ty};
+        return {a * l.a + b * l.c, a * l.b + b * l.d,        c * l.a + d * l.c,
+                c * l.b + d * l.d, a * l.tx + b * l.ty + tx, c * l.tx + d * l.ty + ty};
     }
 };
 
@@ -47,19 +44,23 @@ class Renderer {
 
     void draw_rect(float x, float y, float w, float h, const float color[4]);
 
-    void draw_rounded_rect(float x, float y, float w, float h, float radius, float border_width, const float fill[4], const float border[4]);
+    void draw_rounded_rect(float x, float y, float w, float h, float radius, float border_width,
+                           const float fill[4], const float border[4]);
 
     void draw_fillet(float x, float y, float size, bool circle_on_right, const float color[4]);
 
     void draw_texture(float x, float y, const Texture &tex, const float tint[4]);
 
-    void draw_texture_rect(float x, float y, float w, float h, const Texture &tex, const float tint[4]);
+    void draw_texture_rect(float x, float y, float w, float h, const Texture &tex,
+                           const float tint[4]);
 
-    void draw_texture_rect_rounded(float x, float y, float w, float h, float radius, const Texture &tex, const float tint[4]);
+    void draw_texture_rect_rounded(float x, float y, float w, float h, float radius,
+                                   const Texture &tex, const float tint[4]);
 
     void draw_video_texture_rect(float x, float y, float w, float h, const VideoTexture &tex);
 
-    void draw_custom(GLuint program, float x, float y, float w, float h, const std::function<void(GLuint)> &set_uniforms);
+    void draw_custom(GLuint program, float x, float y, float w, float h,
+                     const std::function<void(GLuint)> &set_uniforms);
 
   private:
     struct ClipRect {
@@ -88,8 +89,7 @@ class Renderer {
 
 class ScopedClip {
   public:
-    ScopedClip(Renderer &renderer, float x, float y, float w, float h)
-        : renderer_(renderer) {
+    ScopedClip(Renderer &renderer, float x, float y, float w, float h) : renderer_(renderer) {
         renderer_.set_clip(x, y, w, h);
     }
     ~ScopedClip() { renderer_.clear_clip(); }

@@ -89,10 +89,12 @@ std::vector<std::string> profile_argv() {
 }
 
 std::vector<std::string> list_argv(bool rescan) {
-    return {"nmcli", "-t", "-f", "SSID,SECURITY,SIGNAL,IN-USE", "device", "wifi", "list", "--rescan", rescan ? "yes" : "no"};
+    return {"nmcli", "-t",   "-f",       "SSID,SECURITY,SIGNAL,IN-USE", "device",
+            "wifi",  "list", "--rescan", rescan ? "yes" : "no"};
 }
 
-std::vector<std::string> connect_argv(const std::string &ssid, const std::string &password, bool saved) {
+std::vector<std::string> connect_argv(const std::string &ssid, const std::string &password,
+                                      bool saved) {
     if (saved) {
         return {"nmcli", "-t", "connection", "up", "id", ssid};
     }
@@ -178,8 +180,12 @@ NetworkMap network_parse_networks(const std::string &text, const std::set<std::s
         bool connected = parts[3] == "*";
         auto [it, inserted] = result.try_emplace(ssid);
         if (inserted) {
-            it->second = {ssid, security.empty() ? "--" : security, signal, connected,
-                          profiles.contains(ssid), true};
+            it->second = {ssid,
+                          security.empty() ? "--" : security,
+                          signal,
+                          connected,
+                          profiles.contains(ssid),
+                          true};
         } else if (connected) {
             it->second.connected = true;
         }
@@ -214,7 +220,9 @@ NetworkDeviceStatus network_parse_device_status(const std::string &text) {
     return status;
 }
 
-bool network_parse_wifi_device(const std::string &text) { return network_parse_device_status(text).wifi; }
+bool network_parse_wifi_device(const std::string &text) {
+    return network_parse_device_status(text).wifi;
+}
 
 std::string network_connectivity_name(uint32_t value) {
     switch (value) {
@@ -271,7 +279,8 @@ NetworkService::NetworkService(SystemBus &bus, Reactor &loop)
             if (!next_rescan_) {
                 return rescan_never;
             }
-            auto left = std::chrono::ceil<std::chrono::milliseconds>(*next_rescan_ - std::chrono::steady_clock::now());
+            auto left = std::chrono::ceil<std::chrono::milliseconds>(
+                *next_rescan_ - std::chrono::steady_clock::now());
             return std::max(left, std::chrono::milliseconds(1));
         },
         [this] {
@@ -285,11 +294,13 @@ NetworkService::NetworkService(SystemBus &bus, Reactor &loop)
             if (!next_connectivity_check_) {
                 return rescan_never;
             }
-            auto left = std::chrono::ceil<std::chrono::milliseconds>(*next_connectivity_check_ - std::chrono::steady_clock::now());
+            auto left = std::chrono::ceil<std::chrono::milliseconds>(
+                *next_connectivity_check_ - std::chrono::steady_clock::now());
             return std::max(left, std::chrono::milliseconds(1));
         },
         [this] {
-            if (next_connectivity_check_ && std::chrono::steady_clock::now() >= *next_connectivity_check_) {
+            if (next_connectivity_check_ &&
+                std::chrono::steady_clock::now() >= *next_connectivity_check_) {
                 next_connectivity_check_ = std::chrono::steady_clock::now() + connectivity_interval;
                 if (status_.kind != NetworkKind::none) {
                     check_connectivity();
@@ -329,69 +340,79 @@ void NetworkService::refresh() {
         return;
     }
     uint64_t generation = ++refresh_generation_;
-    manager_reply_ = dbus_get_all_async(*manager_, nm_service, [this, generation](const DbusProperties &properties) {
-        if (generation != refresh_generation_) {
-            return;
-        }
-        bool wifi_was = wifi_enabled_;
-        wifi_enabled_ = dbus_value<bool>(properties, "WirelessEnabled").value_or(false);
-        if (wifi_enabled_ != wifi_was && initialized_) {
-            if (!wifi_enabled_) {
-                cancel_scans();
-                networks_.clear();
-            } else if (watching_) {
-                scan();
-            }
-            changed.emit();
-        }
-        NetworkStatus next;
-        std::string type = dbus_value<std::string>(properties, "PrimaryConnectionType").value_or("");
-        set_connectivity(network_connectivity_name(dbus_value<uint32_t>(properties, "Connectivity").value_or(0)));
-        next.portal = connectivity_ == "portal";
-        if (type == "802-3-ethernet") {
-            next.kind = NetworkKind::ethernet;
-            finish_refresh(std::move(next));
-            return;
-        }
-        auto active = dbus_value<sdbus::ObjectPath>(properties, "PrimaryConnection");
-        if (type != "802-11-wireless" || !active || std::string(*active) == "/") {
-            finish_refresh(std::move(next));
-            return;
-        }
-        next.kind = NetworkKind::wifi;
-        active_reply_ = {};
-        access_point_reply_ = {};
-        active_proxy_ = bus_.proxy(nm_service, *active);
-        if (!active_proxy_) {
-            finish_refresh(std::move(next));
-            return;
-        }
-        active_reply_ = dbus_get_all_async(*active_proxy_, nm_active_interface, [this, generation, next](const DbusProperties &active_properties) mutable {
+    manager_reply_ = dbus_get_all_async(
+        *manager_, nm_service, [this, generation](const DbusProperties &properties) {
             if (generation != refresh_generation_) {
                 return;
             }
-            auto access_point = dbus_value<sdbus::ObjectPath>(active_properties, "SpecificObject");
-            if (!access_point || std::string(*access_point) == "/") {
+            bool wifi_was = wifi_enabled_;
+            wifi_enabled_ = dbus_value<bool>(properties, "WirelessEnabled").value_or(false);
+            if (wifi_enabled_ != wifi_was && initialized_) {
+                if (!wifi_enabled_) {
+                    cancel_scans();
+                    networks_.clear();
+                } else if (watching_) {
+                    scan();
+                }
+                changed.emit();
+            }
+            NetworkStatus next;
+            std::string type =
+                dbus_value<std::string>(properties, "PrimaryConnectionType").value_or("");
+            set_connectivity(network_connectivity_name(
+                dbus_value<uint32_t>(properties, "Connectivity").value_or(0)));
+            next.portal = connectivity_ == "portal";
+            if (type == "802-3-ethernet") {
+                next.kind = NetworkKind::ethernet;
                 finish_refresh(std::move(next));
                 return;
             }
-            access_point_proxy_ = bus_.proxy(nm_service, *access_point);
-            if (!access_point_proxy_) {
+            auto active = dbus_value<sdbus::ObjectPath>(properties, "PrimaryConnection");
+            if (type != "802-11-wireless" || !active || std::string(*active) == "/") {
                 finish_refresh(std::move(next));
                 return;
             }
-            access_point_reply_ = dbus_get_all_async(*access_point_proxy_, nm_access_point_interface, [this, generation, next](const DbusProperties &ap_properties) mutable {
-                if (generation != refresh_generation_) {
-                    return;
-                }
-                next.strength = dbus_value<uint8_t>(ap_properties, "Strength").value_or(0);
-                if (auto ssid = dbus_value<std::vector<uint8_t>>(ap_properties, "Ssid")) {
-                    next.ssid.assign(ssid->begin(), ssid->end());
-                }
+            next.kind = NetworkKind::wifi;
+            active_reply_ = {};
+            access_point_reply_ = {};
+            active_proxy_ = bus_.proxy(nm_service, *active);
+            if (!active_proxy_) {
                 finish_refresh(std::move(next));
-            });
+                return;
+            }
+            active_reply_ = dbus_get_all_async(
+                *active_proxy_, nm_active_interface,
+                [this, generation, next](const DbusProperties &active_properties) mutable {
+                    if (generation != refresh_generation_) {
+                        return;
+                    }
+                    auto access_point =
+                        dbus_value<sdbus::ObjectPath>(active_properties, "SpecificObject");
+                    if (!access_point || std::string(*access_point) == "/") {
+                        finish_refresh(std::move(next));
+                        return;
+                    }
+                    access_point_proxy_ = bus_.proxy(nm_service, *access_point);
+                    if (!access_point_proxy_) {
+                        finish_refresh(std::move(next));
+                        return;
+                    }
+                    access_point_reply_ = dbus_get_all_async(
+                        *access_point_proxy_, nm_access_point_interface,
+                        [this, generation, next](const DbusProperties &ap_properties) mutable {
+                            if (generation != refresh_generation_) {
+                                return;
+                            }
+                            next.strength =
+                                dbus_value<uint8_t>(ap_properties, "Strength").value_or(0);
+                            if (auto ssid =
+                                    dbus_value<std::vector<uint8_t>>(ap_properties, "Ssid")) {
+                                next.ssid.assign(ssid->begin(), ssid->end());
+                            }
+                            finish_refresh(std::move(next));
+                        });
+                });
         });
-    });
 }
 
 void NetworkService::finish_refresh(NetworkStatus next) {
@@ -410,7 +431,8 @@ void NetworkService::finish_refresh(NetworkStatus next) {
             schedule_rescan(rescan_after_state);
         }
     }
-    if (status_.kind != NetworkKind::none && (first || prev.kind != status_.kind || prev.ssid != status_.ssid)) {
+    if (status_.kind != NetworkKind::none &&
+        (first || prev.kind != status_.kind || prev.ssid != status_.ssid)) {
         check_connectivity();
     }
     changed.emit();
@@ -464,7 +486,8 @@ void NetworkService::scan() {
         scan_pending_ = true;
         return;
     }
-    scanning_ = profile_proc_.start(profile_argv(), [this](const std::string &output) { on_profiles(output); });
+    scanning_ = profile_proc_.start(profile_argv(),
+                                    [this](const std::string &output) { on_profiles(output); });
     changed.emit();
 }
 
@@ -480,7 +503,8 @@ void NetworkService::on_profiles(const std::string &output) {
             networks_.try_emplace(name, NetworkInfo{name, "--", 0, false, true, false});
         }
     }
-    quick_scan_proc_.start(list_argv(false), [this](const std::string &out) { on_quick_scan(out); });
+    quick_scan_proc_.start(list_argv(false),
+                           [this](const std::string &out) { on_quick_scan(out); });
     changed.emit();
 }
 
@@ -491,7 +515,8 @@ void NetworkService::on_quick_scan(const std::string &output) {
         return;
     }
     NetworkMap quick = network_parse_networks(output, profiles_);
-    bool any_in_range = std::ranges::any_of(quick, [](const auto &entry) { return entry.second.in_range; });
+    bool any_in_range =
+        std::ranges::any_of(quick, [](const auto &entry) { return entry.second.in_range; });
     if (any_in_range && quick != networks_) {
         networks_ = std::move(quick);
         changed.emit();
@@ -504,7 +529,8 @@ void NetworkService::on_scan(const std::string &output) {
     if (!network_scan_would_collapse(networks_, parsed)) {
         networks_ = std::move(parsed);
     }
-    bool has_real = std::ranges::any_of(networks_, [](const auto &entry) { return entry.second.in_range; });
+    bool has_real =
+        std::ranges::any_of(networks_, [](const auto &entry) { return entry.second.in_range; });
     std::chrono::milliseconds next = rescan_idle;
     if (std::exchange(scan_pending_, false)) {
         scanning_ = false;

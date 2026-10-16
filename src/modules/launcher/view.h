@@ -25,6 +25,7 @@ bool launcher_field_hit(const LauncherFrame &frame, double x, double y);
 
 float launcher_field_column(const LauncherFrame &frame, double x);
 
-LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float width, float height, const EntranceState *entrance = nullptr);
+LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float width, float height,
+                             const EntranceState *entrance = nullptr);
 
 } // namespace astralia

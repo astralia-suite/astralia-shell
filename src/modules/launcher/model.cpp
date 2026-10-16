@@ -55,7 +55,8 @@ const char *submenu_glyph(const SubmenuEntry &entry) {
 float launcher_content_height(int visible_rows) {
     float height = cfg::menu_pad * 2.0f + cfg::search_height;
     if (visible_rows > 0) {
-        height += cfg::list_gap + static_cast<float>(visible_rows) * cfg::row_height + static_cast<float>(visible_rows - 1) * cfg::row_spacing;
+        height += cfg::list_gap + static_cast<float>(visible_rows) * cfg::row_height +
+                  static_cast<float>(visible_rows - 1) * cfg::row_spacing;
     }
     return height;
 }
@@ -63,12 +64,16 @@ float launcher_content_height(int visible_rows) {
 LauncherModel::LauncherModel(Reactor &reactor)
     : reactor_(reactor), dirs_proc_(reactor), files_proc_(reactor) {
     std::weak_ptr<bool> alive = alive_;
-    timer_ = reactor_.add_timer([this, alive] {
-        auto live = alive.lock();
-        return live ? until_debounce() : std::chrono::hours(1); }, [this, alive] {
-        if (alive.lock()) {
-            debounce_fired();
-        } });
+    timer_ = reactor_.add_timer(
+        [this, alive] {
+            auto live = alive.lock();
+            return live ? until_debounce() : std::chrono::hours(1);
+        },
+        [this, alive] {
+            if (alive.lock()) {
+                debounce_fired();
+            }
+        });
 }
 
 LauncherModel::~LauncherModel() {
@@ -117,7 +122,8 @@ void LauncherModel::close() {
 }
 
 int LauncherModel::item_count() const {
-    return static_cast<int>(submenu_.screen == SubmenuScreen::search ? results_.size() : submenu_.items.size());
+    return static_cast<int>(submenu_.screen == SubmenuScreen::search ? results_.size()
+                                                                     : submenu_.items.size());
 }
 
 int LauncherModel::first_visible() const {
@@ -183,7 +189,8 @@ void LauncherModel::key_text(const input::KeyEvent &event) {
         return;
     }
     constexpr uint32_t key_a = 0x61, key_c = 0x63, key_v = 0x76, key_x = 0x78;
-    uint32_t sym = event.base_sym >= 'A' && event.base_sym <= 'Z' ? event.base_sym + ('a' - 'A') : event.base_sym;
+    uint32_t sym = event.base_sym >= 'A' && event.base_sym <= 'Z' ? event.base_sym + ('a' - 'A')
+                                                                  : event.base_sym;
     switch (sym) {
     case key_a:
         text_cursor_select_all(field_.text, cursor_);
@@ -236,11 +243,14 @@ void LauncherModel::pointer_down(float column, Clock::time_point now) {
         return;
     }
     size_t byte = byte_at_column(column);
-    bool double_click = have_click_ && byte == last_click_byte_ && now - last_click_ <= std::chrono::milliseconds(cfg::double_click_ms);
+    bool double_click = have_click_ && byte == last_click_byte_ &&
+                        now - last_click_ <= std::chrono::milliseconds(cfg::double_click_ms);
     field_.cursor_idle_visible = true;
     hovered_ = -1;
     if (double_click) {
-        text_cursor_select_word(field_.text, cursor_, text_field_byte_offset(field_.text, static_cast<size_t>(std::max(column, 0.0f))));
+        text_cursor_select_word(
+            field_.text, cursor_,
+            text_field_byte_offset(field_.text, static_cast<size_t>(std::max(column, 0.0f))));
         have_click_ = false;
         dragging_ = false;
     } else {
@@ -262,9 +272,7 @@ void LauncherModel::pointer_drag(float column) {
     changed();
 }
 
-void LauncherModel::pointer_up() {
-    dragging_ = false;
-}
+void LauncherModel::pointer_up() { dragging_ = false; }
 
 void LauncherModel::arm_debounce() {
     debounce_pending_ = true;
@@ -276,7 +284,8 @@ std::chrono::milliseconds LauncherModel::until_debounce() const {
     if (!debounce_pending_) {
         return std::chrono::hours(1);
     }
-    return std::max(std::chrono::ceil<std::chrono::milliseconds>(debounce_due_ - Clock::now()), std::chrono::milliseconds(0));
+    return std::max(std::chrono::ceil<std::chrono::milliseconds>(debounce_due_ - Clock::now()),
+                    std::chrono::milliseconds(0));
 }
 
 void LauncherModel::debounce_fired() {
@@ -307,14 +316,13 @@ void LauncherModel::start_search() {
     pending_searches_ = 2;
     for (bool dirs : {true, false}) {
         AsyncProcess &process = dirs ? dirs_proc_ : files_proc_;
-        bool started = process.start(
-            fd_search_argv(pattern, search_root_, dirs, cfg::max_results),
-            [this, dirs](std::string output) {
-                (dirs ? dirs_output_ : files_output_) = std::move(output);
-                if (--pending_searches_ == 0 && searching_) {
-                    finish_search();
-                }
-            });
+        bool started = process.start(fd_search_argv(pattern, search_root_, dirs, cfg::max_results),
+                                     [this, dirs](std::string output) {
+                                         (dirs ? dirs_output_ : files_output_) = std::move(output);
+                                         if (--pending_searches_ == 0 && searching_) {
+                                             finish_search();
+                                         }
+                                     });
         if (!started) {
             --pending_searches_;
         }
@@ -438,7 +446,10 @@ void LauncherModel::key(const input::KeyEvent &event) {
     case input::KeyKind::Up:
     case input::KeyKind::Down: {
         int count = item_count();
-        selected_ = count == 0 ? -1 : std::clamp(selected_ + (event.kind == input::KeyKind::Down ? 1 : -1), 0, count - 1);
+        selected_ = count == 0
+                        ? -1
+                        : std::clamp(selected_ + (event.kind == input::KeyKind::Down ? 1 : -1), 0,
+                                     count - 1);
         break;
     }
     case input::KeyKind::Escape:
@@ -499,9 +510,7 @@ bool LauncherModel::hover(int row) {
     return true;
 }
 
-void LauncherModel::toggle_caret() {
-    text_field_idle_toggle(field_);
-}
+void LauncherModel::toggle_caret() { text_field_idle_toggle(field_); }
 
 const std::string &LauncherModel::icon_path_for(const DesktopEntry &entry) {
     auto it = icon_paths_.find(entry.id);
@@ -520,17 +529,20 @@ std::vector<LauncherRow> LauncherModel::rows() {
                 out.push_back({icon::apps, result.app->name, "", icon_path_for(*result.app)});
                 break;
             case DrunResult::Kind::dir:
-                out.push_back({icon::folder, result.file.name, path_collapse_home(result.file.path), ""});
+                out.push_back(
+                    {icon::folder, result.file.name, path_collapse_home(result.file.path), ""});
                 break;
             case DrunResult::Kind::file:
-                out.push_back({icon::edit, result.file.name, path_collapse_home(result.file.path), ""});
+                out.push_back(
+                    {icon::edit, result.file.name, path_collapse_home(result.file.path), ""});
                 break;
             }
         }
         return out;
     }
     for (const SubmenuEntry &entry : submenu_.items) {
-        out.push_back({submenu_glyph(entry), entry.name, entry.path.empty() ? "" : path_collapse_home(entry.path), ""});
+        out.push_back({submenu_glyph(entry), entry.name,
+                       entry.path.empty() ? "" : path_collapse_home(entry.path), ""});
     }
     return out;
 }
@@ -542,7 +554,9 @@ void LauncherModel::sync_layout() {
         height_ = height_target_ = content;
     } else if (content != height_target_) {
         height_target_ = content;
-        animations_.animate(height_, height_target_, cfg::height_anim_ms, astralia::Easing::EaseInOutCubic, [this](float v) { height_ = v; }, {}, owner_height);
+        animations_.animate(
+            height_, height_target_, cfg::height_anim_ms, astralia::Easing::EaseInOutCubic,
+            [this](float v) { height_ = v; }, {}, owner_height);
     }
     if (selected_ < 0) {
         highlight_target_ = scroll_target_ = -1.0f;
@@ -553,14 +567,18 @@ void LauncherModel::sync_layout() {
         highlight_ = highlight_target_ = highlight;
     } else if (highlight != highlight_target_) {
         highlight_target_ = highlight;
-        animations_.animate(highlight_, highlight_target_, cfg::highlight_anim_ms, astralia::Easing::EaseOutCubic, [this](float v) { highlight_ = v; }, {}, owner_highlight);
+        animations_.animate(
+            highlight_, highlight_target_, cfg::highlight_anim_ms, astralia::Easing::EaseOutCubic,
+            [this](float v) { highlight_ = v; }, {}, owner_highlight);
     }
     float scroll = static_cast<float>(first_visible()) * cfg::row_pitch;
     if (scroll_target_ < 0.0f) {
         scroll_ = scroll_target_ = scroll;
     } else if (scroll != scroll_target_) {
         scroll_target_ = scroll;
-        animations_.animate(scroll_, scroll_target_, cfg::highlight_anim_ms, astralia::Easing::EaseOutCubic, [this](float v) { scroll_ = v; }, {}, owner_scroll);
+        animations_.animate(
+            scroll_, scroll_target_, cfg::highlight_anim_ms, astralia::Easing::EaseOutCubic,
+            [this](float v) { scroll_ = v; }, {}, owner_scroll);
     }
 }
 

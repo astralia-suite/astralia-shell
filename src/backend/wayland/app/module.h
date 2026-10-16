@@ -44,8 +44,7 @@ class Module {
     virtual void handle_scroll(WaylandState &, double) {}
     virtual std::vector<astralia::ShellBinding> shell_bindings(WaylandState &) { return {}; }
 
-    virtual std::vector<std::pair<int, std::function<void()>>>
-    extra_poll_sources(WaylandState &) {
+    virtual std::vector<std::pair<int, std::function<void()>>> extra_poll_sources(WaylandState &) {
         return {};
     }
 };

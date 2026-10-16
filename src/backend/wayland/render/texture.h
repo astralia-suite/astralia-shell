@@ -34,9 +34,11 @@ struct Texture {
     }
 };
 
-Texture make_texture_rgba(int width, int height, const uint8_t *rgba, bool mipmapped = false, int stride_px = 0, bool bgra = false);
+Texture make_texture_rgba(int width, int height, const uint8_t *rgba, bool mipmapped = false,
+                          int stride_px = 0, bool bgra = false);
 
-void update_texture_rgba(Texture &tex, int width, int height, const uint8_t *rgba, bool mipmapped = false, int stride_px = 0, bool bgra = false);
+void update_texture_rgba(Texture &tex, int width, int height, const uint8_t *rgba,
+                         bool mipmapped = false, int stride_px = 0, bool bgra = false);
 
 void texture_detect_caps();
 bool texture_row_length_supported();

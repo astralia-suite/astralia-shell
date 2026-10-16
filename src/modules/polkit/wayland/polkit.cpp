@@ -18,7 +18,8 @@ namespace {
 
 void release_keyboard(PolkitState &state) {
     state.base.open = false;
-    zwlr_layer_surface_v1_set_keyboard_interactivity(state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+    zwlr_layer_surface_v1_set_keyboard_interactivity(
+        state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
     overlay_panel_update_input_region(state.base);
     wl_surface_commit(state.base.surface);
 }
@@ -28,7 +29,8 @@ void open_card(PolkitState &state) {
         return;
     state.base.open = true;
     state.base.opacity = 1.0f;
-    zwlr_layer_surface_v1_set_keyboard_interactivity(state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
+    zwlr_layer_surface_v1_set_keyboard_interactivity(
+        state.base.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
     overlay_panel_update_input_region(state.base);
     wl_surface_commit(state.base.surface);
     state.model.sync(true);
@@ -44,12 +46,15 @@ void close_card(PolkitState &state) {
 
 } // namespace
 
-bool polkit_create_surface(PolkitState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
+bool polkit_create_surface(PolkitState &state, wl_compositor *compositor,
+                           zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
     state.model.reset();
-    return overlay_panel_create_surface(state.base, compositor, layer_shell, kPolkitNamespace, output);
+    return overlay_panel_create_surface(state.base, compositor, layer_shell, kPolkitNamespace,
+                                        output);
 }
 
-bool polkit_init_egl(PolkitState &state, Renderer &renderer, WaylandState &app, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool polkit_init_egl(PolkitState &state, Renderer &renderer, WaylandState &app, EGLDisplay display,
+                     EGLConfig config, EGLContext context) {
     state.renderer = &renderer;
     state.canvas.bind(renderer);
     if (!overlay_panel_init_egl(state.base, display, config, context))
@@ -59,22 +64,30 @@ bool polkit_init_egl(PolkitState &state, Renderer &renderer, WaylandState &app, 
     return true;
 }
 
-void polkit_retarget(PolkitState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, WaylandState &app, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name) {
-    wl_output *bound = overlay_panel_retarget(state.base, display, state.bound_output, target_output, target_name, [&](wl_output *out) { return polkit_create_surface(state, compositor, layer_shell, out); }, [&] { return polkit_init_egl(state, renderer, app, egl_display, egl_config, egl_context); });
+void polkit_retarget(PolkitState &state, wl_compositor *compositor,
+                     zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
+                     WaylandState &app, EGLDisplay egl_display, EGLConfig egl_config,
+                     EGLContext egl_context, wl_output *target_output, const char *target_name) {
+    wl_output *bound = overlay_panel_retarget(
+        state.base, display, state.bound_output, target_output, target_name,
+        [&](wl_output *out) { return polkit_create_surface(state, compositor, layer_shell, out); },
+        [&] {
+            return polkit_init_egl(state, renderer, app, egl_display, egl_config, egl_context);
+        });
     if (bound)
         state.bound_output = bound;
 }
 
-void polkit_request_frame(PolkitState &state) {
-    overlay_panel_request_frame(state.base);
-}
+void polkit_request_frame(PolkitState &state) { overlay_panel_request_frame(state.base); }
 
 void polkit_sync_open_state(PolkitState &state, WaylandState &app) {
     bool pending = app.polkit->pending();
     if (pending && !state.base.open) {
         MonitorOutput *target = app_detail::active_target_monitor(app);
         if (target && (target->output.wl != state.bound_output || !state.base.layer_surface))
-            polkit_retarget(state, app.compositor, app.layer_shell, app.display, app.renderer, app, app.egl_display, app.egl_config, app.egl_context, target->output.wl, target->output.name.c_str());
+            polkit_retarget(state, app.compositor, app.layer_shell, app.display, app.renderer, app,
+                            app.egl_display, app.egl_config, app.egl_context, target->output.wl,
+                            target->output.name.c_str());
         open_card(state);
         return;
     }
@@ -120,7 +133,8 @@ void polkit_paint(PolkitState &state, WaylandState &app) {
     state.canvas.begin(scale);
     if (state.model.open()) {
         state.model.set_prompt(astralia::polkit_prompt(*app.polkit));
-        astralia::paint_polkit(state.canvas, state.model, static_cast<float>(state.base.width), static_cast<float>(state.base.height));
+        astralia::paint_polkit(state.canvas, state.model, static_cast<float>(state.base.width),
+                               static_cast<float>(state.base.height));
     }
     state.canvas.flush();
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
@@ -143,15 +157,14 @@ class PolkitModule final : public Module {
     }
 
     bool init_egl(WaylandState &app) override {
-        if (!polkit_init_egl(state_, app.renderer, app, app.egl_display, app.egl_config, app.egl_context))
+        if (!polkit_init_egl(state_, app.renderer, app, app.egl_display, app.egl_config,
+                             app.egl_context))
             return false;
         state_.bound_output = output_;
         return true;
     }
 
-    bool configured() const override {
-        return !want_ || state_.base.configured;
-    }
+    bool configured() const override { return !want_ || state_.base.configured; }
     wl_surface *surface() const override { return state_.base.surface; }
     void request_frame() override { polkit_request_frame(state_); }
 
@@ -176,9 +189,7 @@ class PolkitModule final : public Module {
 
 } // namespace
 
-std::unique_ptr<Module> make_polkit_module() {
-    return std::make_unique<PolkitModule>();
-}
+std::unique_ptr<Module> make_polkit_module() { return std::make_unique<PolkitModule>(); }
 
 void polkit_notify_state_changed(WaylandState &app) {
     for (auto &m : app.overlays)

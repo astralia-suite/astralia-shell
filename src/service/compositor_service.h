@@ -81,9 +81,7 @@ std::array<double, 2> compositor_logical_size(const CompositorMonitor &monitor);
 const CompositorMonitor *compositor_monitor(const CompositorState &state, const std::string &name);
 const CompositorMonitor *compositor_monitor(const CompositorState &state, int id);
 
-enum class CloseScope { workspace,
-                        monitor,
-                        all };
+enum class CloseScope { workspace, monitor, all };
 
 class Compositor {
   public:
@@ -125,6 +123,7 @@ class NullCompositor final : public Compositor {
     CompositorState state_;
 };
 
-std::unique_ptr<Compositor> make_compositor(Reactor &loop, std::string_view i3_socket_fallback = {});
+std::unique_ptr<Compositor> make_compositor(Reactor &loop,
+                                            std::string_view i3_socket_fallback = {});
 
 } // namespace astralia

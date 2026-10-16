@@ -32,9 +32,15 @@ bool OsdModel::show(OsdKind kind, int percent, bool muted, Clock::time_point now
     visible_ = true;
     hiding_ = false;
     hide_at_ = now + cfg::visible_for;
-    animations_.animate(opacity_, 1.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic, [this](float v) { opacity_ = v; }, {}, owner_opacity);
-    animations_.animate(bar_fill_, static_cast<float>(percent_) / 100.0f, cfg::anim_fast_ms, astralia::Easing::EaseOutCubic, [this](float v) { bar_fill_ = v; }, {}, owner_bar_fill);
-    animations_.animate(icon_mix_, muted ? 1.0f : 0.0f, cfg::anim_fast_ms, astralia::Easing::Linear, [this](float v) { icon_mix_ = v; }, {}, owner_icon_mix);
+    animations_.animate(
+        opacity_, 1.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic,
+        [this](float v) { opacity_ = v; }, {}, owner_opacity);
+    animations_.animate(
+        bar_fill_, static_cast<float>(percent_) / 100.0f, cfg::anim_fast_ms,
+        astralia::Easing::EaseOutCubic, [this](float v) { bar_fill_ = v; }, {}, owner_bar_fill);
+    animations_.animate(
+        icon_mix_, muted ? 1.0f : 0.0f, cfg::anim_fast_ms, astralia::Easing::Linear,
+        [this](float v) { icon_mix_ = v; }, {}, owner_icon_mix);
     return true;
 }
 
@@ -43,9 +49,14 @@ void OsdModel::hide() {
         return;
     }
     hiding_ = true;
-    animations_.animate(opacity_, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic, [this](float v) { opacity_ = v; }, [this] {
+    animations_.animate(
+        opacity_, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic,
+        [this](float v) { opacity_ = v; },
+        [this] {
             visible_ = false;
-            hiding_ = false; }, owner_opacity);
+            hiding_ = false;
+        },
+        owner_opacity);
 }
 
 void OsdModel::tick(Clock::time_point now) {
@@ -59,7 +70,8 @@ std::chrono::milliseconds OsdModel::until_hide(Clock::time_point now) const {
     if (!visible_) {
         return std::chrono::hours(1);
     }
-    return std::max(std::chrono::ceil<std::chrono::milliseconds>(hide_at_ - now), std::chrono::milliseconds(0));
+    return std::max(std::chrono::ceil<std::chrono::milliseconds>(hide_at_ - now),
+                    std::chrono::milliseconds(0));
 }
 
 const char *OsdModel::glyph() const {

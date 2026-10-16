@@ -22,9 +22,11 @@ void check_idle() {
     check(!clock.idle("A", 0, start + seconds(100)), "an unknown output is never idle");
     clock.reset({"A", "B"}, start);
     check(clock.known("A") && clock.known("B"), "a reset seeds every output");
-    check(!clock.idle("A", 150, start + seconds(150)) && clock.idle("A", 150, start + seconds(151)), "idle begins strictly after the timeout");
+    check(!clock.idle("A", 150, start + seconds(150)) && clock.idle("A", 150, start + seconds(151)),
+          "idle begins strictly after the timeout");
     clock.activity("A", start + seconds(140));
-    check(!clock.idle("A", 150, start + seconds(200)) && clock.idle("B", 150, start + seconds(200)), "activity on one output leaves the other idle");
+    check(!clock.idle("A", 150, start + seconds(200)) && clock.idle("B", 150, start + seconds(200)),
+          "activity on one output leaves the other idle");
 
     Config config;
     IdleClock fresh;
@@ -43,7 +45,8 @@ void check_idle() {
     config.monitor_overrides["A"].ambient_timeout_seconds = 10;
     config.monitor_overrides["A"].screensaver_enabled = false;
     IdleVerdict overridden = idle_verdict(fresh, config, "A", start + seconds(400));
-    check(overridden.ambient && !overridden.screensaver, "an override picks its own timeout and switches");
+    check(overridden.ambient && !overridden.screensaver,
+          "an override picks its own timeout and switches");
 
     Config before;
     Config after = before;
@@ -59,7 +62,8 @@ void check_idle() {
 
     Bounce bounce{10.0f, 10.0f, 100.0f, 50.0f};
     bounce_step(bounce, 0.5f, 1000.0f, 800.0f, 200.0f);
-    check(bounce.x == 60.0f && bounce.y == 35.0f && bounce.vx == 100.0f, "the logo moves by velocity times time");
+    check(bounce.x == 60.0f && bounce.y == 35.0f && bounce.vx == 100.0f,
+          "the logo moves by velocity times time");
     Bounce right{790.0f, 10.0f, 100.0f, 50.0f};
     bounce_step(right, 1.0f, 1000.0f, 800.0f, 200.0f);
     check(right.x == 800.0f && right.vx == -100.0f, "the right edge reverses horizontal motion");

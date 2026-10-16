@@ -7,9 +7,7 @@
 
 namespace astralia {
 
-enum class OsdKind { volume,
-                     mic,
-                     brightness };
+enum class OsdKind { volume, mic, brightness };
 
 class OsdModel {
   public:

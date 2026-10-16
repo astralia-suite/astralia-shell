@@ -79,7 +79,8 @@ class BrightnessOsdService final : public Service {
 
     bool init(WaylandState &app) override {
         app.brightness_service->changed.connect([&app] {
-            osd_show_on_monitors(app, astralia::OsdKind::brightness, app.brightness_service->percent(), false);
+            osd_show_on_monitors(app, astralia::OsdKind::brightness,
+                                 app.brightness_service->percent(), false);
         });
         return true;
     }
@@ -93,10 +94,12 @@ class PipewireOsdService final : public Service {
         app.audio->changed.connect([&app](astralia::AudioKind kind) {
             if (kind == astralia::AudioKind::sink) {
                 astralia::AudioLevel level = app.audio->sink();
-                osd_show_on_monitors(app, astralia::OsdKind::volume, level.present ? level.percent : 0, level.muted);
+                osd_show_on_monitors(app, astralia::OsdKind::volume,
+                                     level.present ? level.percent : 0, level.muted);
             } else if (kind == astralia::AudioKind::source) {
                 astralia::AudioLevel level = app.audio->source();
-                osd_show_on_monitors(app, astralia::OsdKind::mic, level.present ? level.percent : 0, level.muted);
+                osd_show_on_monitors(app, astralia::OsdKind::mic, level.present ? level.percent : 0,
+                                     level.muted);
             } else {
                 return;
             }
@@ -122,10 +125,16 @@ class NetworkService final : public Service {
 
     bool init(WaylandState &app) override {
         app.network->changed.connect([&app] { network_dispatch(app, true); });
-        app.network->messages.connect([&app](const astralia::StatusMessage &message) { network_notify(app, message.summary, message.body); });
-        app.reactor->add_timer([] { return std::chrono::milliseconds(400); }, [&app] {
-            if (app.network->scanning() && app.network->wifi_enabled() && astralia::network_visible_count(app.network->networks()) == 0)
-                network_dispatch(app, true); });
+        app.network->messages.connect([&app](const astralia::StatusMessage &message) {
+            network_notify(app, message.summary, message.body);
+        });
+        app.reactor->add_timer([] { return std::chrono::milliseconds(400); },
+                               [&app] {
+                                   if (app.network->scanning() && app.network->wifi_enabled() &&
+                                       astralia::network_visible_count(app.network->networks()) ==
+                                           0)
+                                       network_dispatch(app, true);
+                               });
         return true;
     }
 };
@@ -136,7 +145,9 @@ class BluetoothService final : public Service {
 
     bool init(WaylandState &app) override {
         app.bluetooth->changed.connect([&app] { redraw_and_present(app); });
-        app.bluetooth->messages.connect([&app](const astralia::StatusMessage &message) { bluetooth_notify(app, message.summary, message.body); });
+        app.bluetooth->messages.connect([&app](const astralia::StatusMessage &message) {
+            bluetooth_notify(app, message.summary, message.body);
+        });
         return true;
     }
 };
@@ -193,7 +204,9 @@ class ThemeFollowService final : public Service {
 
     bool init(WaylandState &app) override {
         app.theme = std::make_unique<astralia::ThemeService>();
-        app.theme->decode_video_frame = [](const std::string &path, int &w, int &h) { return animate_decode_scaled(path, 256, 256, w, h); };
+        app.theme->decode_video_frame = [](const std::string &path, int &w, int &h) {
+            return animate_decode_scaled(path, 256, 256, w, h);
+        };
         app.theme->changed.connect([&app] {
             redraw_all_monitors(app);
             for (auto &m : app.overlays)
@@ -244,7 +257,8 @@ class ClipboardProtocolService final : public Service {
 
     bool init(WaylandState &app) override {
         if (!app.clipboard.bind(app.data_device_manager, app.seat, app.display, &app.keyboard))
-            klog("clipboard: wl_data_device_manager unavailable - copy and paste unavailable");
+            klog("clipboard: wl_data_device_manager unavailable - copy and "
+                 "paste unavailable");
         return true;
     }
 
@@ -277,9 +291,7 @@ class IdleService final : public Service {
   public:
     const char *name() const override { return "idle"; }
 
-    bool init(WaylandState &app) override {
-        return idle_init(app.idle, app.seat);
-    }
+    bool init(WaylandState &app) override { return idle_init(app.idle, app.seat); }
 
     void timer_tick(WaylandState &app) override {
         idle_tick(app.idle, app.desktop->state().focused_monitor);

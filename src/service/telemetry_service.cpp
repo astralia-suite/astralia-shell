@@ -15,8 +15,7 @@ namespace astralia {
 namespace {
 
 constexpr std::array<const char *, 11> kVirtualIfacePrefixes = {
-    "lo", "docker", "veth", "br-", "virbr", "vnet",
-    "tun", "tap", "wg", "tailscale", "nordlynx"};
+    "lo", "docker", "veth", "br-", "virbr", "vnet", "tun", "tap", "wg", "tailscale", "nordlynx"};
 
 } // namespace
 
@@ -171,8 +170,7 @@ std::string find_drm_act_freq(const std::filesystem::path &drm_dir) {
 
 std::string find_gpu_clock_sensor(const std::string &temp_hwmon_path) {
     if (!temp_hwmon_path.empty()) {
-        std::filesystem::path hwmon_dir =
-            std::filesystem::path(temp_hwmon_path).parent_path();
+        std::filesystem::path hwmon_dir = std::filesystem::path(temp_hwmon_path).parent_path();
         std::error_code ec;
         std::filesystem::path freq = hwmon_dir / "freq1_input";
         if (std::filesystem::exists(freq, ec))
@@ -213,9 +211,7 @@ void gpu_temp_poll(GpuTempState &state) {
     if (!state.sensor_path.empty()) {
         std::ifstream f(state.sensor_path);
         long millidegrees = 0;
-        state.celsius = (f >> millidegrees)
-                            ? static_cast<float>(millidegrees) / 1000.0f
-                            : -1.0f;
+        state.celsius = (f >> millidegrees) ? static_cast<float>(millidegrees) / 1000.0f : -1.0f;
         if (!state.usage_sensor_path.empty()) {
             std::ifstream uf(state.usage_sensor_path);
             long pct = 0;
@@ -225,22 +221,24 @@ void gpu_temp_poll(GpuTempState &state) {
     }
     if (!state.nvidia_smi_present || !state.nvidia_smi_proc || state.nvidia_smi_proc->running())
         return;
-    state.nvidia_smi_proc->start({"nvidia-smi", "--query-gpu=temperature.gpu,utilization.gpu,clocks.gr", "--format=csv,noheader,nounits"}, [&state](const std::string &output) {
-        std::istringstream fields(output);
-        std::string temp_field, usage_field, clock_field;
-        std::getline(fields, temp_field, ',');
-        std::getline(fields, usage_field, ',');
-        std::getline(fields, clock_field, ',');
-        state.celsius = gpu_temp_detail_parse_nvidia_smi_output(temp_field).value_or(-1.0f);
-        state.usage_percent = gpu_temp_detail_parse_nvidia_smi_output(usage_field).value_or(-1.0f);
-        auto clock_mhz = gpu_temp_detail_parse_nvidia_smi_output(clock_field);
-        state.clock_ghz = clock_mhz ? *clock_mhz / 1000.0f : -1.0f;
-    });
+    state.nvidia_smi_proc->start(
+        {"nvidia-smi", "--query-gpu=temperature.gpu,utilization.gpu,clocks.gr",
+         "--format=csv,noheader,nounits"},
+        [&state](const std::string &output) {
+            std::istringstream fields(output);
+            std::string temp_field, usage_field, clock_field;
+            std::getline(fields, temp_field, ',');
+            std::getline(fields, usage_field, ',');
+            std::getline(fields, clock_field, ',');
+            state.celsius = gpu_temp_detail_parse_nvidia_smi_output(temp_field).value_or(-1.0f);
+            state.usage_percent =
+                gpu_temp_detail_parse_nvidia_smi_output(usage_field).value_or(-1.0f);
+            auto clock_mhz = gpu_temp_detail_parse_nvidia_smi_output(clock_field);
+            state.clock_ghz = clock_mhz ? *clock_mhz / 1000.0f : -1.0f;
+        });
 }
 
-bool gpu_temp_available(const GpuTempState &state) {
-    return state.celsius >= 0.0f;
-}
+bool gpu_temp_available(const GpuTempState &state) { return state.celsius >= 0.0f; }
 
 bool gpu_stats_available(const GpuTempState &state) {
     return state.celsius >= 0.0f && state.usage_percent >= 0.0f;
@@ -311,7 +309,8 @@ std::optional<MemInfo> system_stats_detail_parse_proc_meminfo(const std::string 
 float system_stats_detail_mem_usage(const MemInfo &info) {
     if (info.total_kb == 0 || info.available_kb > info.total_kb)
         return -1.0f;
-    return static_cast<float>(info.total_kb - info.available_kb) / static_cast<float>(info.total_kb);
+    return static_cast<float>(info.total_kb - info.available_kb) /
+           static_cast<float>(info.total_kb);
 }
 
 std::optional<float> system_stats_detail_parse_cpu_freq_avg_mhz(const std::string &cpuinfo_text) {
@@ -423,20 +422,17 @@ void system_stats_poll(SystemStatsState &state) {
     auto stat = system_stats_detail_parse_proc_stat(read_file("/proc/stat"));
     if (stat) {
         if (state.have_prev)
-            state.cpu_usage =
-                system_stats_detail_cpu_usage(state.prev_jiffies, *stat);
+            state.cpu_usage = system_stats_detail_cpu_usage(state.prev_jiffies, *stat);
         state.prev_jiffies = *stat;
         state.have_prev = true;
     } else {
         state.cpu_usage = -1.0f;
     }
 
-    auto mem =
-        system_stats_detail_parse_proc_meminfo(read_file("/proc/meminfo"));
+    auto mem = system_stats_detail_parse_proc_meminfo(read_file("/proc/meminfo"));
     if (mem) {
         state.mem_usage = system_stats_detail_mem_usage(*mem);
-        state.mem_used_gb =
-            static_cast<float>(mem->total_kb - mem->available_kb) / 1048576.0f;
+        state.mem_used_gb = static_cast<float>(mem->total_kb - mem->available_kb) / 1048576.0f;
         state.mem_total_gb = static_cast<float>(mem->total_kb) / 1048576.0f;
     } else {
         state.mem_usage = -1.0f;
@@ -444,36 +440,34 @@ void system_stats_poll(SystemStatsState &state) {
         state.mem_total_gb = -1.0f;
     }
 
-    auto freq_mhz =
-        system_stats_detail_parse_cpu_freq_avg_mhz(read_file("/proc/cpuinfo"));
+    auto freq_mhz = system_stats_detail_parse_cpu_freq_avg_mhz(read_file("/proc/cpuinfo"));
     state.cpu_freq_ghz = freq_mhz ? *freq_mhz / 1000.0f : -1.0f;
 
     auto disk = system_stats_detail_disk_usage("/");
     if (disk) {
-        state.disk_used_gb =
-            static_cast<float>(disk->used_bytes) / 1073741824.0f;
-        state.disk_total_gb =
-            static_cast<float>(disk->total_bytes) / 1073741824.0f;
-        state.disk_pct = static_cast<float>(disk->used_bytes) * 100.0f / static_cast<float>(disk->total_bytes);
+        state.disk_used_gb = static_cast<float>(disk->used_bytes) / 1073741824.0f;
+        state.disk_total_gb = static_cast<float>(disk->total_bytes) / 1073741824.0f;
+        state.disk_pct =
+            static_cast<float>(disk->used_bytes) * 100.0f / static_cast<float>(disk->total_bytes);
     } else {
         state.disk_used_gb = -1.0f;
         state.disk_total_gb = -1.0f;
         state.disk_pct = -1.0f;
     }
 
-    auto net =
-        system_stats_detail_parse_proc_net_dev(read_file("/proc/net/dev"));
+    auto net = system_stats_detail_parse_proc_net_dev(read_file("/proc/net/dev"));
     auto now = std::chrono::steady_clock::now();
     if (net) {
         if (state.have_prev_net) {
-            double dt = std::chrono::duration<double>(now - state.prev_net_time)
-                            .count();
+            double dt = std::chrono::duration<double>(now - state.prev_net_time).count();
             if (dt > 0.0) {
                 state.net_rx_bps =
-                    std::max<int64_t>(0, static_cast<int64_t>(net->rx_bytes - state.prev_net.rx_bytes)) /
+                    std::max<int64_t>(
+                        0, static_cast<int64_t>(net->rx_bytes - state.prev_net.rx_bytes)) /
                     dt;
                 state.net_tx_bps =
-                    std::max<int64_t>(0, static_cast<int64_t>(net->tx_bytes - state.prev_net.tx_bytes)) /
+                    std::max<int64_t>(
+                        0, static_cast<int64_t>(net->tx_bytes - state.prev_net.tx_bytes)) /
                     dt;
             }
         }

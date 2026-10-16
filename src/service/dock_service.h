@@ -15,6 +15,7 @@ struct DockEntry {
     bool operator==(const DockEntry &) const = default;
 };
 
-std::vector<DockEntry> dock_entries_for_monitor(const CompositorState &compositor, const std::string &monitor_name);
+std::vector<DockEntry> dock_entries_for_monitor(const CompositorState &compositor,
+                                                const std::string &monitor_name);
 
 } // namespace astralia

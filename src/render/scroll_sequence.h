@@ -16,7 +16,8 @@ struct ScrollTimings {
 
 class ScrollSequence {
   public:
-    ScrollSequence(AnimationManager &animations, uint64_t owner_base, ScrollTimings timings = {}) : animations_(animations), owner_(owner_base), timings_(timings) {}
+    ScrollSequence(AnimationManager &animations, uint64_t owner_base, ScrollTimings timings = {})
+        : animations_(animations), owner_(owner_base), timings_(timings) {}
     ScrollSequence(const ScrollSequence &) = delete;
     ScrollSequence &operator=(const ScrollSequence &) = delete;
 

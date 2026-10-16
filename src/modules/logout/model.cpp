@@ -38,7 +38,8 @@ std::array<std::string, logout_config::button_count> logout_commands(bool with_l
 LogoutModel::LogoutModel(Commands commands) : commands_(std::move(commands)) {}
 
 void LogoutModel::schedule_after(float delay_ms, uint64_t owner, std::function<void()> fn) {
-    animations_.animate(0.0f, 1.0f, delay_ms, astralia::Easing::Linear, [](float) {}, std::move(fn), owner);
+    animations_.animate(
+        0.0f, 1.0f, delay_ms, astralia::Easing::Linear, [](float) {}, std::move(fn), owner);
 }
 
 void LogoutModel::set_highlight(int index, bool on) {
@@ -47,8 +48,12 @@ void LogoutModel::set_highlight(int index, bool on) {
     }
     auto i = static_cast<size_t>(index);
     float target = on ? 1.0f : 0.0f;
-    animations_.animate(highlight_scale_[i], target, cfg::button_scale_ms, astralia::Easing::EaseOutCubic, [this, i](float v) { highlight_scale_[i] = v; }, {}, owner_scale(index));
-    animations_.animate(highlight_border_[i], target, cfg::button_border_ms, astralia::Easing::EaseOutCubic, [this, i](float v) { highlight_border_[i] = v; }, {}, owner_border(index));
+    animations_.animate(
+        highlight_scale_[i], target, cfg::button_scale_ms, astralia::Easing::EaseOutCubic,
+        [this, i](float v) { highlight_scale_[i] = v; }, {}, owner_scale(index));
+    animations_.animate(
+        highlight_border_[i], target, cfg::button_border_ms, astralia::Easing::EaseOutCubic,
+        [this, i](float v) { highlight_border_[i] = v; }, {}, owner_border(index));
 }
 
 void LogoutModel::update_highlight(int index) {
@@ -85,35 +90,52 @@ void LogoutModel::finish_close() {
 
 void LogoutModel::start_burst() {
     burst_ = 0.0f;
-    animations_.animate(0.0f, 1.0f, cfg::burst_ms, astralia::Easing::EaseOutCubic, [this](float v) { burst_ = v; }, [this] {
-        input_ready_ = true;
-        update_highlight(selected_); }, owner_burst);
+    animations_.animate(
+        0.0f, 1.0f, cfg::burst_ms, astralia::Easing::EaseOutCubic, [this](float v) { burst_ = v; },
+        [this] {
+            input_ready_ = true;
+            update_highlight(selected_);
+        },
+        owner_burst);
     for (int i = 0; i < count; ++i) {
         auto idx = static_cast<size_t>(i);
-        animations_.animate(0.0f, 1.0f, cfg::push_ms, astralia::Easing::EaseOutBack, [this, idx](float v) { travel_[idx] = v; }, {}, owner_push(i));
+        animations_.animate(
+            0.0f, 1.0f, cfg::push_ms, astralia::Easing::EaseOutBack,
+            [this, idx](float v) { travel_[idx] = v; }, {}, owner_push(i));
     }
 }
 
 void LogoutModel::start_exit_burst() {
     burst_ = 0.0f;
     exit_fade_ = 1.0f;
-    animations_.animate(0.0f, 1.0f, cfg::burst_ms, astralia::Easing::EaseOutCubic, [this](float v) { burst_ = v; }, [this] { finish_close(); }, owner_burst);
-    animations_.animate(1.0f, 0.0f, cfg::exit_fade_ms, astralia::Easing::EaseOutCubic, [this](float v) { exit_fade_ = v; }, {}, owner_exit);
+    animations_.animate(
+        0.0f, 1.0f, cfg::burst_ms, astralia::Easing::EaseOutCubic, [this](float v) { burst_ = v; },
+        [this] { finish_close(); }, owner_burst);
+    animations_.animate(
+        1.0f, 0.0f, cfg::exit_fade_ms, astralia::Easing::EaseOutCubic,
+        [this](float v) { exit_fade_ = v; }, {}, owner_exit);
     for (int i = 0; i < count; ++i) {
         auto idx = static_cast<size_t>(i);
-        animations_.animate(travel_[idx], 1.0f + cfg::exit_spread, cfg::exit_fade_ms, astralia::Easing::EaseOutCubic, [this, idx](float v) { travel_[idx] = v; }, {}, owner_push(i));
+        animations_.animate(
+            travel_[idx], 1.0f + cfg::exit_spread, cfg::exit_fade_ms,
+            astralia::Easing::EaseOutCubic, [this, idx](float v) { travel_[idx] = v; }, {},
+            owner_push(i));
     }
 }
 
 void LogoutModel::start_slashes() {
     if (!exiting_) {
-        animations_.animate(0.0f, 1.0f, cfg::charge_ms, astralia::Easing::Linear, [this](float v) { charge_ = v; }, {}, owner_charge);
+        animations_.animate(
+            0.0f, 1.0f, cfg::charge_ms, astralia::Easing::Linear, [this](float v) { charge_ = v; },
+            {}, owner_charge);
     }
     float step = cfg::slash_ms * cfg::slash_advance_frac;
     for (int e = 0; e < count; ++e) {
         auto idx = static_cast<size_t>(e);
         schedule_after(static_cast<float>(e) * step, owner_gate(e), [this, idx, e] {
-            animations_.animate(0.0f, 1.0f, cfg::slash_ms, astralia::Easing::EaseOutCubic, [this, idx](float v) { slash_[idx] = v; }, {}, owner_slash(e));
+            animations_.animate(
+                0.0f, 1.0f, cfg::slash_ms, astralia::Easing::EaseOutCubic,
+                [this, idx](float v) { slash_[idx] = v; }, {}, owner_slash(e));
         });
     }
     float slash_time = static_cast<float>(count - 1) * step + cfg::slash_ms;
@@ -137,7 +159,11 @@ void LogoutModel::start_open() {
     burst_started_ = std::chrono::steady_clock::now();
     slash_.fill(0.0f);
     travel_.fill(0.0f);
-    animations_.animate(0.0f, 1.0f, cfg::logo_anim_ms, astralia::Easing::EaseOutBack, [this](float v) { logo_scale_ = v; }, [this] { schedule_after(cfg::hold_ms, owner_hold, [this] { start_slashes(); }); }, owner_logo);
+    animations_.animate(
+        0.0f, 1.0f, cfg::logo_anim_ms, astralia::Easing::EaseOutBack,
+        [this](float v) { logo_scale_ = v; },
+        [this] { schedule_after(cfg::hold_ms, owner_hold, [this] { start_slashes(); }); },
+        owner_logo);
 }
 
 void LogoutModel::start_close() {
@@ -266,8 +292,6 @@ bool LogoutModel::clear_hover() {
     return true;
 }
 
-void LogoutModel::tick(std::chrono::steady_clock::time_point now) {
-    animations_.tick(now);
-}
+void LogoutModel::tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
 
 } // namespace astralia

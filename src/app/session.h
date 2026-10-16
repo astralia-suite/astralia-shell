@@ -10,9 +10,7 @@
 
 namespace astralia {
 
-enum class SessionKind { none,
-                         wayland,
-                         x11 };
+enum class SessionKind { none, wayland, x11 };
 
 struct SessionEnvironment {
     std::string override_name;
@@ -28,7 +26,8 @@ SessionEnvironment session_environment();
 SessionKind detect_session(const SessionEnvironment &environment);
 std::string_view session_name(SessionKind kind);
 std::string backend_library_name(SessionKind kind);
-std::vector<std::string> backend_search_dirs(std::string_view override_dir, std::string_view executable_dir);
+std::vector<std::string> backend_search_dirs(std::string_view override_dir,
+                                             std::string_view executable_dir);
 
 struct LoadedBackend {
     void *handle = nullptr;

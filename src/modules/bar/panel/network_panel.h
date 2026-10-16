@@ -14,16 +14,18 @@
 namespace astralia {
 
 struct NetworkRow {
-    enum class Kind { error,
-                      ethernet,
-                      no_adapter,
-                      disabled,
-                      scanning,
-                      section_connected,
-                      section_known,
-                      section_available,
-                      network,
-                      spacer } kind;
+    enum class Kind {
+        error,
+        ethernet,
+        no_adapter,
+        disabled,
+        scanning,
+        section_connected,
+        section_known,
+        section_available,
+        network,
+        spacer
+    } kind;
     float height;
     const NetworkInfo *info = nullptr;
 };
@@ -59,10 +61,7 @@ class NetworkPanel final : public PanelContent {
     ui::Box cursor() const override;
 
   private:
-    enum class Dialog { none,
-                        password,
-                        disconnect,
-                        forget };
+    enum class Dialog { none, password, disconnect, forget };
 
     NetworkRowsInput rows_input() const;
     void open_dialog(Dialog dialog, const std::string &ssid);

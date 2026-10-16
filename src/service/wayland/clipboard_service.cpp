@@ -16,7 +16,8 @@
 namespace {
 
 constexpr size_t kMaxPaste = 1 << 20;
-constexpr std::array<const char *, 5> kMimes = {"text/plain;charset=utf-8", "text/plain", "UTF8_STRING", "TEXT", "STRING"};
+constexpr std::array<const char *, 5> kMimes = {"text/plain;charset=utf-8", "text/plain",
+                                                "UTF8_STRING", "TEXT", "STRING"};
 
 int mime_rank(const char *mime) {
     for (size_t i = 0; i < kMimes.size(); ++i)
@@ -44,7 +45,8 @@ void device_data_offer(void *data, wl_data_device *, wl_data_offer *offer) {
     wl_data_offer_add_listener(offer, &kOfferListener, data);
 }
 
-void device_enter(void *, wl_data_device *, uint32_t, wl_surface *, wl_fixed_t, wl_fixed_t, wl_data_offer *) {}
+void device_enter(void *, wl_data_device *, uint32_t, wl_surface *, wl_fixed_t, wl_fixed_t,
+                  wl_data_offer *) {}
 
 void device_leave(void *, wl_data_device *) {}
 
@@ -94,7 +96,8 @@ constexpr wl_data_source_listener kSourceListener = {
 
 ClipboardService::~ClipboardService() { cleanup(); }
 
-bool ClipboardService::bind(wl_data_device_manager *manager, wl_seat *seat, wl_display *display, const KeyboardState *keyboard) {
+bool ClipboardService::bind(wl_data_device_manager *manager, wl_seat *seat, wl_display *display,
+                            const KeyboardState *keyboard) {
     if (!manager || !seat)
         return false;
     manager_ = manager;
@@ -201,9 +204,7 @@ void ClipboardService::finish_read() {
     done_ = nullptr;
 }
 
-void ClipboardService::handle_data_offer(wl_data_offer *offer) {
-    offers_[offer] = {};
-}
+void ClipboardService::handle_data_offer(wl_data_offer *offer) { offers_[offer] = {}; }
 
 void ClipboardService::handle_offer_mime(wl_data_offer *offer, const char *mime) {
     auto it = offers_.find(offer);

@@ -5,13 +5,9 @@
 
 namespace astralia {
 
-enum class ScrollAxis { horizontal,
-                        vertical };
+enum class ScrollAxis { horizontal, vertical };
 
-enum class ScrollEntry { from_left,
-                         from_right,
-                         from_top,
-                         from_bottom };
+enum class ScrollEntry { from_left, from_right, from_top, from_bottom };
 
 struct ScrollMetrics {
     float roller_w = 18.0f;
@@ -37,7 +33,8 @@ ScrollGeometry scroll_geometry(const ui::Box &panel, float open, const ScrollMet
 
 ui::Box scroll_bounds(const ScrollGeometry &geometry);
 
-ScrollOffset scroll_slide_offset(ScrollEntry entry, float slide, const ui::Box &closed, float surface_w, float surface_h);
+ScrollOffset scroll_slide_offset(ScrollEntry entry, float slide, const ui::Box &closed,
+                                 float surface_w, float surface_h);
 
 void paint_scroll(ui::Canvas &canvas, const ScrollGeometry &geometry, const ScrollMetrics &metrics);
 

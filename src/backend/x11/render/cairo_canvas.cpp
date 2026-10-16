@@ -66,13 +66,15 @@ void CairoCanvas::rect(const ui::Box &box, const Color &fill) {
     cairo_fill(cr_);
 }
 
-void CairoCanvas::rounded(const ui::Box &box, float radius, const Color &fill, float border_width, const Color &border) {
+void CairoCanvas::rounded(const ui::Box &box, float radius, const Color &fill, float border_width,
+                          const Color &border) {
     rounded_rect(cr_, box.x, box.y, box.w, box.h, radius);
     set_source(cr_, fill);
     cairo_fill(cr_);
     if (border_width > 0.0f) {
         double inset = border_width / 2.0;
-        rounded_rect(cr_, box.x + inset, box.y + inset, box.w - border_width, box.h - border_width, radius - inset);
+        rounded_rect(cr_, box.x + inset, box.y + inset, box.w - border_width, box.h - border_width,
+                     radius - inset);
         set_source(cr_, border);
         cairo_set_line_width(cr_, border_width);
         cairo_stroke(cr_);
@@ -112,7 +114,8 @@ float CairoCanvas::advance(const ui::TextStyle &style) {
     return static_cast<float>(face("M", style).width());
 }
 
-void CairoCanvas::text(std::string_view text, const ui::TextStyle &style, float x, float y, const Color &color) {
+void CairoCanvas::text(std::string_view text, const ui::TextStyle &style, float x, float y,
+                       const Color &color) {
     if (text.empty()) {
         return;
     }
@@ -120,7 +123,8 @@ void CairoCanvas::text(std::string_view text, const ui::TextStyle &style, float 
     set_source(cr_, color);
     if (style.family != ui::FontFamily::text) {
         PangoRectangle ink = layout.ink_exact();
-        layout.draw(cr_, x - static_cast<double>(ink.x) / PANGO_SCALE, y - static_cast<double>(ink.y) / PANGO_SCALE);
+        layout.draw(cr_, x - static_cast<double>(ink.x) / PANGO_SCALE,
+                    y - static_cast<double>(ink.y) / PANGO_SCALE);
     } else {
         layout.draw(cr_, x - layout.ink().x, y);
     }
@@ -238,7 +242,8 @@ ui::TextSize CairoCanvas::image_size(ui::ImageId id) {
         return {};
     }
     cairo_surface_t *surface = images_[static_cast<size_t>(id)].get();
-    return {static_cast<float>(cairo_image_surface_get_width(surface)), static_cast<float>(cairo_image_surface_get_height(surface))};
+    return {static_cast<float>(cairo_image_surface_get_width(surface)),
+            static_cast<float>(cairo_image_surface_get_height(surface))};
 }
 
 void CairoCanvas::draw_image(ui::ImageId id, const ui::Box &box, const Color &) {
@@ -276,7 +281,8 @@ void CairoCanvas::gauge(const ui::Box &box, float stroke, float value, const Col
         if (filled > 0.0) {
             set_source(cr_, fill);
             cairo_new_sub_path(cr_);
-            cairo_arc(cr_, box.x + box.w / 2.0, box.y + box.h / 2.0, radius, start, start + span * filled);
+            cairo_arc(cr_, box.x + box.w / 2.0, box.y + box.h / 2.0, radius, start,
+                      start + span * filled);
             cairo_stroke(cr_);
         }
     }
@@ -300,8 +306,6 @@ void CairoCanvas::begin_group(const ui::Box &box, const ui::GroupOptions &option
     }
 }
 
-void CairoCanvas::end_group() {
-    cairo_restore(cr_);
-}
+void CairoCanvas::end_group() { cairo_restore(cr_); }
 
 } // namespace astralia

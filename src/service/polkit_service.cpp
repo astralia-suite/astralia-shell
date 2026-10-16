@@ -28,8 +28,7 @@ namespace {
 
 constexpr const char *agent_object_path = "/org/astralia_shell/PolkitAuthenticationAgent";
 
-template <typename F>
-void guard_callback(const char *name, F &&body) noexcept {
+template <typename F> void guard_callback(const char *name, F &&body) noexcept {
     try {
         std::forward<F>(body)();
     } catch (const std::exception &e) {
@@ -183,7 +182,8 @@ void request_cancelled(GCancellable *, gpointer user_data) noexcept {
     guard_callback("request_cancelled", [&] {
         auto *request = static_cast<AuthRequest *>(user_data);
         request->cancel_handler = 0;
-        gpointer source = G_IS_TASK(request->task) ? g_task_get_source_object(request->task) : nullptr;
+        gpointer source =
+            G_IS_TASK(request->task) ? g_task_get_source_object(request->task) : nullptr;
         auto *listener = static_cast<AstraliaPolkitListener *>(source);
         if (listener != nullptr && listener->cancel != nullptr && listener->owner != nullptr) {
             listener->cancel(listener->owner, request);
@@ -203,16 +203,18 @@ void initiate_authentication(PolkitAgentListener *listener, const gchar *action_
         request->icon_name = icon_name != nullptr ? icon_name : "";
         request->cookie = cookie != nullptr ? cookie : "";
         request->task = g_task_new(G_OBJECT(listener), nullptr, callback, user_data);
-        request->cancellable =
-            cancellable != nullptr ? static_cast<GCancellable *>(g_object_ref(cancellable)) : nullptr;
+        request->cancellable = cancellable != nullptr
+                                   ? static_cast<GCancellable *>(g_object_ref(cancellable))
+                                   : nullptr;
         for (GList *item = g_list_first(identities); item != nullptr; item = g_list_next(item)) {
             auto *identity = static_cast<PolkitIdentity *>(item->data);
             if (identity == nullptr) {
                 continue;
             }
-            bool duplicate = std::ranges::any_of(request->identities, [identity](const IdentityRef &existing) {
-                return polkit_identity_equal(existing.get(), identity);
-            });
+            bool duplicate =
+                std::ranges::any_of(request->identities, [identity](const IdentityRef &existing) {
+                    return polkit_identity_equal(existing.get(), identity);
+                });
             if (!duplicate) {
                 request->identities.emplace_back(identity);
             }
@@ -306,13 +308,13 @@ struct PolkitService::Impl {
             return;
         }
         register_cancellable = g_cancellable_new();
-        polkit_unix_session_new_for_process(getpid(), register_cancellable, &Impl::session_ready, this);
+        polkit_unix_session_new_for_process(getpid(), register_cancellable, &Impl::session_ready,
+                                            this);
     }
 
     static void session_ready(GObject *, GAsyncResult *result, gpointer user_data) noexcept {
-        guard_callback("session_ready", [&] {
-            static_cast<Impl *>(user_data)->on_session_ready(result);
-        });
+        guard_callback("session_ready",
+                       [&] { static_cast<Impl *>(user_data)->on_session_ready(result); });
     }
 
     void on_session_ready(GAsyncResult *result) {
@@ -330,7 +332,8 @@ struct PolkitService::Impl {
             if (subject != nullptr) {
                 g_object_unref(subject);
             }
-            log::info("polkit: no logind session for pid, registering for the unix user");
+            log::info("polkit: no logind session for pid, registering for the "
+                      "unix user");
             subject = POLKIT_SUBJECT(polkit_unix_user_new(static_cast<gint>(getuid())));
         }
         register_subject(subject, error);
@@ -343,7 +346,8 @@ struct PolkitService::Impl {
             register_cancellable = nullptr;
         }
         if (subject == nullptr || error != nullptr) {
-            std::string reason = error != nullptr ? error->message : "cannot create the session subject";
+            std::string reason =
+                error != nullptr ? error->message : "cannot create the session subject";
             log::error("polkit: {}", reason);
             g_clear_error(&error);
             if (subject != nullptr) {
@@ -382,10 +386,12 @@ struct PolkitService::Impl {
     }
 
     static void completed(PolkitAgentSession *, gboolean gained, gpointer user_data) noexcept {
-        guard_callback("completed", [&] { static_cast<Impl *>(user_data)->on_completed(gained != FALSE); });
+        guard_callback("completed",
+                       [&] { static_cast<Impl *>(user_data)->on_completed(gained != FALSE); });
     }
 
-    static void request(PolkitAgentSession *, gchar *text, gboolean echo_on, gpointer user_data) noexcept {
+    static void request(PolkitAgentSession *, gchar *text, gboolean echo_on,
+                        gpointer user_data) noexcept {
         guard_callback("request", [&] {
             auto *self = static_cast<Impl *>(user_data);
             self->prompt = text != nullptr && text[0] != '\0' ? text : "Password:";
@@ -594,8 +600,9 @@ struct PolkitService::Impl {
 
 PolkitService::PolkitService(Reactor &loop)
     : loop_(loop), impl_(std::make_unique<Impl>(changed, ready)) {
-    source_ = loop_.add_poll_source([this](std::vector<pollfd> &fds) { return impl_->prepare(fds); },
-                                    [this](std::span<const pollfd> fds) { impl_->dispatch(fds); });
+    source_ =
+        loop_.add_poll_source([this](std::vector<pollfd> &fds) { return impl_->prepare(fds); },
+                              [this](std::span<const pollfd> fds) { impl_->dispatch(fds); });
     impl_->start();
 }
 

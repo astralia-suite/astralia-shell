@@ -24,7 +24,9 @@ class PanelSurface final : public TextInputClient {
     bool configured() const { return !base_.layer_surface || base_.configured; }
     bool init_egl();
     void destroy();
-    bool owns(wl_surface *surface) const { return surface != nullptr && (surface == base_.surface || surface == popup_.surface); }
+    bool owns(wl_surface *surface) const {
+        return surface != nullptr && (surface == base_.surface || surface == popup_.surface);
+    }
     void request_frame();
 
     astralia::PanelSet &panels() { return set_; }

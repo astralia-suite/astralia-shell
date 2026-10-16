@@ -13,9 +13,11 @@ namespace {
 
 namespace cfg = notification_config;
 
-constexpr uint32_t view_events = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW;
+constexpr uint32_t view_events = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                                 XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW;
 
-std::optional<uint32_t> close_hit(const std::vector<std::pair<uint32_t, ui::Box>> &boxes, double x, double y) {
+std::optional<uint32_t> close_hit(const std::vector<std::pair<uint32_t, ui::Box>> &boxes, double x,
+                                  double y) {
     for (const auto &[id, box] : boxes) {
         if (x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h) {
             return id;
@@ -40,7 +42,8 @@ Notifications::View &Notifications::view_for(const Output &output) {
     if (it == views_.end()) {
         it = views_.emplace(output.name, std::make_unique<View>(x_)).first;
         View *view = it->second.get();
-        loop_.on_window(view->window.id(), [this, view](const xcb_generic_event_t &event) { handle(*view, event); });
+        loop_.on_window(view->window.id(),
+                        [this, view](const xcb_generic_event_t &event) { handle(*view, event); });
     }
     return *it->second;
 }
@@ -49,12 +52,14 @@ void Notifications::sync() {
     model_.sync(service_);
     const std::vector<Output> &outputs = services_.outputs.outputs();
     for (auto &[name, view] : views_) {
-        if (std::ranges::none_of(outputs, [&name](const Output &output) { return output.name == name; })) {
+        if (std::ranges::none_of(outputs,
+                                 [&name](const Output &output) { return output.name == name; })) {
             view->window.hide();
         }
     }
     for (const Output &output : outputs) {
-        bool wanted = !model_.entries().empty() && notifications_effective_enabled(services_.settings.config(), output.name);
+        bool wanted = !model_.entries().empty() &&
+                      notifications_effective_enabled(services_.settings.config(), output.name);
         auto existing = views_.find(output.name);
         if (!wanted) {
             if (existing != views_.end()) {
@@ -72,7 +77,8 @@ void Notifications::sync() {
         }
         auto height = static_cast<int>(std::ceil(view.layout.height));
         const OutputGeometry &area = output.geometry;
-        view.window.place({static_cast<int16_t>(area.x + area.width - cfg::margin_right - static_cast<int>(cfg::card_width)),
+        view.window.place({static_cast<int16_t>(area.x + area.width - cfg::margin_right -
+                                                static_cast<int>(cfg::card_width)),
                            static_cast<int16_t>(area.y + area.height - cfg::margin_bottom - height),
                            static_cast<uint16_t>(cfg::card_width), static_cast<uint16_t>(height)});
         paint(view);
@@ -81,16 +87,21 @@ void Notifications::sync() {
 }
 
 void Notifications::apply_input_region(View &view) {
-    std::vector<std::pair<uint32_t, ui::Box>> boxes = notification_close_boxes(view.layout, view.state);
+    std::vector<std::pair<uint32_t, ui::Box>> boxes =
+        notification_close_boxes(view.layout, view.state);
     if (boxes == view.close_boxes) {
         return;
     }
     view.close_boxes = std::move(boxes);
     std::vector<xcb_rectangle_t> rectangles;
     for (const auto &[id, box] : view.close_boxes) {
-        rectangles.push_back({static_cast<int16_t>(box.x), static_cast<int16_t>(box.y), static_cast<uint16_t>(std::ceil(box.w)), static_cast<uint16_t>(std::ceil(box.h))});
+        rectangles.push_back({static_cast<int16_t>(box.x), static_cast<int16_t>(box.y),
+                              static_cast<uint16_t>(std::ceil(box.w)),
+                              static_cast<uint16_t>(std::ceil(box.h))});
     }
-    xcb_shape_rectangles(x_.conn(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, XCB_CLIP_ORDERING_UNSORTED, view.window.id(), 0, 0, static_cast<uint32_t>(rectangles.size()), rectangles.data());
+    xcb_shape_rectangles(x_.conn(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT,
+                         XCB_CLIP_ORDERING_UNSORTED, view.window.id(), 0, 0,
+                         static_cast<uint32_t>(rectangles.size()), rectangles.data());
     xcb_flush(x_.conn());
 }
 
@@ -107,7 +118,8 @@ void Notifications::handle(View &view, const xcb_generic_event_t &event) {
         if (press.detail != XCB_BUTTON_INDEX_1) {
             break;
         }
-        if (auto id = close_hit(view.close_boxes, press.event_x, press.event_y); id && view.state.hide_locally(*id)) {
+        if (auto id = close_hit(view.close_boxes, press.event_x, press.event_y);
+            id && view.state.hide_locally(*id)) {
             sync();
         }
         break;
@@ -115,7 +127,8 @@ void Notifications::handle(View &view, const xcb_generic_event_t &event) {
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
         if (view.state.set_hover(close_hit(view.close_boxes, motion.event_x, motion.event_y))) {
-            view.window.set_cursor(view.state.hovered() != 0 ? CursorShape::hand : CursorShape::arrow);
+            view.window.set_cursor(view.state.hovered() != 0 ? CursorShape::hand
+                                                             : CursorShape::arrow);
             paint(view);
         }
         break;

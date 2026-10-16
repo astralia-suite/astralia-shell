@@ -58,7 +58,8 @@ void test_config() {
 }
 
 void test_config_watch() {
-    std::string path = "/tmp/astralia_shell_test_config_watch_" + std::to_string(getpid()) + ".json";
+    std::string path =
+        "/tmp/astralia_shell_test_config_watch_" + std::to_string(getpid()) + ".json";
     {
         std::ofstream f(path);
         f << "{\"idle\":{\"timeoutSeconds\":300}}";
@@ -90,7 +91,8 @@ void test_monitor_overrides() {
     assert(notifications_effective_enabled(cfg, "DP-1") == cfg.default_notifications_enabled);
     assert(autohide_effective_enabled(cfg, "DP-1") == cfg.autohide);
 
-    cfg.monitor_overrides["DP-1"] = MonitorOverride{.enabled = false, .osd = false, .notifications = false, .autohide = true};
+    cfg.monitor_overrides["DP-1"] =
+        MonitorOverride{.enabled = false, .osd = false, .notifications = false, .autohide = true};
     assert(osd_effective_enabled(cfg, "DP-1") == cfg.default_osd_enabled);
 
     cfg.monitor_overrides["DP-1"].enabled = true;

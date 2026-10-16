@@ -21,12 +21,14 @@ class CairoCanvas final : public ui::Canvas {
     void release_images();
 
     void rect(const ui::Box &box, const Color &fill) override;
-    void rounded(const ui::Box &box, float radius, const Color &fill, float border_width, const Color &border) override;
+    void rounded(const ui::Box &box, float radius, const Color &fill, float border_width,
+                 const Color &border) override;
     void fillet(const ui::Box &box, bool circle_on_right, const Color &color) override;
     void set_erase(bool on) override;
     ui::TextSize measure(std::string_view text, const ui::TextStyle &style) override;
     float advance(const ui::TextStyle &style) override;
-    void text(std::string_view text, const ui::TextStyle &style, float x, float y, const Color &color) override;
+    void text(std::string_view text, const ui::TextStyle &style, float x, float y,
+              const Color &color) override;
     ui::ImageId image(std::string_view asset, int target_px) override;
     ui::ImageId thumbnail(std::string_view path, int px) override;
     ui::TextSize image_size(ui::ImageId id) override;

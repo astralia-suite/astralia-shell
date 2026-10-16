@@ -13,30 +13,39 @@ void check_theme_service() {
 
     Config cfg;
     cfg.wallpaper_path = "/global.png";
-    check(theme_wallpaper_path(cfg, "") == "/global.png", "the global wallpaper drives the theme without a monitor");
+    check(theme_wallpaper_path(cfg, "") == "/global.png",
+          "the global wallpaper drives the theme without a monitor");
     cfg.wallpaper_path.clear();
     check(theme_wallpaper_path(cfg, "").empty(), "no wallpaper gives an empty path");
     cfg.wallpaper_columns["DP-1"] = {"", "/second.png"};
     cfg.wallpaper_columns["DP-2"] = {"/dp2.png"};
-    check(theme_wallpaper_path(cfg, "") == "/dp2.png", "a column image beats the global one without a monitor");
+    check(theme_wallpaper_path(cfg, "") == "/dp2.png",
+          "a column image beats the global one without a monitor");
 
-    check(theme_wallpaper_path(cfg, "DP-1") == "", "a monitor with a blank column falls back to the blank global path");
+    check(theme_wallpaper_path(cfg, "DP-1") == "",
+          "a monitor with a blank column falls back to the blank global path");
     cfg.wallpaper_columns["DP-1"] = {"/dp1.png"};
     check(theme_wallpaper_path(cfg, "DP-1") == "/dp1.png", "a monitor uses its own column image");
     Config animated = cfg;
     animated.wallpaper_animated_enabled = true;
     animated.wallpaper_animated_columns["DP-1"] = {"/clip.mp4", "/second.mp4"};
-    check(theme_wallpaper_path(animated, "DP-1") == "/clip.mp4", "animated mode themes from the first animated column");
-    check(theme_wallpaper_path(animated, "DP-2").empty(), "an animated monitor without a video has no theme path");
-    check(theme_wallpaper_path(animated, "") == "/clip.mp4", "animated mode without a monitor takes the first animated column");
+    check(theme_wallpaper_path(animated, "DP-1") == "/clip.mp4",
+          "animated mode themes from the first animated column");
+    check(theme_wallpaper_path(animated, "DP-2").empty(),
+          "an animated monitor without a video has no theme path");
+    check(theme_wallpaper_path(animated, "") == "/clip.mp4",
+          "animated mode without a monitor takes the first animated column");
     cfg.wallpaper_columns.clear();
-    std::filesystem::path file = std::filesystem::temp_directory_path() / "astralia-theme-source-test.png";
+    std::filesystem::path file =
+        std::filesystem::temp_directory_path() / "astralia-theme-source-test.png";
     std::ofstream(file) << "x";
     cfg.wallpaper_path = file.string();
     ThemeSource first = theme_source(cfg, "");
-    check(first.path == file.string() && first.modified != 0, "a source records its path and mtime");
+    check(first.path == file.string() && first.modified != 0,
+          "a source records its path and mtime");
     check(first == theme_source(cfg, ""), "an unchanged file gives an equal source");
-    std::filesystem::last_write_time(file, std::filesystem::last_write_time(file) + std::chrono::seconds(5));
+    std::filesystem::last_write_time(file, std::filesystem::last_write_time(file) +
+                                               std::chrono::seconds(5));
     check(!(first == theme_source(cfg, "")), "a changed mtime gives a different source");
     std::filesystem::remove(file);
     check(theme_source(cfg, "").modified == 0, "a missing file records no mtime");

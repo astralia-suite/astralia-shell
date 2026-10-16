@@ -12,7 +12,9 @@ using astralia::Easing;
 using namespace std::chrono_literals;
 
 void check_easing() {
-    for (Easing e : {Easing::Linear, Easing::EaseOutQuad, Easing::EaseInOutCubic, Easing::EaseOutCubic, Easing::EaseInCubic, Easing::EaseOutBack, Easing::EaseInBack}) {
+    for (Easing e :
+         {Easing::Linear, Easing::EaseOutQuad, Easing::EaseInOutCubic, Easing::EaseOutCubic,
+          Easing::EaseInCubic, Easing::EaseOutBack, Easing::EaseInBack}) {
         test::check(std::fabs(astralia::applyEasing(e, 0.0f)) < 1e-5f, "easing starts at zero");
         test::check(std::fabs(astralia::applyEasing(e, 1.0f) - 1.0f) < 1e-5f, "easing ends at one");
     }
@@ -26,7 +28,8 @@ void check_interpolation() {
     float value = -1.0f;
     int completions = 0;
     auto now = std::chrono::steady_clock::now();
-    mgr.animate(0.0f, 10.0f, 100.0f, Easing::Linear, [&](float v) { value = v; }, [&] { completions++; });
+    mgr.animate(
+        0.0f, 10.0f, 100.0f, Easing::Linear, [&](float v) { value = v; }, [&] { completions++; });
     mgr.tick(now);
     test::check(value == 0.0f, "first tick sits at the start");
     mgr.tick(now + 50ms);
@@ -41,7 +44,8 @@ void check_zero_duration() {
     AnimationManager mgr;
     float value = -1.0f;
     int completions = 0;
-    mgr.animate(0.0f, 5.0f, 0.0f, Easing::Linear, [&](float v) { value = v; }, [&] { completions++; });
+    mgr.animate(
+        0.0f, 5.0f, 0.0f, Easing::Linear, [&](float v) { value = v; }, [&] { completions++; });
     test::check(value == 5.0f && completions == 1 && !mgr.hasActive(), "zero duration snaps");
 }
 
@@ -57,10 +61,13 @@ void check_owner() {
 
     float cancelled = -1.0f;
     bool completed = false;
-    mgr.animate(0.0f, 10.0f, 100.0f, Easing::Linear, [&](float v) { cancelled = v; }, [&] { completed = true; }, 2);
+    mgr.animate(
+        0.0f, 10.0f, 100.0f, Easing::Linear, [&](float v) { cancelled = v; },
+        [&] { completed = true; }, 2);
     mgr.cancelForOwner(2);
     mgr.tick(now + 400ms);
-    test::check(!mgr.hasActive() && cancelled == -1.0f && !completed, "cancel drops the animation silently");
+    test::check(!mgr.hasActive() && cancelled == -1.0f && !completed,
+                "cancel drops the animation silently");
 }
 
 void check_instant() {
@@ -69,9 +76,12 @@ void check_instant() {
     int completions = 0;
     astralia::animation_set_instant(true);
     test::check(astralia::animation_instant(), "flag reads back");
-    mgr.animate(0.0f, 7.0f, 500.0f, Easing::EaseOutCubic, [&](float v) { value = v; }, [&] { completions++; });
+    mgr.animate(
+        0.0f, 7.0f, 500.0f, Easing::EaseOutCubic, [&](float v) { value = v; },
+        [&] { completions++; });
     astralia::animation_set_instant(false);
-    test::check(value == 7.0f && completions == 1 && !mgr.hasActive(), "instant mode snaps and keeps no entry");
+    test::check(value == 7.0f && completions == 1 && !mgr.hasActive(),
+                "instant mode snaps and keeps no entry");
     test::check(!astralia::animation_instant(), "flag clears");
 }
 

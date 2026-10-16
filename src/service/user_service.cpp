@@ -75,7 +75,8 @@ std::string UserService::uptime() const {
         return {};
     }
     char text[32];
-    std::snprintf(text, sizeof(text), "Up: %02ld:%02ld", info.uptime / 3600, (info.uptime % 3600) / 60);
+    std::snprintf(text, sizeof(text), "Up: %02ld:%02ld", info.uptime / 3600,
+                  (info.uptime % 3600) / 60);
     return text;
 }
 

@@ -96,7 +96,8 @@ astralia::input::PointerEvent to_neutral(const PointerClick &click);
 
 astralia::input::ScrollEvent to_neutral(const PointerScroll &scroll);
 
-std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode, xkb_compose_state *compose = nullptr);
+std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode,
+                                      xkb_compose_state *compose = nullptr);
 
 void keyboard_attach_seat(SeatCapabilityState &seat_state, wl_seat *seat);
 

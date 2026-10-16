@@ -25,6 +25,8 @@ struct FieldCursor {
     size_t selection_to = 0;
 };
 
-Box draw_field_input(Canvas &canvas, const std::string &display, const TextFieldState &field, const TextFieldTypeAnim &anim, const FieldDraw &draw, const FieldCursor *cursor = nullptr);
+Box draw_field_input(Canvas &canvas, const std::string &display, const TextFieldState &field,
+                     const TextFieldTypeAnim &anim, const FieldDraw &draw,
+                     const FieldCursor *cursor = nullptr);
 
 } // namespace astralia::ui

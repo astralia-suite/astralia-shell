@@ -50,8 +50,7 @@ constexpr float kVisualizerGlowDirectionsMax = 32.0f;
 constexpr float kVisualizerGlowQualityMin = 2.0f;
 constexpr float kVisualizerGlowQualityMax = 8.0f;
 
-enum class VisualizerShape { Bar,
-                             Sphere };
+enum class VisualizerShape { Bar, Sphere };
 
 struct VisualizerParams {
     VisualizerShape visualizer_shape = VisualizerShape::Bar;

@@ -39,9 +39,7 @@ float card_height(float content) {
     return cfg::card_top + cfg::card_header + cfg::card_header_gap + content + cfg::card_bottom;
 }
 
-float device_content() {
-    return 2.0f * cfg::gauge_diameter + cfg::gauge_row_gap;
-}
+float device_content() { return 2.0f * cfg::gauge_diameter + cfg::gauge_row_gap; }
 
 float line_height(ui::Canvas &canvas) {
     return canvas.measure("RAM", text_style).h + cfg::memory_label_gap + cfg::memory_bar;
@@ -49,14 +47,18 @@ float line_height(ui::Canvas &canvas) {
 
 float memory_content(ui::Canvas &canvas, const SystemStatsState &stats) {
     int lines = stats.disk_pct >= 0.0f ? 2 : 1;
-    return static_cast<float>(lines) * line_height(canvas) + static_cast<float>(lines - 1) * cfg::memory_line_gap;
+    return static_cast<float>(lines) * line_height(canvas) +
+           static_cast<float>(lines - 1) * cfg::memory_line_gap;
 }
 
 ui::Box card(ui::Canvas &canvas, const ui::Box &box, const char *title) {
-    sticker(canvas, box, metrics::radius_card, palette::surface, palette::ink, metrics::border_thin, metrics::shadow_widget);
+    sticker(canvas, box, metrics::radius_card, palette::surface, palette::ink, metrics::border_thin,
+            metrics::shadow_widget);
     ui::TextSize size = canvas.measure(title, title_style);
-    canvas.text(title, title_style, box.x + cfg::card_side, box.y + cfg::card_top + (cfg::card_header - size.h) / 2.0f, palette::text);
-    return {box.x + cfg::card_side, box.y + cfg::card_top + cfg::card_header + cfg::card_header_gap, box.w - 2.0f * cfg::card_side, box.h};
+    canvas.text(title, title_style, box.x + cfg::card_side,
+                box.y + cfg::card_top + (cfg::card_header - size.h) / 2.0f, palette::text);
+    return {box.x + cfg::card_side, box.y + cfg::card_top + cfg::card_header + cfg::card_header_gap,
+            box.w - 2.0f * cfg::card_side, box.h};
 }
 
 struct Device {
@@ -82,10 +84,14 @@ void device_card(ui::Canvas &canvas, const ui::Box &box, const Device &d) {
     float stack = clock_size.h + cfg::gauge_line_gap + usage_size.h;
     float y = top.y + (top.h - stack) / 2.0f;
     canvas.text(clock, center, top.x + (top.w - clock_size.w) / 2.0f, y, palette::text_dim);
-    canvas.text(usage, center, top.x + (top.w - usage_size.w) / 2.0f, y + clock_size.h + cfg::gauge_line_gap, palette::text);
-    ui::Box bottom{gx, inner.y + cfg::gauge_diameter + cfg::gauge_row_gap, cfg::gauge_diameter, cfg::gauge_diameter};
-    canvas.gauge(bottom, cfg::gauge_stroke, std::clamp(d.celsius / cfg::temp_gauge_max, 0.0f, 1.0f), temp_color(d.celsius, d.base));
-    panel_widgets::centered_text(canvas, resource_format_celsius(d.celsius), center, bottom, palette::text);
+    canvas.text(usage, center, top.x + (top.w - usage_size.w) / 2.0f,
+                y + clock_size.h + cfg::gauge_line_gap, palette::text);
+    ui::Box bottom{gx, inner.y + cfg::gauge_diameter + cfg::gauge_row_gap, cfg::gauge_diameter,
+                   cfg::gauge_diameter};
+    canvas.gauge(bottom, cfg::gauge_stroke, std::clamp(d.celsius / cfg::temp_gauge_max, 0.0f, 1.0f),
+                 temp_color(d.celsius, d.base));
+    panel_widgets::centered_text(canvas, resource_format_celsius(d.celsius), center, bottom,
+                                 palette::text);
 }
 
 } // namespace
@@ -104,8 +110,9 @@ std::string resource_format_percent(float value01) {
 }
 
 std::string resource_format_celsius(float celsius) {
-    return (celsius < 0.0f ? std::string("--") : std::to_string(static_cast<int>(celsius))) + "\xC2\xB0"
-                                                                                              "C";
+    return (celsius < 0.0f ? std::string("--") : std::to_string(static_cast<int>(celsius))) +
+           "\xC2\xB0"
+           "C";
 }
 
 std::string resource_format_used_cap(float used_gb, float total_gb) {
@@ -117,7 +124,8 @@ std::string resource_format_used_cap(float used_gb, float total_gb) {
     return buf;
 }
 
-ResourcePanel::ResourcePanel(CpuTempState &cpu, GpuTempState &gpu, SystemStatsState &stats) : cpu_(cpu), gpu_(gpu), stats_(stats) {}
+ResourcePanel::ResourcePanel(CpuTempState &cpu, GpuTempState &gpu, SystemStatsState &stats)
+    : cpu_(cpu), gpu_(gpu), stats_(stats) {}
 
 void ResourcePanel::refresh() {
     cpu_temp_poll(cpu_);
@@ -126,15 +134,19 @@ void ResourcePanel::refresh() {
 }
 
 float ResourcePanel::content_height(ui::Canvas &canvas) {
-    return card_height(device_content()) + cfg::resource_card_gap + card_height(memory_content(canvas, stats_)) + cfg::resource_card_gap + cfg::trailing_spacer;
+    return card_height(device_content()) + cfg::resource_card_gap +
+           card_height(memory_content(canvas, stats_)) + cfg::resource_card_gap +
+           cfg::trailing_spacer;
 }
 
 void ResourcePanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, PanelPaint &) {
     float y = view.y - scroll;
     float half = (view.w - cfg::resource_card_gap) / 2.0f;
     float devices = card_height(device_content());
-    Device cpu{"CPU", stats_.cpu_usage, stats_.cpu_freq_ghz, cpu_temp_available(cpu_) ? cpu_.celsius : -1.0f, palette::pop_a};
-    Device gpu{"GPU", gpu_.usage_percent < 0.0f ? -1.0f : gpu_.usage_percent / 100.0f, gpu_.clock_ghz, gpu_temp_available(gpu_) ? gpu_.celsius : -1.0f, palette::accent};
+    Device cpu{"CPU", stats_.cpu_usage, stats_.cpu_freq_ghz,
+               cpu_temp_available(cpu_) ? cpu_.celsius : -1.0f, palette::pop_a};
+    Device gpu{"GPU", gpu_.usage_percent < 0.0f ? -1.0f : gpu_.usage_percent / 100.0f,
+               gpu_.clock_ghz, gpu_temp_available(gpu_) ? gpu_.celsius : -1.0f, palette::accent};
     device_card(canvas, {view.x, y, half, devices}, cpu);
     device_card(canvas, {view.x + half + cfg::resource_card_gap, y, half, devices}, gpu);
     y += devices + cfg::resource_card_gap;
@@ -148,19 +160,25 @@ void ResourcePanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll,
         const Color *color;
     };
     std::vector<Line> lines;
-    lines.push_back({"RAM", resource_format_used_cap(stats_.mem_used_gb, stats_.mem_total_gb), stats_.mem_usage, &usage_color(stats_.mem_usage, palette::pop_c)});
+    lines.push_back({"RAM", resource_format_used_cap(stats_.mem_used_gb, stats_.mem_total_gb),
+                     stats_.mem_usage, &usage_color(stats_.mem_usage, palette::pop_c)});
     if (stats_.disk_pct >= 0.0f) {
         float disk = std::clamp(stats_.disk_pct / 100.0f, 0.0f, 1.0f);
-        lines.push_back({"Disk", resource_format_used_cap(stats_.disk_used_gb, stats_.disk_total_gb), disk, &usage_color(disk, palette::pop_b)});
+        lines.push_back({"Disk",
+                         resource_format_used_cap(stats_.disk_used_gb, stats_.disk_total_gb), disk,
+                         &usage_color(disk, palette::pop_b)});
     }
     float line_y = inner.y;
     for (const Line &line : lines) {
         ui::TextSize label = canvas.measure(line.label, text_style);
         ui::TextSize detail = canvas.measure(line.detail, text_style);
         canvas.text(line.label, text_style, inner.x, line_y, palette::text);
-        canvas.text(line.detail, text_style, inner.x + inner.w - detail.w, line_y, palette::text_dim);
+        canvas.text(line.detail, text_style, inner.x + inner.w - detail.w, line_y,
+                    palette::text_dim);
         float bar_y = line_y + std::max(label.h, detail.h) + cfg::memory_label_gap;
-        panel_widgets::flat_bar(canvas, {inner.x, bar_y, inner.w, cfg::memory_bar}, std::max(0.0f, line.value), cfg::memory_min_fill, palette::paper, *line.color);
+        panel_widgets::flat_bar(canvas, {inner.x, bar_y, inner.w, cfg::memory_bar},
+                                std::max(0.0f, line.value), cfg::memory_min_fill, palette::paper,
+                                *line.color);
         line_y = bar_y + cfg::memory_bar + cfg::memory_line_gap;
     }
 }

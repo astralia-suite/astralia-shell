@@ -38,7 +38,8 @@ struct Context {
     std::string output;
 };
 
-I3Window make_window(const Json &node, uint32_t workspace, const std::string &output, const Box &box, bool floating) {
+I3Window make_window(const Json &node, uint32_t workspace, const std::string &output,
+                     const Box &box, bool floating) {
     I3Window entry;
     entry.id = static_cast<int64_t>(node.number_or("id", 0));
     if (const Json *properties = node.find("window_properties")) {
@@ -69,10 +70,12 @@ bool is_window(const Json &node) {
     return app_id != nullptr && app_id->type == Json::Type::string;
 }
 
-void place_tiled(const Json &node, const Box &box, const Box &area, uint32_t workspace, const std::string &output, I3Tree &tree) {
+void place_tiled(const Json &node, const Box &box, const Box &area, uint32_t workspace,
+                 const std::string &output, I3Tree &tree) {
     if (is_window(node)) {
         bool fullscreen = node.number_or("fullscreen_mode", 0) > 0;
-        tree.windows.push_back(make_window(node, workspace, output, fullscreen ? area : box, false));
+        tree.windows.push_back(
+            make_window(node, workspace, output, fullscreen ? area : box, false));
         return;
     }
     const Json *children = node.find("nodes");
@@ -102,11 +105,13 @@ void place_tiled(const Json &node, const Box &box, const Box &area, uint32_t wor
     }
 }
 
-void place_floating(const Json &node, double origin_x, double origin_y, const Box &area, uint32_t workspace, const std::string &output, I3Tree &tree) {
+void place_floating(const Json &node, double origin_x, double origin_y, const Box &area,
+                    uint32_t workspace, const std::string &output, I3Tree &tree) {
     const Json *rect = node.find("rect");
     if (is_window(node) && rect != nullptr) {
         bool fullscreen = node.number_or("fullscreen_mode", 0) > 0;
-        Box box{rect->number_or("x", 0) - origin_x, rect->number_or("y", 0) - origin_y, rect->number_or("width", 0), rect->number_or("height", 0)};
+        Box box{rect->number_or("x", 0) - origin_x, rect->number_or("y", 0) - origin_y,
+                rect->number_or("width", 0), rect->number_or("height", 0)};
         tree.windows.push_back(make_window(node, workspace, output, fullscreen ? area : box, true));
         return;
     }
@@ -129,7 +134,8 @@ void collect(const Json &node, const Context &context, I3Tree &tree) {
         }
         inner.output = name;
         if (const Json *rect = node.find("rect")) {
-            tree.outputs.push_back({name, rect->number_or("x", 0), rect->number_or("y", 0), rect->number_or("width", 0), rect->number_or("height", 0)});
+            tree.outputs.push_back({name, rect->number_or("x", 0), rect->number_or("y", 0),
+                                    rect->number_or("width", 0), rect->number_or("height", 0)});
         } else {
             tree.outputs.push_back({name, 0, 0, 0, 0});
         }
@@ -142,16 +148,21 @@ void collect(const Json &node, const Context &context, I3Tree &tree) {
         }
         auto workspace = static_cast<uint32_t>(number);
         Box area{0.0, 0.0, rect->number_or("width", 0), rect->number_or("height", 0)};
-        tree.workspaces.push_back({workspace, node.string_or("name"), context.output, rect->number_or("x", 0), rect->number_or("y", 0), area.width, area.height});
+        tree.workspaces.push_back({workspace, node.string_or("name"), context.output,
+                                   rect->number_or("x", 0), rect->number_or("y", 0), area.width,
+                                   area.height});
         place_tiled(node, area, area, workspace, context.output, tree);
-        if (const Json *floating = node.find("floating_nodes"); floating != nullptr && floating->type == Json::Type::array) {
+        if (const Json *floating = node.find("floating_nodes");
+            floating != nullptr && floating->type == Json::Type::array) {
             for (const Json &child : floating->array) {
-                place_floating(child, rect->number_or("x", 0), rect->number_or("y", 0), area, workspace, context.output, tree);
+                place_floating(child, rect->number_or("x", 0), rect->number_or("y", 0), area,
+                               workspace, context.output, tree);
             }
         }
         return;
     }
-    if (const Json *children = node.find("nodes"); children != nullptr && children->type == Json::Type::array) {
+    if (const Json *children = node.find("nodes");
+        children != nullptr && children->type == Json::Type::array) {
         for (const Json &child : children->array) {
             collect(child, inner, tree);
         }
@@ -207,7 +218,8 @@ std::vector<I3WorkspaceStatus> i3_parse_workspaces(const Json &array) {
         if (number < 1) {
             continue;
         }
-        out.push_back({static_cast<uint32_t>(number), entry.string_or("output"), entry.boolean_or("visible", false), entry.boolean_or("focused", false)});
+        out.push_back({static_cast<uint32_t>(number), entry.string_or("output"),
+                       entry.boolean_or("visible", false), entry.boolean_or("focused", false)});
     }
     return out;
 }
@@ -231,7 +243,8 @@ CompositorState i3_build_state(const I3Tree &tree, const std::vector<I3Workspace
             if (workspace.output == monitor.name && workspace.width > 0) {
                 double left = workspace.x - monitor.x;
                 double top = workspace.y - monitor.y;
-                monitor.reserved = {left, top, monitor.width - left - workspace.width, monitor.height - top - workspace.height};
+                monitor.reserved = {left, top, monitor.width - left - workspace.width,
+                                    monitor.height - top - workspace.height};
                 break;
             }
         }
@@ -245,8 +258,10 @@ CompositorState i3_build_state(const I3Tree &tree, const std::vector<I3Workspace
         return -1;
     };
     for (const I3Workspace &workspace : tree.workspaces) {
-        bool has_windows = std::ranges::any_of(tree.windows, [&](const I3Window &w) { return w.workspace == workspace.number; });
-        state.by_monitor[workspace.output].workspaces.push_back({static_cast<int>(workspace.number), workspace.name, has_windows});
+        bool has_windows = std::ranges::any_of(
+            tree.windows, [&](const I3Window &w) { return w.workspace == workspace.number; });
+        state.by_monitor[workspace.output].workspaces.push_back(
+            {static_cast<int>(workspace.number), workspace.name, has_windows});
     }
     for (auto &[output, entry] : state.by_monitor) {
         std::ranges::sort(entry.workspaces, {}, &Workspace::id);
@@ -323,9 +338,12 @@ std::string i3_socket_path(std::string_view fallback) {
     return std::string(fallback);
 }
 
-bool I3Compositor::available(std::string_view fallback) { return !i3_socket_path(fallback).empty(); }
+bool I3Compositor::available(std::string_view fallback) {
+    return !i3_socket_path(fallback).empty();
+}
 
-I3Compositor::I3Compositor(Reactor &loop, std::string socket_path) : loop_(loop), path_(std::move(socket_path)) {
+I3Compositor::I3Compositor(Reactor &loop, std::string socket_path)
+    : loop_(loop), path_(std::move(socket_path)) {
     if (path_.empty()) {
         return;
     }
@@ -338,7 +356,8 @@ I3Compositor::I3Compositor(Reactor &loop, std::string socket_path) : loop_(loop)
     std::string subscribe = i3_encode(i3_subscribe, R"(["workspace","window"])");
     char reply_header[i3_header_size];
     uint32_t length = 0;
-    if (send(fd.get(), subscribe.data(), subscribe.size(), MSG_NOSIGNAL) != static_cast<ssize_t>(subscribe.size()) ||
+    if (send(fd.get(), subscribe.data(), subscribe.size(), MSG_NOSIGNAL) !=
+            static_cast<ssize_t>(subscribe.size()) ||
         !read_exact(fd.get(), reply_header, sizeof reply_header)) {
         log::error("i3: cannot subscribe to events");
         return;
@@ -367,7 +386,8 @@ std::optional<std::string> I3Compositor::request(uint32_t type, std::string_view
         return std::nullopt;
     }
     std::string message = i3_encode(type, payload);
-    if (send(fd.get(), message.data(), message.size(), MSG_NOSIGNAL) != static_cast<ssize_t>(message.size())) {
+    if (send(fd.get(), message.data(), message.size(), MSG_NOSIGNAL) !=
+        static_cast<ssize_t>(message.size())) {
         return std::nullopt;
     }
     char header[i3_header_size];
@@ -473,24 +493,31 @@ std::vector<const CompositorClient *> I3Compositor::clients_in(int workspace) co
     return out;
 }
 
-void I3Compositor::move_all(const std::vector<const CompositorClient *> &windows, const std::string &workspace) {
+void I3Compositor::move_all(const std::vector<const CompositorClient *> &windows,
+                            const std::string &workspace) {
     for (const CompositorClient *window : windows) {
-        command(std::format("[con_id={}] move container to workspace {}", window->address, workspace));
+        command(
+            std::format("[con_id={}] move container to workspace {}", window->address, workspace));
     }
 }
 
-void I3Compositor::focus_workspace(int id, bool) { command(std::format("workspace number {}", id)); }
+void I3Compositor::focus_workspace(int id, bool) {
+    command(std::format("workspace number {}", id));
+}
 
 void I3Compositor::move_window(const std::string &address, int id, bool) {
     command(std::format("[con_id={}] move container to workspace number {}", address, id));
 }
 
-void I3Compositor::close_window(const std::string &address) { command(std::format("[con_id={}] kill", address)); }
+void I3Compositor::close_window(const std::string &address) {
+    command(std::format("[con_id={}] kill", address));
+}
 
 void I3Compositor::close_windows(CloseScope scope, int id) {
     std::vector<std::string> targets;
     for (const CompositorClient &client : state_.clients) {
-        bool match = scope == CloseScope::all || (scope == CloseScope::workspace && client.workspace_id == id) ||
+        bool match = scope == CloseScope::all ||
+                     (scope == CloseScope::workspace && client.workspace_id == id) ||
                      (scope == CloseScope::monitor && client.monitor_id == id);
         if (match) {
             targets.push_back(client.address);

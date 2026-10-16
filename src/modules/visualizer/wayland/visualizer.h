@@ -45,6 +45,7 @@ void visualizer_toggle(VisualizerState &state, WaylandState &app);
 
 void visualizer_handle_key_event(VisualizerState &state, WaylandState &app, const KeyEvent &event);
 
-std::vector<astralia::ShellBinding> visualizer_shell_bindings(VisualizerState &visualizer, WaylandState &state);
+std::vector<astralia::ShellBinding> visualizer_shell_bindings(VisualizerState &visualizer,
+                                                              WaylandState &state);
 
 std::unique_ptr<Module> make_visualizer_module();

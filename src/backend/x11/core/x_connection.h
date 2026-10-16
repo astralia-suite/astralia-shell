@@ -32,8 +32,7 @@ struct Output {
     bool operator==(const Output &) const = default;
 };
 
-enum class CursorShape { arrow,
-                         hand };
+enum class CursorShape { arrow, hand };
 
 class XConnection {
   public:

@@ -23,12 +23,16 @@ size_t utf8_char_len(unsigned char lead) {
 }
 
 bool settled(const TextFieldTypeAnim &anim) {
-    return std::ranges::all_of(anim.chars, [](const TextFieldCharAnim &c) { return c.scale == 1.0f && c.slide_x == 0.0f; });
+    return std::ranges::all_of(anim.chars, [](const TextFieldCharAnim &c) {
+        return c.scale == 1.0f && c.slide_x == 0.0f;
+    });
 }
 
 } // namespace
 
-Box draw_field_input(Canvas &canvas, const std::string &display, const TextFieldState &field, const TextFieldTypeAnim &anim, const FieldDraw &draw, const FieldCursor *cursor) {
+Box draw_field_input(Canvas &canvas, const std::string &display, const TextFieldState &field,
+                     const TextFieldTypeAnim &anim, const FieldDraw &draw,
+                     const FieldCursor *cursor) {
     float cell = canvas.advance(draw.style);
     size_t length = text_field_utf8_len(display);
     size_t column = cursor ? std::min(cursor->column, length) : length;
@@ -37,7 +41,10 @@ Box draw_field_input(Canvas &canvas, const std::string &display, const TextField
         size_t from = std::min(cursor->selection_from, length);
         size_t to = std::min(cursor->selection_to, length);
         float shift = preedit_w > 0.0f && from >= column ? preedit_w : 0.0f;
-        canvas.rect({draw.x + static_cast<float>(from) * cell + shift, draw.center_y - draw.caret_height / 2.0f, static_cast<float>(to - from) * cell, draw.caret_height}, draw.selection);
+        canvas.rect({draw.x + static_cast<float>(from) * cell + shift,
+                     draw.center_y - draw.caret_height / 2.0f, static_cast<float>(to - from) * cell,
+                     draw.caret_height},
+                    draw.selection);
     }
     if (!display.empty()) {
         if (settled(anim) && preedit_w <= 0.0f) {
@@ -53,24 +60,31 @@ Box draw_field_input(Canvas &canvas, const std::string &display, const TextField
             }
             if (!tail.empty()) {
                 TextSize size = canvas.measure(tail, draw.style);
-                canvas.text(tail, draw.style, draw.x + static_cast<float>(column) * cell + preedit_w, draw.center_y - size.h / 2.0f, draw.color);
+                canvas.text(tail, draw.style,
+                            draw.x + static_cast<float>(column) * cell + preedit_w,
+                            draw.center_y - size.h / 2.0f, draw.color);
             }
         } else {
             size_t index = 0;
             for (size_t i = 0; i < display.size(); ++index) {
-                size_t len = std::min(utf8_char_len(static_cast<unsigned char>(display[i])), display.size() - i);
+                size_t len = std::min(utf8_char_len(static_cast<unsigned char>(display[i])),
+                                      display.size() - i);
                 std::string ch = display.substr(i, len);
                 i += len;
                 size_t anim_index = draw.first_index + index;
                 float scale = anim_index < anim.chars.size() ? anim.chars[anim_index].scale : 1.0f;
-                float slide = anim_index < anim.chars.size() ? anim.chars[anim_index].slide_x : 0.0f;
+                float slide =
+                    anim_index < anim.chars.size() ? anim.chars[anim_index].slide_x : 0.0f;
                 if (scale <= 0.0f) {
                     continue;
                 }
                 TextSize size = canvas.measure(ch, draw.style);
                 float shift = index >= column ? preedit_w : 0.0f;
-                float center = draw.x + static_cast<float>(index) * cell + cell / 2.0f + slide + shift;
-                canvas.begin_group({center - size.w / 2.0f, draw.center_y - size.h / 2.0f, size.w, size.h}, {scale, false});
+                float center =
+                    draw.x + static_cast<float>(index) * cell + cell / 2.0f + slide + shift;
+                canvas.begin_group(
+                    {center - size.w / 2.0f, draw.center_y - size.h / 2.0f, size.w, size.h},
+                    {scale, false});
                 canvas.text(ch, draw.style, 0.0f, 0.0f, draw.color);
                 canvas.end_group();
             }
@@ -86,7 +100,8 @@ Box draw_field_input(Canvas &canvas, const std::string &display, const TextField
             caret_x += size.w;
         }
     }
-    Box caret{caret_x, draw.center_y - draw.caret_height / 2.0f, draw.caret_width, draw.caret_height};
+    Box caret{caret_x, draw.center_y - draw.caret_height / 2.0f, draw.caret_width,
+              draw.caret_height};
     if (field.cursor_idle_visible) {
         canvas.rect(caret, draw.color);
     }

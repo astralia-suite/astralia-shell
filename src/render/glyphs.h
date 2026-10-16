@@ -18,8 +18,6 @@ inline const char *brightness_threshold(int percent) {
     return percent < 50 ? brightness_down : brightness_up;
 }
 
-inline int level_percent(float level) {
-    return static_cast<int>(level * 100.0f + 1e-4f);
-}
+inline int level_percent(float level) { return static_cast<int>(level * 100.0f + 1e-4f); }
 
 } // namespace astralia::icon

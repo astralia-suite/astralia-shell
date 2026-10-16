@@ -13,8 +13,7 @@ struct FreeReply {
     void operator()(void *reply) const { std::free(reply); }
 };
 
-template <typename T>
-using Reply = std::unique_ptr<T, FreeReply>;
+template <typename T> using Reply = std::unique_ptr<T, FreeReply>;
 
 constexpr uint32_t max_paste_words = 1 << 18;
 
@@ -36,7 +35,8 @@ void X11Clipboard::request(std::function<void(std::string)> done) {
     }
     pending_ = std::move(done);
     xcb_atom_t property = x_.atom("ASTRALIA_PASTE");
-    xcb_convert_selection(x_.conn(), window_, x_.atom("CLIPBOARD"), x_.atom("UTF8_STRING"), property, XCB_CURRENT_TIME);
+    xcb_convert_selection(x_.conn(), window_, x_.atom("CLIPBOARD"), x_.atom("UTF8_STRING"),
+                          property, XCB_CURRENT_TIME);
     xcb_flush(x_.conn());
 }
 
@@ -46,7 +46,8 @@ bool X11Clipboard::handle(const xcb_generic_event_t &event) {
         answer(reinterpret_cast<const xcb_selection_request_event_t &>(event));
         return true;
     case XCB_SELECTION_CLEAR:
-        if (reinterpret_cast<const xcb_selection_clear_event_t &>(event).selection == x_.atom("CLIPBOARD")) {
+        if (reinterpret_cast<const xcb_selection_clear_event_t &>(event).selection ==
+            x_.atom("CLIPBOARD")) {
             owner_ = false;
         }
         return true;
@@ -69,14 +70,21 @@ void X11Clipboard::answer(const xcb_selection_request_event_t &request) {
     bool answered = false;
     if (request.selection == x_.atom("CLIPBOARD") && owner_) {
         if (request.target == targets) {
-            std::array<xcb_atom_t, 6> supported{targets, utf8, mime_utf8, mime_plain, text_atom, XCB_ATOM_STRING};
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, request.requestor, property, XCB_ATOM_ATOM, 32, static_cast<uint32_t>(supported.size()), supported.data());
+            std::array<xcb_atom_t, 6> supported{targets,    utf8,      mime_utf8,
+                                                mime_plain, text_atom, XCB_ATOM_STRING};
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, request.requestor, property,
+                                XCB_ATOM_ATOM, 32, static_cast<uint32_t>(supported.size()),
+                                supported.data());
             answered = true;
-        } else if (request.target == utf8 || request.target == mime_utf8 || request.target == mime_plain) {
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, request.requestor, property, utf8, 8, static_cast<uint32_t>(text_.size()), text_.data());
+        } else if (request.target == utf8 || request.target == mime_utf8 ||
+                   request.target == mime_plain) {
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, request.requestor, property, utf8, 8,
+                                static_cast<uint32_t>(text_.size()), text_.data());
             answered = true;
         } else if (request.target == XCB_ATOM_STRING || request.target == text_atom) {
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, request.requestor, property, XCB_ATOM_STRING, 8, static_cast<uint32_t>(text_.size()), text_.data());
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, request.requestor, property,
+                                XCB_ATOM_STRING, 8, static_cast<uint32_t>(text_.size()),
+                                text_.data());
             answered = true;
         }
     }
@@ -87,7 +95,8 @@ void X11Clipboard::answer(const xcb_selection_request_event_t &request) {
     notify.selection = request.selection;
     notify.target = request.target;
     notify.property = answered ? property : static_cast<xcb_atom_t>(XCB_ATOM_NONE);
-    xcb_send_event(conn, 0, request.requestor, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<const char *>(&notify));
+    xcb_send_event(conn, 0, request.requestor, XCB_EVENT_MASK_NO_EVENT,
+                   reinterpret_cast<const char *>(&notify));
     xcb_flush(conn);
 }
 
@@ -99,10 +108,12 @@ void X11Clipboard::receive(const xcb_selection_notify_event_t &notify) {
     pending_ = nullptr;
     std::string text;
     if (notify.property != XCB_ATOM_NONE) {
-        xcb_get_property_cookie_t cookie = xcb_get_property(x_.conn(), 1, window_, notify.property, XCB_GET_PROPERTY_TYPE_ANY, 0, max_paste_words);
+        xcb_get_property_cookie_t cookie = xcb_get_property(
+            x_.conn(), 1, window_, notify.property, XCB_GET_PROPERTY_TYPE_ANY, 0, max_paste_words);
         Reply<xcb_get_property_reply_t> reply(xcb_get_property_reply(x_.conn(), cookie, nullptr));
         if (reply && reply->format == 8 && reply->type != x_.atom("INCR")) {
-            text.assign(static_cast<const char *>(xcb_get_property_value(reply.get())), static_cast<size_t>(xcb_get_property_value_length(reply.get())));
+            text.assign(static_cast<const char *>(xcb_get_property_value(reply.get())),
+                        static_cast<size_t>(xcb_get_property_value_length(reply.get())));
         }
     }
     done(std::move(text));

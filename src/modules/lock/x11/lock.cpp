@@ -28,7 +28,8 @@ namespace astralia {
 
 namespace {
 
-constexpr uint32_t window_events = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_VISIBILITY_CHANGE;
+constexpr uint32_t window_events = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS |
+                                   XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_VISIBILITY_CHANGE;
 
 std::string clock_text(const char *format, size_t capacity) {
     std::time_t now = std::time(nullptr);
@@ -75,7 +76,8 @@ std::chrono::milliseconds Lock::next_tick() const {
         return std::chrono::hours(1);
     }
     auto tick = std::chrono::milliseconds(kLockTickMs);
-    auto fail = std::chrono::duration_cast<std::chrono::milliseconds>(model_.until_fail_clear(LockModel::Clock::now()));
+    auto fail = std::chrono::duration_cast<std::chrono::milliseconds>(
+        model_.until_fail_clear(LockModel::Clock::now()));
     return model_.failed() ? std::min(tick, std::max(fail, std::chrono::milliseconds(1))) : tick;
 }
 
@@ -92,7 +94,8 @@ size_t Lock::layout_surfaces() {
                 paint_all(true);
             }
         };
-        loop_.on_window(surfaces_.back()->window.id(), [this, index](const xcb_generic_event_t &event) { handle(index, event); });
+        loop_.on_window(surfaces_.back()->window.id(),
+                        [this, index](const xcb_generic_event_t &event) { handle(index, event); });
     }
     for (size_t i = 0; i < outputs.size(); ++i) {
         surfaces_[i]->output = outputs[i];
@@ -175,14 +178,20 @@ bool Lock::grab() {
     bool pointer = false;
     for (int attempt = 0; attempt < kLockGrabAttempts && !(keyboard && pointer); ++attempt) {
         if (!keyboard) {
-            xcb_grab_keyboard_reply_t *reply = xcb_grab_keyboard_reply(
-                conn, xcb_grab_keyboard(conn, 0, window, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC), nullptr);
+            xcb_grab_keyboard_reply_t *reply =
+                xcb_grab_keyboard_reply(conn,
+                                        xcb_grab_keyboard(conn, 0, window, XCB_CURRENT_TIME,
+                                                          XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC),
+                                        nullptr);
             keyboard = reply != nullptr && reply->status == XCB_GRAB_STATUS_SUCCESS;
             std::free(reply);
         }
         if (!pointer) {
             xcb_grab_pointer_reply_t *reply = xcb_grab_pointer_reply(
-                conn, xcb_grab_pointer(conn, 0, window, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME), nullptr);
+                conn,
+                xcb_grab_pointer(conn, 0, window, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_ASYNC,
+                                 XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME),
+                nullptr);
             pointer = reply != nullptr && reply->status == XCB_GRAB_STATUS_SUCCESS;
             std::free(reply);
         }
@@ -226,7 +235,8 @@ void Lock::handle(size_t index, const xcb_generic_event_t &event) {
         surfaces_[index]->window.present();
         break;
     case XCB_VISIBILITY_NOTIFY:
-        if (reinterpret_cast<const xcb_visibility_notify_event_t &>(event).state != XCB_VISIBILITY_UNOBSCURED) {
+        if (reinterpret_cast<const xcb_visibility_notify_event_t &>(event).state !=
+            XCB_VISIBILITY_UNOBSCURED) {
             surfaces_[index]->window.show(true);
         }
         break;
@@ -260,7 +270,8 @@ void Lock::click(const xcb_button_press_event_t &event) {
     }
     for (auto &surface : surfaces_) {
         const OutputGeometry &area = surface->output.geometry;
-        if (!surface->window.mapped() || event.root_x < area.x || event.root_y < area.y || event.root_x >= area.x + area.width || event.root_y >= area.y + area.height) {
+        if (!surface->window.mapped() || event.root_x < area.x || event.root_y < area.y ||
+            event.root_x >= area.x + area.width || event.root_y >= area.y + area.height) {
             continue;
         }
         double x = event.root_x - area.x;
@@ -288,7 +299,8 @@ void Lock::submit() {
     std::thread([this, generation, password = std::move(password)]() mutable {
         pam_auth::Result result = pam_auth::authenticate(user_, password, ASTRALIA_PAM_DIR);
         pam_auth::secure_clear(password);
-        DeferredCall::call_later([this, generation, success = result.success] { finished(generation, success); });
+        DeferredCall::call_later(
+            [this, generation, success = result.success] { finished(generation, success); });
     }).detach();
     paint_all(true);
 }
@@ -351,11 +363,14 @@ void Lock::paint(Surface &surface, bool with_wallpaper) {
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     if (with_wallpaper) {
         const Config &config = services_.settings.config();
-        std::string key = wallpaper_signature(config, surface.output.name) + ":" + std::to_string(area.width) + "x" + std::to_string(area.height);
+        std::string key = wallpaper_signature(config, surface.output.name) + ":" +
+                          std::to_string(area.width) + "x" + std::to_string(area.height);
         if (key != surface.wallpaper_key) {
-            surface.wallpaper.reset(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, area.width, area.height));
+            surface.wallpaper.reset(
+                cairo_image_surface_create(CAIRO_FORMAT_ARGB32, area.width, area.height));
             cairo_t *wallpaper_cr = cairo_create(surface.wallpaper.get());
-            paint_wallpaper(wallpaper_cr, config, surface.output.name, 0, 0, area.width, area.height);
+            paint_wallpaper(wallpaper_cr, config, surface.output.name, 0, 0, area.width,
+                            area.height);
             cairo_destroy(wallpaper_cr);
             surface.wallpaper_key = key;
         }

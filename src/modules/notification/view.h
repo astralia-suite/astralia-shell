@@ -6,6 +6,7 @@
 
 namespace astralia {
 
-void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view, const NotificationLayout &layout);
+void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view,
+                         const NotificationLayout &layout);
 
 } // namespace astralia

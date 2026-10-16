@@ -101,11 +101,14 @@ TrayService::TrayService(Reactor &loop) : bus_(loop, BusKind::session) {
         object_ = sdbus::createObject(*conn, sdbus::ObjectPath(watcher_path));
         object_
             ->addVTable(
-                sdbus::registerMethod("RegisterStatusNotifierItem").implementedAs([this](const std::string &service) {
-                    std::string sender = object_->getCurrentlyProcessedMessage().getSender();
-                    register_item(sender, service.starts_with('/') ? service : default_item_path);
-                }),
-                sdbus::registerMethod("RegisterStatusNotifierHost").implementedAs([](const std::string &) {}),
+                sdbus::registerMethod("RegisterStatusNotifierItem")
+                    .implementedAs([this](const std::string &service) {
+                        std::string sender = object_->getCurrentlyProcessedMessage().getSender();
+                        register_item(sender,
+                                      service.starts_with('/') ? service : default_item_path);
+                    }),
+                sdbus::registerMethod("RegisterStatusNotifierHost")
+                    .implementedAs([](const std::string &) {}),
                 sdbus::registerProperty("RegisteredStatusNotifierItems").withGetter([this] {
                     std::vector<std::string> out;
                     for (const TrayItem &item : items_) {
@@ -113,7 +116,9 @@ TrayService::TrayService(Reactor &loop) : bus_(loop, BusKind::session) {
                     }
                     return out;
                 }),
-                sdbus::registerProperty("IsStatusNotifierHostRegistered").withGetter([] { return true; }),
+                sdbus::registerProperty("IsStatusNotifierHostRegistered").withGetter([] {
+                    return true;
+                }),
                 sdbus::registerProperty("ProtocolVersion").withGetter([] { return int32_t{0}; }))
             .forInterface(watcher_name);
         conn->requestName(sdbus::ServiceName(watcher_name));
@@ -124,11 +129,13 @@ TrayService::TrayService(Reactor &loop) : bus_(loop, BusKind::session) {
     }
     daemon_ = bus_.proxy("org.freedesktop.DBus", "/org/freedesktop/DBus");
     if (daemon_) {
-        daemon_->uponSignal("NameOwnerChanged").onInterface("org.freedesktop.DBus").call([this](const std::string &name, const std::string &, const std::string &owner) {
-            if (owner.empty()) {
-                remove_owner(name);
-            }
-        });
+        daemon_->uponSignal("NameOwnerChanged")
+            .onInterface("org.freedesktop.DBus")
+            .call([this](const std::string &name, const std::string &, const std::string &owner) {
+                if (owner.empty()) {
+                    remove_owner(name);
+                }
+            });
     }
 }
 
@@ -152,7 +159,10 @@ void TrayService::register_item(const std::string &bus_name, const std::string &
     if (!proxy) {
         return;
     }
-    proxy->uponSignal("PropertiesChanged").onInterface(properties_interface).call([this, key](const std::string &, const Properties &, const std::vector<std::string> &) { fetch(key); });
+    proxy->uponSignal("PropertiesChanged")
+        .onInterface(properties_interface)
+        .call([this, key](const std::string &, const Properties &,
+                          const std::vector<std::string> &) { fetch(key); });
     for (const char *signal : {"NewIcon", "NewStatus", "NewMenu"}) {
         proxy->uponSignal(signal).onInterface(item_interface).call([this, key] { fetch(key); });
     }
@@ -169,18 +179,22 @@ void TrayService::fetch(const std::string &key) {
         return;
     }
     try {
-        it->second.item->callMethodAsync("GetAll").onInterface(properties_interface).withArguments(std::string(item_interface)).uponReplyInvoke([this, key](std::optional<sdbus::Error> error, Properties props) {
-            if (error) {
-                log::error("tray: GetAll failed for {}: {}", key, error->getMessage());
-                return;
-            }
-            auto item = std::ranges::find_if(items_, [&](const TrayItem &i) { return i.key() == key; });
-            if (item == items_.end()) {
-                return;
-            }
-            apply_properties(*item, props);
-            changed.emit();
-        });
+        it->second.item->callMethodAsync("GetAll")
+            .onInterface(properties_interface)
+            .withArguments(std::string(item_interface))
+            .uponReplyInvoke([this, key](std::optional<sdbus::Error> error, Properties props) {
+                if (error) {
+                    log::error("tray: GetAll failed for {}: {}", key, error->getMessage());
+                    return;
+                }
+                auto item =
+                    std::ranges::find_if(items_, [&](const TrayItem &i) { return i.key() == key; });
+                if (item == items_.end()) {
+                    return;
+                }
+                apply_properties(*item, props);
+                changed.emit();
+            });
     } catch (const sdbus::Error &error) {
         log::error("tray: GetAll dispatch failed for {}: {}", key, error.what());
     }
@@ -188,7 +202,8 @@ void TrayService::fetch(const std::string &key) {
 
 void TrayService::remove_owner(const std::string &name) {
     std::string prefix = name + "|";
-    std::size_t removed = std::erase_if(items_, [&](const TrayItem &item) { return item.bus_name == name; });
+    std::size_t removed =
+        std::erase_if(items_, [&](const TrayItem &item) { return item.bus_name == name; });
     std::erase_if(proxies_, [&](const auto &kv) { return kv.first.starts_with(prefix); });
     std::erase_if(menus_, [&](const auto &kv) { return kv.first.starts_with(prefix); });
     if (removed > 0) {
@@ -202,11 +217,14 @@ void TrayService::activate(const std::string &key, bool secondary) {
         return;
     }
     try {
-        it->second.item->callMethodAsync(secondary ? "SecondaryActivate" : "Activate").onInterface(item_interface).withArguments(int32_t{0}, int32_t{0}).uponReplyInvoke([](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("tray: Activate failed: {}", error->getMessage());
-            }
-        });
+        it->second.item->callMethodAsync(secondary ? "SecondaryActivate" : "Activate")
+            .onInterface(item_interface)
+            .withArguments(int32_t{0}, int32_t{0})
+            .uponReplyInvoke([](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("tray: Activate failed: {}", error->getMessage());
+                }
+            });
     } catch (const sdbus::Error &error) {
         log::error("tray: Activate dispatch failed: {}", error.what());
     }
@@ -232,18 +250,25 @@ void TrayService::request_menu(const std::string &key) {
         return;
     }
     try {
-        proxy->callMethodAsync("AboutToShow").onInterface(menu_interface).withArguments(int32_t{0}).uponReplyInvoke([](std::optional<sdbus::Error>, bool) {});
-        proxy->callMethodAsync("GetLayout").onInterface(menu_interface).withArguments(int32_t{0}, int32_t{-1}, std::vector<std::string>{}).uponReplyInvoke([this, key](std::optional<sdbus::Error> error, uint32_t, TrayMenuLayout layout) {
-            if (error) {
-                log::error("tray: GetLayout failed for {}: {}", key, error->getMessage());
-                return;
-            }
-            if (find(key) == nullptr) {
-                return;
-            }
-            menus_[key] = tray_parse_menu(layout).children;
-            changed.emit();
-        });
+        proxy->callMethodAsync("AboutToShow")
+            .onInterface(menu_interface)
+            .withArguments(int32_t{0})
+            .uponReplyInvoke([](std::optional<sdbus::Error>, bool) {});
+        proxy->callMethodAsync("GetLayout")
+            .onInterface(menu_interface)
+            .withArguments(int32_t{0}, int32_t{-1}, std::vector<std::string>{})
+            .uponReplyInvoke(
+                [this, key](std::optional<sdbus::Error> error, uint32_t, TrayMenuLayout layout) {
+                    if (error) {
+                        log::error("tray: GetLayout failed for {}: {}", key, error->getMessage());
+                        return;
+                    }
+                    if (find(key) == nullptr) {
+                        return;
+                    }
+                    menus_[key] = tray_parse_menu(layout).children;
+                    changed.emit();
+                });
     } catch (const sdbus::Error &error) {
         log::error("tray: menu request failed for {}: {}", key, error.what());
     }
@@ -255,11 +280,14 @@ void TrayService::menu_clicked(const std::string &key, int32_t id) {
         return;
     }
     try {
-        proxy->callMethodAsync("Event").onInterface(menu_interface).withArguments(id, std::string("clicked"), sdbus::Variant(int32_t{0}), uint32_t{0}).uponReplyInvoke([](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("tray: menu Event failed: {}", error->getMessage());
-            }
-        });
+        proxy->callMethodAsync("Event")
+            .onInterface(menu_interface)
+            .withArguments(id, std::string("clicked"), sdbus::Variant(int32_t{0}), uint32_t{0})
+            .uponReplyInvoke([](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("tray: menu Event failed: {}", error->getMessage());
+                }
+            });
     } catch (const sdbus::Error &error) {
         log::error("tray: menu Event dispatch failed: {}", error.what());
     }

@@ -107,11 +107,13 @@ std::vector<std::string> desktop_app_dirs() {
         dirs.push_back(home + "/.local/share/applications");
     }
     const char *data_dirs = getenv("XDG_DATA_DIRS");
-    std::string list = data_dirs != nullptr && *data_dirs != '\0' ? data_dirs : "/usr/local/share:/usr/share";
+    std::string list =
+        data_dirs != nullptr && *data_dirs != '\0' ? data_dirs : "/usr/local/share:/usr/share";
     std::size_t start = 0;
     while (start <= list.size()) {
         std::size_t colon = list.find(':', start);
-        std::string dir = list.substr(start, colon == std::string::npos ? std::string::npos : colon - start);
+        std::string dir =
+            list.substr(start, colon == std::string::npos ? std::string::npos : colon - start);
         if (!dir.empty()) {
             dirs.push_back(dir + "/applications");
         }
@@ -171,8 +173,10 @@ const std::unordered_map<std::string, std::string> &window_class_index() {
             if (!fs::is_directory(dir, error)) {
                 continue;
             }
-            for (const auto &entry : fs::recursive_directory_iterator(dir, fs::directory_options::skip_permission_denied, error)) {
-                if (!error && entry.is_regular_file(error) && entry.path().extension() == ".desktop") {
+            for (const auto &entry : fs::recursive_directory_iterator(
+                     dir, fs::directory_options::skip_permission_denied, error)) {
+                if (!error && entry.is_regular_file(error) &&
+                    entry.path().extension() == ".desktop") {
                     index_desktop_file(entry.path(), result);
                 }
             }

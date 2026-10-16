@@ -29,8 +29,7 @@ extern "C" {
 
 namespace {
 
-constexpr AVHWDeviceType kPreferredHwTypes[] = {AV_HWDEVICE_TYPE_VAAPI,
-                                                AV_HWDEVICE_TYPE_CUDA};
+constexpr AVHWDeviceType kPreferredHwTypes[] = {AV_HWDEVICE_TYPE_VAAPI, AV_HWDEVICE_TYPE_CUDA};
 
 AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts) {
     auto *wanted = static_cast<AVPixelFormat *>(ctx->opaque);
@@ -93,16 +92,22 @@ struct PacketGuard {
     ~PacketGuard() { av_packet_free(&packet); }
 };
 
-bool build_filter_graph(FilterGraphGuard &filter, AVFilterContext *&src_ctx, AVFilterContext *&sink_ctx, const AVFrame *sample, AVRational time_base, const std::string &filter_desc, const char *path) {
+bool build_filter_graph(FilterGraphGuard &filter, AVFilterContext *&src_ctx,
+                        AVFilterContext *&sink_ctx, const AVFrame *sample, AVRational time_base,
+                        const std::string &filter_desc, const char *path) {
     filter.graph = avfilter_graph_alloc();
     const AVFilter *buffersrc = avfilter_get_by_name("buffer");
     const AVFilter *buffersink = avfilter_get_by_name("buffersink");
     char args[256];
-    AVRational aspect = sample->sample_aspect_ratio.num
-                            ? sample->sample_aspect_ratio
-                            : AVRational{1, 1};
-    std::snprintf(args, sizeof(args), "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d", sample->width, sample->height, sample->format, time_base.num, time_base.den, aspect.num, aspect.den);
-    if (avfilter_graph_create_filter(&src_ctx, buffersrc, "in", args, nullptr, filter.graph) < 0 || avfilter_graph_create_filter(&sink_ctx, buffersink, "out", nullptr, nullptr, filter.graph) < 0) {
+    AVRational aspect =
+        sample->sample_aspect_ratio.num ? sample->sample_aspect_ratio : AVRational{1, 1};
+    std::snprintf(args, sizeof(args),
+                  "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d", sample->width,
+                  sample->height, sample->format, time_base.num, time_base.den, aspect.num,
+                  aspect.den);
+    if (avfilter_graph_create_filter(&src_ctx, buffersrc, "in", args, nullptr, filter.graph) < 0 ||
+        avfilter_graph_create_filter(&sink_ctx, buffersink, "out", nullptr, nullptr, filter.graph) <
+            0) {
         klog("media_decode: filter source/sink setup failed '%s'", path);
         return false;
     }
@@ -116,7 +121,8 @@ bool build_filter_graph(FilterGraphGuard &filter, AVFilterContext *&src_ctx, AVF
     inputs->filter_ctx = sink_ctx;
     inputs->pad_idx = 0;
     inputs->next = nullptr;
-    int ret = avfilter_graph_parse_ptr(filter.graph, filter_desc.c_str(), &inputs, &outputs, nullptr);
+    int ret =
+        avfilter_graph_parse_ptr(filter.graph, filter_desc.c_str(), &inputs, &outputs, nullptr);
     avfilter_inout_free(&inputs);
     avfilter_inout_free(&outputs);
     if (ret < 0 || avfilter_graph_config(filter.graph, nullptr) < 0) {
@@ -127,8 +133,7 @@ bool build_filter_graph(FilterGraphGuard &filter, AVFilterContext *&src_ctx, AVF
 }
 
 bool fill_drm_frame(MediaDrmFrame &out, const AVFrame *drm_frame) {
-    const auto *desc =
-        reinterpret_cast<const AVDRMFrameDescriptor *>(drm_frame->data[0]);
+    const auto *desc = reinterpret_cast<const AVDRMFrameDescriptor *>(drm_frame->data[0]);
     if (!desc)
         return false;
 
@@ -167,7 +172,12 @@ bool fill_drm_frame(MediaDrmFrame &out, const AVFrame *drm_frame) {
     return true;
 }
 
-void decode_loop(std::string path, std::string filter_desc, int fps, bool supports_row_length, MediaDecodeFrameCallback on_frame, MediaDecodeDrmFrameCallback on_drm_frame, std::shared_ptr<std::atomic<bool>> stop_flag, std::shared_ptr<std::atomic<bool>> pause_flag, std::shared_ptr<std::atomic<MediaDecodeStatus>> status, std::shared_ptr<std::atomic<bool>> egl_import_failed) {
+void decode_loop(std::string path, std::string filter_desc, int fps, bool supports_row_length,
+                 MediaDecodeFrameCallback on_frame, MediaDecodeDrmFrameCallback on_drm_frame,
+                 std::shared_ptr<std::atomic<bool>> stop_flag,
+                 std::shared_ptr<std::atomic<bool>> pause_flag,
+                 std::shared_ptr<std::atomic<MediaDecodeStatus>> status,
+                 std::shared_ptr<std::atomic<bool>> egl_import_failed) {
     FormatCtxGuard fmt;
     if (avformat_open_input(&fmt.ctx, path.c_str(), nullptr, nullptr) < 0) {
         klog("media_decode: open failed '%s'", path.c_str());
@@ -177,8 +187,7 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
         klog("media_decode: stream info failed '%s'", path.c_str());
         return;
     }
-    int stream_index =
-        av_find_best_stream(fmt.ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    int stream_index = av_find_best_stream(fmt.ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     if (stream_index < 0) {
         klog("media_decode: no video stream '%s'", path.c_str());
         return;
@@ -206,7 +215,8 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
             const AVCodecHWConfig *config = avcodec_get_hw_config(decoder, i);
             if (!config)
                 break;
-            if ((config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) && config->device_type == type) {
+            if ((config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) &&
+                config->device_type == type) {
                 candidate = config->pix_fmt;
                 break;
             }
@@ -227,7 +237,8 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
     if (!on_drm_frame || hw_pix_fmt != AV_PIX_FMT_VAAPI) {
         klog("media_decode: zero-copy unavailable for '%s' (drm_cb=%d "
              "hw_pix_fmt=%s), using CPU upload path",
-             path.c_str(), on_drm_frame ? 1 : 0, hw_pix_fmt == AV_PIX_FMT_NONE ? "none" : av_get_pix_fmt_name(hw_pix_fmt));
+             path.c_str(), on_drm_frame ? 1 : 0,
+             hw_pix_fmt == AV_PIX_FMT_NONE ? "none" : av_get_pix_fmt_name(hw_pix_fmt));
         status->store(MediaDecodeStatus::CpuFallback);
     }
 
@@ -243,7 +254,8 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
     auto ensure_filter_graph = [&](const AVFrame *sample) -> bool {
         if (filter.graph)
             return true;
-        return build_filter_graph(filter, buffersrc_ctx, buffersink_ctx, sample, stream->time_base, filter_desc, path.c_str());
+        return build_filter_graph(filter, buffersrc_ctx, buffersink_ctx, sample, stream->time_base,
+                                  filter_desc, path.c_str());
     };
 
     FrameGuard filtered;
@@ -258,17 +270,17 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
             int h = filtered.frame->height;
             int linesize = filtered.frame->linesize[0];
             if (supports_row_length) {
-                size_t buf_bytes =
-                    static_cast<size_t>(linesize) * static_cast<size_t>(h);
+                size_t buf_bytes = static_cast<size_t>(linesize) * static_cast<size_t>(h);
                 auto *copy = new unsigned char[buf_bytes];
                 std::memcpy(copy, filtered.frame->data[0], buf_bytes);
                 on_frame(copy, w, h, linesize / 4);
             } else {
                 size_t row_bytes = static_cast<size_t>(w) * 4;
-                auto *copy =
-                    new unsigned char[row_bytes * static_cast<size_t>(h)];
+                auto *copy = new unsigned char[row_bytes * static_cast<size_t>(h)];
                 for (int y = 0; y < h; ++y)
-                    std::memcpy(copy + static_cast<size_t>(y) * row_bytes, filtered.frame->data[0] + static_cast<size_t>(y) * linesize, row_bytes);
+                    std::memcpy(copy + static_cast<size_t>(y) * row_bytes,
+                                filtered.frame->data[0] + static_cast<size_t>(y) * linesize,
+                                row_bytes);
                 on_frame(copy, w, h, 0);
             }
             av_frame_unref(filtered.frame);
@@ -302,7 +314,8 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
                 klog("media_decode: unsupported DRM layout for '%s': "
                      "nb_layers=%d format=0x%x nb_planes=%d, disabling "
                      "zero-copy for this playback",
-                     path.c_str(), desc->nb_layers, desc->layers[0].format, desc->layers[0].nb_planes);
+                     path.c_str(), desc->nb_layers, desc->layers[0].format,
+                     desc->layers[0].nb_planes);
             else
                 klog("media_decode: DRM_PRIME frame for '%s' has no layers, "
                      "disabling zero-copy for this playback",
@@ -364,14 +377,15 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
             if (recv_ret < 0)
                 return true;
 
-            int64_t raw_pts = decoded.frame->pts != AV_NOPTS_VALUE ? decoded.frame->pts : decoded.frame->pkt_dts;
+            int64_t raw_pts =
+                decoded.frame->pts != AV_NOPTS_VALUE ? decoded.frame->pts : decoded.frame->pkt_dts;
             double pts_seconds =
                 raw_pts != AV_NOPTS_VALUE
                     ? static_cast<double>(raw_pts) * pts_time_base
                     : (have_shown_frame ? last_shown_pts_seconds + frame_interval_seconds : 0.0);
 
-            bool due =
-                !have_shown_frame || pts_seconds - last_shown_pts_seconds >= frame_interval_seconds - 1e-6;
+            bool due = !have_shown_frame ||
+                       pts_seconds - last_shown_pts_seconds >= frame_interval_seconds - 1e-6;
             if (!due) {
                 av_frame_unref(decoded.frame);
                 if (stop_flag->load())
@@ -385,19 +399,22 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
                 have_anchor = true;
             }
             auto due_time =
-                anchor_time + std::chrono::duration_cast<clock::duration>(std::chrono::duration<double>(pts_seconds - anchor_pts_seconds));
+                anchor_time + std::chrono::duration_cast<clock::duration>(
+                                  std::chrono::duration<double>(pts_seconds - anchor_pts_seconds));
             while (!stop_flag->load() && clock::now() < due_time) {
                 auto remaining = due_time - clock::now();
                 auto step = remaining < std::chrono::milliseconds(20)
                                 ? remaining
-                                : std::chrono::duration_cast<clock::duration>(std::chrono::milliseconds(20));
+                                : std::chrono::duration_cast<clock::duration>(
+                                      std::chrono::milliseconds(20));
                 std::this_thread::sleep_for(step);
             }
             if (stop_flag->load())
                 return false;
 
             bool zero_copy_delivered = false;
-            if (on_drm_frame && !zero_copy_disabled && !egl_import_failed->load() && hw_pix_fmt == AV_PIX_FMT_VAAPI && decoded.frame->format == hw_pix_fmt) {
+            if (on_drm_frame && !zero_copy_disabled && !egl_import_failed->load() &&
+                hw_pix_fmt == AV_PIX_FMT_VAAPI && decoded.frame->format == hw_pix_fmt) {
                 zero_copy_delivered = try_deliver_zero_copy(decoded.frame);
                 if (zero_copy_delivered) {
                     status->store(MediaDecodeStatus::ZeroCopy);
@@ -475,12 +492,12 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
         return out;
 
     FormatCtxGuard fmt;
-    if (avformat_open_input(&fmt.ctx, path.c_str(), nullptr, nullptr) < 0 || avformat_find_stream_info(fmt.ctx, nullptr) < 0) {
+    if (avformat_open_input(&fmt.ctx, path.c_str(), nullptr, nullptr) < 0 ||
+        avformat_find_stream_info(fmt.ctx, nullptr) < 0) {
         klog("media_decode: open/probe failed '%s'", path.c_str());
         return out;
     }
-    int stream_index =
-        av_find_best_stream(fmt.ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    int stream_index = av_find_best_stream(fmt.ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     if (stream_index < 0) {
         klog("media_decode: no video stream '%s'", path.c_str());
         return out;
@@ -498,7 +515,8 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
         codec.ctx->thread_count = 1;
         codec.ctx->thread_type = 0;
     }
-    if (!codec.ctx || avcodec_parameters_to_context(codec.ctx, stream->codecpar) < 0 || avcodec_open2(codec.ctx, decoder, nullptr) < 0) {
+    if (!codec.ctx || avcodec_parameters_to_context(codec.ctx, stream->codecpar) < 0 ||
+        avcodec_open2(codec.ctx, decoder, nullptr) < 0) {
         klog("media_decode: codec setup failed '%s'", path.c_str());
         return out;
     }
@@ -513,7 +531,8 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
     bool failed = false;
 
     auto collect = [&] {
-        while (static_cast<int>(out.size()) < max_frames && av_buffersink_get_frame(sink_ctx, filtered.frame) >= 0) {
+        while (static_cast<int>(out.size()) < max_frames &&
+               av_buffersink_get_frame(sink_ctx, filtered.frame) >= 0) {
             int w = filtered.frame->width;
             int h = filtered.frame->height;
             int linesize = filtered.frame->linesize[0];
@@ -522,14 +541,17 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
             mf.height = h;
             mf.rgba.resize(static_cast<size_t>(w) * static_cast<size_t>(h) * 4);
             for (int y = 0; y < h; ++y)
-                std::memcpy(mf.rgba.data() + static_cast<size_t>(y) * w * 4, filtered.frame->data[0] + static_cast<size_t>(y) * linesize, static_cast<size_t>(w) * 4);
+                std::memcpy(mf.rgba.data() + static_cast<size_t>(y) * w * 4,
+                            filtered.frame->data[0] + static_cast<size_t>(y) * linesize,
+                            static_cast<size_t>(w) * 4);
             out.push_back(std::move(mf));
             av_frame_unref(filtered.frame);
         }
     };
 
     auto feed = [&](AVFrame *frame) -> bool {
-        if (!filter.graph && !build_filter_graph(filter, src_ctx, sink_ctx, frame, stream->time_base, filter_desc, path.c_str())) {
+        if (!filter.graph && !build_filter_graph(filter, src_ctx, sink_ctx, frame,
+                                                 stream->time_base, filter_desc, path.c_str())) {
             failed = true;
             return false;
         }
@@ -541,8 +563,10 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
         return true;
     };
 
-    while (!failed && static_cast<int>(out.size()) < max_frames && av_read_frame(fmt.ctx, packet.packet) >= 0) {
-        if (packet.packet->stream_index == stream_index && avcodec_send_packet(codec.ctx, packet.packet) >= 0) {
+    while (!failed && static_cast<int>(out.size()) < max_frames &&
+           av_read_frame(fmt.ctx, packet.packet) >= 0) {
+        if (packet.packet->stream_index == stream_index &&
+            avcodec_send_packet(codec.ctx, packet.packet) >= 0) {
             while (avcodec_receive_frame(codec.ctx, decoded.frame) >= 0) {
                 bool ok = feed(decoded.frame);
                 av_frame_unref(decoded.frame);
@@ -568,18 +592,24 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
 
 } // namespace
 
-extern "C" MediaDecodePlayback astralia_shell_media_plugin_stream(const std::string &path, const std::string &filter_desc, int fps, bool supports_row_length, MediaDecodeFrameCallback on_frame, MediaDecodeDrmFrameCallback on_drm_frame) {
+extern "C" MediaDecodePlayback
+astralia_shell_media_plugin_stream(const std::string &path, const std::string &filter_desc, int fps,
+                                   bool supports_row_length, MediaDecodeFrameCallback on_frame,
+                                   MediaDecodeDrmFrameCallback on_drm_frame) {
     MediaDecodePlayback playback;
     playback.stop_flag = std::make_shared<std::atomic<bool>>(false);
     playback.pause_flag = std::make_shared<std::atomic<bool>>(false);
     playback.status = std::make_shared<std::atomic<MediaDecodeStatus>>(MediaDecodeStatus::Idle);
     playback.egl_import_failed = std::make_shared<std::atomic<bool>>(false);
-    playback.worker = std::thread(decode_loop, path, filter_desc, fps, supports_row_length, std::move(on_frame), std::move(on_drm_frame), playback.stop_flag, playback.pause_flag, playback.status, playback.egl_import_failed);
+    playback.worker = std::thread(decode_loop, path, filter_desc, fps, supports_row_length,
+                                  std::move(on_frame), std::move(on_drm_frame), playback.stop_flag,
+                                  playback.pause_flag, playback.status, playback.egl_import_failed);
     return playback;
 }
 
 extern "C" std::vector<MediaFrame>
-astralia_shell_media_plugin_frames(const std::string &path, const std::string &filter_desc, int max_frames) {
+astralia_shell_media_plugin_frames(const std::string &path, const std::string &filter_desc,
+                                   int max_frames) {
     return decode_frames(path, filter_desc, max_frames);
 }
 

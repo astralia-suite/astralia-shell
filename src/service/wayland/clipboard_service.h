@@ -19,7 +19,8 @@ class ClipboardService final : public astralia::Clipboard {
   public:
     ~ClipboardService() override;
 
-    bool bind(wl_data_device_manager *manager, wl_seat *seat, wl_display *display, const KeyboardState *keyboard);
+    bool bind(wl_data_device_manager *manager, wl_seat *seat, wl_display *display,
+              const KeyboardState *keyboard);
     void cleanup();
 
     void set(std::string text) override;

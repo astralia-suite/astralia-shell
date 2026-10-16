@@ -73,9 +73,11 @@ void check_cover() {
     astralia::Placement exact = cover(640, 360, 1280, 720);
     check(exact.scale == 2.0 && exact.x == 0.0 && exact.y == 0.0, "same aspect fills exactly");
     astralia::Placement inside = astralia::contain(200, 100, 100, 100);
-    check(inside.scale == 0.5 && inside.x == 0.0 && inside.y == 25.0, "a wider image fits inside and centers vertically");
+    check(inside.scale == 0.5 && inside.x == 0.0 && inside.y == 25.0,
+          "a wider image fits inside and centers vertically");
     astralia::Placement upright = astralia::contain(100, 400, 200, 200);
-    check(upright.scale == 0.5 && upright.x == 75.0 && upright.y == 0.0, "a taller image fits inside and centers horizontally");
+    check(upright.scale == 0.5 && upright.x == 75.0 && upright.y == 0.0,
+          "a taller image fits inside and centers horizontally");
 }
 
 void check_cover_cache() {
@@ -91,19 +93,37 @@ void check_cover_cache() {
     constexpr uintmax_t mib = 1024 * 1024;
     using Entries = std::vector<astralia::CoverCacheEntry>;
     check(astralia::cover_cache_expired({}, 1000 * day).empty(), "an empty cache expires nothing");
-    check(astralia::cover_cache_expired(Entries{{"a.png", mib, 1000 * day}, {"b.png", mib, 999 * day}}, 1000 * day).empty(), "recent entries under the cap stay");
-    check(astralia::cover_cache_expired(Entries{{"old.png", mib, 900 * day}, {"new.png", mib, 999 * day}}, 1000 * day) == std::vector<std::string>{"old.png"}, "entries unused for 90 days expire");
-    check(astralia::cover_cache_expired(Entries{{"a.png", 70 * mib, 990 * day}, {"b.png", 70 * mib, 995 * day}, {"c.png", 70 * mib, 999 * day}}, 1000 * day) == std::vector<std::string>{"a.png", "b.png"}, "the least recently used go first over the cap");
-    check(astralia::cover_cache_expired(Entries{{"x.1.tmp", mib, 1000 * day - 7200}, {"y.2.tmp", mib, 1000 * day - 60}}, 1000 * day) == std::vector<std::string>{"x.1.tmp"}, "only stale temporary files expire");
+    check(astralia::cover_cache_expired(
+              Entries{{"a.png", mib, 1000 * day}, {"b.png", mib, 999 * day}}, 1000 * day)
+              .empty(),
+          "recent entries under the cap stay");
+    check(astralia::cover_cache_expired(
+              Entries{{"old.png", mib, 900 * day}, {"new.png", mib, 999 * day}}, 1000 * day) ==
+              std::vector<std::string>{"old.png"},
+          "entries unused for 90 days expire");
+    check(astralia::cover_cache_expired(Entries{{"a.png", 70 * mib, 990 * day},
+                                                {"b.png", 70 * mib, 995 * day},
+                                                {"c.png", 70 * mib, 999 * day}},
+                                        1000 * day) == std::vector<std::string>{"a.png", "b.png"},
+          "the least recently used go first over the cap");
+    check(astralia::cover_cache_expired(
+              Entries{{"x.1.tmp", mib, 1000 * day - 7200}, {"y.2.tmp", mib, 1000 * day - 60}},
+              1000 * day) == std::vector<std::string>{"x.1.tmp"},
+          "only stale temporary files expire");
 
     std::string name = cover_cache_name("/w/a.jpg", 100, 5, 1920, 1200);
     check(name.size() == 16 && !name.contains('.'), "cache names are a bare hash");
-    check(name == cover_cache_name("/w/a.jpg", 100, 5, 1920, 1200), "the same input gives the same name");
-    check(name != cover_cache_name("/w/b.jpg", 100, 5, 1920, 1200), "a different path changes the name");
-    check(name != cover_cache_name("/w/a.jpg", 101, 5, 1920, 1200), "a different size changes the name");
+    check(name == cover_cache_name("/w/a.jpg", 100, 5, 1920, 1200),
+          "the same input gives the same name");
+    check(name != cover_cache_name("/w/b.jpg", 100, 5, 1920, 1200),
+          "a different path changes the name");
+    check(name != cover_cache_name("/w/a.jpg", 101, 5, 1920, 1200),
+          "a different size changes the name");
     check(name != cover_cache_name("/w/a.jpg", 100, 6, 1920, 1200), "a new mtime changes the name");
-    check(name != cover_cache_name("/w/a.jpg", 100, 5, 1920, 1080), "a different target changes the name");
-    check(name != cover_cache_name("/w/a.jpg", 100, 5, 1920, 1200, true), "a contained decode caches apart from a cover");
+    check(name != cover_cache_name("/w/a.jpg", 100, 5, 1920, 1080),
+          "a different target changes the name");
+    check(name != cover_cache_name("/w/a.jpg", 100, 5, 1920, 1200, true),
+          "a contained decode caches apart from a cover");
 
     astralia::SurfacePtr opaque(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 4, 4));
     astralia::SurfacePtr clear(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 4, 4));
@@ -113,10 +133,15 @@ void check_cover_cache() {
     cairo_destroy(cr);
     check(astralia::surface_opaque(opaque.get()), "a painted surface is opaque");
     check(!astralia::surface_opaque(clear.get()), "a transparent surface is not opaque");
-    std::string jpeg = (std::filesystem::temp_directory_path() / std::format("astralia-test-{}.jpg", getpid())).string();
+    std::string jpeg =
+        (std::filesystem::temp_directory_path() / std::format("astralia-test-{}.jpg", getpid()))
+            .string();
     check(astralia::write_jpeg(opaque.get(), jpeg.c_str(), 90), "an opaque surface writes as jpeg");
     auto decoded = astralia::decode_image(jpeg);
-    check(decoded && cairo_image_surface_get_width(decoded->get()) == 4 && cairo_image_surface_get_height(decoded->get()) == 4 && astralia::surface_opaque(decoded->get()), "a written jpeg decodes back opaque at the same size");
+    check(decoded && cairo_image_surface_get_width(decoded->get()) == 4 &&
+              cairo_image_surface_get_height(decoded->get()) == 4 &&
+              astralia::surface_opaque(decoded->get()),
+          "a written jpeg decodes back opaque at the same size");
     std::filesystem::remove(jpeg);
 }
 
@@ -138,17 +163,22 @@ void check_bar_styles() {
     auto alpha = [&](int x, int y) { return static_cast<int>(data[y * stride + x * 4 + 3]); };
     auto is = [&](int x, int y, const Color &c) {
         const unsigned char *p = data + y * stride + x * 4;
-        auto close = [](int a, float b) { return std::abs(a - static_cast<int>(std::lround(b * 255.0f))) <= 1; };
+        auto close = [](int a, float b) {
+            return std::abs(a - static_cast<int>(std::lround(b * 255.0f))) <= 1;
+        };
         return p[3] == 255 && close(p[2], c.r) && close(p[1], c.g) && close(p[0], c.b);
     };
-    check(is(50, 2, palette::accent_container) && is(125, 2, palette::accent_container), "rail and island overlap share one fill");
+    check(is(50, 2, palette::accent_container) && is(125, 2, palette::accent_container),
+          "rail and island overlap share one fill");
     check(is(125, 5, palette::ink), "rail border line is the outline colour");
-    check(is(50, 5, palette::accent_container) && is(50, 20, palette::accent_container), "island interior replaces the rail line");
+    check(is(50, 5, palette::accent_container) && is(50, 20, palette::accent_container),
+          "island interior replaces the rail line");
     check(alpha(125, 20) == 0, "the gap under the rail is transparent");
     int fx = static_cast<int>(frame.fillets.front().edge_x);
     int fr = static_cast<int>(okinami.fillet_radius);
     int fy = static_cast<int>(okinami.rail_height);
-    check(alpha(fx + fr - 2, fy + fr - 1) == 0, "the fillet cutout leaves the circle side transparent");
+    check(alpha(fx + fr - 2, fy + fr - 1) == 0,
+          "the fillet cutout leaves the circle side transparent");
     check(alpha(fx + 1, fy + 2) == 255, "the fillet fills the corner beside the island");
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
@@ -159,19 +189,34 @@ void check_bar_styles() {
 void check_input_convert() {
     namespace in = astralia::input;
     in::PointerEvent left = astralia::pointer_event(10, 20, XCB_BUTTON_INDEX_1, true);
-    check(left.button == in::Button::Left && left.pressed && left.x == 10 && left.y == 20, "left button press");
-    check(astralia::pointer_event(0, 0, XCB_BUTTON_INDEX_3, false).button == in::Button::Right, "right button");
-    check(astralia::pointer_event(0, 0, XCB_BUTTON_INDEX_2, false).button == in::Button::Middle, "middle button");
+    check(left.button == in::Button::Left && left.pressed && left.x == 10 && left.y == 20,
+          "left button press");
+    check(astralia::pointer_event(0, 0, XCB_BUTTON_INDEX_3, false).button == in::Button::Right,
+          "right button");
+    check(astralia::pointer_event(0, 0, XCB_BUTTON_INDEX_2, false).button == in::Button::Middle,
+          "middle button");
     check(astralia::pointer_event(0, 0, 8, false).button == in::Button::Other, "extra button");
     check(!astralia::scroll_event(XCB_BUTTON_INDEX_1).has_value(), "left button is not a scroll");
-    check(astralia::scroll_event(XCB_BUTTON_INDEX_4)->dy < 0 && astralia::scroll_event(XCB_BUTTON_INDEX_5)->dy > 0, "wheel buttons give signed scroll");
+    check(astralia::scroll_event(XCB_BUTTON_INDEX_4)->dy < 0 &&
+              astralia::scroll_event(XCB_BUTTON_INDEX_5)->dy > 0,
+          "wheel buttons give signed scroll");
 
     astralia::KeyEvent text{astralia::KeyKind::text, "a"};
-    check(astralia::to_neutral(text).kind == in::KeyKind::Text && astralia::to_neutral(text).text == "a", "text key");
-    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::escape, ""}).kind == in::KeyKind::Escape, "escape key");
-    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::backspace, ""}).kind == in::KeyKind::Backspace, "backspace key");
-    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::enter, ""}).kind == in::KeyKind::Enter, "enter key");
-    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::down, ""}).kind == in::KeyKind::Down, "arrow key");
+    check(astralia::to_neutral(text).kind == in::KeyKind::Text &&
+              astralia::to_neutral(text).text == "a",
+          "text key");
+    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::escape, ""}).kind ==
+              in::KeyKind::Escape,
+          "escape key");
+    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::backspace, ""}).kind ==
+              in::KeyKind::Backspace,
+          "backspace key");
+    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::enter, ""}).kind ==
+              in::KeyKind::Enter,
+          "enter key");
+    check(astralia::to_neutral(astralia::KeyEvent{astralia::KeyKind::down, ""}).kind ==
+              in::KeyKind::Down,
+          "arrow key");
 }
 
 int main() {

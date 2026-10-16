@@ -13,9 +13,7 @@ namespace {
 
 namespace cfg = panel_config;
 
-enum Action { item = 1,
-              back,
-              entry };
+enum Action { item = 1, back, entry };
 
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
@@ -34,10 +32,12 @@ float rows_height(const std::vector<TrayMenuRow> &rows) {
 } // namespace
 
 int tray_columns(float width) {
-    return std::max(1, static_cast<int>((width - 2.0f * cfg::padding + cfg::tray_gap) / (cfg::tray_cell + cfg::tray_gap)));
+    return std::max(1, static_cast<int>((width - 2.0f * cfg::padding + cfg::tray_gap) /
+                                        (cfg::tray_cell + cfg::tray_gap)));
 }
 
-const std::vector<TrayMenuEntry> *tray_menu_level(const std::vector<TrayMenuEntry> *root, const std::vector<int32_t> &path) {
+const std::vector<TrayMenuEntry> *tray_menu_level(const std::vector<TrayMenuEntry> *root,
+                                                  const std::vector<int32_t> &path) {
     const std::vector<TrayMenuEntry> *level = root;
     for (int32_t id : path) {
         if (level == nullptr) {
@@ -71,13 +71,9 @@ std::vector<TrayMenuRow> tray_menu_rows(const std::vector<TrayMenuEntry> *level,
     return rows;
 }
 
-TrayPanel::TrayPanel(TrayService &tray) : tray_(tray) {
-    tray_.changed.connect(notifier());
-}
+TrayPanel::TrayPanel(TrayService &tray) : tray_(tray) { tray_.changed.connect(notifier()); }
 
-void TrayPanel::closed() {
-    close_menu();
-}
+void TrayPanel::closed() { close_menu(); }
 
 void TrayPanel::close_menu() {
     menu_key_.clear();
@@ -111,25 +107,38 @@ void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, Pan
     const std::vector<TrayItem> &items = tray_.items();
     if (items.empty()) {
         ui::TextSize size = canvas.measure("No tray icons", text_style);
-        canvas.text("No tray icons", text_style, view.x + (view.w - size.w) / 2.0f, view.y - scroll, palette::text_dim);
+        canvas.text("No tray icons", text_style, view.x + (view.w - size.w) / 2.0f, view.y - scroll,
+                    palette::text_dim);
         return;
     }
     int columns = tray_columns(width());
     for (size_t i = 0; i < items.size(); ++i) {
-        ui::Box cell{view.x + static_cast<float>(i % columns) * (cfg::tray_cell + cfg::tray_gap), view.y - scroll + static_cast<float>(i / columns) * (cfg::tray_cell + cfg::tray_gap), cfg::tray_cell, cfg::tray_cell};
+        ui::Box cell{view.x + static_cast<float>(i % columns) * (cfg::tray_cell + cfg::tray_gap),
+                     view.y - scroll +
+                         static_cast<float>(i / columns) * (cfg::tray_cell + cfg::tray_gap),
+                     cfg::tray_cell, cfg::tray_cell};
         if (cell.y + cell.h < view.y || cell.y > view.y + view.h) {
             continue;
         }
         canvas.rounded(cell, metrics::radius_widget, palette::text_alpha06);
         std::string path = tray_item_icon_path(items[i]);
-        ui::ImageId image = path.empty() ? ui::no_image : canvas.image(path, static_cast<int>(cfg::tray_icon));
-        ui::Box target{cell.x + (cell.w - cfg::tray_icon) / 2.0f, cell.y + (cell.h - cfg::tray_icon) / 2.0f, cfg::tray_icon, cfg::tray_icon};
+        ui::ImageId image =
+            path.empty() ? ui::no_image : canvas.image(path, static_cast<int>(cfg::tray_icon));
+        ui::Box target{cell.x + (cell.w - cfg::tray_icon) / 2.0f,
+                       cell.y + (cell.h - cfg::tray_icon) / 2.0f, cfg::tray_icon, cfg::tray_icon};
         if (image != ui::no_image) {
             ui::TextSize size = canvas.image_size(image);
-            float scale = size.w > 0.0f && size.h > 0.0f ? cfg::tray_icon / std::max(size.w, size.h) : 1.0f;
-            canvas.draw_image(image, {cell.x + (cell.w - size.w * scale) / 2.0f, cell.y + (cell.h - size.h * scale) / 2.0f, size.w * scale, size.h * scale}, palette::white);
+            float scale =
+                size.w > 0.0f && size.h > 0.0f ? cfg::tray_icon / std::max(size.w, size.h) : 1.0f;
+            canvas.draw_image(image,
+                              {cell.x + (cell.w - size.w * scale) / 2.0f,
+                               cell.y + (cell.h - size.h * scale) / 2.0f, size.w * scale,
+                               size.h * scale},
+                              palette::white);
         } else {
-            panel_widgets::centered_text(canvas, icon::apps, ui::TextStyle{ui::FontFamily::icon, cfg::icon_px}, target, palette::text);
+            panel_widgets::centered_text(canvas, icon::apps,
+                                         ui::TextStyle{ui::FontFamily::icon, cfg::icon_px}, target,
+                                         palette::text);
         }
         paint.region(cell, item, static_cast<int>(i));
     }
@@ -153,16 +162,20 @@ void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &
         y += row.height + cfg::tray_menu_gap;
         switch (row.kind) {
         case TrayMenuRow::Kind::separator:
-            canvas.rect({r.x + cfg::tray_menu_separator_inset, r.y + r.h / 2.0f, r.w - 2.0f * cfg::tray_menu_separator_inset, 1.0f}, palette::text_alpha06);
+            canvas.rect({r.x + cfg::tray_menu_separator_inset, r.y + r.h / 2.0f,
+                         r.w - 2.0f * cfg::tray_menu_separator_inset, 1.0f},
+                        palette::text_alpha06);
             break;
         case TrayMenuRow::Kind::loading:
-            panel_widgets::text_in_row(canvas, "Loading\xE2\x80\xA6", text_style, r.x + cfg::tray_menu_row_pad, r, palette::text_dim);
+            panel_widgets::text_in_row(canvas, "Loading\xE2\x80\xA6", text_style,
+                                       r.x + cfg::tray_menu_row_pad, r, palette::text_dim);
             break;
         case TrayMenuRow::Kind::back: {
             if (hover_id_ == back) {
                 canvas.rounded(r, metrics::radius_widget, palette::text_alpha08);
             }
-            panel_widgets::centered_text(canvas, icon::chevron_left, icon_style, {r.x, r.y, cfg::tray_menu_row, r.h}, palette::text);
+            panel_widgets::centered_text(canvas, icon::chevron_left, icon_style,
+                                         {r.x, r.y, cfg::tray_menu_row, r.h}, palette::text);
             paint.region(r, back);
             break;
         }
@@ -176,16 +189,21 @@ void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &
             if (e.checkbox) {
                 ui::TextSize glyph = canvas.measure(icon::check, icon_style);
                 if (e.checked) {
-                    canvas.text(icon::check, icon_style, text_x, r.y + (r.h - glyph.h) / 2.0f, color);
+                    canvas.text(icon::check, icon_style, text_x, r.y + (r.h - glyph.h) / 2.0f,
+                                color);
                 }
                 text_x += glyph.w + cfg::tray_menu_row_pad;
             }
             ui::TextStyle label = text_style;
-            label.max_width = std::max(0, static_cast<int>(r.x + r.w - text_x - cfg::tray_menu_label_offset));
-            panel_widgets::text_in_row(canvas, tray_strip_mnemonic(e.label), label, text_x, r, color);
+            label.max_width =
+                std::max(0, static_cast<int>(r.x + r.w - text_x - cfg::tray_menu_label_offset));
+            panel_widgets::text_in_row(canvas, tray_strip_mnemonic(e.label), label, text_x, r,
+                                       color);
             if (!e.children.empty()) {
                 ui::TextSize glyph = canvas.measure(icon::chevron_right, icon_style);
-                canvas.text(icon::chevron_right, icon_style, r.x + r.w - cfg::tray_menu_row_pad - glyph.w, r.y + (r.h - glyph.h) / 2.0f, palette::text_dim);
+                canvas.text(icon::chevron_right, icon_style,
+                            r.x + r.w - cfg::tray_menu_row_pad - glyph.w,
+                            r.y + (r.h - glyph.h) / 2.0f, palette::text_dim);
             }
             if (e.enabled) {
                 paint.region(r, entry, e.id);

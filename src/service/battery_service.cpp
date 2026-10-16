@@ -29,7 +29,8 @@ BatteryStatus battery_parse_status(const DbusProperties &properties) {
     if (!next.present) {
         return next;
     }
-    next.percent = static_cast<int>(std::lround(dbus_value<double>(properties, "Percentage").value_or(0)));
+    next.percent =
+        static_cast<int>(std::lround(dbus_value<double>(properties, "Percentage").value_or(0)));
     uint32_t state = dbus_value<uint32_t>(properties, "State").value_or(0);
     next.charging = state == upower_state_charging;
     next.full = state == upower_state_fully_charged;
@@ -45,9 +46,12 @@ BatteryDevice battery_parse_device(const std::string &path, const DbusProperties
     device.type = dbus_value<uint32_t>(properties, "Type").value_or(0);
     device.present = dbus_value<bool>(properties, "IsPresent").value_or(false);
     device.state = dbus_value<uint32_t>(properties, "State").value_or(0);
-    device.percent = static_cast<int>(std::lround(dbus_value<double>(properties, "Percentage").value_or(0)));
-    device.time_to_empty_s = static_cast<int>(dbus_value<int64_t>(properties, "TimeToEmpty").value_or(0));
-    device.time_to_full_s = static_cast<int>(dbus_value<int64_t>(properties, "TimeToFull").value_or(0));
+    device.percent =
+        static_cast<int>(std::lround(dbus_value<double>(properties, "Percentage").value_or(0)));
+    device.time_to_empty_s =
+        static_cast<int>(dbus_value<int64_t>(properties, "TimeToEmpty").value_or(0));
+    device.time_to_full_s =
+        static_cast<int>(dbus_value<int64_t>(properties, "TimeToFull").value_or(0));
     device.native_path = dbus_value<std::string>(properties, "NativePath").value_or("");
     return device;
 }
@@ -73,46 +77,48 @@ BatteryService::BatteryService(SystemBus &bus) : bus_(bus) {
     refresh_display();
     refresh_manager();
     try {
-        enumerate_reply_ = manager_->callMethodAsync("EnumerateDevices")
-                               .onInterface(manager_interface)
-                               .uponReplyInvoke(
-                                   [this](std::optional<sdbus::Error> error,
-                                          std::vector<sdbus::ObjectPath> paths) {
-                                       if (error) {
-                                           log::error("upower: EnumerateDevices failed: {}",
-                                                      error->getMessage());
-                                           return;
-                                       }
-                                       for (const sdbus::ObjectPath &path : paths) {
-                                           add_device(path);
-                                       }
-                                   },
-                                   sdbus::return_slot);
+        enumerate_reply_ =
+            manager_->callMethodAsync("EnumerateDevices")
+                .onInterface(manager_interface)
+                .uponReplyInvoke(
+                    [this](std::optional<sdbus::Error> error,
+                           std::vector<sdbus::ObjectPath> paths) {
+                        if (error) {
+                            log::error("upower: EnumerateDevices failed: {}", error->getMessage());
+                            return;
+                        }
+                        for (const sdbus::ObjectPath &path : paths) {
+                            add_device(path);
+                        }
+                    },
+                    sdbus::return_slot);
     } catch (const sdbus::Error &error) {
         log::error("upower: EnumerateDevices dispatch failed: {}", error.getMessage());
     }
 }
 
 void BatteryService::refresh_display() {
-    display_reply_ = dbus_get_all_async(*display_, device_interface, [this](const DbusProperties &properties) {
-        BatteryStatus next = battery_parse_status(properties);
-        if (next == status_) {
-            return;
-        }
-        status_ = next;
-        changed.emit();
-    });
+    display_reply_ =
+        dbus_get_all_async(*display_, device_interface, [this](const DbusProperties &properties) {
+            BatteryStatus next = battery_parse_status(properties);
+            if (next == status_) {
+                return;
+            }
+            status_ = next;
+            changed.emit();
+        });
 }
 
 void BatteryService::refresh_manager() {
-    manager_reply_ = dbus_get_all_async(*manager_, manager_interface, [this](const DbusProperties &properties) {
-        bool next = dbus_value<bool>(properties, "OnBattery").value_or(false);
-        if (next == on_battery_) {
-            return;
-        }
-        on_battery_ = next;
-        changed.emit();
-    });
+    manager_reply_ =
+        dbus_get_all_async(*manager_, manager_interface, [this](const DbusProperties &properties) {
+            bool next = dbus_value<bool>(properties, "OnBattery").value_or(false);
+            if (next == on_battery_) {
+                return;
+            }
+            on_battery_ = next;
+            changed.emit();
+        });
 }
 
 void BatteryService::add_device(const std::string &path) {
@@ -143,18 +149,19 @@ void BatteryService::refresh_device(const std::string &path) {
     if (it == tracked_.end()) {
         return;
     }
-    it->second.reply = dbus_get_all_async(*it->second.proxy, device_interface, [this, path](const DbusProperties &properties) {
-        auto found = tracked_.find(path);
-        if (found == tracked_.end()) {
-            return;
-        }
-        BatteryDevice next = battery_parse_device(path, properties);
-        if (next == found->second.device) {
-            return;
-        }
-        found->second.device = next;
-        publish_devices();
-    });
+    it->second.reply = dbus_get_all_async(
+        *it->second.proxy, device_interface, [this, path](const DbusProperties &properties) {
+            auto found = tracked_.find(path);
+            if (found == tracked_.end()) {
+                return;
+            }
+            BatteryDevice next = battery_parse_device(path, properties);
+            if (next == found->second.device) {
+                return;
+            }
+            found->second.device = next;
+            publish_devices();
+        });
 }
 
 void BatteryService::publish_devices() {

@@ -94,7 +94,8 @@ void test_poll_source() {
             std::size_t start;
         };
         std::vector<Range> ranges;
-        for (PollSource *s : {static_cast<PollSource *>(&src_a), static_cast<PollSource *>(&src_b), static_cast<PollSource *>(&src_c)}) {
+        for (PollSource *s : {static_cast<PollSource *>(&src_a), static_cast<PollSource *>(&src_b),
+                              static_cast<PollSource *>(&src_c)}) {
             std::size_t start = fds.size();
             if (s->add_poll_fds(fds) > 0)
                 ranges.push_back({s, start});

@@ -8,8 +8,8 @@ void xdg_surface_configure(void *data, xdg_surface *surface, uint32_t serial) {
     xdg_surface_ack_configure(surface, serial);
 
     int32_t width = base->last_toplevel_width > 0 ? base->last_toplevel_width : base->pending_width;
-    int32_t height = base->last_toplevel_height > 0 ? base->last_toplevel_height
-                                                    : base->pending_height;
+    int32_t height =
+        base->last_toplevel_height > 0 ? base->last_toplevel_height : base->pending_height;
     base->width = width;
     base->height = height;
     int32_t scale = base->output_scale.scale;
@@ -47,7 +47,9 @@ const xdg_toplevel_listener xdg_toplevel_listener_impl = {
 
 } // namespace
 
-bool toplevel_window_create_surface(ToplevelWindowBase &base, wl_compositor *compositor, xdg_wm_base *wm_base, const char *title, const char *app_id, int32_t default_width, int32_t default_height) {
+bool toplevel_window_create_surface(ToplevelWindowBase &base, wl_compositor *compositor,
+                                    xdg_wm_base *wm_base, const char *title, const char *app_id,
+                                    int32_t default_width, int32_t default_height) {
     base.compositor = compositor;
     base.pending_width = default_width;
     base.pending_height = default_height;
@@ -81,12 +83,14 @@ bool toplevel_window_create_surface(ToplevelWindowBase &base, wl_compositor *com
     return true;
 }
 
-bool toplevel_window_init_egl(ToplevelWindowBase &base, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool toplevel_window_init_egl(ToplevelWindowBase &base, EGLDisplay display, EGLConfig config,
+                              EGLContext context) {
     base.egl_display = display;
     base.egl_context = context;
     int32_t scale = base.output_scale.scale;
     base.egl_window = wl_egl_window_create(base.surface, base.width * scale, base.height * scale);
-    base.egl_surface = eglCreateWindowSurface(display, config, reinterpret_cast<EGLNativeWindowType>(base.egl_window), nullptr);
+    base.egl_surface = eglCreateWindowSurface(
+        display, config, reinterpret_cast<EGLNativeWindowType>(base.egl_window), nullptr);
     if (base.egl_surface == EGL_NO_SURFACE)
         return false;
     if (!gl_make_current(display, base.egl_surface, context))

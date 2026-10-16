@@ -30,7 +30,8 @@ int conversation(int num_msg, const pam_message **msg, pam_response **resp, void
         return PAM_CONV_ERR;
 
     auto *data = static_cast<ConvData *>(appdata);
-    auto *replies = static_cast<pam_response *>(std::calloc(static_cast<size_t>(num_msg), sizeof(pam_response)));
+    auto *replies = static_cast<pam_response *>(
+        std::calloc(static_cast<size_t>(num_msg), sizeof(pam_response)));
     if (!replies)
         return PAM_BUF_ERR;
 
@@ -68,7 +69,8 @@ void secure_clear(std::string &value) {
     value.clear();
 }
 
-Result authenticate(std::string_view user_name, std::string_view password, std::string_view pam_dir_view) {
+Result authenticate(std::string_view user_name, std::string_view password,
+                    std::string_view pam_dir_view) {
     std::string user(user_name);
     std::string pam_dir(pam_dir_view);
     if (user.empty() || user == "unknown")

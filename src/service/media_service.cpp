@@ -19,8 +19,7 @@ const std::string name_prefix = "org.mpris.MediaPlayer2.";
 
 using Metadata = std::map<std::string, sdbus::Variant>;
 
-template <typename T>
-std::optional<T> variant_get(const sdbus::Variant &value) {
+template <typename T> std::optional<T> variant_get(const sdbus::Variant &value) {
     try {
         return value.get<T>();
     } catch (const sdbus::Error &) {
@@ -37,7 +36,8 @@ std::optional<T> metadata_get(const Metadata &metadata, const std::string &key) 
 MediaTrack parse_metadata(const Metadata &metadata) {
     MediaTrack track;
     track.title = metadata_get<std::string>(metadata, "xesam:title").value_or("");
-    if (auto artists = metadata_get<std::vector<std::string>>(metadata, "xesam:artist"); artists && !artists->empty()) {
+    if (auto artists = metadata_get<std::vector<std::string>>(metadata, "xesam:artist");
+        artists && !artists->empty()) {
         track.artist = artists->front();
     }
     track.art_url = metadata_get<std::string>(metadata, "mpris:artUrl").value_or("");
@@ -77,10 +77,12 @@ int media_select_player(const std::vector<MediaPlayer> &players) {
     return players.empty() ? -1 : 0;
 }
 
-MediaService::MediaService(SystemBus &bus) : bus_(bus), daemon_(bus_.proxy(daemon_service, daemon_path)) {
-    owner_match_ = bus_.add_match("type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',"
-                                  "arg0namespace='org.mpris.MediaPlayer2'",
-                                  [this] { scan(); });
+MediaService::MediaService(SystemBus &bus)
+    : bus_(bus), daemon_(bus_.proxy(daemon_service, daemon_path)) {
+    owner_match_ =
+        bus_.add_match("type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',"
+                       "arg0namespace='org.mpris.MediaPlayer2'",
+                       [this] { scan(); });
     properties_match_ = bus_.add_match("type='signal',interface='org.freedesktop.DBus.Properties',"
                                        "member='PropertiesChanged',path='/org/mpris/MediaPlayer2',"
                                        "arg0='org.mpris.MediaPlayer2.Player'",
@@ -102,38 +104,47 @@ void MediaService::scan() {
     }
     uint64_t generation = ++generation_;
     try {
-        daemon_->callMethodAsync("ListNames").onInterface(daemon_service).uponReplyInvoke([this, generation](std::optional<sdbus::Error> error, std::vector<std::string> names) {
-            if (error || generation != generation_) {
-                return;
-            }
-            std::set<std::string> live;
-            for (const std::string &name : names) {
-                if (name.starts_with(name_prefix)) {
-                    live.insert(name);
+        daemon_->callMethodAsync("ListNames")
+            .onInterface(daemon_service)
+            .uponReplyInvoke([this, generation](std::optional<sdbus::Error> error,
+                                                std::vector<std::string> names) {
+                if (error || generation != generation_) {
+                    return;
                 }
-            }
-            std::erase_if(players_, [&](const auto &entry) { return !live.contains(entry.first); });
-            if (!live.contains(status_.bus_name)) {
-                position_inflight_ = false;
-            }
-            candidates_.clear();
-            expected_ = live.size();
-            if (live.empty()) {
-                select();
-                return;
-            }
-            for (const std::string &name : live) {
-                sdbus::IProxy *proxy = player(name);
-                if (proxy == nullptr) {
-                    collect(generation, name, MediaPlayback::stopped);
-                    continue;
+                std::set<std::string> live;
+                for (const std::string &name : names) {
+                    if (name.starts_with(name_prefix)) {
+                        live.insert(name);
+                    }
                 }
-                proxy->callMethodAsync("Get").onInterface(properties_interface).withArguments(player_interface, std::string("PlaybackStatus")).uponReplyInvoke([this, generation, name](std::optional<sdbus::Error> error, sdbus::Variant value) {
-                    std::optional<std::string> status = error ? std::nullopt : variant_get<std::string>(value);
-                    collect(generation, name, media_parse_playback(status.value_or("")));
-                });
-            }
-        });
+                std::erase_if(players_,
+                              [&](const auto &entry) { return !live.contains(entry.first); });
+                if (!live.contains(status_.bus_name)) {
+                    position_inflight_ = false;
+                }
+                candidates_.clear();
+                expected_ = live.size();
+                if (live.empty()) {
+                    select();
+                    return;
+                }
+                for (const std::string &name : live) {
+                    sdbus::IProxy *proxy = player(name);
+                    if (proxy == nullptr) {
+                        collect(generation, name, MediaPlayback::stopped);
+                        continue;
+                    }
+                    proxy->callMethodAsync("Get")
+                        .onInterface(properties_interface)
+                        .withArguments(player_interface, std::string("PlaybackStatus"))
+                        .uponReplyInvoke([this, generation, name](std::optional<sdbus::Error> error,
+                                                                  sdbus::Variant value) {
+                            std::optional<std::string> status =
+                                error ? std::nullopt : variant_get<std::string>(value);
+                            collect(generation, name, media_parse_playback(status.value_or("")));
+                        });
+                }
+            });
     } catch (const sdbus::Error &error) {
         log::error("media: cannot list players: {}", error.what());
     }
@@ -166,21 +177,25 @@ void MediaService::fetch_metadata(const std::string &name, MediaPlayback playbac
     }
     uint64_t generation = generation_;
     try {
-        proxy->callMethodAsync("Get").onInterface(properties_interface).withArguments(player_interface, std::string("Metadata")).uponReplyInvoke([this, generation, name, playback](std::optional<sdbus::Error> error, sdbus::Variant value) {
-            if (generation != generation_) {
-                return;
-            }
-            MediaStatus next{true, name, playback, {}};
-            if (!error) {
-                if (auto metadata = variant_get<Metadata>(value)) {
-                    next.track = parse_metadata(*metadata);
+        proxy->callMethodAsync("Get")
+            .onInterface(properties_interface)
+            .withArguments(player_interface, std::string("Metadata"))
+            .uponReplyInvoke([this, generation, name, playback](std::optional<sdbus::Error> error,
+                                                                sdbus::Variant value) {
+                if (generation != generation_) {
+                    return;
                 }
-            }
-            if (status_.bus_name == name && status_.track.title == next.track.title) {
-                next.track.position_us = status_.track.position_us;
-            }
-            update(next);
-        });
+                MediaStatus next{true, name, playback, {}};
+                if (!error) {
+                    if (auto metadata = variant_get<Metadata>(value)) {
+                        next.track = parse_metadata(*metadata);
+                    }
+                }
+                if (status_.bus_name == name && status_.track.title == next.track.title) {
+                    next.track.position_us = status_.track.position_us;
+                }
+                update(next);
+            });
     } catch (const sdbus::Error &error) {
         log::error("media: cannot read metadata: {}", error.what());
     }
@@ -203,11 +218,13 @@ void MediaService::call(const char *method) {
         return;
     }
     try {
-        proxy->callMethodAsync(method).onInterface(player_interface).uponReplyInvoke([method](std::optional<sdbus::Error> error) {
-            if (error) {
-                log::error("media: {} failed: {}", method, error->what());
-            }
-        });
+        proxy->callMethodAsync(method)
+            .onInterface(player_interface)
+            .uponReplyInvoke([method](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("media: {} failed: {}", method, error->what());
+                }
+            });
     } catch (const sdbus::Error &error) {
         log::error("media: cannot call {}: {}", method, error.what());
     }
@@ -230,17 +247,20 @@ void MediaService::poll_position() {
     std::string name = status_.bus_name;
     try {
         position_inflight_ = true;
-        proxy->callMethodAsync("Get").onInterface(properties_interface).withArguments(player_interface, std::string("Position")).uponReplyInvoke([this, name](std::optional<sdbus::Error> error, sdbus::Variant value) {
-            position_inflight_ = false;
-            if (error || status_.bus_name != name) {
-                return;
-            }
-            if (auto position = variant_get<int64_t>(value)) {
-                MediaStatus next = status_;
-                next.track.position_us = *position;
-                update(next);
-            }
-        });
+        proxy->callMethodAsync("Get")
+            .onInterface(properties_interface)
+            .withArguments(player_interface, std::string("Position"))
+            .uponReplyInvoke([this, name](std::optional<sdbus::Error> error, sdbus::Variant value) {
+                position_inflight_ = false;
+                if (error || status_.bus_name != name) {
+                    return;
+                }
+                if (auto position = variant_get<int64_t>(value)) {
+                    MediaStatus next = status_;
+                    next.track.position_us = *position;
+                    update(next);
+                }
+            });
     } catch (const sdbus::Error &) {
         position_inflight_ = false;
     }

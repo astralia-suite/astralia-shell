@@ -51,7 +51,10 @@ bool VisualizerAudioCapture::start() {
         return false;
     }
 
-    pw_properties *props = pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Music", PW_KEY_MEDIA_NAME, "astralia-shell visualizer", PW_KEY_NODE_ALWAYS_PROCESS, "true", PW_KEY_STREAM_CAPTURE_SINK, "true", nullptr);
+    pw_properties *props = pw_properties_new(
+        PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Music",
+        PW_KEY_MEDIA_NAME, "astralia-shell visualizer", PW_KEY_NODE_ALWAYS_PROCESS, "true",
+        PW_KEY_STREAM_CAPTURE_SINK, "true", nullptr);
 
     pw_thread_loop_lock(loop_);
 
@@ -76,7 +79,11 @@ bool VisualizerAudioCapture::start() {
     const spa_pod *params[1];
     params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &raw);
 
-    pw_stream_connect(stream_, PW_DIRECTION_INPUT, PW_ID_ANY, static_cast<pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS), params, 1);
+    pw_stream_connect(stream_, PW_DIRECTION_INPUT, PW_ID_ANY,
+                      static_cast<pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT |
+                                                   PW_STREAM_FLAG_MAP_BUFFERS |
+                                                   PW_STREAM_FLAG_RT_PROCESS),
+                      params, 1);
 
     pw_thread_loop_unlock(loop_);
     pw_thread_loop_start(loop_);
@@ -104,7 +111,8 @@ void VisualizerAudioCapture::stop() {
     }
 }
 
-void VisualizerAudioCapture::on_state_changed(void *, pw_stream_state, pw_stream_state state, const char *error) {
+void VisualizerAudioCapture::on_state_changed(void *, pw_stream_state, pw_stream_state state,
+                                              const char *error) {
     if (state == PW_STREAM_STATE_ERROR)
         log::error("visualizer_audio: stream error: {}", error ? error : "unknown");
 }
@@ -144,8 +152,7 @@ void VisualizerAudioCapture::process_buffer() {
     if (sbuf && sbuf->n_datas > 0) {
         spa_data *d = &sbuf->datas[0];
         if (d->data && d->chunk) {
-            const auto *base =
-                static_cast<const uint8_t *>(d->data) + d->chunk->offset;
+            const auto *base = static_cast<const uint8_t *>(d->data) + d->chunk->offset;
             samples = reinterpret_cast<const float *>(base);
             n_samples = static_cast<int>(d->chunk->size / sizeof(float));
         }
@@ -161,28 +168,32 @@ void VisualizerAudioCapture::process_buffer() {
                 continue;
             }
 
-            std::memmove(br_.data(), br_.data() + kSlide, static_cast<size_t>(kVisualizerFragmentSize - kSlide) * sizeof(float));
-            std::memmove(bl_.data(), bl_.data() + kSlide, static_cast<size_t>(kVisualizerFragmentSize - kSlide) * sizeof(float));
+            std::memmove(br_.data(), br_.data() + kSlide,
+                         static_cast<size_t>(kVisualizerFragmentSize - kSlide) * sizeof(float));
+            std::memmove(bl_.data(), bl_.data() + kSlide,
+                         static_cast<size_t>(kVisualizerFragmentSize - kSlide) * sizeof(float));
 
             for (int k = 0, i = 0; i < kHalfSample; i += 2, k += 2) {
                 int idx = kTail + k;
                 if (n_channels == 1) {
-                    float s = (audio_buffer_[static_cast<size_t>(i)] + audio_buffer_[static_cast<size_t>(i + 1)]) / 2.0f;
+                    float s = (audio_buffer_[static_cast<size_t>(i)] +
+                               audio_buffer_[static_cast<size_t>(i + 1)]) /
+                              2.0f;
                     br_[static_cast<size_t>(idx)] = s;
                     bl_[static_cast<size_t>(idx)] = s;
                 } else {
-                    br_[static_cast<size_t>(idx)] =
-                        audio_buffer_[static_cast<size_t>(i + 1)];
-                    bl_[static_cast<size_t>(idx)] =
-                        audio_buffer_[static_cast<size_t>(i)];
+                    br_[static_cast<size_t>(idx)] = audio_buffer_[static_cast<size_t>(i + 1)];
+                    bl_[static_cast<size_t>(idx)] = audio_buffer_[static_cast<size_t>(i)];
                 }
                 br_[static_cast<size_t>(idx + 1)] = 0.0f;
                 bl_[static_cast<size_t>(idx + 1)] = 0.0f;
             }
 
             filled_idx_ = 0;
-            std::memcpy(rb_.data(), br_.data(), static_cast<size_t>(kVisualizerFragmentSize) * sizeof(float));
-            std::memcpy(lb_.data(), bl_.data(), static_cast<size_t>(kVisualizerFragmentSize) * sizeof(float));
+            std::memcpy(rb_.data(), br_.data(),
+                        static_cast<size_t>(kVisualizerFragmentSize) * sizeof(float));
+            std::memcpy(lb_.data(), bl_.data(),
+                        static_cast<size_t>(kVisualizerFragmentSize) * sizeof(float));
             modified_ = true;
             have_data_ = true;
         }

@@ -285,7 +285,8 @@ struct AudioService::Impl {
             node.is_sink = sink;
             node.name = name != nullptr ? name : "";
             node.label = sink || source ? first({PW_KEY_NODE_DESCRIPTION, SPA_KEY_NODE_NAME})
-                                        : first({PW_KEY_APP_NAME, PW_KEY_NODE_DESCRIPTION, PW_KEY_MEDIA_NAME, SPA_KEY_NODE_NAME});
+                                        : first({PW_KEY_APP_NAME, PW_KEY_NODE_DESCRIPTION,
+                                                 PW_KEY_MEDIA_NAME, SPA_KEY_NODE_NAME});
             impl->nodes_changed = true;
             node.device_id = device_id != nullptr ? std::strtoul(device_id, nullptr, 10) : 0;
             node.card_profile_device = profile_device != nullptr ? std::atoi(profile_device) : -1;
@@ -308,7 +309,8 @@ struct AudioService::Impl {
                 impl->registry, id, PW_TYPE_INTERFACE_Device, PW_VERSION_DEVICE, 0));
             pw_device_add_listener(reinterpret_cast<pw_device *>(device.proxy), &device.listener,
                                    &device_events, &device);
-        } else if (std::strcmp(type, PW_TYPE_INTERFACE_Metadata) == 0 && impl->metadata == nullptr) {
+        } else if (std::strcmp(type, PW_TYPE_INTERFACE_Metadata) == 0 &&
+                   impl->metadata == nullptr) {
             const char *name = lookup(props, PW_KEY_METADATA_NAME);
             if (name == nullptr || std::strcmp(name, "default") != 0) {
                 return;
@@ -412,8 +414,7 @@ struct AudioService::Impl {
         std::array<uint8_t, 1024> buffer{};
         spa_pod_builder builder = SPA_POD_BUILDER_INIT(buffer.data(), buffer.size());
         auto *props = static_cast<spa_pod *>(spa_pod_builder_add_object(
-            &builder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props, SPA_PROP_mute,
-            SPA_POD_Bool(muted)));
+            &builder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props, SPA_PROP_mute, SPA_POD_Bool(muted)));
         set_props(it->second, builder, props);
     }
 
@@ -530,13 +531,9 @@ std::optional<AudioNode> AudioService::node(uint32_t id) const {
     return AudioNode{id, node.kind, node.label, node.percent, node.muted};
 }
 
-void AudioService::set_sink_volume(int percent) {
-    impl_->set_volume(impl_->sink_id, percent);
-}
+void AudioService::set_sink_volume(int percent) { impl_->set_volume(impl_->sink_id, percent); }
 
-void AudioService::set_sink_mute(bool muted) {
-    impl_->set_mute(impl_->sink_id, muted);
-}
+void AudioService::set_sink_mute(bool muted) { impl_->set_mute(impl_->sink_id, muted); }
 
 void AudioService::set_volume(uint32_t id, int percent) { impl_->set_volume(id, percent); }
 

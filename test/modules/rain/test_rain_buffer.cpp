@@ -10,7 +10,8 @@
 namespace {
 
 std::vector<uint8_t> copy(const astralia::RainFrame &frame) {
-    return std::vector<uint8_t>(frame.pixels, frame.pixels + static_cast<size_t>(frame.stride) * frame.height);
+    return std::vector<uint8_t>(frame.pixels,
+                                frame.pixels + static_cast<size_t>(frame.stride) * frame.height);
 }
 
 bool has_ink(const std::vector<uint8_t> &pixels) {
@@ -22,13 +23,14 @@ bool has_ink(const std::vector<uint8_t> &pixels) {
     return false;
 }
 
-template <typename Rain>
-void check_rain(const char *name) {
+template <typename Rain> void check_rain(const char *name) {
     Rain rain;
     test::check(!rain.frame().ready(), "a rain with no rebuild has no frame");
     rain.rebuild(480, 600, false);
     astralia::RainFrame frame = rain.frame();
-    test::check(frame.ready() && frame.width == 480 && frame.height == 600 && frame.stride >= 480 * 4, name);
+    test::check(frame.ready() && frame.width == 480 && frame.height == 600 &&
+                    frame.stride >= 480 * 4,
+                name);
     test::check(!has_ink(copy(frame)), "a fresh buffer is transparent");
 
     astralia::rain_seed(7);
@@ -47,9 +49,11 @@ void check_rain(const char *name) {
     test::check(copy(rain.frame()) == first, "the same seed gives the same frames");
 
     rain.rebuild(200, 100, false);
-    test::check(rain.frame().width == 200 && rain.frame().height == 100, "a rebuild resizes the buffer");
+    test::check(rain.frame().width == 200 && rain.frame().height == 100,
+                "a rebuild resizes the buffer");
     rain.rebuild(0, 0, false);
-    test::check(rain.frame().width == 1 && rain.frame().height == 1, "a degenerate size is clamped");
+    test::check(rain.frame().width == 1 && rain.frame().height == 1,
+                "a degenerate size is clamped");
 }
 
 } // namespace

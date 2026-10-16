@@ -84,7 +84,9 @@ std::string bar_battery_label(const BatteryStatus &status) {
     return status.full ? "Plugged in" : std::to_string(status.percent) + "%";
 }
 
-BarModel::BarModel(BarSources sources, Clock::time_point now) : sources_(std::move(sources)), style_(&bar_style_spec(BarStyle::continuous, false)), started_(now) {}
+BarModel::BarModel(BarSources sources, Clock::time_point now)
+    : sources_(std::move(sources)), style_(&bar_style_spec(BarStyle::continuous, false)),
+      started_(now) {}
 
 void BarModel::refresh(Clock::time_point now) {
     auto set = [&](BarItem id, const char *glyph, std::string label, bool visible) {
@@ -134,12 +136,14 @@ void BarModel::refresh(Clock::time_point now) {
 
     if (sources_.audio != nullptr && sources_.audio->sink().present) {
         AudioLevel level = sources_.audio->sink();
-        set(BarItem::volume, icon::volume_threshold(level.muted, level.percent), level.muted ? "muted" : std::to_string(level.percent) + "%", true);
+        set(BarItem::volume, icon::volume_threshold(level.muted, level.percent),
+            level.muted ? "muted" : std::to_string(level.percent) + "%", true);
         if (!peek_ready_ && now - started_ >= cfg::peek_ready_delay) {
             peek_ready_ = true;
         }
         if (peek_ready_) {
-            bool changed = peek_level_ < 0 || peek_level_ != level.percent || peek_muted_ != level.muted;
+            bool changed =
+                peek_level_ < 0 || peek_level_ != level.percent || peek_muted_ != level.muted;
             peek_level_ = level.percent;
             peek_muted_ = level.muted;
             if (changed) {
@@ -156,7 +160,8 @@ void BarModel::refresh(Clock::time_point now) {
 
     if (sources_.brightness != nullptr && sources_.brightness->available()) {
         int percent = sources_.brightness->percent();
-        set(BarItem::brightness, icon::brightness_threshold(percent), std::to_string(percent) + "%", true);
+        set(BarItem::brightness, icon::brightness_threshold(percent), std::to_string(percent) + "%",
+            true);
     } else {
         set(BarItem::brightness, nullptr, "", false);
     }
@@ -168,10 +173,12 @@ void BarModel::refresh(Clock::time_point now) {
         if (status.full) {
             view.tint.reset();
         } else {
-            view.tint = status.charging ? palette::accent_alt : status.percent <= 25 ? palette::critical_container
-                                                                                     : palette::accent;
+            view.tint = status.charging        ? palette::accent_alt
+                        : status.percent <= 25 ? palette::critical_container
+                                               : palette::accent;
         }
-        view.alert = !status.charging && !status.full && status.percent <= cfg::battery_critical_percent;
+        view.alert =
+            !status.charging && !status.full && status.percent <= cfg::battery_critical_percent;
     } else {
         set(BarItem::battery, nullptr, "", false);
     }
@@ -198,7 +205,9 @@ void BarModel::refresh_workspaces() {
         for (int id = 1; id <= sources_.workspace_slots; ++id) {
             bool occupied = false;
             for (const auto &[monitor, entry] : state.by_monitor) {
-                occupied |= std::ranges::any_of(entry.workspaces, [&](const Workspace &ws) { return ws.id == id && ws.occupied; });
+                occupied |= std::ranges::any_of(entry.workspaces, [&](const Workspace &ws) {
+                    return ws.id == id && ws.occupied;
+                });
             }
             list.push_back({id, std::to_string(id), occupied});
         }
@@ -219,7 +228,10 @@ void BarModel::refresh_workspaces() {
         } else if (seen->second != active) {
             seen->second = active;
             int id = ws.id;
-            animations_.animate(grow_[id], active ? 1.0f : 0.0f, cfg::workspace_anim_ms, astralia::Easing::Linear, [this, id](float v) { grow_[id] = v; }, {}, cfg::owner_workspace + static_cast<uint64_t>(id));
+            animations_.animate(
+                grow_[id], active ? 1.0f : 0.0f, cfg::workspace_anim_ms, astralia::Easing::Linear,
+                [this, id](float v) { grow_[id] = v; }, {},
+                cfg::owner_workspace + static_cast<uint64_t>(id));
         }
         workspaces_.push_back({ws.id, active, ws.occupied, grow_[ws.id], {}});
     }
@@ -243,7 +255,9 @@ void BarModel::refresh_dock() {
             dock_x_[entry.address] = target;
         } else if (std::fabs(slot->second - target) > 0.5f) {
             std::string address = entry.address;
-            animations_.animate(slot->second, target, cfg::dock_reorder_ms, astralia::Easing::EaseOutQuad, [this, address](float v) { dock_x_[address] = v; }, {}, cfg::owner_dock + i);
+            animations_.animate(
+                slot->second, target, cfg::dock_reorder_ms, astralia::Easing::EaseOutQuad,
+                [this, address](float v) { dock_x_[address] = v; }, {}, cfg::owner_dock + i);
         }
         dock_.push_back({entry, dock_x_[entry.address]});
     }
@@ -257,7 +271,10 @@ bool BarModel::update_expand(BarItem id, bool target, bool instant) {
     }
     view.hovered = target;
     size_t index = static_cast<size_t>(id);
-    animations_.animate(view.expand, target ? 1.0f : 0.0f, instant ? 0.0f : cfg::expand_ms, astralia::Easing::EaseOutCubic, [this, index](float v) { items_[index].expand = v; }, {}, cfg::owner_expand + index);
+    animations_.animate(
+        view.expand, target ? 1.0f : 0.0f, instant ? 0.0f : cfg::expand_ms,
+        astralia::Easing::EaseOutCubic, [this, index](float v) { items_[index].expand = v; }, {},
+        cfg::owner_expand + index);
     return true;
 }
 
@@ -352,8 +369,7 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     float pad = height * style.pad_ratio;
     bool rail = style.has_rail();
     bool dividers_on = rail || style.continuous;
-    float island_pad = rail ? cfg::island_pad : style.continuous ? height * style.pad_ratio
-                                                                 : 0.0f;
+    float island_pad = rail ? cfg::island_pad : style.continuous ? height * style.pad_ratio : 0.0f;
     layout_ = {};
     layout_.width = width;
     layout_.height = height;
@@ -412,7 +428,9 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     float grow_w = 0.0f;
     for (size_t i = 0; i < workspaces_.size(); ++i) {
         const BarWorkspace &ws = workspaces_[i];
-        grow_w += (i > 0 ? cfg::workspace_pill_spacing : 0.0f) + cfg::workspace_pill_height * (1.0f + (cfg::workspace_active_scale - 1.0f) * ws.grow);
+        grow_w +=
+            (i > 0 ? cfg::workspace_pill_spacing : 0.0f) +
+            cfg::workspace_pill_height * (1.0f + (cfg::workspace_active_scale - 1.0f) * ws.grow);
     }
     if (grow_w > 0.0f) {
         float overview_w = canvas.measure(icon::overview, icon_style).w;
@@ -421,17 +439,20 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         float wx = x + pad;
         float wy = (height - cfg::workspace_pill_height) / 2.0f;
         for (BarWorkspace &ws : workspaces_) {
-            float w = cfg::workspace_pill_height * (1.0f + (cfg::workspace_active_scale - 1.0f) * ws.grow);
+            float w = cfg::workspace_pill_height *
+                      (1.0f + (cfg::workspace_active_scale - 1.0f) * ws.grow);
             ws.box = {wx, wy, w, cfg::workspace_pill_height};
             wx += w + cfg::workspace_pill_spacing;
         }
         float icon_x = wx - cfg::workspace_pill_spacing + cfg::workspace_overview_gap;
-        layout_.overview = {icon_x - cfg::workspace_overview_gap / 2.0f, 0.0f, overview_w + cfg::workspace_overview_gap, height};
+        layout_.overview = {icon_x - cfg::workspace_overview_gap / 2.0f, 0.0f,
+                            overview_w + cfg::workspace_overview_gap, height};
         x += row_w + cfg::capsule_gap;
         track();
     }
     if (!dock_.empty()) {
-        float row_w = static_cast<float>(dock_.size()) * cfg::dock_icon + static_cast<float>(dock_.size() - 1) * cfg::dock_spacing;
+        float row_w = static_cast<float>(dock_.size()) * cfg::dock_icon +
+                      static_cast<float>(dock_.size() - 1) * cfg::dock_spacing;
         layout_.dock = {x, 0.0f, row_w + 2.0f * pad, height};
         x += row_w + 2.0f * pad + cfg::capsule_gap;
         track();
@@ -457,11 +478,14 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         float center_x = (width - center_w) / 2.0f;
         run({BarItem::media, BarItem::clock}, center_x, layout_.dividers);
         if (rail) {
-            layout_.center = IslandSpan{std::round(center_x - island_pad), std::round(center_x + center_w + island_pad)};
+            layout_.center = IslandSpan{std::round(center_x - island_pad),
+                                        std::round(center_x + center_w + island_pad)};
         }
     }
 
-    constexpr BarItem right_items[] = {BarItem::tray, BarItem::resource, BarItem::network, BarItem::bluetooth, BarItem::volume, BarItem::brightness, BarItem::battery};
+    constexpr BarItem right_items[] = {BarItem::tray,      BarItem::resource, BarItem::network,
+                                       BarItem::bluetooth, BarItem::volume,   BarItem::brightness,
+                                       BarItem::battery};
     float right_w = 0.0f;
     first = true;
     for (BarItem id : right_items) {
@@ -472,7 +496,9 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     }
     if (right_w > 0.0f) {
         float right_x = width - island_pad - right_w;
-        run({BarItem::tray, BarItem::resource, BarItem::network, BarItem::bluetooth, BarItem::volume, BarItem::brightness, BarItem::battery}, right_x, layout_.dividers);
+        run({BarItem::tray, BarItem::resource, BarItem::network, BarItem::bluetooth,
+             BarItem::volume, BarItem::brightness, BarItem::battery},
+            right_x, layout_.dividers);
         if (rail) {
             layout_.right_start = std::round(right_x - island_pad);
         }
@@ -494,7 +520,8 @@ BarAction BarModel::press(double x, double y) const {
         return {BarActionKind::overview};
     }
     for (const BarWorkspace &ws : workspaces_) {
-        ui::Box hit{ws.box.x - cfg::workspace_pill_spacing / 2.0f, 0.0f, ws.box.w + cfg::workspace_pill_spacing, layout_.height};
+        ui::Box hit{ws.box.x - cfg::workspace_pill_spacing / 2.0f, 0.0f,
+                    ws.box.w + cfg::workspace_pill_spacing, layout_.height};
         if (inside(hit, x, y)) {
             return {BarActionKind::workspace, BarItem::count, ws.id};
         }

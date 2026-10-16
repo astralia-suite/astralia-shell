@@ -31,8 +31,10 @@ astralia::SettingsCaps wayland_caps() {
 
 } // namespace
 
-bool settings_create_surface(SettingsState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
-    return overlay_panel_create_surface(state.base, compositor, layer_shell, "astralia-shell-settings", output);
+bool settings_create_surface(SettingsState &state, wl_compositor *compositor,
+                             zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
+    return overlay_panel_create_surface(state.base, compositor, layer_shell,
+                                        "astralia-shell-settings", output);
 }
 
 bool settings_init_egl(SettingsState &state, WaylandState &app) {
@@ -41,7 +43,9 @@ bool settings_init_egl(SettingsState &state, WaylandState &app) {
     if (!overlay_panel_init_egl(state.base, app.egl_display, app.egl_config, app.egl_context))
         return false;
     state.base.frame_clock.draw = [&state] { settings_paint(state); };
-    state.canvas.bind_context([&state] { gl_make_current(state.base.egl_display, state.base.egl_surface, state.base.egl_context); });
+    state.canvas.bind_context([&state] {
+        gl_make_current(state.base.egl_display, state.base.egl_surface, state.base.egl_context);
+    });
     state.canvas.on_image_ready = [&state] { settings_request_frame(state); };
 
     if (!state.model) {
@@ -60,7 +64,8 @@ bool settings_init_egl(SettingsState &state, WaylandState &app) {
         };
         hooks.focused_monitor = [&app] { return app.desktop->state().focused_monitor; };
         hooks.cpu_fallback = [&state, &app](const std::string &monitor, int column) {
-            return state.decode_status_source && state.decode_status_source(app, monitor, column) == MediaDecodeStatus::CpuFallback;
+            return state.decode_status_source && state.decode_status_source(app, monitor, column) ==
+                                                     MediaDecodeStatus::CpuFallback;
         };
         state.model = std::make_unique<astralia::SettingsModel>(wayland_caps(), std::move(hooks));
         state.model->on_close_requested = [&state, &app] { settings_toggle(state, app); };
@@ -75,17 +80,19 @@ bool settings_init_egl(SettingsState &state, WaylandState &app) {
     return true;
 }
 
-void settings_request_frame(SettingsState &state) {
-    overlay_panel_request_frame(state.base);
-}
+void settings_request_frame(SettingsState &state) { overlay_panel_request_frame(state.base); }
 
 void settings_toggle(SettingsState &state, WaylandState &app) {
     if (!state.base.layer_surface || state.base.egl_surface == EGL_NO_SURFACE || !state.model) {
-        klog("settings: toggle ignored, surface not ready (layer_surface=%p egl_surface_ready=%d)", static_cast<void *>(state.base.layer_surface), state.base.egl_surface != EGL_NO_SURFACE);
+        klog("settings: toggle ignored, surface not ready (layer_surface=%p "
+             "egl_surface_ready=%d)",
+             static_cast<void *>(state.base.layer_surface),
+             state.base.egl_surface != EGL_NO_SURFACE);
         return;
     }
     bool opening = !state.base.open;
-    klog("settings: toggle called (was_open=%d opacity=%.2f)", state.base.open, static_cast<double>(state.base.opacity));
+    klog("settings: toggle called (was_open=%d opacity=%.2f)", state.base.open,
+         static_cast<double>(state.base.opacity));
     if (opening) {
         state.model->open();
         overlay_panel_toggle(state.base, false);
@@ -100,7 +107,12 @@ void settings_toggle(SettingsState &state, WaylandState &app) {
 namespace {
 
 void settings_retarget(WaylandState &app, SettingsState &s, MonitorOutput &target) {
-    wl_output *bound = overlay_panel_retarget(s.base, app.display, s.bound_output, target.output.wl, target.output.name.c_str(), [&](wl_output *out) { return settings_create_surface(s, app.compositor, app.layer_shell, out); }, [&] { return settings_init_egl(s, app); });
+    wl_output *bound = overlay_panel_retarget(
+        s.base, app.display, s.bound_output, target.output.wl, target.output.name.c_str(),
+        [&](wl_output *out) {
+            return settings_create_surface(s, app.compositor, app.layer_shell, out);
+        },
+        [&] { return settings_init_egl(s, app); });
     if (bound)
         s.bound_output = bound;
     else
@@ -110,13 +122,15 @@ void settings_retarget(WaylandState &app, SettingsState &s, MonitorOutput &targe
 
 } // namespace
 
-std::vector<astralia::ShellBinding> settings_shell_bindings(SettingsState &settings, WaylandState &state) {
+std::vector<astralia::ShellBinding> settings_shell_bindings(SettingsState &settings,
+                                                            WaylandState &state) {
     return {
         {astralia::ShellVerb::settings,
          [&settings, &state] {
              if (!settings.base.open && settings.enabled) {
                  MonitorOutput *target = app_detail::active_target_monitor(state);
-                 if (target && (target->output.wl != settings.bound_output || !settings.base.layer_surface))
+                 if (target &&
+                     (target->output.wl != settings.bound_output || !settings.base.layer_surface))
                      settings_retarget(state, settings, *target);
              }
              settings_toggle(settings, state);
@@ -146,7 +160,9 @@ void settings_paint(SettingsState &state) {
         art.user_name = user_info::username();
         art.uptime = user_info::uptime_string();
         art.face = user_info::face_path();
-        state.frame = astralia::paint_settings(state.canvas, *state.model, art, static_cast<float>(state.base.width), static_cast<float>(state.base.height));
+        state.frame = astralia::paint_settings(state.canvas, *state.model, art,
+                                               static_cast<float>(state.base.width),
+                                               static_cast<float>(state.base.height));
     }
     state.canvas.flush();
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
@@ -220,9 +236,7 @@ class SettingsModule final : public Module, public TextInputClient {
         return true;
     }
 
-    TextInputState text_input_state() const override {
-        return settings_text_input_state(state_);
-    }
+    TextInputState text_input_state() const override { return settings_text_input_state(state_); }
     void text_input_apply_edit(const TextInputEdit &edit) override {
         settings_text_input_apply_edit(state_, edit);
         request_frame();
@@ -238,9 +252,7 @@ class SettingsModule final : public Module, public TextInputClient {
             state_.model->field().preedit.clear();
     }
 
-    bool configured() const override {
-        return !want_ || state_.base.configured;
-    }
+    bool configured() const override { return !want_ || state_.base.configured; }
     wl_surface *surface() const override { return state_.base.surface; }
     void request_frame() override { settings_request_frame(state_); }
 
@@ -256,12 +268,13 @@ class SettingsModule final : public Module, public TextInputClient {
         if (state_.model)
             state_.model->click(x, y);
     }
-    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x, double y) override {
-        hovering_clickable_ = state_.model && state_.base.open && focused_surface == state_.base.surface && state_.model->clickable(x, y);
+    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x,
+                             double y) override {
+        hovering_clickable_ = state_.model && state_.base.open &&
+                              focused_surface == state_.base.surface &&
+                              state_.model->clickable(x, y);
     }
-    bool wants_pointing_hand_cursor() const override {
-        return hovering_clickable_;
-    }
+    bool wants_pointing_hand_cursor() const override { return hovering_clickable_; }
     void handle_key_event(WaylandState &, const KeyEvent &event) override {
         if (state_.model && state_.model->key(to_neutral(event)))
             request_frame();

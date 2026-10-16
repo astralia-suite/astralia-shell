@@ -22,11 +22,13 @@ constexpr uint64_t owner_step = 2;
 using Clock = std::chrono::steady_clock;
 
 Clock::duration millis(float ms) {
-    return std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float, std::milli>(ms));
+    return std::chrono::duration_cast<Clock::duration>(
+        std::chrono::duration<float, std::milli>(ms));
 }
 
 bool same_file(const std::string &a, const std::string &b) {
-    return std::filesystem::path(a).lexically_normal() == std::filesystem::path(b).lexically_normal();
+    return std::filesystem::path(a).lexically_normal() ==
+           std::filesystem::path(b).lexically_normal();
 }
 
 } // namespace
@@ -34,13 +36,9 @@ bool same_file(const std::string &a, const std::string &b) {
 WallpaperSelectModel::WallpaperSelectModel(WallpaperSelectHooks hooks, bool animated_wallpaper)
     : hooks_(std::move(hooks)), animated_wallpaper_(animated_wallpaper) {}
 
-WallpaperSelectModel::~WallpaperSelectModel() {
-    *alive_ = false;
-}
+WallpaperSelectModel::~WallpaperSelectModel() { *alive_ = false; }
 
-bool WallpaperSelectModel::available() const {
-    return true;
-}
+bool WallpaperSelectModel::available() const { return true; }
 
 void WallpaperSelectModel::open(const std::string &monitor, int column) {
     if (open_) {
@@ -50,7 +48,8 @@ void WallpaperSelectModel::open(const std::string &monitor, int column) {
     monitor_ = monitor;
     column_ = column;
     animated_ = animated_wallpaper_ && config.wallpaper_animated_enabled;
-    current_ = animated_ ? wallpaper_column_override(config, monitor, column, true) : wallpaper_column_path(config, monitor, column, false);
+    current_ = animated_ ? wallpaper_column_override(config, monitor, column, true)
+                         : wallpaper_column_path(config, monitor, column, false);
     directory_ = animated_ ? config.wallpaper_animated_dir : config.wallpaper_dir;
     files_.clear();
     if (!current_.empty()) {
@@ -76,7 +75,9 @@ void WallpaperSelectModel::open(const std::string &monitor, int column) {
 }
 
 void WallpaperSelectModel::start_zoom() {
-    animations_.animate(0.0f, 1.0f, cfg::zoom_ms, Easing::EaseOutCubic, [this](float v) { zoom_ = v; }, {}, owner_zoom);
+    animations_.animate(
+        0.0f, 1.0f, cfg::zoom_ms, Easing::EaseOutCubic, [this](float v) { zoom_ = v; }, {},
+        owner_zoom);
 }
 
 void WallpaperSelectModel::reveal() {
@@ -100,7 +101,8 @@ void WallpaperSelectModel::reveal_if_overdue(Clock::time_point now) {
 
 void WallpaperSelectModel::tick(Clock::time_point now) {
     animations_.tick(now);
-    if (holding_ && (now >= hold_deadline_ || (settled_ && now >= settled_at_ + millis(cfg::handoff_settle_ms)))) {
+    if (holding_ && (now >= hold_deadline_ ||
+                     (settled_ && now >= settled_at_ + millis(cfg::handoff_settle_ms)))) {
         finish_close();
     }
 }
@@ -122,7 +124,8 @@ float WallpaperSelectModel::fade(const std::string &path, bool ready) {
         return 0.0f;
     }
     auto [at, inserted] = seen_.try_emplace(path, Clock::now());
-    float t = std::chrono::duration<float, std::milli>(Clock::now() - at->second).count() / cfg::fade_in_ms;
+    float t = std::chrono::duration<float, std::milli>(Clock::now() - at->second).count() /
+              cfg::fade_in_ms;
     if (t >= 1.0f) {
         return 1.0f;
     }
@@ -138,14 +141,18 @@ void WallpaperSelectModel::close() {
     waiting_ = false;
     ++generation_;
     animations_.cancelForOwner(owner_step);
-    animations_.animate(zoom_, 0.0f, cfg::zoom_ms, Easing::EaseInCubic, [this](float v) { zoom_ = v; }, [this] {
-        if (applying_ && !settled_) {
-            holding_ = true;
-            hold_deadline_ = Clock::now() + millis(cfg::handoff_timeout_ms);
-            changed();
-            return;
-        }
-        finish_close(); }, owner_zoom);
+    animations_.animate(
+        zoom_, 0.0f, cfg::zoom_ms, Easing::EaseInCubic, [this](float v) { zoom_ = v; },
+        [this] {
+            if (applying_ && !settled_) {
+                holding_ = true;
+                hold_deadline_ = Clock::now() + millis(cfg::handoff_timeout_ms);
+                changed();
+                return;
+            }
+            finish_close();
+        },
+        owner_zoom);
     changed();
 }
 
@@ -176,7 +183,8 @@ void WallpaperSelectModel::scan() {
             if (!alive.lock() || generation != generation_) {
                 return;
             }
-            auto at = std::ranges::find_if(found, [this](const std::string &path) { return same_file(path, current_); });
+            auto at = std::ranges::find_if(
+                found, [this](const std::string &path) { return same_file(path, current_); });
             if (at == found.end() && !current_.empty()) {
                 found.insert(found.begin(), current_);
                 at = found.begin();
@@ -200,15 +208,17 @@ void WallpaperSelectModel::select(int index) {
         return;
     }
     selected_ = target;
-    animations_.animate(position_, static_cast<float>(selected_), cfg::step_ms, Easing::EaseOutCubic, [this](float v) {
-        position_ = v;
-        changed(); }, {}, owner_step);
+    animations_.animate(
+        position_, static_cast<float>(selected_), cfg::step_ms, Easing::EaseOutCubic,
+        [this](float v) {
+            position_ = v;
+            changed();
+        },
+        {}, owner_step);
     changed();
 }
 
-void WallpaperSelectModel::step(int delta) {
-    select(selected_ + delta);
-}
+void WallpaperSelectModel::step(int delta) { select(selected_ + delta); }
 
 void WallpaperSelectModel::scroll(float notches) {
     if (!open_ || closing_) {
@@ -233,7 +243,10 @@ void WallpaperSelectModel::apply() {
     if (!same_file(path, current_)) {
         target_ = path;
         applying_ = true;
-        hooks_.update([monitor = monitor_, column = column_, animated = animated_, path](Config &config) { wallpaper_set_column(config, monitor, column, path, animated); });
+        hooks_.update(
+            [monitor = monitor_, column = column_, animated = animated_, path](Config &config) {
+                wallpaper_set_column(config, monitor, column, path, animated);
+            });
         settled_ = animated_ || !hooks_.settled || hooks_.settled();
     }
     request_close();

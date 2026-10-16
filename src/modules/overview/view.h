@@ -8,7 +8,8 @@
 
 namespace astralia {
 
-using OverviewTileArt = std::function<bool(ui::Canvas &, const OverviewTile &, const ui::Box &, float radius)>;
+using OverviewTileArt =
+    std::function<bool(ui::Canvas &, const OverviewTile &, const ui::Box &, float radius)>;
 
 void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTileArt &art);
 

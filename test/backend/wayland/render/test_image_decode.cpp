@@ -15,8 +15,7 @@ static bool has_nonzero_byte(const unsigned char *data, size_t count) {
 
 static void test_decode_png() {
     int width = 0, height = 0;
-    unsigned char *data =
-        load_image_decode(ASTRALIA_SHELL_DEFAULT_WALLPAPER, width, height);
+    unsigned char *data = load_image_decode(ASTRALIA_SHELL_DEFAULT_WALLPAPER, width, height);
     assert(data);
     assert(width == 1920);
     assert(height == 1080);
@@ -53,7 +52,8 @@ static void test_decode_svg() {
 static void test_decode_truncated() {
     std::filesystem::path path =
         std::filesystem::temp_directory_path() / "astralia-shell-test-truncated";
-    std::filesystem::copy_file(ASTRALIA_SHELL_DEFAULT_WALLPAPER, path, std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::copy_file(ASTRALIA_SHELL_DEFAULT_WALLPAPER, path,
+                               std::filesystem::copy_options::overwrite_existing);
     std::filesystem::resize_file(path, std::filesystem::file_size(path) / 2);
     int width = 0, height = 0;
     assert(!load_image_decode(path.string(), width, height));

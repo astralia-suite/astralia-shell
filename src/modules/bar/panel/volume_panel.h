@@ -10,12 +10,7 @@
 namespace astralia {
 
 struct VolumeRow {
-    enum class Kind { label,
-                      slider,
-                      section,
-                      divider,
-                      app,
-                      device } kind;
+    enum class Kind { label, slider, section, divider, app, device } kind;
     float height;
     std::string text{};
     std::string detail{};

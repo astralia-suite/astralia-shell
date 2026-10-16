@@ -31,11 +31,15 @@ struct PopupWindowBase {
     std::function<void()> on_configured;
 };
 
-bool popup_window_create(PopupWindowBase &base, wl_compositor *compositor, xdg_wm_base *wm_base, zwlr_layer_surface_v1 *parent_layer, const astralia::ui::Box &anchor_rect, int32_t w, int32_t h, wl_seat *seat, uint32_t grab_serial);
+bool popup_window_create(PopupWindowBase &base, wl_compositor *compositor, xdg_wm_base *wm_base,
+                         zwlr_layer_surface_v1 *parent_layer, const astralia::ui::Box &anchor_rect,
+                         int32_t w, int32_t h, wl_seat *seat, uint32_t grab_serial);
 
-bool popup_window_init_egl(PopupWindowBase &base, wl_display *display, EGLDisplay egl_display, EGLConfig config, EGLContext context);
+bool popup_window_init_egl(PopupWindowBase &base, wl_display *display, EGLDisplay egl_display,
+                           EGLConfig config, EGLContext context);
 
-void popup_window_reposition(PopupWindowBase &base, xdg_wm_base *wm_base, const astralia::ui::Box &anchor_rect, int32_t w, int32_t h);
+void popup_window_reposition(PopupWindowBase &base, xdg_wm_base *wm_base,
+                             const astralia::ui::Box &anchor_rect, int32_t w, int32_t h);
 
 void popup_window_request_frame(PopupWindowBase &base);
 

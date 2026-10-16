@@ -26,7 +26,8 @@ class Parser {
 
   private:
     void skip_space() {
-        while (pos_ < text_.size() && (text_[pos_] == ' ' || text_[pos_] == '\n' || text_[pos_] == '\t' || text_[pos_] == '\r')) {
+        while (pos_ < text_.size() && (text_[pos_] == ' ' || text_[pos_] == '\n' ||
+                                       text_[pos_] == '\t' || text_[pos_] == '\r')) {
             ++pos_;
         }
     }
@@ -315,9 +316,7 @@ bool Json::boolean_or(std::string_view key, bool fallback) const {
     return value != nullptr && value->type == Type::boolean ? value->boolean : fallback;
 }
 
-std::optional<Json> parse_json(std::string_view text) {
-    return Parser(text).parse();
-}
+std::optional<Json> parse_json(std::string_view text) { return Parser(text).parse(); }
 
 namespace {
 

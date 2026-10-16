@@ -16,9 +16,7 @@ constexpr uint64_t owner_dots = 1000;
 
 } // namespace
 
-PolkitModel::~PolkitModel() {
-    clear_password();
-}
+PolkitModel::~PolkitModel() { clear_password(); }
 
 void PolkitModel::clear_password() {
     explicit_bzero(field_.text.data(), field_.text.size());
@@ -63,19 +61,26 @@ void PolkitModel::begin_open() {
     open_ = true;
     closing_ = false;
     last_error_ = false;
-    animations_.animate(card_scale_, 1.0f, scale_ms, astralia::Easing::EaseOutBack, [this](float v) { card_scale_ = v; }, {}, owner_card_scale);
+    animations_.animate(
+        card_scale_, 1.0f, scale_ms, astralia::Easing::EaseOutBack,
+        [this](float v) { card_scale_ = v; }, {}, owner_card_scale);
 }
 
 void PolkitModel::begin_close() {
     clear_password();
     last_error_ = false;
     closing_ = true;
-    animations_.animate(card_scale_, 0.0f, scale_ms, astralia::Easing::EaseInBack, [this](float v) { card_scale_ = v; }, [this] {
-        open_ = false;
-        closing_ = false;
-        if (on_closed) {
-            on_closed();
-        } }, owner_card_scale);
+    animations_.animate(
+        card_scale_, 0.0f, scale_ms, astralia::Easing::EaseInBack,
+        [this](float v) { card_scale_ = v; },
+        [this] {
+            open_ = false;
+            closing_ = false;
+            if (on_closed) {
+                on_closed();
+            }
+        },
+        owner_card_scale);
 }
 
 void PolkitModel::set_prompt(PolkitPrompt prompt) {
@@ -108,8 +113,6 @@ std::string PolkitModel::take_password() {
     return password;
 }
 
-void PolkitModel::tick(std::chrono::steady_clock::time_point now) {
-    animations_.tick(now);
-}
+void PolkitModel::tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
 
 } // namespace astralia

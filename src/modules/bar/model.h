@@ -78,10 +78,7 @@ struct BarDockSlot {
     float x = 0.0f;
 };
 
-enum class BarActionKind { none,
-                           toggle,
-                           overview,
-                           workspace };
+enum class BarActionKind { none, toggle, overview, workspace };
 
 struct BarAction {
     BarActionKind kind = BarActionKind::none;

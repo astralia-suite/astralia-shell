@@ -38,7 +38,9 @@ void check_visualizer_fft() {
     const int tone_bin = 64;
     std::vector<float> tone(static_cast<size_t>(n), 0.0f);
     for (int i = 0; i < complex_points; ++i)
-        tone[static_cast<size_t>(2 * i)] = std::cos(2.0f * std::numbers::pi_v<float> * static_cast<float>(tone_bin) * static_cast<float>(i) / static_cast<float>(complex_points));
+        tone[static_cast<size_t>(2 * i)] =
+            std::cos(2.0f * std::numbers::pi_v<float> * static_cast<float>(tone_bin) *
+                     static_cast<float>(i) / static_cast<float>(complex_points));
 
     visualizer_fft(tone.data(), n, kVisualizerFftScale, kVisualizerFftCutOff);
 

@@ -13,12 +13,20 @@ uint64_t type_anim_owner(uint64_t base, size_t index, uint64_t prop) {
 void type_anim_push(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base) {
     size_t idx = anim.chars.size();
     anim.chars.push_back({0.0f, kTextFieldPopSlideOffsetPx});
-    am.animate(0.0f, 1.0f, kTextFieldPopScaleMs, Easing::EaseOutBack, [&anim, idx](float v) {
+    am.animate(
+        0.0f, 1.0f, kTextFieldPopScaleMs, Easing::EaseOutBack,
+        [&anim, idx](float v) {
             if (idx < anim.chars.size())
-                anim.chars[idx].scale = v; }, {}, type_anim_owner(owner_base, idx, 0));
-    am.animate(kTextFieldPopSlideOffsetPx, 0.0f, kTextFieldPopSlideMs, Easing::Linear, [&anim, idx](float v) {
+                anim.chars[idx].scale = v;
+        },
+        {}, type_anim_owner(owner_base, idx, 0));
+    am.animate(
+        kTextFieldPopSlideOffsetPx, 0.0f, kTextFieldPopSlideMs, Easing::Linear,
+        [&anim, idx](float v) {
             if (idx < anim.chars.size())
-                anim.chars[idx].slide_x = v; }, {}, type_anim_owner(owner_base, idx, 1));
+                anim.chars[idx].slide_x = v;
+        },
+        {}, type_anim_owner(owner_base, idx, 1));
 }
 
 void type_anim_pop(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base) {
@@ -35,7 +43,8 @@ bool is_continuation(const std::string &text, size_t i) {
 }
 
 bool is_word_byte(unsigned char c) {
-    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || c >= 0x80;
+    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' ||
+           c >= 0x80;
 }
 
 size_t prev_boundary(const std::string &text, size_t i) {
@@ -98,17 +107,21 @@ void text_cursor_move(const std::string &text, TextCursor &cursor, CursorDir dir
         move_to(cursor, dir == CursorDir::Left ? cursor.begin() : cursor.end(), false);
         return;
     }
-    move_to(cursor, dir == CursorDir::Left ? prev_boundary(text, cursor.pos) : next_boundary(text, cursor.pos), extend);
+    move_to(cursor,
+            dir == CursorDir::Left ? prev_boundary(text, cursor.pos)
+                                   : next_boundary(text, cursor.pos),
+            extend);
 }
 
-void text_cursor_move_word(const std::string &text, TextCursor &cursor, CursorDir dir, bool extend) {
+void text_cursor_move_word(const std::string &text, TextCursor &cursor, CursorDir dir,
+                           bool extend) {
     text_cursor_clamp(text, cursor);
-    move_to(cursor, dir == CursorDir::Left ? prev_word(text, cursor.pos) : next_word(text, cursor.pos), extend);
+    move_to(cursor,
+            dir == CursorDir::Left ? prev_word(text, cursor.pos) : next_word(text, cursor.pos),
+            extend);
 }
 
-void text_cursor_home(TextCursor &cursor, bool extend) {
-    move_to(cursor, 0, extend);
-}
+void text_cursor_home(TextCursor &cursor, bool extend) { move_to(cursor, 0, extend); }
 
 void text_cursor_end(const std::string &text, TextCursor &cursor, bool extend) {
     move_to(cursor, text.size(), extend);
@@ -245,7 +258,8 @@ bool text_field_idle_toggle(TextFieldState &field) {
     return true;
 }
 
-void text_field_type_anim_sync(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base, const std::string &text) {
+void text_field_type_anim_sync(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base,
+                               const std::string &text) {
     size_t target = text_field_utf8_len(text);
     while (anim.chars.size() > target)
         type_anim_pop(anim, am, owner_base);
@@ -253,19 +267,22 @@ void text_field_type_anim_sync(TextFieldTypeAnim &anim, AnimationManager &am, ui
         type_anim_push(anim, am, owner_base);
 }
 
-void text_field_type_anim_settle(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base, const std::string &text) {
+void text_field_type_anim_settle(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base,
+                                 const std::string &text) {
     text_field_type_anim_clear(anim, am, owner_base);
     size_t n = text_field_utf8_len(text);
     for (size_t i = 0; i < n; ++i)
         anim.chars.push_back({1.0f, 0.0f});
 }
 
-void text_field_type_anim_clear(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base) {
+void text_field_type_anim_clear(TextFieldTypeAnim &anim, AnimationManager &am,
+                                uint64_t owner_base) {
     while (!anim.chars.empty())
         type_anim_pop(anim, am, owner_base);
 }
 
-float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint64_t owner, float anchor_x) {
+float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint64_t owner,
+                           float anchor_x) {
     if (!slide.primed) {
         slide.primed = true;
         slide.target = anchor_x;
@@ -275,7 +292,9 @@ float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint6
     if (anchor_x != slide.target) {
         slide.target = anchor_x;
         am.cancelForOwner(owner);
-        am.animate(slide.x, anchor_x, kTextFieldRowSlideMs, Easing::EaseOutCubic, [&slide](float v) { slide.x = v; }, {}, owner);
+        am.animate(
+            slide.x, anchor_x, kTextFieldRowSlideMs, Easing::EaseOutCubic,
+            [&slide](float v) { slide.x = v; }, {}, owner);
     }
     return slide.x;
 }

@@ -16,9 +16,7 @@
 
 namespace astralia {
 
-enum class NetworkKind { none,
-                         ethernet,
-                         wifi };
+enum class NetworkKind { none, ethernet, wifi };
 
 struct NetworkStatus {
     NetworkKind kind = NetworkKind::none;

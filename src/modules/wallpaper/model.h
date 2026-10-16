@@ -7,8 +7,7 @@
 
 namespace astralia {
 
-enum class DesktopMenuAction : uint8_t { settings,
-                                         wallpaper };
+enum class DesktopMenuAction : uint8_t { settings, wallpaper };
 
 struct DesktopMenuEntry {
     DesktopMenuAction action;

@@ -41,9 +41,11 @@ struct Env {
     bool settled = true;
 
     explicit Env(bool animated_wallpaper = false)
-        : model({[this]() -> const Config & { return config; }, [this](const std::function<void(Config &)> &edit) {
+        : model({[this]() -> const Config & { return config; },
+                 [this](const std::function<void(Config &)> &edit) {
                      edit(config);
-                     ++updates; },
+                     ++updates;
+                 },
                  [this] { return settled; }},
                 animated_wallpaper) {
         model.on_close_requested = [this] { model.close(); };
@@ -59,7 +61,8 @@ struct Env {
 };
 
 struct Folder {
-    std::filesystem::path root = std::filesystem::temp_directory_path() / ("astralia_test_wallpaper_select_" + std::to_string(getpid()));
+    std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                 ("astralia_test_wallpaper_select_" + std::to_string(getpid()));
 
     Folder() {
         std::filesystem::create_directories(root);
@@ -85,20 +88,28 @@ void check_listing(astralia::PollReactor &reactor) {
     Env env;
     test::check(opened(reactor, env, folder), "the scan finishes");
     const std::vector<std::string> &files = env.model.files();
-    test::check(files.size() == 3 && files[0] == folder.file("b.jpg") && files[1] == folder.file("a.png") && files[2] == folder.file("c.png"), "images sort by extension then name and other files are skipped");
-    test::check(env.model.is_open() && env.model.selected() == 0 && env.model.zoom() == 1.0f, "the current wallpaper starts selected and zoomed out");
+    test::check(files.size() == 3 && files[0] == folder.file("b.jpg") &&
+                    files[1] == folder.file("a.png") && files[2] == folder.file("c.png"),
+                "images sort by extension then name and other files are skipped");
+    test::check(env.model.is_open() && env.model.selected() == 0 && env.model.zoom() == 1.0f,
+                "the current wallpaper starts selected and zoomed out");
 
     env.config.wallpaper_columns["DP-1"] = {folder.file("c.png")};
     env.model.close();
     env.model.open("DP-1", 0);
     env.model.reveal();
-    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }) && env.model.selected() == 2, "a wallpaper inside the folder is found by path");
+    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }) &&
+                    env.model.selected() == 2,
+                "a wallpaper inside the folder is found by path");
 
     env.model.close();
     env.config.wallpaper_columns["DP-1"] = {"/elsewhere/z.png"};
     env.model.open("DP-1", 0);
     env.model.reveal();
-    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }) && env.model.files().size() == 4 && env.model.files().front() == "/elsewhere/z.png" && env.model.selected() == 0, "a wallpaper outside the folder is put in front");
+    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }) &&
+                    env.model.files().size() == 4 &&
+                    env.model.files().front() == "/elsewhere/z.png" && env.model.selected() == 0,
+                "a wallpaper outside the folder is put in front");
 }
 
 void check_stepping(astralia::PollReactor &reactor) {
@@ -106,7 +117,8 @@ void check_stepping(astralia::PollReactor &reactor) {
     Env env;
     opened(reactor, env, folder);
     env.model.step(1);
-    test::check(env.model.selected() == 1 && env.model.position() == 1.0f, "stepping moves the selection and the scroller");
+    test::check(env.model.selected() == 1 && env.model.position() == 1.0f,
+                "stepping moves the selection and the scroller");
     env.model.step(10);
     test::check(env.model.selected() == 2, "stepping stops at the last image");
     env.model.step(-10);
@@ -137,21 +149,25 @@ void check_apply(astralia::PollReactor &reactor) {
     opened(reactor, env, folder);
     env.model.step(1);
     env.key(KeyKind::Enter);
-    test::check(env.updates == 1 && astralia::wallpaper_column_override(env.config, "DP-1", 0, false) == folder.file("a.png"), "Enter sets the wallpaper of the opened column");
+    test::check(env.updates == 1 && astralia::wallpaper_column_override(
+                                        env.config, "DP-1", 0, false) == folder.file("a.png"),
+                "Enter sets the wallpaper of the opened column");
     test::check(!env.model.is_open() && env.closed == 1, "applying closes the selector");
 
     env.model.open("DP-1", 0);
     env.model.reveal();
     test::pump_until(reactor, [&] { return !env.model.scanning(); });
     env.key(KeyKind::Enter);
-    test::check(env.updates == 1 && !env.model.is_open(), "applying the current wallpaper changes nothing");
+    test::check(env.updates == 1 && !env.model.is_open(),
+                "applying the current wallpaper changes nothing");
 
     env.model.open("DP-1", 0);
     env.model.reveal();
     test::pump_until(reactor, [&] { return !env.model.scanning(); });
     env.key(KeyKind::End);
     env.key(KeyKind::Escape);
-    test::check(env.updates == 1 && !env.model.is_open() && env.closed == 3, "Escape closes without a change");
+    test::check(env.updates == 1 && !env.model.is_open() && env.closed == 3,
+                "Escape closes without a change");
 }
 
 void check_clicks(astralia::PollReactor &reactor) {
@@ -161,7 +177,8 @@ void check_clicks(astralia::PollReactor &reactor) {
     env.model.begin_frame();
     env.model.add_card({0, 0, 10, 10}, 0);
     env.model.add_card({20, 0, 10, 10}, 1);
-    test::check(env.model.clickable(25, 5) && !env.model.clickable(15, 5), "cards are clickable, the gap is not");
+    test::check(env.model.clickable(25, 5) && !env.model.clickable(15, 5),
+                "cards are clickable, the gap is not");
     env.model.click(25, 5);
     test::check(env.model.selected() == 1 && env.updates == 0, "clicking a side card selects it");
     env.model.click(25, 5);
@@ -171,7 +188,8 @@ void check_clicks(astralia::PollReactor &reactor) {
     env.model.begin_frame();
     env.model.add_card({0, 0, 10, 10}, 0);
     env.model.click(500, 500);
-    test::check(!env.model.is_open() && env.updates == 1, "clicking outside the cards closes without a change");
+    test::check(!env.model.is_open() && env.updates == 1,
+                "clicking outside the cards closes without a change");
 }
 
 void check_availability() {
@@ -193,12 +211,19 @@ void check_animated(astralia::PollReactor &reactor) {
     env.config.wallpaper_animated_column_counts["DP-1"] = 2;
     env.model.open("DP-1", 1);
     env.model.reveal();
-    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }), "the animated scan finishes");
-    test::check(env.model.animated() && env.model.column_count() == 2, "the animated column count is used");
-    test::check(env.model.files().size() == 2 && env.model.files()[0] == folder.file("y.mp4") && env.model.files()[1] == folder.file("x.webm"), "only videos are listed, starting from the current one");
+    test::check(test::pump_until(reactor, [&] { return !env.model.scanning(); }),
+                "the animated scan finishes");
+    test::check(env.model.animated() && env.model.column_count() == 2,
+                "the animated column count is used");
+    test::check(env.model.files().size() == 2 && env.model.files()[0] == folder.file("y.mp4") &&
+                    env.model.files()[1] == folder.file("x.webm"),
+                "only videos are listed, starting from the current one");
     env.model.step(1);
     env.key(KeyKind::Enter);
-    test::check(astralia::wallpaper_column_override(env.config, "DP-1", 1, true) == folder.file("x.webm") && env.config.wallpaper_columns.empty(), "applying sets the animated column and leaves the static ones alone");
+    test::check(astralia::wallpaper_column_override(env.config, "DP-1", 1, true) ==
+                        folder.file("x.webm") &&
+                    env.config.wallpaper_columns.empty(),
+                "applying sets the animated column and leaves the static ones alone");
 }
 
 void check_view(astralia::PollReactor &reactor) {
@@ -208,7 +233,9 @@ void check_view(astralia::PollReactor &reactor) {
     opened(reactor, env, folder);
     test::RecordingCanvas canvas;
     astralia::paint_wallpaper_select(canvas, env.model, 1920.0f, 1080.0f);
-    test::check(canvas.count(Kind::begin_group) == 4, "the current wallpaper and its neighbours are drawn inside the column clip");
+    test::check(canvas.count(Kind::begin_group) == 4,
+                "the current wallpaper and its neighbours are drawn inside the "
+                "column clip");
     float centre_w = 1920.0f * cfg::card_scale;
     bool shrunk = false;
     for (const test::Op &op : canvas.ops) {
@@ -232,11 +259,16 @@ void check_reveal(astralia::PollReactor &reactor) {
     env.config.wallpaper_dir = folder.root.string();
     env.config.wallpaper_columns["DP-1"] = {folder.file("b.jpg")};
     env.model.open("DP-1", 0);
-    test::check(env.model.waiting() && env.model.zoom() == 0.0f && env.model.animating() && env.revealed == 0, "opening waits for the current image before zooming");
-    env.model.reveal_if_overdue(Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::reveal_timeout_ms) / 2));
+    test::check(env.model.waiting() && env.model.zoom() == 0.0f && env.model.animating() &&
+                    env.revealed == 0,
+                "opening waits for the current image before zooming");
+    env.model.reveal_if_overdue(
+        Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::reveal_timeout_ms) / 2));
     test::check(env.model.waiting(), "the wait lasts until the timeout");
-    env.model.reveal_if_overdue(Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::reveal_timeout_ms) + 50));
-    test::check(!env.model.waiting() && env.model.zoom() == 1.0f && env.revealed == 1, "the timeout reveals without the image");
+    env.model.reveal_if_overdue(
+        Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::reveal_timeout_ms) + 50));
+    test::check(!env.model.waiting() && env.model.zoom() == 1.0f && env.revealed == 1,
+                "the timeout reveals without the image");
     env.model.reveal();
     test::check(env.revealed == 1, "revealing twice is ignored");
     env.model.close();
@@ -244,14 +276,16 @@ void check_reveal(astralia::PollReactor &reactor) {
 
     env.model.open("DP-1", 0);
     env.key(KeyKind::Escape);
-    test::check(!env.model.is_open() && !env.model.waiting() && env.closed == 2, "closing while waiting never zooms");
+    test::check(!env.model.is_open() && !env.model.waiting() && env.closed == 2,
+                "closing while waiting never zooms");
     env.model.reveal();
     test::check(env.revealed == 1, "a closed selector does not reveal");
 
     env.config.wallpaper_columns.clear();
     env.config.default_wallpaper_enabled = false;
     env.model.open("DP-1", 0);
-    test::check(!env.model.waiting() && env.revealed == 2, "with no current wallpaper there is nothing to wait for");
+    test::check(!env.model.waiting() && env.revealed == 2,
+                "with no current wallpaper there is nothing to wait for");
 }
 
 void check_handoff(astralia::PollReactor &reactor) {
@@ -262,30 +296,39 @@ void check_handoff(astralia::PollReactor &reactor) {
     opened(reactor, env, folder);
     env.model.step(1);
     env.key(KeyKind::Enter);
-    test::check(env.updates == 1 && env.model.is_open() && env.closed == 0, "an unsettled wallpaper keeps the selector open after the zoom");
-    test::check(env.model.target() == folder.file("a.png") && env.model.animating(), "the applied wallpaper is the target while holding");
+    test::check(env.updates == 1 && env.model.is_open() && env.closed == 0,
+                "an unsettled wallpaper keeps the selector open after the zoom");
+    test::check(env.model.target() == folder.file("a.png") && env.model.animating(),
+                "the applied wallpaper is the target while holding");
     env.model.wallpaper_settled("DP-2", 0);
-    env.model.tick(Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::handoff_settle_ms) + 20));
+    env.model.tick(Clock::now() +
+                   std::chrono::milliseconds(static_cast<int>(cfg::handoff_settle_ms) + 20));
     test::check(env.model.is_open(), "a settle report for another monitor is ignored");
     env.model.wallpaper_settled("DP-1", 0);
     env.model.tick(Clock::now());
     test::check(env.model.is_open(), "the selector waits a moment after the settle report");
-    env.model.tick(Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::handoff_settle_ms) + 20));
-    test::check(!env.model.is_open() && env.closed == 1, "the selector closes once the wallpaper is settled");
+    env.model.tick(Clock::now() +
+                   std::chrono::milliseconds(static_cast<int>(cfg::handoff_settle_ms) + 20));
+    test::check(!env.model.is_open() && env.closed == 1,
+                "the selector closes once the wallpaper is settled");
 
     opened(reactor, env, folder);
     env.model.step(1);
     env.key(KeyKind::Enter);
-    env.model.tick(Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::handoff_timeout_ms) / 2));
+    env.model.tick(Clock::now() +
+                   std::chrono::milliseconds(static_cast<int>(cfg::handoff_timeout_ms) / 2));
     test::check(env.model.is_open(), "the hold lasts until the timeout");
-    env.model.tick(Clock::now() + std::chrono::milliseconds(static_cast<int>(cfg::handoff_timeout_ms) + 100));
-    test::check(!env.model.is_open() && env.closed == 2, "the timeout closes a selector that never settles");
+    env.model.tick(Clock::now() +
+                   std::chrono::milliseconds(static_cast<int>(cfg::handoff_timeout_ms) + 100));
+    test::check(!env.model.is_open() && env.closed == 2,
+                "the timeout closes a selector that never settles");
 
     env.settled = true;
     opened(reactor, env, folder);
     env.model.step(1);
     env.key(KeyKind::Enter);
-    test::check(!env.model.is_open() && env.closed == 3, "a wallpaper that is already settled closes straight after the zoom");
+    test::check(!env.model.is_open() && env.closed == 3,
+                "a wallpaper that is already settled closes straight after the zoom");
 }
 
 void check_target_resolution(astralia::PollReactor &reactor) {
@@ -299,10 +342,12 @@ void check_target_resolution(astralia::PollReactor &reactor) {
     int sharp = 0;
     for (const auto &[path, px] : canvas.thumbnails) {
         sharp += px == cfg::centre_px;
-        test::check(px == cfg::centre_px || px == cfg::neighbour_px, "thumbnails use only the centre and neighbour sizes");
+        test::check(px == cfg::centre_px || px == cfg::neighbour_px,
+                    "thumbnails use only the centre and neighbour sizes");
     }
     test::check(sharp == 2, "the current and the selected card ask for the sharp size");
-    test::check(canvas.thumbnails.front().first == folder.file("a.png"), "the selected card is requested first");
+    test::check(canvas.thumbnails.front().first == folder.file("a.png"),
+                "the selected card is requested first");
 
     Env waiting;
     waiting.config.wallpaper_dir = folder.root.string();
@@ -311,10 +356,13 @@ void check_target_resolution(astralia::PollReactor &reactor) {
     test::RecordingCanvas blank;
     blank.image_id = astralia::ui::no_image;
     astralia::paint_wallpaper_select(blank, waiting.model, 1920.0f, 1080.0f);
-    test::check(blank.count(Kind::rect) == 0 && blank.count(Kind::begin_group) == 0 && waiting.model.waiting(), "nothing is painted while the current image loads");
+    test::check(blank.count(Kind::rect) == 0 && blank.count(Kind::begin_group) == 0 &&
+                    waiting.model.waiting(),
+                "nothing is painted while the current image loads");
     test::RecordingCanvas loaded;
     astralia::paint_wallpaper_select(loaded, waiting.model, 1920.0f, 1080.0f);
-    test::check(!waiting.model.waiting() && loaded.count(Kind::begin_group) > 0, "the selector paints as soon as the current image is ready");
+    test::check(!waiting.model.waiting() && loaded.count(Kind::begin_group) > 0,
+                "the selector paints as soon as the current image is ready");
 }
 
 } // namespace

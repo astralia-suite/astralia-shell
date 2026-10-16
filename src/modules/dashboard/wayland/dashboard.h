@@ -26,7 +26,8 @@ void dashboard_toggle(DashboardState &state, WaylandState &app);
 
 void dashboard_handle_key_event(DashboardState &state, WaylandState &app, const KeyEvent &event);
 
-std::vector<astralia::ShellBinding> dashboard_shell_bindings(DashboardState &dashboard, WaylandState &state);
+std::vector<astralia::ShellBinding> dashboard_shell_bindings(DashboardState &dashboard,
+                                                             WaylandState &state);
 
 void dashboard_paint(DashboardState &state);
 

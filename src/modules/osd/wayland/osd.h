@@ -34,9 +34,11 @@ struct OsdState {
     astralia::OsdModel model;
 };
 
-bool osd_create_surface(OsdState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool osd_create_surface(OsdState &state, wl_compositor *compositor,
+                        zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
 
-bool osd_init_egl(OsdState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool osd_init_egl(OsdState &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+                  EGLContext context);
 
 void osd_request_frame(OsdState &state);
 

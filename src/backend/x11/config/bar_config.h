@@ -9,7 +9,8 @@
 namespace astralia::bar_config {
 
 inline constexpr std::size_t style_count = 3;
-inline constexpr std::array<BarStyle, style_count> supported_styles{BarStyle::islands, BarStyle::okinami, BarStyle::continuous};
+inline constexpr std::array<BarStyle, style_count> supported_styles{
+    BarStyle::islands, BarStyle::okinami, BarStyle::continuous};
 
 inline constexpr std::chrono::milliseconds trim_interval = std::chrono::minutes(1);
 

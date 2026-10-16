@@ -59,10 +59,8 @@ void AnimationManager::tick(std::chrono::steady_clock::time_point now) {
         if (e.anim.finished)
             continue;
         float elapsed_ms =
-            std::chrono::duration<float, std::milli>(now - e.anim.started_at)
-                .count();
-        float t =
-            e.anim.duration_ms > 0.0f ? elapsed_ms / e.anim.duration_ms : 1.0f;
+            std::chrono::duration<float, std::milli>(now - e.anim.started_at).count();
+        float t = e.anim.duration_ms > 0.0f ? elapsed_ms / e.anim.duration_ms : 1.0f;
         if (t >= 1.0f) {
             t = 1.0f;
             e.anim.finished = true;
@@ -78,7 +76,11 @@ void AnimationManager::tick(std::chrono::steady_clock::time_point now) {
         cb();
 }
 
-AnimationManager::Id AnimationManager::animate_internal(float from, float to, float duration_ms, Easing easing, std::function<void(float)> setter, std::function<void()> on_complete, uint64_t owner) {
+AnimationManager::Id AnimationManager::animate_internal(float from, float to, float duration_ms,
+                                                        Easing easing,
+                                                        std::function<void(float)> setter,
+                                                        std::function<void()> on_complete,
+                                                        uint64_t owner) {
     cancelForOwner(owner);
     if (duration_ms <= 0.0f || g_instant) {
         if (setter)

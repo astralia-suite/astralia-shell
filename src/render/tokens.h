@@ -24,9 +24,7 @@ constexpr Color color(std::string_view hex) {
     return {byte(i), byte(i + 2), byte(i + 4), a};
 }
 
-inline constexpr Color with_alpha(Color c, float a) {
-    return {c.r, c.g, c.b, a};
-}
+inline constexpr Color with_alpha(Color c, float a) { return {c.r, c.g, c.b, a}; }
 
 inline constexpr Color lerp_color(Color a, Color b, float t) {
     return {a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t,

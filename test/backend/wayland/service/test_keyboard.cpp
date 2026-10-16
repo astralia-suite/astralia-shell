@@ -8,8 +8,7 @@ void test_keyboard() {
     assert(ctx);
 
     xkb_rule_names names{};
-    xkb_keymap *keymap =
-        xkb_keymap_new_from_names(ctx, &names, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    xkb_keymap *keymap = xkb_keymap_new_from_names(ctx, &names, XKB_KEYMAP_COMPILE_NO_FLAGS);
     assert(keymap);
     xkb_state *state = xkb_state_new(keymap);
     assert(state);
@@ -41,7 +40,8 @@ void test_keyboard() {
     xkb_state_update_key(state, 29 + 8, XKB_KEY_UP);
 
     setlocale(LC_CTYPE, "en_US.utf8");
-    xkb_compose_table *compose_table = xkb_compose_table_new_from_locale(ctx, "en_US.utf8", XKB_COMPOSE_COMPILE_NO_FLAGS);
+    xkb_compose_table *compose_table =
+        xkb_compose_table_new_from_locale(ctx, "en_US.utf8", XKB_COMPOSE_COMPILE_NO_FLAGS);
     if (compose_table) {
         xkb_compose_state *compose =
             xkb_compose_state_new(compose_table, XKB_COMPOSE_STATE_NO_FLAGS);

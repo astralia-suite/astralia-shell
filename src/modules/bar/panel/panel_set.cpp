@@ -55,7 +55,8 @@ bool PanelSet::any_open() const {
 }
 
 bool PanelSet::animating() const {
-    return std::ranges::any_of(panels_, [](const auto &p) { return p && p->is_open() && p->animating(); });
+    return std::ranges::any_of(panels_,
+                               [](const auto &p) { return p && p->is_open() && p->animating(); });
 }
 
 void PanelSet::close_except(PanelId keep) {
@@ -66,9 +67,7 @@ void PanelSet::close_except(PanelId keep) {
     }
 }
 
-void PanelSet::close_all() {
-    close_except(PanelId::count);
-}
+void PanelSet::close_all() { close_except(PanelId::count); }
 
 void PanelSet::toggle(PanelId id) {
     Panel *panel = find(id);

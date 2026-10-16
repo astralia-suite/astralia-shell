@@ -21,15 +21,18 @@
 
 using astralia::PanelId;
 
-PanelSurface::PanelSurface(WaylandState &app, MonitorOutput &mon) : app_(app), mon_(mon), set_(*app.reactor) {
+PanelSurface::PanelSurface(WaylandState &app, MonitorOutput &mon)
+    : app_(app), mon_(mon), set_(*app.reactor) {
     set_.add(PanelId::tray, std::make_unique<astralia::TrayPanel>(*app.tray));
-    set_.add(PanelId::resource, std::make_unique<astralia::ResourcePanel>(app.cpu_temp, app.gpu_temp, app.system_stats));
+    set_.add(PanelId::resource, std::make_unique<astralia::ResourcePanel>(
+                                    app.cpu_temp, app.gpu_temp, app.system_stats));
     set_.add(PanelId::network, std::make_unique<astralia::NetworkPanel>(*app.network));
     set_.add(PanelId::bluetooth, std::make_unique<astralia::BluetoothPanel>(*app.bluetooth));
     set_.add(PanelId::volume, std::make_unique<astralia::VolumePanel>(*app.audio));
     set_.add(PanelId::battery, std::make_unique<astralia::BatteryPanel>(*app.battery));
     set_.add(PanelId::media, std::make_unique<astralia::MediaPanel>(*app.media));
-    set_.add(PanelId::brightness, std::make_unique<astralia::BrightnessPanel>(*app.brightness_service));
+    set_.add(PanelId::brightness,
+             std::make_unique<astralia::BrightnessPanel>(*app.brightness_service));
     set_.add(PanelId::clock, std::make_unique<astralia::ClockPanel>());
     set_.on_changed = [this] { request_frame(); };
     set_.on_state = [this](PanelId id, bool open) { state_changed(id, open); };
@@ -42,11 +45,13 @@ PanelSurface::~PanelSurface() {
 }
 
 float PanelSurface::card_top() const {
-    return astralia::bar_layout::height + static_cast<float>(bar_style_of(mon_).top_margin) + astralia::bar_layout::panel_gap;
+    return astralia::bar_layout::height + static_cast<float>(bar_style_of(mon_).top_margin) +
+           astralia::bar_layout::panel_gap;
 }
 
 bool PanelSurface::create_surface(wl_output *output) {
-    if (!overlay_panel_create_surface(base_, app_.compositor, app_.layer_shell, "astralia-shell-panel", output)) {
+    if (!overlay_panel_create_surface(base_, app_.compositor, app_.layer_shell,
+                                      "astralia-shell-panel", output)) {
         klog("panel: failed to create layer surface on '%s'", mon_.output.name.c_str());
         return false;
     }
@@ -75,9 +80,7 @@ void PanelSurface::destroy() {
     overlay_panel_destroy_surface(base_);
 }
 
-void PanelSurface::request_frame() {
-    overlay_panel_request_frame(base_);
-}
+void PanelSurface::request_frame() { overlay_panel_request_frame(base_); }
 
 void PanelSurface::state_changed(PanelId, bool open) {
     if (!base_.layer_surface) {
@@ -85,12 +88,14 @@ void PanelSurface::state_changed(PanelId, bool open) {
     }
     if (open && !base_.open) {
         base_.open = true;
-        zwlr_layer_surface_v1_set_keyboard_interactivity(base_.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
+        zwlr_layer_surface_v1_set_keyboard_interactivity(
+            base_.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
         overlay_panel_update_input_region(base_);
         wl_surface_commit(base_.surface);
     } else if (!open && !set_.any_open()) {
         base_.open = false;
-        zwlr_layer_surface_v1_set_keyboard_interactivity(base_.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+        zwlr_layer_surface_v1_set_keyboard_interactivity(
+            base_.layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
         overlay_panel_update_input_region(base_);
         wl_surface_commit(base_.surface);
     }
@@ -134,10 +139,13 @@ void PanelSurface::sync_popup() {
     float height = panel->popup_height();
     astralia::ui::Box anchor = panel->popup_anchor();
     if (popup_.surface == nullptr) {
-        if (!popup_window_create(popup_, app_.compositor, app_.wm_base, base_.layer_surface, anchor, static_cast<int32_t>(width), static_cast<int32_t>(height), app_.seat, press_serial_)) {
+        if (!popup_window_create(popup_, app_.compositor, app_.wm_base, base_.layer_surface, anchor,
+                                 static_cast<int32_t>(width), static_cast<int32_t>(height),
+                                 app_.seat, press_serial_)) {
             return;
         }
-        if (!popup_window_init_egl(popup_, app_.display, app_.egl_display, app_.egl_config, app_.egl_context)) {
+        if (!popup_window_init_egl(popup_, app_.display, app_.egl_display, app_.egl_config,
+                                   app_.egl_context)) {
             popup_window_destroy(popup_);
             return;
         }
@@ -153,7 +161,8 @@ void PanelSurface::sync_popup() {
         return;
     }
     if (anchor != popup_anchor_ || width != popup_width_ || height != popup_height_) {
-        popup_window_reposition(popup_, app_.wm_base, anchor, static_cast<int32_t>(width), static_cast<int32_t>(height));
+        popup_window_reposition(popup_, app_.wm_base, anchor, static_cast<int32_t>(width),
+                                static_cast<int32_t>(height));
         popup_anchor_ = anchor;
         popup_width_ = width;
         popup_height_ = height;
@@ -163,7 +172,8 @@ void PanelSurface::sync_popup() {
 
 void PanelSurface::paint_popup() {
     astralia::Panel *panel = set_.active();
-    if (popup_.egl_surface == EGL_NO_SURFACE || popup_.done || panel == nullptr || !panel->popup_wanted()) {
+    if (popup_.egl_surface == EGL_NO_SURFACE || popup_.done || panel == nullptr ||
+        !panel->popup_wanted()) {
         return;
     }
     if (!popup_.configured) {
@@ -227,8 +237,9 @@ void PanelSurface::paint() {
 }
 
 void PanelSurface::press(wl_surface *surface, int button, double x, double y, uint32_t serial) {
-    astralia::input::Button mapped = button == 0x110 ? astralia::input::Button::Left : button == 0x111 ? astralia::input::Button::Right
-                                                                                                       : astralia::input::Button::Other;
+    astralia::input::Button mapped = button == 0x110   ? astralia::input::Button::Left
+                                     : button == 0x111 ? astralia::input::Button::Right
+                                                       : astralia::input::Button::Other;
     press_serial_ = serial;
     astralia::Panel *panel = set_.active();
     if (popup_.surface != nullptr && surface == popup_.surface) {
@@ -264,9 +275,7 @@ void PanelSurface::send_key(const astralia::input::KeyEvent &event) {
     }
 }
 
-void PanelSurface::key(const KeyEvent &event) {
-    send_key(to_neutral(event));
-}
+void PanelSurface::key(const KeyEvent &event) { send_key(to_neutral(event)); }
 
 void PanelSurface::move(wl_surface *surface, double x, double y) {
     astralia::Panel *panel = set_.active();
@@ -334,6 +343,4 @@ void PanelSurface::text_input_reset_preedit() {
     send_key(event);
 }
 
-void PanelSurface::text_input_deactivated(TextInputService &) {
-    text_input_reset_preedit();
-}
+void PanelSurface::text_input_deactivated(TextInputService &) { text_input_reset_preedit(); }

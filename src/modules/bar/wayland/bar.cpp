@@ -73,7 +73,10 @@ std::string clock_text() {
     return buf;
 }
 
-void set_surface_geometry(zwlr_layer_surface_v1 *layer_surface, wl_surface *surface, wl_egl_window *egl_window, int32_t width, int32_t height_px, int32_t margin_top, int32_t margin_side, int32_t exclusive_zone, int32_t output_scale) {
+void set_surface_geometry(zwlr_layer_surface_v1 *layer_surface, wl_surface *surface,
+                          wl_egl_window *egl_window, int32_t width, int32_t height_px,
+                          int32_t margin_top, int32_t margin_side, int32_t exclusive_zone,
+                          int32_t output_scale) {
     zwlr_layer_surface_v1_set_size(layer_surface, 0, height_px);
     zwlr_layer_surface_v1_set_margin(layer_surface, margin_top, margin_side, 0, margin_side);
     zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, exclusive_zone);
@@ -82,14 +85,16 @@ void set_surface_geometry(zwlr_layer_surface_v1 *layer_surface, wl_surface *surf
         wl_egl_window_resize(egl_window, width * output_scale, height_px * output_scale, 0, 0);
 }
 
-void bar_layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial, uint32_t width, uint32_t) {
+void bar_layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial,
+                                 uint32_t width, uint32_t) {
     auto *mon = static_cast<MonitorOutput *>(data);
     BarPerMonitorState &bs = bar_state(*mon);
     zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
     bs.width = static_cast<int32_t>(width);
     if (bs.egl_window) {
         int32_t scale = bs.output_scale.scale;
-        wl_egl_window_resize(bs.egl_window, bs.width * scale, bar_detail::bar_current_height(*mon) * scale, 0, 0);
+        wl_egl_window_resize(bs.egl_window, bs.width * scale,
+                             bar_detail::bar_current_height(*mon) * scale, 0, 0);
     }
     bs.configured = true;
 }
@@ -108,7 +113,9 @@ astralia::BarSources bar_sources(WaylandState &app, const std::string &output) {
     sources.bluetooth = app.bluetooth.get();
     sources.network = app.network.get();
     sources.brightness = app.brightness_service.get();
-    sources.compositor = [&app]() -> const astralia::CompositorState & { return app.desktop->state(); };
+    sources.compositor = [&app]() -> const astralia::CompositorState & {
+        return app.desktop->state();
+    };
     sources.output = output;
     sources.resource = true;
     return sources;
@@ -160,12 +167,21 @@ void toggle_panel(MonitorOutput &mon, BarItem item) {
 }
 
 int32_t bar_current_height(const MonitorOutput &mon) {
-    return astralia::bar_autohide_geometry(bar_state(mon).autohide.enabled, bar_state(mon).autohide.collapsed, static_cast<int>(layout_cfg::height), bar_style_of(mon).top_margin, bar_hug_radius_px(mon)).height;
+    return astralia::bar_autohide_geometry(bar_state(mon).autohide.enabled,
+                                           bar_state(mon).autohide.collapsed,
+                                           static_cast<int>(layout_cfg::height),
+                                           bar_style_of(mon).top_margin, bar_hug_radius_px(mon))
+        .height;
 }
 
-void bar_autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed, const astralia::BarStyleSpec &style) {
-    astralia::BarGeometry g = astralia::bar_autohide_geometry(autohide, collapsed, static_cast<int>(layout_cfg::height), style.top_margin, bar_hug_radius_px(mon));
-    set_surface_geometry(bar_state(mon).layer_surface, bar_state(mon).surface, bar_state(mon).egl_window, bar_state(mon).width, g.height, g.margin_top, style.side_margin, g.exclusive_zone, bar_state(mon).output_scale.scale);
+void bar_autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed,
+                                 const astralia::BarStyleSpec &style) {
+    astralia::BarGeometry g =
+        astralia::bar_autohide_geometry(autohide, collapsed, static_cast<int>(layout_cfg::height),
+                                        style.top_margin, bar_hug_radius_px(mon));
+    set_surface_geometry(bar_state(mon).layer_surface, bar_state(mon).surface,
+                         bar_state(mon).egl_window, bar_state(mon).width, g.height, g.margin_top,
+                         style.side_margin, g.exclusive_zone, bar_state(mon).output_scale.scale);
 }
 
 void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const astralia::BarStyleSpec &style) {
@@ -178,18 +194,22 @@ void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const astralia::Ba
 
 } // namespace bar_detail
 
-bool bar_init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool bar_init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config,
+                  EGLContext context) {
     BarPerMonitorState &bs = bar_state(mon);
     int32_t scale = bs.output_scale.scale;
-    bs.egl_window = wl_egl_window_create(bs.surface, bs.width * scale, bar_detail::bar_current_height(mon) * scale);
-    bs.egl_surface = eglCreateWindowSurface(display, config, reinterpret_cast<EGLNativeWindowType>(bs.egl_window), nullptr);
+    bs.egl_window = wl_egl_window_create(bs.surface, bs.width * scale,
+                                         bar_detail::bar_current_height(mon) * scale);
+    bs.egl_surface = eglCreateWindowSurface(
+        display, config, reinterpret_cast<EGLNativeWindowType>(bs.egl_window), nullptr);
     if (bs.egl_surface == EGL_NO_SURFACE)
         return false;
     if (!gl_make_current(display, bs.egl_surface, context))
         return false;
 
     const char *renderer_name = reinterpret_cast<const char *>(glGetString(GL_RENDERER));
-    klog("egl: renderer=%s output='%s'", renderer_name ? renderer_name : "(unknown)", mon.output.name.c_str());
+    klog("egl: renderer=%s output='%s'", renderer_name ? renderer_name : "(unknown)",
+         mon.output.name.c_str());
 
     bs.canvas.bind(renderer);
     bs.frame_clock.surface = bs.surface;
@@ -241,8 +261,10 @@ void bar_paint(MonitorOutput &mon) {
 
     Module *logout_m = find_overlay_by_name(app, "logout");
     Module *overview_m = find_overlay_by_name(app, "overview");
-    bool overview_here = overview_m && overview_m->is_open() && overview_m->opened_by_widget() && overview_m->bound_output() == mon.output.wl;
-    bool logout_here = logout_m && logout_m->is_open() && logout_m->opened_by_widget() && logout_m->bound_output() == mon.output.wl;
+    bool overview_here = overview_m && overview_m->is_open() && overview_m->opened_by_widget() &&
+                         overview_m->bound_output() == mon.output.wl;
+    bool logout_here = logout_m && logout_m->is_open() && logout_m->opened_by_widget() &&
+                       logout_m->bound_output() == mon.output.wl;
     std::optional<BarItem> open;
     bool clock_open = false;
     if (bs.panels) {
@@ -266,7 +288,8 @@ void bar_paint(MonitorOutput &mon) {
     model.set_open(open, now);
 
     if (bs.autohide.enabled) {
-        bool want_shown = app.pointer.focused_surface == bs.surface || open.has_value() || clock_open || overview_here;
+        bool want_shown = app.pointer.focused_surface == bs.surface || open.has_value() ||
+                          clock_open || overview_here;
         if (want_shown == bs.autohide.hidden) {
             bs.autohide.hidden = !want_shown;
             if (want_shown && bs.autohide.collapsed) {
@@ -275,11 +298,16 @@ void bar_paint(MonitorOutput &mon) {
             }
             float target = want_shown ? 1.0f : 0.0f;
             float duration = want_shown ? kAutoHideRevealMs : kAutoHideHideMs;
-            bs.animations.animate(bs.autohide.opacity, target, duration, astralia::Easing::EaseOutCubic, [&bs](float v) { bs.autohide.opacity = v; }, [&mon, &bs] {
+            bs.animations.animate(
+                bs.autohide.opacity, target, duration, astralia::Easing::EaseOutCubic,
+                [&bs](float v) { bs.autohide.opacity = v; },
+                [&mon, &bs] {
                     if (bs.autohide.hidden && !bs.autohide.collapsed) {
                         bs.autohide.collapsed = true;
                         bar_detail::bar_autohide_apply_geometry(mon, true, true, bar_style_of(mon));
-                    } }, kAutoHideAnimOwner);
+                    }
+                },
+                kAutoHideAnimOwner);
         }
     }
 
@@ -298,7 +326,9 @@ void bar_paint(MonitorOutput &mon) {
 
     bool pointer_here = app.pointer.focused_surface == bs.surface;
     model.refresh(now);
-    model.hover(pointer_here ? std::optional<double>(app.pointer.x) : std::nullopt, pointer_here ? std::optional<double>(app.pointer.y - content_y_offset) : std::nullopt, now);
+    model.hover(
+        pointer_here ? std::optional<double>(app.pointer.x) : std::nullopt,
+        pointer_here ? std::optional<double>(app.pointer.y - content_y_offset) : std::nullopt, now);
     model.tick(now);
     model.layout(bs.canvas, width);
 
@@ -306,7 +336,9 @@ void bar_paint(MonitorOutput &mon) {
     astralia::BarFrame frame = model.frame();
     astralia::bar_frame_base(bs.canvas, style, frame, width, height);
     astralia::paint_bar(bs.canvas, model);
-    astralia::bar_frame_overlay(bs.canvas, style, frame, width, height, static_cast<float>(bar_hug_radius_px(mon)), model.layout().left_end.has_value(), model.layout().right_start.has_value());
+    astralia::bar_frame_overlay(
+        bs.canvas, style, frame, width, height, static_cast<float>(bar_hug_radius_px(mon)),
+        model.layout().left_end.has_value(), model.layout().right_start.has_value());
     bs.canvas.end_group();
     bs.canvas.flush();
     eglSwapBuffers(app.egl_display, bs.egl_surface);
@@ -324,24 +356,30 @@ void bar_request_frame(MonitorOutput &mon) {
 bool BarPerMonitorModule::create_surface(WaylandState &app, MonitorOutput &mon, wl_output *output) {
     mon_ = &mon;
     state.autohide.enabled = autohide_effective_enabled(app.cfg, mon.output.name);
-    state.model = std::make_unique<astralia::BarModel>(bar_sources(app, mon.output.name), std::chrono::steady_clock::now());
+    state.model = std::make_unique<astralia::BarModel>(bar_sources(app, mon.output.name),
+                                                       std::chrono::steady_clock::now());
     state.clock_label = clock_text();
     const astralia::BarStyleSpec &style = astralia::bar_style_spec(app.cfg.bar_style, true);
-    astralia::BarGeometry geometry = astralia::bar_autohide_geometry(state.autohide.enabled, state.autohide.collapsed, static_cast<int>(layout_cfg::height), style.top_margin, bar_hug_radius_px(mon));
+    astralia::BarGeometry geometry = astralia::bar_autohide_geometry(
+        state.autohide.enabled, state.autohide.collapsed, static_cast<int>(layout_cfg::height),
+        style.top_margin, bar_hug_radius_px(mon));
     LayerSurfaceConfig bar_cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         .name_space = "astralia-shell",
-        .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+        .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+                  ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
         .height = geometry.height,
         .margin_top = geometry.margin_top,
         .margin_right = style.side_margin,
         .margin_left = style.side_margin,
         .exclusive_zone = geometry.exclusive_zone,
     };
-    state.layer_surface = layer_surface_create(state.surface, app.compositor, app.layer_shell, bar_cfg, &bar_layer_surface_listener, &mon, output);
+    state.layer_surface = layer_surface_create(state.surface, app.compositor, app.layer_shell,
+                                               bar_cfg, &bar_layer_surface_listener, &mon, output);
     state.output_scale.on_change = [this, &mon](int32_t scale) {
         if (state.egl_window)
-            wl_egl_window_resize(state.egl_window, state.width * scale, bar_detail::bar_current_height(mon) * scale, 0, 0);
+            wl_egl_window_resize(state.egl_window, state.width * scale,
+                                 bar_detail::bar_current_height(mon) * scale, 0, 0);
         if (state.frame_clock.surface)
             ::request_frame(state.frame_clock);
     };
@@ -376,7 +414,8 @@ void BarPerMonitorModule::destroy(WaylandState &app, MonitorOutput &) {
     if (state.panels)
         state.panels->destroy();
     EGLDisplay d = app.egl_display;
-    destroy_layer_surface(d, state.surface, state.layer_surface, state.egl_window, state.egl_surface, &state.frame_clock);
+    destroy_layer_surface(d, state.surface, state.layer_surface, state.egl_window,
+                          state.egl_surface, &state.frame_clock);
 }
 
 bool BarPerMonitorModule::owns_surface(wl_surface *surface) const {
@@ -391,13 +430,15 @@ void BarPerMonitorModule::request_frame() {
         state.panels->request_frame();
 }
 
-void BarPerMonitorModule::apply_config(WaylandState &app, MonitorOutput &mon, const Config &new_cfg) {
+void BarPerMonitorModule::apply_config(WaylandState &app, MonitorOutput &mon,
+                                       const Config &new_cfg) {
     bool new_autohide = autohide_effective_enabled(new_cfg, mon.output.name);
     const astralia::BarStyleSpec &new_style = astralia::bar_style_spec(new_cfg.bar_style, true);
     if (new_autohide != state.autohide.enabled)
         bar_detail::monitor_autohide_apply(mon, new_autohide, new_style);
     else if (new_cfg.bar_style != app.cfg.bar_style)
-        bar_detail::bar_autohide_apply_geometry(mon, state.autohide.enabled, state.autohide.collapsed, new_style);
+        bar_detail::bar_autohide_apply_geometry(mon, state.autohide.enabled,
+                                                state.autohide.collapsed, new_style);
 }
 
 std::vector<astralia::ShellBinding> BarPerMonitorModule::shell_bindings(WaylandState &app) {
@@ -427,7 +468,8 @@ void BarPerMonitorModule::tick(WaylandState &, MonitorOutput &mon) {
     int32_t hug = bar_hug_radius_px(mon);
     if (hug != state.applied_hug_radius_px) {
         state.applied_hug_radius_px = hug;
-        bar_detail::bar_autohide_apply_geometry(mon, state.autohide.enabled, state.autohide.collapsed, bar_style_of(mon));
+        bar_detail::bar_autohide_apply_geometry(mon, state.autohide.enabled,
+                                                state.autohide.collapsed, bar_style_of(mon));
         bar_request_frame(mon);
     }
 }
@@ -437,11 +479,10 @@ void BarPerMonitorModule::timer_tick(WaylandState &, MonitorOutput &mon) {
     bar_request_frame(mon);
 }
 
-bool BarPerMonitorModule::is_open() const {
-    return state.panels && state.panels->is_open();
-}
+bool BarPerMonitorModule::is_open() const { return state.panels && state.panels->is_open(); }
 
-void BarPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t serial) {
+void BarPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface,
+                                       int button, double x, double y, uint32_t serial) {
     if (state.panels && state.panels->owns(surface)) {
         state.panels->press(surface, button, x, y, serial);
         app_detail::rest_egl_current(app);
@@ -457,7 +498,8 @@ void BarPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon, wl
     }
 }
 
-void BarPerMonitorModule::handle_scroll(WaylandState &app, MonitorOutput &mon, wl_surface *surface, double dy) {
+void BarPerMonitorModule::handle_scroll(WaylandState &app, MonitorOutput &mon, wl_surface *surface,
+                                        double dy) {
     if (state.panels && state.panels->owns(surface)) {
         state.panels->wheel(surface, pointer_x_, pointer_y_, dy);
         return;
@@ -474,14 +516,16 @@ void BarPerMonitorModule::handle_scroll(WaylandState &app, MonitorOutput &mon, w
         adjust_brightness(app, dy);
 }
 
-void BarPerMonitorModule::handle_key_event(WaylandState &app, MonitorOutput &, const KeyEvent &event) {
+void BarPerMonitorModule::handle_key_event(WaylandState &app, MonitorOutput &,
+                                           const KeyEvent &event) {
     if (state.panels && state.panels->is_open()) {
         state.panels->key(event);
         app_detail::rest_egl_current(app);
     }
 }
 
-void BarPerMonitorModule::handle_pointer_move(WaylandState &app, MonitorOutput &, double x, double y) {
+void BarPerMonitorModule::handle_pointer_move(WaylandState &app, MonitorOutput &, double x,
+                                              double y) {
     pointer_x_ = x;
     pointer_y_ = y;
     if (state.panels)

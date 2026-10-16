@@ -18,13 +18,15 @@ constexpr ui::TextStyle message_style{ui::FontFamily::text, 12};
 constexpr ui::TextStyle field_style{ui::FontFamily::text, 12};
 constexpr ui::TextStyle info_style{ui::FontFamily::text, 11};
 
-void centered_text(ui::Canvas &canvas, std::string_view text, ui::TextStyle style, float width, float cx, float cy, const Color &color) {
+void centered_text(ui::Canvas &canvas, std::string_view text, ui::TextStyle style, float width,
+                   float cx, float cy, const Color &color) {
     style.max_width = static_cast<int>(width);
     ui::TextSize size = canvas.measure(text, style);
     canvas.text(text, style, cx - size.w / 2.0f, cy - size.h / 2.0f, color);
 }
 
-void line_text(ui::Canvas &canvas, std::string_view text, const ui::TextStyle &style, float x, float y, float line_height, const Color &color) {
+void line_text(ui::Canvas &canvas, std::string_view text, const ui::TextStyle &style, float x,
+               float y, float line_height, const Color &color) {
     ui::TextSize size = canvas.measure(text, style);
     canvas.text(text, style, x, y + (line_height - size.h) / 2.0f, color);
 }
@@ -53,7 +55,8 @@ void dots(ui::Canvas &canvas, const PolkitModel &model, float x0, float width, f
 
 } // namespace
 
-void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width, float surface_height) {
+void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width,
+                  float surface_height) {
     if (!model.open()) {
         return;
     }
@@ -74,26 +77,37 @@ void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width, f
     title.max_width = static_cast<int>(content_w);
     ui::TextSize title_size = canvas.measure(cfg::title_text, title);
     float tag_pad = static_cast<float>(cfg::title_tag_pad);
-    sticker(canvas, {pad - tag_pad, y - tag_pad / 2.0f, title_size.w + 2.0f * tag_pad + metrics::shadow_widget, static_cast<float>(cfg::title_line_height) + tag_pad + metrics::shadow_widget}, metrics::radius_widget, palette::accent, palette::ink, metrics::border_thin, metrics::shadow_widget);
+    sticker(canvas,
+            {pad - tag_pad, y - tag_pad / 2.0f,
+             title_size.w + 2.0f * tag_pad + metrics::shadow_widget,
+             static_cast<float>(cfg::title_line_height) + tag_pad + metrics::shadow_widget},
+            metrics::radius_widget, palette::accent, palette::ink, metrics::border_thin,
+            metrics::shadow_widget);
     line_text(canvas, cfg::title_text, title, pad, y, cfg::title_line_height, palette::text);
     y += cfg::title_line_height + cfg::spacing;
 
-    draw_marquee_text(canvas, model.animations(), model.marquee(), prompt.message, message_style, pad, y, content_w, palette::text_muted);
+    draw_marquee_text(canvas, model.animations(), model.marquee(), prompt.message, message_style,
+                      pad, y, content_w, palette::text_muted);
     y += cfg::message_line_height + cfg::spacing;
 
-    canvas.rounded({pad, y, content_w, cfg::field_height}, metrics::radius_widget, prompt.needs_input ? palette::pop_b : palette::surface, metrics::border_thick, palette::ink);
+    canvas.rounded({pad, y, content_w, cfg::field_height}, metrics::radius_widget,
+                   prompt.needs_input ? palette::pop_b : palette::surface, metrics::border_thick,
+                   palette::ink);
     float field_cy = y + cfg::field_height / 2.0f;
     float dots_w = content_w - cfg::dot_margin * 2.0f;
     if (prompt.needs_input) {
         if (!model.error().empty()) {
-            centered_text(canvas, model.error(), field_style, dots_w, content_cx, field_cy, palette::critical);
+            centered_text(canvas, model.error(), field_style, dots_w, content_cx, field_cy,
+                          palette::critical);
         } else if (model.password().empty()) {
-            centered_text(canvas, cfg::password_placeholder, field_style, dots_w, content_cx, field_cy, palette::text_muted);
+            centered_text(canvas, cfg::password_placeholder, field_style, dots_w, content_cx,
+                          field_cy, palette::text_muted);
         } else {
             dots(canvas, model, pad + cfg::dot_margin, dots_w, field_cy);
         }
     } else {
-        centered_text(canvas, cfg::authenticating_text, field_style, dots_w, content_cx, field_cy, palette::text_muted);
+        centered_text(canvas, cfg::authenticating_text, field_style, dots_w, content_cx, field_cy,
+                      palette::text_muted);
     }
     y += cfg::field_height;
 

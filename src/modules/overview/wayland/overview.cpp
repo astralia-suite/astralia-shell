@@ -33,30 +33,37 @@ astralia::OverviewModel &ensure_model(OverviewState &state, WaylandState &app) {
 
 } // namespace
 
-bool overview_create_surface(OverviewState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
-    return overlay_panel_create_surface(state.base, compositor, layer_shell, "astralia-shell-overview", output);
+bool overview_create_surface(OverviewState &state, wl_compositor *compositor,
+                             zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
+    return overlay_panel_create_surface(state.base, compositor, layer_shell,
+                                        "astralia-shell-overview", output);
 }
 
-bool overview_init_egl(OverviewState &state, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context) {
+bool overview_init_egl(OverviewState &state, Renderer &renderer, EGLDisplay display,
+                       EGLConfig config, EGLContext context) {
     state.renderer = &renderer;
     state.canvas.bind(renderer);
     if (!overlay_panel_init_egl(state.base, display, config, context))
         return false;
-    state.base.frame_clock.draw = [&state] {
-        overview_paint(state, *state.app_ptr);
-    };
+    state.base.frame_clock.draw = [&state] { overview_paint(state, *state.app_ptr); };
     return true;
 }
 
-void overview_retarget(OverviewState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context, wl_output *target_output, const char *target_name) {
-    wl_output *bound = overlay_panel_retarget(state.base, display, state.bound_output, target_output, target_name, [&](wl_output *out) { return overview_create_surface(state, compositor, layer_shell, out); }, [&] { return overview_init_egl(state, renderer, egl_display, egl_config, egl_context); });
+void overview_retarget(OverviewState &state, wl_compositor *compositor,
+                       zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
+                       EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
+                       wl_output *target_output, const char *target_name) {
+    wl_output *bound = overlay_panel_retarget(
+        state.base, display, state.bound_output, target_output, target_name,
+        [&](wl_output *out) {
+            return overview_create_surface(state, compositor, layer_shell, out);
+        },
+        [&] { return overview_init_egl(state, renderer, egl_display, egl_config, egl_context); });
     if (bound)
         state.bound_output = bound;
 }
 
-void overview_request_frame(OverviewState &state) {
-    overlay_panel_request_frame(state.base);
-}
+void overview_request_frame(OverviewState &state) { overlay_panel_request_frame(state.base); }
 
 void overview_toggle(OverviewState &state, WaylandState &app, bool by_widget) {
     if (!compositor_available(app))
@@ -69,7 +76,8 @@ void overview_toggle(OverviewState &state, WaylandState &app, bool by_widget) {
     if (opening) {
         app.desktop->refresh();
         state.opened_by_widget = by_widget;
-        model.open(bound_output_name(state, app), static_cast<float>(state.base.width), static_cast<float>(state.base.height));
+        model.open(bound_output_name(state, app), static_cast<float>(state.base.width),
+                   static_cast<float>(state.base.height));
         overlay_panel_toggle(state.base, false);
     } else {
         overview_request_frame(state);
@@ -77,14 +85,19 @@ void overview_toggle(OverviewState &state, WaylandState &app, bool by_widget) {
     }
 }
 
-std::vector<astralia::ShellBinding> overview_shell_bindings(OverviewState &overview, WaylandState &state) {
+std::vector<astralia::ShellBinding> overview_shell_bindings(OverviewState &overview,
+                                                            WaylandState &state) {
     return {
         {astralia::ShellVerb::overview,
          [&overview, &state] {
              if (!overview.base.open) {
                  MonitorOutput *target = app_detail::active_target_monitor(state);
-                 if (target && (target->output.wl != overview.bound_output || !overview.base.layer_surface))
-                     overview_retarget(overview, state.compositor, state.layer_shell, state.display, state.renderer, state.egl_display, state.egl_config, state.egl_context, target->output.wl, target->output.name.c_str());
+                 if (target &&
+                     (target->output.wl != overview.bound_output || !overview.base.layer_surface))
+                     overview_retarget(overview, state.compositor, state.layer_shell, state.display,
+                                       state.renderer, state.egl_display, state.egl_config,
+                                       state.egl_context, target->output.wl,
+                                       target->output.name.c_str());
              }
              overview_toggle(overview, state);
          }},
@@ -132,15 +145,20 @@ void overview_paint(OverviewState &state, WaylandState &app) {
         model.tick(now);
         if (state.base.open && compositor_available(app)) {
             model.sync(static_cast<float>(state.base.width), static_cast<float>(state.base.height));
-            astralia::paint_overview(state.canvas, model, [&](astralia::ui::Canvas &, const astralia::OverviewTile &tile, const astralia::ui::Box &rect, float radius) {
-                toplevel_export_request(state.capture, app.toplevel_export_manager, app.shm, tile.address, astralia::overview_config::capture_interval_ms);
-                const Texture *tex = toplevel_export_texture(state.capture, tile.address);
-                if (!tex || !tex->id)
-                    return false;
-                static const float white[4] = {1, 1, 1, 1};
-                state.canvas.texture(*tex, rect, white, radius);
-                return true;
-            });
+            astralia::paint_overview(
+                state.canvas, model,
+                [&](astralia::ui::Canvas &, const astralia::OverviewTile &tile,
+                    const astralia::ui::Box &rect, float radius) {
+                    toplevel_export_request(state.capture, app.toplevel_export_manager, app.shm,
+                                            tile.address,
+                                            astralia::overview_config::capture_interval_ms);
+                    const Texture *tex = toplevel_export_texture(state.capture, tile.address);
+                    if (!tex || !tex->id)
+                        return false;
+                    static const float white[4] = {1, 1, 1, 1};
+                    state.canvas.texture(*tex, rect, white, radius);
+                    return true;
+                });
             std::vector<std::string> live_addresses;
             for (const astralia::CompositorClient &c : app.desktop->state().clients)
                 live_addresses.push_back(c.address);
@@ -169,16 +187,15 @@ class OverviewModule final : public Module {
     }
 
     bool init_egl(WaylandState &app) override {
-        if (!overview_init_egl(state_, app.renderer, app.egl_display, app.egl_config, app.egl_context))
+        if (!overview_init_egl(state_, app.renderer, app.egl_display, app.egl_config,
+                               app.egl_context))
             return false;
         state_.bound_output = output_;
         state_.app_ptr = &app;
         return true;
     }
 
-    bool configured() const override {
-        return !want_ || state_.base.configured;
-    }
+    bool configured() const override { return !want_ || state_.base.configured; }
     wl_surface *surface() const override { return state_.base.surface; }
     void request_frame() override { overview_request_frame(state_); }
 
@@ -190,7 +207,8 @@ class OverviewModule final : public Module {
         if (!state_.base.open)
             return false;
         auto now = std::chrono::steady_clock::now();
-        if (now - last_capture_arm_ < std::chrono::milliseconds(astralia::overview_config::capture_interval_ms))
+        if (now - last_capture_arm_ <
+            std::chrono::milliseconds(astralia::overview_config::capture_interval_ms))
             return false;
         last_capture_arm_ = now;
         return true;
@@ -198,12 +216,10 @@ class OverviewModule final : public Module {
 
     void handle_pointer_move(WaylandState &app, wl_surface *, double x, double y) override {
         overview_handle_pointer_move(state_, app, x, y);
-        hovering_clickable_ =
-            app.pointer.focused_surface == state_.base.surface && overview_point_is_clickable(state_, app, x, y);
+        hovering_clickable_ = app.pointer.focused_surface == state_.base.surface &&
+                              overview_point_is_clickable(state_, app, x, y);
     }
-    bool wants_pointing_hand_cursor() const override {
-        return hovering_clickable_;
-    }
+    bool wants_pointing_hand_cursor() const override { return hovering_clickable_; }
     void handle_pointer_release() override {
         if (state_.app_ptr)
             overview_handle_pointer_release(state_, *state_.app_ptr);
@@ -232,7 +248,9 @@ class OverviewModule final : public Module {
         if (!state_.base.open) {
             MonitorOutput *target = app_detail::active_target_monitor(app);
             if (target && (target->output.wl != state_.bound_output || !state_.base.layer_surface))
-                overview_retarget(state_, app.compositor, app.layer_shell, app.display, app.renderer, app.egl_display, app.egl_config, app.egl_context, target->output.wl, target->output.name.c_str());
+                overview_retarget(state_, app.compositor, app.layer_shell, app.display,
+                                  app.renderer, app.egl_display, app.egl_config, app.egl_context,
+                                  target->output.wl, target->output.name.c_str());
         }
         overview_toggle(state_, app, true);
     }
@@ -247,6 +265,4 @@ class OverviewModule final : public Module {
 
 } // namespace
 
-std::unique_ptr<Module> make_overview_module() {
-    return std::make_unique<OverviewModule>();
-}
+std::unique_ptr<Module> make_overview_module() { return std::make_unique<OverviewModule>(); }

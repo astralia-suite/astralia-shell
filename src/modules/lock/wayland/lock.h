@@ -79,7 +79,8 @@ void lock_hotplug_remove(LockState &st, wl_output *output);
 wl_surface *lock_focused_surface(const LockState &st);
 bool lock_owns_surface(const LockState &st, wl_surface *s);
 
-using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>;
+using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::string &output_name,
+                                               GlCanvas &canvas, int32_t w, int32_t h)>;
 
 std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper);
 void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name);

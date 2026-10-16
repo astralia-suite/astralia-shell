@@ -27,7 +27,8 @@
 class Renderer;
 struct WaylandState;
 
-using SettingsDecodeStatusFn = std::function<MediaDecodeStatus(WaylandState &app, const std::string &monitor, int column)>;
+using SettingsDecodeStatusFn =
+    std::function<MediaDecodeStatus(WaylandState &app, const std::string &monitor, int column)>;
 
 struct SettingsState {
     OverlayPanelBase base;
@@ -41,7 +42,8 @@ struct SettingsState {
     std::function<void(bool)> sync_text_input_focus;
 };
 
-bool settings_create_surface(SettingsState &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool settings_create_surface(SettingsState &state, wl_compositor *compositor,
+                             zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
 
 bool settings_init_egl(SettingsState &state, WaylandState &app);
 
@@ -49,7 +51,8 @@ void settings_request_frame(SettingsState &state);
 
 void settings_toggle(SettingsState &state, WaylandState &app);
 
-std::vector<astralia::ShellBinding> settings_shell_bindings(SettingsState &settings, WaylandState &state);
+std::vector<astralia::ShellBinding> settings_shell_bindings(SettingsState &settings,
+                                                            WaylandState &state);
 
 void settings_paint(SettingsState &state);
 

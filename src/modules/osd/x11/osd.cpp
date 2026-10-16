@@ -56,9 +56,10 @@ void Osd::show(OsdKind kind, int percent, bool muted) {
         }
         Surface &surface = surface_for(output.name);
         const OutputGeometry &area = output.geometry;
-        surface.window.place({static_cast<int16_t>(area.x + (area.width - cfg::width) / 2),
-                              static_cast<int16_t>(area.y + area.height - cfg::margin_bottom - cfg::height),
-                              cfg::width, cfg::height});
+        surface.window.place(
+            {static_cast<int16_t>(area.x + (area.width - cfg::width) / 2),
+             static_cast<int16_t>(area.y + area.height - cfg::margin_bottom - cfg::height),
+             cfg::width, cfg::height});
         paint(surface);
         surface.window.show(false);
         shown = true;
@@ -79,7 +80,8 @@ void Osd::hide() {
 }
 
 std::chrono::milliseconds Osd::until_hide() const {
-    bool visible = std::ranges::any_of(surfaces_, [](const auto &entry) { return entry.second->window.mapped(); });
+    bool visible = std::ranges::any_of(
+        surfaces_, [](const auto &entry) { return entry.second->window.mapped(); });
     if (!visible) {
         return std::chrono::hours(1);
     }

@@ -21,4 +21,5 @@ struct Output {
     bool done = false;
 };
 
-wl_output *active_output_select(const std::vector<Output *> &outputs, const std::string &focused_name, wl_output *pointer_hint);
+wl_output *active_output_select(const std::vector<Output *> &outputs,
+                                const std::string &focused_name, wl_output *pointer_hint);

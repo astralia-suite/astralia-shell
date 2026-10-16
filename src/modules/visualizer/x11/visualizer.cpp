@@ -33,9 +33,15 @@ void top_rounded(cairo_t *cr, double x, double y, double width, double height, d
 } // namespace
 
 Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
-    : x_(x), loop_(loop), services_(services), window_(x, title, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY, false), keyboard_(x.conn()) {
+    : x_(x), loop_(loop), services_(services),
+      window_(x, title,
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+              false),
+      keyboard_(x.conn()) {
     window_.make_managed(kVisualizerDefaultWindow, kVisualizerDefaultWindow);
-    timer_ = loop.add_timer([this] { return open_ ? std::chrono::milliseconds(1000 / fps()) : idle_interval; }, [this] { step(); });
+    timer_ = loop.add_timer(
+        [this] { return open_ ? std::chrono::milliseconds(1000 / fps()) : idle_interval; },
+        [this] { step(); });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     shell.track("visualizer", [this] { return open_; });
     shell.bind(ShellVerb::visualizer, [this] { toggle(); });
@@ -43,7 +49,9 @@ Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &
 
 Visualizer::~Visualizer() { capture_.stop(); }
 
-int Visualizer::fps() const { return std::clamp(kVisualizerBarFps, kVisualizerFpsMin, kVisualizerFpsMax); }
+int Visualizer::fps() const {
+    return std::clamp(kVisualizerBarFps, kVisualizerFpsMin, kVisualizerFpsMax);
+}
 
 void Visualizer::toggle() {
     if (open_) {
@@ -89,11 +97,14 @@ void Visualizer::step() {
     std::vector<float> right;
     bool modified = false;
     capture_.take(left, right, modified);
-    if (modified && static_cast<int>(left.size()) >= kVisualizerFragmentSize && static_cast<int>(right.size()) >= kVisualizerFragmentSize) {
+    if (modified && static_cast<int>(left.size()) >= kVisualizerFragmentSize &&
+        static_cast<int>(right.size()) >= kVisualizerFragmentSize) {
         left_ = std::move(left);
         right_ = std::move(right);
-        visualizer_fft(left_.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
-        visualizer_fft(right_.data(), kVisualizerFragmentSize, kVisualizerFftScale, kVisualizerFftCutOff);
+        visualizer_fft(left_.data(), kVisualizerFragmentSize, kVisualizerFftScale,
+                       kVisualizerFftCutOff);
+        visualizer_fft(right_.data(), kVisualizerFragmentSize, kVisualizerFftScale,
+                       kVisualizerFftCutOff);
         audio_size_ = kVisualizerFragmentSize;
     }
     if (audio_size_ > 0) {
@@ -115,7 +126,8 @@ void Visualizer::handle(const xcb_generic_event_t &event) {
         window_.present();
         break;
     case XCB_CONFIGURE_NOTIFY:
-        if (window_.apply_configure(reinterpret_cast<const xcb_configure_notify_event_t &>(event))) {
+        if (window_.apply_configure(
+                reinterpret_cast<const xcb_configure_notify_event_t &>(event))) {
             paint();
         }
         break;
@@ -146,7 +158,8 @@ void Visualizer::paint() {
     double start = (width - total) / 2.0;
     double slot = kVisualizerBarWidth + kVisualizerBarSpacing;
     double radius = std::min(kVisualizerBarRadius, kVisualizerBarWidth * 0.5f);
-    cairo_set_source_rgba(cr, palette::accent.r, palette::accent.g, palette::accent.b, kVisualizerBarOpacity);
+    cairo_set_source_rgba(cr, palette::accent.r, palette::accent.g, palette::accent.b,
+                          kVisualizerBarOpacity);
     for (int i = 0; i < count; ++i) {
         float magnitude = 0.0f;
         if (stages_.ready()) {
@@ -154,7 +167,8 @@ void Visualizer::paint() {
             magnitude = std::max(stages_.smooth_texel(0, texel), stages_.smooth_texel(1, texel));
         }
         double bar_height = visualizer_bar_height(magnitude, height);
-        top_rounded(cr, start + i * slot, height - bar_height, kVisualizerBarWidth, bar_height, std::min(radius, bar_height));
+        top_rounded(cr, start + i * slot, height - bar_height, kVisualizerBarWidth, bar_height,
+                    std::min(radius, bar_height));
         cairo_fill(cr);
     }
     window_.present();

@@ -15,22 +15,33 @@ constexpr std::chrono::milliseconds caret_interval{1000};
 }
 
 Launcher::Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
-    : x_(x), loop_(loop), services_(services), window_(x, "astralia-launcher", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
+    : x_(x), loop_(loop), services_(services),
+      window_(x, "astralia-launcher",
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION |
+                  XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_KEY_PRESS),
       keyboard_(x.conn()), clipboard_(x, window_.id()), model_(loop) {
     model_.set_clipboard(&clipboard_);
     model_.on_changed = [this] { paint(); };
     model_.on_close_requested = [this] { close(); };
-    caret_timer_ = loop.add_timer([this] { return model_.is_open() ? caret_interval : std::chrono::milliseconds(std::chrono::hours(1)); }, [this] {
-        if (model_.is_open()) {
-            model_.toggle_caret();
-            paint();
-        } });
+    caret_timer_ = loop.add_timer(
+        [this] {
+            return model_.is_open() ? caret_interval
+                                    : std::chrono::milliseconds(std::chrono::hours(1));
+        },
+        [this] {
+            if (model_.is_open()) {
+                model_.toggle_caret();
+                paint();
+            }
+        });
     services.outputs.changed.connect([this] {
         if (!model_.is_open()) {
             return;
         }
         const std::vector<Output> &outputs = services_.outputs.outputs();
-        if (std::ranges::none_of(outputs, [this](const Output &output) { return output.name == bound_output_; })) {
+        if (std::ranges::none_of(
+                outputs, [this](const Output &output) { return output.name == bound_output_; })) {
             close();
         }
     });
@@ -100,14 +111,18 @@ void Launcher::handle(const xcb_generic_event_t &event) {
         if (int row = row_at(press.event_x, press.event_y); row >= 0) {
             model_.click_row(row);
         } else if (launcher_field_hit(frame_, press.event_x, press.event_y)) {
-            model_.pointer_down(launcher_field_column(frame_, press.event_x), std::chrono::steady_clock::now());
-        } else if (const ui::Box &box = frame_.box; !(press.event_x >= box.x && press.event_x < box.x + box.w && press.event_y >= box.y && press.event_y < box.y + box.h)) {
+            model_.pointer_down(launcher_field_column(frame_, press.event_x),
+                                std::chrono::steady_clock::now());
+        } else if (const ui::Box &box = frame_.box;
+                   !(press.event_x >= box.x && press.event_x < box.x + box.w &&
+                     press.event_y >= box.y && press.event_y < box.y + box.h)) {
             close();
         }
         break;
     }
     case XCB_BUTTON_RELEASE:
-        if (reinterpret_cast<const xcb_button_release_event_t &>(event).detail == XCB_BUTTON_INDEX_1) {
+        if (reinterpret_cast<const xcb_button_release_event_t &>(event).detail ==
+            XCB_BUTTON_INDEX_1) {
             model_.pointer_up();
         }
         break;
@@ -147,7 +162,8 @@ void Launcher::paint() {
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     model_.sync_layout();
     canvas_.bind(cr);
-    frame_ = paint_launcher(canvas_, model_, static_cast<float>(window_.geometry().width), static_cast<float>(window_.geometry().height));
+    frame_ = paint_launcher(canvas_, model_, static_cast<float>(window_.geometry().width),
+                            static_cast<float>(window_.geometry().height));
     window_.present();
 }
 

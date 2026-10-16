@@ -30,8 +30,9 @@ std::string executable_dir() {
 
 SessionEnvironment session_environment() {
     return {environment_value("ASTRALIA_BACKEND"), environment_value("HYPRLAND_INSTANCE_SIGNATURE"),
-            environment_value("I3SOCK"), environment_value("SWAYSOCK"), environment_value("XDG_SESSION_TYPE"),
-            environment_value("WAYLAND_DISPLAY"), environment_value("DISPLAY")};
+            environment_value("I3SOCK"),           environment_value("SWAYSOCK"),
+            environment_value("XDG_SESSION_TYPE"), environment_value("WAYLAND_DISPLAY"),
+            environment_value("DISPLAY")};
 }
 
 SessionKind detect_session(const SessionEnvironment &environment) {
@@ -78,9 +79,11 @@ std::string backend_library_name(SessionKind kind) {
     return std::format("libastralia-{}.so", session_name(kind));
 }
 
-std::vector<std::string> backend_search_dirs(std::string_view override_dir, std::string_view executable_dir) {
+std::vector<std::string> backend_search_dirs(std::string_view override_dir,
+                                             std::string_view executable_dir) {
     std::vector<std::string> dirs;
-    for (std::string_view dir : {override_dir, executable_dir, std::string_view(ASTRALIA_BACKEND_DIR)}) {
+    for (std::string_view dir :
+         {override_dir, executable_dir, std::string_view(ASTRALIA_BACKEND_DIR)}) {
         if (!dir.empty() && std::ranges::find(dirs, dir) == dirs.end()) {
             dirs.emplace_back(dir);
         }
@@ -90,11 +93,13 @@ std::vector<std::string> backend_search_dirs(std::string_view override_dir, std:
 
 std::expected<LoadedBackend, std::string> load_backend(SessionKind kind) {
     if (kind == SessionKind::none) {
-        return std::unexpected("no graphical session found: set WAYLAND_DISPLAY or DISPLAY, or ASTRALIA_BACKEND=wayland|x11");
+        return std::unexpected("no graphical session found: set WAYLAND_DISPLAY or DISPLAY, or "
+                               "ASTRALIA_BACKEND=wayland|x11");
     }
     std::string library = backend_library_name(kind);
     std::string last_error = "not found";
-    for (const std::string &dir : backend_search_dirs(environment_value("ASTRALIA_BACKEND_DIR"), executable_dir())) {
+    for (const std::string &dir :
+         backend_search_dirs(environment_value("ASTRALIA_BACKEND_DIR"), executable_dir())) {
         std::string path = dir + "/" + library;
         if (access(path.c_str(), R_OK) != 0) {
             continue;

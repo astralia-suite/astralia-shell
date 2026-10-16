@@ -7,7 +7,8 @@
 
 namespace {
 
-RasterizedText rasterize_glyph(const char *family, const cairo_font_options_t *options, const std::string &codepoint_utf8, int32_t scale, int px) {
+RasterizedText rasterize_glyph(const char *family, const cairo_font_options_t *options,
+                               const std::string &codepoint_utf8, int32_t scale, int px) {
     RasterizedText result;
     astralia::register_app_fonts();
     scale = scale > 0 ? scale : 1;
@@ -61,9 +62,11 @@ RasterizedText rasterize_glyph(const char *family, const cairo_font_options_t *o
 } // namespace
 
 RasterizedText rasterize_icon(const std::string &codepoint_utf8, int32_t scale, int px) {
-    return rasterize_glyph(astralia::icon_font_family, astralia::icon_font_options(), codepoint_utf8, scale, px);
+    return rasterize_glyph(astralia::icon_font_family, astralia::icon_font_options(),
+                           codepoint_utf8, scale, px);
 }
 
 RasterizedText rasterize_display_glyph(const std::string &codepoint_utf8, int32_t scale, int px) {
-    return rasterize_glyph(astralia::glyph_font_family, astralia_shell_font_options(), codepoint_utf8, scale, px);
+    return rasterize_glyph(astralia::glyph_font_family, astralia_shell_font_options(),
+                           codepoint_utf8, scale, px);
 }

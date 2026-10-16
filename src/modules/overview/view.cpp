@@ -18,17 +18,23 @@ namespace cfg = overview_config;
 constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
 constexpr ui::TextStyle number_style{ui::FontFamily::text, cfg::number_px};
 
-void paint_cell(ui::Canvas &canvas, const OverviewModel &model, const OverviewCell &cell, float scale) {
+void paint_cell(ui::Canvas &canvas, const OverviewModel &model, const OverviewCell &cell,
+                float scale) {
     bool hovered = model.dragging() && model.drag_target() == cell.workspace;
-    canvas.rounded(cell.rect, metrics::radius_card * scale, hovered ? palette::pop_a : palette::surface, cfg::workspace_border_width, palette::ink);
+    canvas.rounded(cell.rect, metrics::radius_card * scale,
+                   hovered ? palette::pop_a : palette::surface, cfg::workspace_border_width,
+                   palette::ink);
     std::string label = std::to_string(cell.workspace);
     ui::TextSize size = canvas.measure(label, number_style);
     if (size.w <= cell.rect.w && size.h <= cell.rect.h) {
-        canvas.text(label, number_style, cell.rect.x + (cell.rect.w - size.w) / 2.0f, cell.rect.y + (cell.rect.h - size.h) / 2.0f, with_alpha(palette::text, 1.0f - cfg::number_fade));
+        canvas.text(label, number_style, cell.rect.x + (cell.rect.w - size.w) / 2.0f,
+                    cell.rect.y + (cell.rect.h - size.h) / 2.0f,
+                    with_alpha(palette::text, 1.0f - cfg::number_fade));
     }
 }
 
-void paint_tile(ui::Canvas &canvas, OverviewModel &model, const OverviewTile &tile, const OverviewTileArt &art, float scale) {
+void paint_tile(ui::Canvas &canvas, OverviewModel &model, const OverviewTile &tile,
+                const OverviewTileArt &art, float scale) {
     ui::Box rect = model.tile_rect(tile);
     float radius = metrics::radius_widget * scale;
     bool live = art && art(canvas, tile, rect, radius);
@@ -44,7 +50,10 @@ void paint_tile(ui::Canvas &canvas, OverviewModel &model, const OverviewTile &ti
         return;
     }
     ui::ImageId icon = canvas.image(path, static_cast<int>(size));
-    canvas.draw_image(icon, {rect.x + rect.w - size - cfg::corner_icon_inset, rect.y + rect.h - size - cfg::corner_icon_inset, size, size}, palette::white);
+    canvas.draw_image(icon,
+                      {rect.x + rect.w - size - cfg::corner_icon_inset,
+                       rect.y + rect.h - size - cfg::corner_icon_inset, size, size},
+                      palette::white);
 }
 
 } // namespace
@@ -76,8 +85,10 @@ void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTile
     if (const ui::Box *indicator = model.indicator()) {
         float offset = metrics::shadow_widget * scale;
         ui::Box shadow{indicator->x + offset, indicator->y + offset, indicator->w, indicator->h};
-        canvas.rounded(shadow, metrics::radius_card * scale, transparent, cfg::indicator_border_width, palette::ink);
-        canvas.rounded(*indicator, metrics::radius_card * scale, transparent, cfg::indicator_border_width, palette::accent);
+        canvas.rounded(shadow, metrics::radius_card * scale, transparent,
+                       cfg::indicator_border_width, palette::ink);
+        canvas.rounded(*indicator, metrics::radius_card * scale, transparent,
+                       cfg::indicator_border_width, palette::accent);
     }
     canvas.set_opacity(1.0f);
 }

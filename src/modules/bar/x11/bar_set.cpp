@@ -18,10 +18,14 @@ constexpr int32_t status_message_timeout_ms = 6000;
 
 BarSet::BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), shell_(shell), services_(services) {
-    services_.bluetooth.messages.connect(
-        [this](const StatusMessage &message) { services_.notifications.post("Bluetooth", message.summary, message.body, status_message_timeout_ms); });
-    services_.network.messages.connect(
-        [this](const StatusMessage &message) { services_.notifications.post("Network", message.summary, message.body, status_message_timeout_ms); });
+    services_.bluetooth.messages.connect([this](const StatusMessage &message) {
+        services_.notifications.post("Bluetooth", message.summary, message.body,
+                                     status_message_timeout_ms);
+    });
+    services_.network.messages.connect([this](const StatusMessage &message) {
+        services_.notifications.post("Network", message.summary, message.body,
+                                     status_message_timeout_ms);
+    });
     constexpr std::pair<ShellVerb, PanelId> verbs[] = {
         {ShellVerb::panel_tray, PanelId::tray},
         {ShellVerb::panel_resource, PanelId::resource},
@@ -43,7 +47,8 @@ BarSet::BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services
         });
     }
     shell_.track("bar", [this] {
-        return std::ranges::any_of(bars_, [](const Entry &entry) { return entry.bar->panels_open(); });
+        return std::ranges::any_of(bars_,
+                                   [](const Entry &entry) { return entry.bar->panels_open(); });
     });
     services_.outputs.changed.connect([this] { sync(); });
     services_.settings.changed.connect([this] { sync(); });
@@ -58,7 +63,8 @@ void BarSet::sync() {
         shown.push_back(output.name);
         auto it = std::ranges::find(bars_, output.name, &Entry::output);
         if (it == bars_.end()) {
-            bars_.push_back({output.name, std::make_unique<Bar>(x_, loop_, shell_, services_, output)});
+            bars_.push_back(
+                {output.name, std::make_unique<Bar>(x_, loop_, shell_, services_, output)});
             continue;
         }
         it->bar->place(output);

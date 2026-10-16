@@ -30,10 +30,14 @@ void paint_desktop_menu(ui::Canvas &canvas, const DesktopMenuModel &model, float
         row.y += y;
         selectable(canvas, row, metrics::radius_widget, false, i == model.hovered());
         ui::TextSize icon_size = canvas.measure(entries[static_cast<size_t>(i)].icon, icon_style);
-        ui::TextSize label_size = canvas.measure(entries[static_cast<size_t>(i)].label, label_style);
+        ui::TextSize label_size =
+            canvas.measure(entries[static_cast<size_t>(i)].label, label_style);
         float icon_x = row.x + cfg::menu_padding + 2.0f;
-        canvas.text(entries[static_cast<size_t>(i)].icon, icon_style, icon_x, row.y + (row.h - icon_size.h) / 2.0f, palette::text);
-        canvas.text(entries[static_cast<size_t>(i)].label, label_style, icon_x + cfg::menu_icon_size + cfg::menu_icon_gap, row.y + (row.h - label_size.h) / 2.0f, palette::text);
+        canvas.text(entries[static_cast<size_t>(i)].icon, icon_style, icon_x,
+                    row.y + (row.h - icon_size.h) / 2.0f, palette::text);
+        canvas.text(entries[static_cast<size_t>(i)].label, label_style,
+                    icon_x + cfg::menu_icon_size + cfg::menu_icon_gap,
+                    row.y + (row.h - label_size.h) / 2.0f, palette::text);
     }
 }
 

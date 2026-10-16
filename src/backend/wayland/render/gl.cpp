@@ -163,7 +163,8 @@ void gl_reset_detection_init() {
     else if (gl_has_extension("GL_EXT_robustness"))
         proc = "glGetGraphicsResetStatusEXT";
     if (proc)
-        get_graphics_reset_status = reinterpret_cast<PFNGLGETGRAPHICSRESETSTATUSKHRPROC>(eglGetProcAddress(proc));
+        get_graphics_reset_status =
+            reinterpret_cast<PFNGLGETGRAPHICSRESETSTATUSKHRPROC>(eglGetProcAddress(proc));
     if (get_graphics_reset_status)
         klog("gl: reset detection via %s", proc);
     else
@@ -181,6 +182,7 @@ bool gl_poll_graphics_reset(const char *where) {
         klog("gl: graphics reset completed (%s)", where ? where : "?");
         return false;
     }
-    klog("gl: graphics reset detected (%s), status %s 0x%04x", where ? where : "?", reset_status_name(status), status);
+    klog("gl: graphics reset detected (%s), status %s 0x%04x", where ? where : "?",
+         reset_status_name(status), status);
     return true;
 }

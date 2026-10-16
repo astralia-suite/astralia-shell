@@ -71,7 +71,9 @@ BarSources make_sources(Services &services, const std::string &output) {
     sources.bluetooth = &services.bluetooth;
     sources.network = &services.network;
     sources.brightness = &services.brightness;
-    sources.compositor = [&services]() -> const CompositorState & { return services.compositor->state(); };
+    sources.compositor = [&services]() -> const CompositorState & {
+        return services.compositor->state();
+    };
     sources.output = output;
     sources.resource = true;
     sources.workspace_slots = bar_workspace_slots;
@@ -82,7 +84,11 @@ BarSources make_sources(Services &services, const std::string &output) {
 
 Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, const Output &output)
     : x_(x), loop_(loop), shell_(shell), services_(services), output_name_(output.name),
-      window_(x, "astralia-shell", XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW, false),
+      window_(x, "astralia-shell",
+              XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
+                  XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_ENTER_WINDOW |
+                  XCB_EVENT_MASK_LEAVE_WINDOW,
+              false),
       model_(make_sources(services, output.name), BarModel::Clock::now()) {
     register_app_fonts();
     refresh_style();
@@ -129,7 +135,8 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
             set_collapsed(false);
             break;
         case XCB_LEAVE_NOTIFY:
-            if (reinterpret_cast<const xcb_leave_notify_event_t &>(event).mode == XCB_NOTIFY_MODE_NORMAL) {
+            if (reinterpret_cast<const xcb_leave_notify_event_t &>(event).mode ==
+                XCB_NOTIFY_MODE_NORMAL) {
                 hover(std::nullopt, std::nullopt);
                 update_autohide();
             }
@@ -138,7 +145,8 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
             break;
         }
     });
-    loop.add_timer([] { return ms_until_next_second(std::chrono::system_clock::now()); }, [this] { redraw_clock(); });
+    loop.add_timer([] { return ms_until_next_second(std::chrono::system_clock::now()); },
+                   [this] { redraw_clock(); });
     loop.add_timer([] { return bar_config::trim_interval; }, [] { malloc_trim(0); });
     linger_timer_ = loop.add_timer([this] { return until_linger_end(); }, [this] { sync_hover(); });
 
@@ -172,7 +180,8 @@ bool Bar::refresh_autohide() {
 }
 
 uint16_t Bar::collapsed_height() const {
-    return static_cast<uint16_t>(bar_autohide_geometry(true, true, bar_layout::height, spec_->top_margin, 0).height);
+    return static_cast<uint16_t>(
+        bar_autohide_geometry(true, true, bar_layout::height, spec_->top_margin, 0).height);
 }
 
 void Bar::set_collapsed(bool collapsed) {
@@ -189,8 +198,10 @@ void Bar::update_autohide() {
     if (!autohide_ || collapsed_ || panels_->is_open()) {
         return;
     }
-    xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(x_.conn(), xcb_query_pointer(x_.conn(), window_.id()), nullptr);
-    bool inside = reply != nullptr && reply->same_screen && reply->win_x >= 0 && reply->win_y >= 0 && reply->win_x < width_ && reply->win_y < height_;
+    xcb_query_pointer_reply_t *reply =
+        xcb_query_pointer_reply(x_.conn(), xcb_query_pointer(x_.conn(), window_.id()), nullptr);
+    bool inside = reply != nullptr && reply->same_screen && reply->win_x >= 0 &&
+                  reply->win_y >= 0 && reply->win_x < width_ && reply->win_y < height_;
     free(reply);
     if (!inside) {
         set_collapsed(true);
@@ -208,7 +219,9 @@ void Bar::apply_output(const OutputGeometry &output) {
 void Bar::place(const Output &output) {
     bool restyled = refresh_style();
     bool autohide_changed = refresh_autohide();
-    if (!restyled && !autohide_changed && window_.mapped() && window_.geometry() == OutputGeometry{output.geometry.x, output.geometry.y, output.geometry.width, height_}) {
+    if (!restyled && !autohide_changed && window_.mapped() &&
+        window_.geometry() ==
+            OutputGeometry{output.geometry.x, output.geometry.y, output.geometry.width, height_}) {
         return;
     }
     panels_->panels().close_all();
@@ -273,7 +286,9 @@ void Bar::draw(const ui::Box *dirty) {
     int clip_w = width_;
     if (dirty != nullptr) {
         clip_x = std::max(0, static_cast<int>(std::floor(left + dirty->x)));
-        clip_w = std::min(static_cast<int>(width_), static_cast<int>(std::ceil(left + dirty->x + dirty->w))) - clip_x;
+        clip_w = std::min(static_cast<int>(width_),
+                          static_cast<int>(std::ceil(left + dirty->x + dirty->w))) -
+                 clip_x;
     }
     cairo_save(cr);
     if (dirty != nullptr) {
@@ -350,14 +365,16 @@ void Bar::scroll(const xcb_button_press_event_t &event) {
     if (!wheel || collapsed_) {
         return;
     }
-    BarAction hit = model_.press(event.event_x - spec_->side_margin, event.event_y - spec_->top_margin);
+    BarAction hit =
+        model_.press(event.event_x - spec_->side_margin, event.event_y - spec_->top_margin);
     if (hit.kind != BarActionKind::toggle) {
         return;
     }
     if (hit.item == BarItem::volume) {
         AudioService &audio = services_.audio;
         if (audio.sink_id() != 0) {
-            audio.set_volume(audio.sink_id(), std::clamp(audio.sink().percent + (wheel->dy < 0 ? 5 : -5), 0, 150));
+            audio.set_volume(audio.sink_id(),
+                             std::clamp(audio.sink().percent + (wheel->dy < 0 ? 5 : -5), 0, 150));
         }
     } else if (hit.item == BarItem::brightness) {
         BrightnessService &brightness = services_.brightness;
@@ -443,9 +460,7 @@ void Bar::sync_panels() {
     }
 }
 
-void Bar::start_linger() {
-    loop_.reschedule(linger_timer_);
-}
+void Bar::start_linger() { loop_.reschedule(linger_timer_); }
 
 void Bar::sync_hover() {
     auto now = BarModel::Clock::now();
@@ -459,11 +474,13 @@ void Bar::sync_hover() {
         }
         return;
     }
-    bool inside = reply->same_screen && reply->win_x >= 0 && reply->win_y >= 0 && reply->win_x < width_ && reply->win_y < height_;
+    bool inside = reply->same_screen && reply->win_x >= 0 && reply->win_y >= 0 &&
+                  reply->win_x < width_ && reply->win_y < height_;
     int px = reply->win_x;
     int py = reply->win_y;
     free(reply);
-    hover(inside ? std::optional<int>(px) : std::nullopt, inside ? std::optional<int>(py) : std::nullopt);
+    hover(inside ? std::optional<int>(px) : std::nullopt,
+          inside ? std::optional<int>(py) : std::nullopt);
     if (changed) {
         draw();
     }

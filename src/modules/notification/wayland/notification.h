@@ -40,9 +40,13 @@ struct NotificationView {
     std::vector<std::pair<uint32_t, astralia::ui::Box>> close_hitboxes;
 };
 
-bool notification_view_create_surface(NotificationView &view, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool notification_view_create_surface(NotificationView &view, wl_compositor *compositor,
+                                      zwlr_layer_shell_v1 *layer_shell,
+                                      wl_output *output = nullptr);
 
-bool notification_view_init_egl(NotificationView &view, astralia::NotificationModel &service, Renderer &renderer, EGLDisplay display, EGLConfig config, EGLContext context);
+bool notification_view_init_egl(NotificationView &view, astralia::NotificationModel &service,
+                                Renderer &renderer, EGLDisplay display, EGLConfig config,
+                                EGLContext context);
 
 void notification_view_request_frame(NotificationView &view);
 
@@ -62,7 +66,8 @@ class NotificationViewPerMonitorModule final : public PerMonitorModule {
     void destroy(WaylandState &app, MonitorOutput &mon) override;
     bool owns_surface(wl_surface *surface) const override;
     void request_frame() override;
-    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button, double x, double y, uint32_t serial) override;
+    void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button,
+                      double x, double y, uint32_t serial) override;
     void handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) override;
     bool wants_pointing_hand_cursor() const override;
 

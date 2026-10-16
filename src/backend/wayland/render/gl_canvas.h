@@ -19,27 +19,37 @@ class GlCanvas final : public astralia::ui::Canvas {
     ~GlCanvas() override { *alive_ = false; }
 
     void bind(Renderer &renderer) { renderer_ = &renderer; }
-    void bind_context(std::function<void()> make_current) { make_current_ = std::move(make_current); }
+    void bind_context(std::function<void()> make_current) {
+        make_current_ = std::move(make_current);
+    }
     void begin(int32_t scale);
     void flush();
 
     void rect(const astralia::ui::Box &box, const astralia::Color &fill) override;
-    void rounded(const astralia::ui::Box &box, float radius, const astralia::Color &fill, float border_width, const astralia::Color &border) override;
-    void fillet(const astralia::ui::Box &box, bool circle_on_right, const astralia::Color &color) override;
+    void rounded(const astralia::ui::Box &box, float radius, const astralia::Color &fill,
+                 float border_width, const astralia::Color &border) override;
+    void fillet(const astralia::ui::Box &box, bool circle_on_right,
+                const astralia::Color &color) override;
     void set_erase(bool on) override { erase_ = on; }
-    astralia::ui::TextSize measure(std::string_view text, const astralia::ui::TextStyle &style) override;
+    astralia::ui::TextSize measure(std::string_view text,
+                                   const astralia::ui::TextStyle &style) override;
     float advance(const astralia::ui::TextStyle &style) override;
-    void text(std::string_view text, const astralia::ui::TextStyle &style, float x, float y, const astralia::Color &color) override;
+    void text(std::string_view text, const astralia::ui::TextStyle &style, float x, float y,
+              const astralia::Color &color) override;
     astralia::ui::ImageId image(std::string_view asset, int target_px) override;
     astralia::ui::ImageId thumbnail(std::string_view path, int px) override;
     astralia::ui::TextSize image_size(astralia::ui::ImageId id) override;
-    void draw_image(astralia::ui::ImageId id, const astralia::ui::Box &box, const astralia::Color &tint) override;
-    void begin_group(const astralia::ui::Box &box, const astralia::ui::GroupOptions &options) override;
+    void draw_image(astralia::ui::ImageId id, const astralia::ui::Box &box,
+                    const astralia::Color &tint) override;
+    void begin_group(const astralia::ui::Box &box,
+                     const astralia::ui::GroupOptions &options) override;
     void end_group() override;
     void set_opacity(float opacity) override { renderer_->set_opacity(opacity); }
-    void gauge(const astralia::ui::Box &box, float stroke, float value, const astralia::Color &fill) override;
+    void gauge(const astralia::ui::Box &box, float stroke, float value,
+               const astralia::Color &fill) override;
 
-    void texture(const Texture &tex, const astralia::ui::Box &box, const float tint[4], float radius = 0.0f);
+    void texture(const Texture &tex, const astralia::ui::Box &box, const float tint[4],
+                 float radius = 0.0f);
     void texture(const Texture &tex, float x, float y, const float tint[4]);
     void video(const VideoTexture &tex, const astralia::ui::Box &box);
     Renderer &renderer() { return *renderer_; }
@@ -54,8 +64,7 @@ class GlCanvas final : public astralia::ui::Canvas {
 
     float ox() const { return groups_.empty() ? 0.0f : groups_.back().x; }
     float oy() const { return groups_.empty() ? 0.0f : groups_.back().y; }
-    template <typename Draw>
-    void shape(const Draw &draw);
+    template <typename Draw> void shape(const Draw &draw);
     const Texture *glyphs(std::string_view text, const astralia::ui::TextStyle &style);
 
     Renderer *renderer_ = nullptr;

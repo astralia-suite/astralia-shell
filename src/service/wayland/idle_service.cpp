@@ -27,9 +27,11 @@ bool idle_init(IdleState &state, wl_seat *seat) {
              "skipping");
         return false;
     }
-    state.recent_activity_notification = ext_idle_notifier_v1_get_idle_notification(state.notifier, astralia::kIdleRecentActivityPulseSeconds * 1000, seat);
+    state.recent_activity_notification = ext_idle_notifier_v1_get_idle_notification(
+        state.notifier, astralia::kIdleRecentActivityPulseSeconds * 1000, seat);
     if (state.recent_activity_notification)
-        ext_idle_notification_v1_add_listener(state.recent_activity_notification, &idle_recent_activity_listener, &state);
+        ext_idle_notification_v1_add_listener(state.recent_activity_notification,
+                                              &idle_recent_activity_listener, &state);
     else
         klog("idle: recent-activity notification failed, ambient/screensaver "
              "clock disabled");
@@ -51,6 +53,8 @@ bool is_idle(const IdleState &state, const std::string &monitor, uint32_t timeou
     auto it = state.last_activity.find(monitor);
     if (it == state.last_activity.end())
         return false;
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - it->second).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                       std::chrono::steady_clock::now() - it->second)
+                       .count();
     return elapsed > static_cast<int64_t>(timeout_seconds);
 }

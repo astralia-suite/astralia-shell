@@ -30,7 +30,8 @@ struct IdleVerdict {
     bool operator==(const IdleVerdict &) const = default;
 };
 
-IdleVerdict idle_verdict(const IdleClock &clock, const Config &config, const std::string &output, IdleClock::Time now);
+IdleVerdict idle_verdict(const IdleClock &clock, const Config &config, const std::string &output,
+                         IdleClock::Time now);
 bool idle_policy_changed(const Config &before, const Config &after);
 
 } // namespace astralia

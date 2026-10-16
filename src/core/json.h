@@ -8,12 +8,7 @@
 namespace astralia {
 
 struct Json {
-    enum class Type { null,
-                      boolean,
-                      number,
-                      string,
-                      array,
-                      object };
+    enum class Type { null, boolean, number, string, array, object };
 
     struct Member;
 

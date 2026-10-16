@@ -25,7 +25,8 @@ void load(NotificationEntry &entry, const Notification &notification) {
 }
 
 bool same_content(const NotificationEntry &entry, const Notification &notification) {
-    return entry.app == notification.app && entry.summary == notification.summary && entry.body == notification.body;
+    return entry.app == notification.app && entry.summary == notification.summary &&
+           entry.body == notification.body;
 }
 
 } // namespace
@@ -36,10 +37,14 @@ NotificationEntry *NotificationModel::find(uint32_t id) {
 }
 
 void NotificationModel::start_progress(uint32_t id, std::chrono::milliseconds timeout) {
-    animations_.animate(1.0f, 0.0f, static_cast<float>(timeout.count()), astralia::Easing::Linear, [this, id](float v) {
-        if (NotificationEntry *entry = find(id)) {
-            entry->progress = v;
-        } }, {}, owner_progress(id));
+    animations_.animate(
+        1.0f, 0.0f, static_cast<float>(timeout.count()), astralia::Easing::Linear,
+        [this, id](float v) {
+            if (NotificationEntry *entry = find(id)) {
+                entry->progress = v;
+            }
+        },
+        {}, owner_progress(id));
 }
 
 void NotificationModel::add(const Notification &notification) {
@@ -50,14 +55,22 @@ void NotificationModel::add(const Notification &notification) {
     entry.slide_offset = cfg::slide_offset;
     entries_.insert(entries_.begin(), std::move(entry));
 
-    animations_.animate(0.0f, 1.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic, [this, id](float v) {
-        if (NotificationEntry *e = find(id)) {
-            e->opacity = v;
-        } }, {}, owner_opacity(id));
-    animations_.animate(cfg::slide_offset, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic, [this, id](float v) {
-        if (NotificationEntry *e = find(id)) {
-            e->slide_offset = v;
-        } }, {}, owner_slide(id));
+    animations_.animate(
+        0.0f, 1.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic,
+        [this, id](float v) {
+            if (NotificationEntry *e = find(id)) {
+                e->opacity = v;
+            }
+        },
+        {}, owner_opacity(id));
+    animations_.animate(
+        cfg::slide_offset, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic,
+        [this, id](float v) {
+            if (NotificationEntry *e = find(id)) {
+                e->slide_offset = v;
+            }
+        },
+        {}, owner_slide(id));
     start_progress(id, notification.timeout);
 }
 
@@ -68,11 +81,21 @@ void NotificationModel::start_exit(uint32_t id) {
     }
     entry->exiting = true;
     animations_.cancelForOwner(owner_progress(id));
-    animations_.animate(entry->opacity, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic, [this, id](float v) {
-        if (NotificationEntry *e = find(id)) {
-            e->opacity = v;
-        } }, {}, owner_opacity(id));
-    animations_.animate(0.0f, 1.0f, cfg::anim_normal_ms + cfg::anim_exit_buffer_ms, astralia::Easing::Linear, [](float) {}, [this, id] { std::erase_if(entries_, [id](const NotificationEntry &e) { return e.id == id; }); }, owner_exit(id));
+    animations_.animate(
+        entry->opacity, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic,
+        [this, id](float v) {
+            if (NotificationEntry *e = find(id)) {
+                e->opacity = v;
+            }
+        },
+        {}, owner_opacity(id));
+    animations_.animate(
+        0.0f, 1.0f, cfg::anim_normal_ms + cfg::anim_exit_buffer_ms, astralia::Easing::Linear,
+        [](float) {},
+        [this, id] {
+            std::erase_if(entries_, [id](const NotificationEntry &e) { return e.id == id; });
+        },
+        owner_exit(id));
 }
 
 void NotificationModel::sync(const std::vector<Notification> &list) {
@@ -90,7 +113,8 @@ void NotificationModel::sync(const std::vector<Notification> &list) {
         if (entry.exiting) {
             continue;
         }
-        bool present = std::ranges::any_of(list, [&entry](const Notification &n) { return n.id == entry.id; });
+        bool present =
+            std::ranges::any_of(list, [&entry](const Notification &n) { return n.id == entry.id; });
         if (!present) {
             gone.push_back(entry.id);
         }
@@ -105,13 +129,19 @@ bool NotificationViewState::hide_locally(uint32_t id) {
         return false;
     }
     local_exit_[id] = 1.0f;
-    animations_.animate(1.0f, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic, [this, id](float v) {
-        if (auto it = local_exit_.find(id); it != local_exit_.end()) {
-            it->second = v;
-        } }, [this, id] {
-        if (auto it = local_exit_.find(id); it != local_exit_.end()) {
-            it->second = 0.0f;
-        } }, id);
+    animations_.animate(
+        1.0f, 0.0f, cfg::anim_normal_ms, astralia::Easing::EaseOutCubic,
+        [this, id](float v) {
+            if (auto it = local_exit_.find(id); it != local_exit_.end()) {
+                it->second = v;
+            }
+        },
+        [this, id] {
+            if (auto it = local_exit_.find(id); it != local_exit_.end()) {
+                it->second = 0.0f;
+            }
+        },
+        id);
     return true;
 }
 
@@ -126,7 +156,8 @@ bool NotificationViewState::set_hover(std::optional<uint32_t> id) {
 
 void NotificationViewState::forget_missing(const std::vector<NotificationEntry> &entries) {
     std::erase_if(local_exit_, [&entries](const auto &kv) {
-        return std::ranges::none_of(entries, [&kv](const NotificationEntry &e) { return e.id == kv.first; });
+        return std::ranges::none_of(entries,
+                                    [&kv](const NotificationEntry &e) { return e.id == kv.first; });
     });
 }
 
@@ -146,10 +177,14 @@ float notification_card_height(float header, float summary, float body) {
     return height;
 }
 
-NotificationLayout layout_notifications(ui::Canvas &canvas, const NotificationModel &model, const NotificationViewState &view, float max_height) {
-    ui::TextStyle app_style{ui::FontFamily::text, cfg::app_px, true, static_cast<int>(cfg::wrap_width)};
-    ui::TextStyle summary_style{ui::FontFamily::text, cfg::summary_px, true, static_cast<int>(cfg::wrap_width), true};
-    ui::TextStyle body_style{ui::FontFamily::text, cfg::body_px, false, static_cast<int>(cfg::wrap_width), true};
+NotificationLayout layout_notifications(ui::Canvas &canvas, const NotificationModel &model,
+                                        const NotificationViewState &view, float max_height) {
+    ui::TextStyle app_style{ui::FontFamily::text, cfg::app_px, true,
+                            static_cast<int>(cfg::wrap_width)};
+    ui::TextStyle summary_style{ui::FontFamily::text, cfg::summary_px, true,
+                                static_cast<int>(cfg::wrap_width), true};
+    ui::TextStyle body_style{ui::FontFamily::text, cfg::body_px, false,
+                             static_cast<int>(cfg::wrap_width), true};
 
     NotificationLayout layout;
     float used = 0.0f;
@@ -159,8 +194,11 @@ NotificationLayout layout_notifications(ui::Canvas &canvas, const NotificationMo
         }
         NotificationCard card;
         card.entry = &entry;
-        card.header = std::max(cfg::urgency_dot, canvas.measure(entry.app.empty() ? cfg::app_fallback : entry.app, app_style).h);
-        card.summary = entry.summary.empty() ? 0.0f : canvas.measure(entry.summary, summary_style).h;
+        card.header = std::max(
+            cfg::urgency_dot,
+            canvas.measure(entry.app.empty() ? cfg::app_fallback : entry.app, app_style).h);
+        card.summary =
+            entry.summary.empty() ? 0.0f : canvas.measure(entry.summary, summary_style).h;
         card.body = entry.body.empty() ? 0.0f : canvas.measure(entry.body, body_style).h;
         card.height = notification_card_height(card.header, card.summary, card.body);
         float next = used + (layout.cards.empty() ? 0.0f : cfg::gap) + card.height;
@@ -180,18 +218,23 @@ NotificationLayout layout_notifications(ui::Canvas &canvas, const NotificationMo
     return layout;
 }
 
-std::vector<std::pair<uint32_t, ui::Box>> notification_close_boxes(const NotificationLayout &layout, const NotificationViewState &view) {
+std::vector<std::pair<uint32_t, ui::Box>>
+notification_close_boxes(const NotificationLayout &layout, const NotificationViewState &view) {
     std::vector<std::pair<uint32_t, ui::Box>> boxes;
     for (const NotificationCard &card : layout.cards) {
         if (view.fading(card.entry->id)) {
             continue;
         }
-        boxes.push_back({card.entry->id, {cfg::card_width - cfg::close_hit, card.y + card.entry->slide_offset, cfg::close_hit, cfg::close_hit}});
+        boxes.push_back({card.entry->id,
+                         {cfg::card_width - cfg::close_hit, card.y + card.entry->slide_offset,
+                          cfg::close_hit, cfg::close_hit}});
     }
     return boxes;
 }
 
-std::optional<uint32_t> notification_close_at(const NotificationLayout &layout, const NotificationViewState &view, double x, double y) {
+std::optional<uint32_t> notification_close_at(const NotificationLayout &layout,
+                                              const NotificationViewState &view, double x,
+                                              double y) {
     for (const auto &[id, box] : notification_close_boxes(layout, view)) {
         if (x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h) {
             return id;

@@ -9,19 +9,19 @@
 constexpr int kArcGaugeSegments = 10;
 constexpr float kArcGaugeSegmentGapDeg = 6.0f;
 
-const Texture *cached_arc_gauge(TextureCache &tcache, int32_t scale, float diameter, float stroke, float value01, const astralia::Color &fill_color) {
+const Texture *cached_arc_gauge(TextureCache &tcache, int32_t scale, float diameter, float stroke,
+                                float value01, const astralia::Color &fill_color) {
     int px_diameter = static_cast<int>(diameter * scale);
-    int bucket =
-        static_cast<int>(std::round(std::clamp(value01, 0.0f, 1.0f) * 100.0f));
-    std::string key =
-        "arc_gauge:" + std::to_string(px_diameter) + ":" +
-        std::to_string(static_cast<int>(stroke * scale)) + ":" +
-        std::to_string(bucket) + ":" +
-        std::to_string(static_cast<int>(fill_color.r * 255)) + "," +
-        std::to_string(static_cast<int>(fill_color.g * 255)) + "," +
-        std::to_string(static_cast<int>(fill_color.b * 255));
+    int bucket = static_cast<int>(std::round(std::clamp(value01, 0.0f, 1.0f) * 100.0f));
+    std::string key = "arc_gauge:" + std::to_string(px_diameter) + ":" +
+                      std::to_string(static_cast<int>(stroke * scale)) + ":" +
+                      std::to_string(bucket) + ":" +
+                      std::to_string(static_cast<int>(fill_color.r * 255)) + "," +
+                      std::to_string(static_cast<int>(fill_color.g * 255)) + "," +
+                      std::to_string(static_cast<int>(fill_color.b * 255));
     return tcache.get(key, [&]() -> RasterizedText {
-        cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, px_diameter, px_diameter);
+        cairo_surface_t *surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32, px_diameter, px_diameter);
         cairo_t *cr = cairo_create(surface);
         float cx = px_diameter / 2.0f, cy = px_diameter / 2.0f;
         float px_stroke = stroke * scale;
@@ -51,8 +51,7 @@ const Texture *cached_arc_gauge(TextureCache &tcache, int32_t scale, float diame
         }
 
         cairo_surface_flush(surface);
-        RasterizedText result =
-            surface_to_rgba(surface, px_diameter, px_diameter);
+        RasterizedText result = surface_to_rgba(surface, px_diameter, px_diameter);
         result.scale = scale;
         cairo_destroy(cr);
         cairo_surface_destroy(surface);

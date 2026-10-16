@@ -171,7 +171,8 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
     if (ranked.empty()) {
         return none;
     }
-    std::stable_sort(ranked.begin(), ranked.end(), [](const Scored &a, const Scored &b) { return a.score > b.score; });
+    std::stable_sort(ranked.begin(), ranked.end(),
+                     [](const Scored &a, const Scored &b) { return a.score > b.score; });
 
     Extraction result{{ranked[0].seed}, true};
     std::vector<bool> used(ranked.size(), false);
@@ -193,7 +194,8 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
         }
         bool distinct = true;
         for (const Seed &chosen : result.seeds) {
-            distinct = distinct && hue_distance(ranked[i].seed.hue, chosen.hue) >= secondary_hue_gap;
+            distinct =
+                distinct && hue_distance(ranked[i].seed.hue, chosen.hue) >= secondary_hue_gap;
         }
         if (distinct) {
             result.seeds.push_back(ranked[i].seed);

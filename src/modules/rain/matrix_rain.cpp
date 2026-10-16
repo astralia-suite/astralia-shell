@@ -48,11 +48,13 @@ std::string utf8_encode(char32_t cp) {
 }
 
 void matrix_rain_font(cairo_t *cr, bool bold) {
-    cairo_select_font_face(cr, "Noto Sans CJK JP", CAIRO_FONT_SLANT_NORMAL, bold ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Noto Sans CJK JP", CAIRO_FONT_SLANT_NORMAL,
+                           bold ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, kMatrixRainFontPx);
 }
 
-void draw_glyph_centered(cairo_t *cr, char32_t glyph, float cell_x, float cell_y, bool bold, const Color &color) {
+void draw_glyph_centered(cairo_t *cr, char32_t glyph, float cell_x, float cell_y, bool bold,
+                         const Color &color) {
     matrix_rain_font(cr, bold);
     std::string utf8 = utf8_encode(glyph);
     cairo_text_extents_t extents;
@@ -70,8 +72,7 @@ char32_t MatrixRain::random_glyph() const {
     const std::u32string &pool = matrix_rain_glyph_pool();
     if (pool.empty())
         return U' ';
-    size_t idx =
-        static_cast<size_t>(rain_random01() * static_cast<float>(pool.size()));
+    size_t idx = static_cast<size_t>(rain_random01() * static_cast<float>(pool.size()));
     if (idx >= pool.size())
         idx = pool.size() - 1;
     return pool[idx];
@@ -81,8 +82,7 @@ void MatrixRain::rebuild(int width, int height, bool async_speed) {
     width_ = std::max(1, width);
     height_ = std::max(1, height);
 
-    column_count_ =
-        std::max(1, static_cast<int>(width_ / (kMatrixRainCellWidth * 2)));
+    column_count_ = std::max(1, static_cast<int>(width_ / (kMatrixRainCellWidth * 2)));
     row_count_ = std::max(1, static_cast<int>(height_ / kMatrixRainCellHeight));
 
     columns_.assign(static_cast<size_t>(column_count_), Column{});
@@ -91,8 +91,7 @@ void MatrixRain::rebuild(int width, int height, bool async_speed) {
         c.speed = async_speed ? rain_random_range(kRainAsyncSpeedMin, kRainAsyncSpeedMax) : 1.0f;
     }
 
-    float content_width =
-        column_count_ * kMatrixRainCellWidth * 2 - kMatrixRainCellWidth;
+    float content_width = column_count_ * kMatrixRainCellWidth * 2 - kMatrixRainCellWidth;
     offset_x_ = (width_ - content_width) / 2.0f;
     offset_y_ = (height_ - row_count_ * kMatrixRainCellHeight) / 2.0f;
 
@@ -104,8 +103,7 @@ void MatrixRain::rebuild(int width, int height, bool async_speed) {
 }
 
 void MatrixRain::decay() {
-    int alpha_step =
-        std::clamp(static_cast<int>(255.0f * kRainFadeAlpha), 1, 255);
+    int alpha_step = std::clamp(static_cast<int>(255.0f * kRainFadeAlpha), 1, 255);
     for (int y = 0; y < height_; ++y) {
         uint8_t *row = buffer_.data() + static_cast<size_t>(y) * stride_;
         for (int x = 0; x < width_; ++x) {
@@ -132,7 +130,8 @@ void MatrixRain::tick() {
 
     decay();
 
-    cairo_surface_t *surface = cairo_image_surface_create_for_data(buffer_.data(), CAIRO_FORMAT_ARGB32, width_, height_, stride_);
+    cairo_surface_t *surface = cairo_image_surface_create_for_data(
+        buffer_.data(), CAIRO_FORMAT_ARGB32, width_, height_, stride_);
     cairo_t *cr = cairo_create(surface);
     cairo_font_options_t *opts = cairo_font_options_create();
     cairo_font_options_set_antialias(opts, CAIRO_ANTIALIAS_GRAY);
@@ -144,8 +143,7 @@ void MatrixRain::tick() {
         float x = offset_x_ + c * kMatrixRainCellWidth * 2.0f;
 
         if (col.last_head_valid) {
-            float last_y =
-                offset_y_ + col.last_head_drop * kMatrixRainCellHeight;
+            float last_y = offset_y_ + col.last_head_drop * kMatrixRainCellHeight;
             draw_glyph_centered(cr, col.last_glyph, x, last_y, false, palette::accent);
         }
 
@@ -165,7 +163,8 @@ void MatrixRain::tick() {
 
     if (sweeping_) {
         sweep_drop_ += 1.0f;
-        if (sweep_drop_ * kMatrixRainCellHeight > static_cast<float>(height_) + kMatrixRainCellHeight) {
+        if (sweep_drop_ * kMatrixRainCellHeight >
+            static_cast<float>(height_) + kMatrixRainCellHeight) {
             sweeping_ = false;
             for (Column &col : columns_) {
                 col.drop = -(rain_random01() * static_cast<float>(row_count_));
@@ -180,8 +179,10 @@ void MatrixRain::tick() {
                 continue;
             col.accum -= 1.0f;
             col.drop += 1.0f;
-            if (col.drop * kMatrixRainCellHeight > static_cast<float>(height_) && rain_random01() < kRainResetChance) {
-                col.drop = col.ever_reset ? -(rain_random01() * static_cast<float>(row_count_)) : start_drop();
+            if (col.drop * kMatrixRainCellHeight > static_cast<float>(height_) &&
+                rain_random01() < kRainResetChance) {
+                col.drop = col.ever_reset ? -(rain_random01() * static_cast<float>(row_count_))
+                                          : start_drop();
                 col.ever_reset = true;
                 col.last_head_valid = false;
             }

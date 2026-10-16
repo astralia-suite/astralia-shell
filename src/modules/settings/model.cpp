@@ -73,7 +73,8 @@ const std::vector<SettingsTabInfo> &settings_all_tabs() {
     return tabs;
 }
 
-std::string settings_field_text(const Config &config, SettingsField field, const std::string &monitor) {
+std::string settings_field_text(const Config &config, SettingsField field,
+                                const std::string &monitor) {
     switch (field) {
     case SettingsField::wallpaper_dir:
         return path_collapse_home(config.wallpaper_dir);
@@ -101,7 +102,8 @@ std::string settings_field_text(const Config &config, SettingsField field, const
     return "";
 }
 
-void settings_apply_field(Config &config, SettingsField field, const std::string &text, const std::string &monitor) {
+void settings_apply_field(Config &config, SettingsField field, const std::string &text,
+                          const std::string &monitor) {
     try {
         switch (field) {
         case SettingsField::wallpaper_dir:
@@ -111,38 +113,50 @@ void settings_apply_field(Config &config, SettingsField field, const std::string
             config.wallpaper_animated_dir = path_expand_home(text);
             break;
         case SettingsField::ambient_timeout: {
-            auto value = static_cast<uint32_t>(std::clamp(std::stoi(text), cfg::idle_timeout_min, cfg::idle_timeout_max));
-            (monitor.empty() ? config.ambient_timeout_seconds : config.monitor_overrides[monitor].ambient_timeout_seconds) = value;
+            auto value = static_cast<uint32_t>(
+                std::clamp(std::stoi(text), cfg::idle_timeout_min, cfg::idle_timeout_max));
+            (monitor.empty() ? config.ambient_timeout_seconds
+                             : config.monitor_overrides[monitor].ambient_timeout_seconds) = value;
             break;
         }
         case SettingsField::screensaver_timeout: {
-            auto value = static_cast<uint32_t>(std::clamp(std::stoi(text), cfg::idle_timeout_min, cfg::idle_timeout_max));
-            (monitor.empty() ? config.screensaver_timeout_seconds : config.monitor_overrides[monitor].screensaver_timeout_seconds) = value;
+            auto value = static_cast<uint32_t>(
+                std::clamp(std::stoi(text), cfg::idle_timeout_min, cfg::idle_timeout_max));
+            (monitor.empty() ? config.screensaver_timeout_seconds
+                             : config.monitor_overrides[monitor].screensaver_timeout_seconds) =
+                value;
             break;
         }
         case SettingsField::visualizer_fps:
-            config.visualizer.fps = std::clamp(std::stoi(text), kVisualizerFpsMin, kVisualizerFpsMax);
+            config.visualizer.fps =
+                std::clamp(std::stoi(text), kVisualizerFpsMin, kVisualizerFpsMax);
             break;
         case SettingsField::visualizer_thin:
-            config.visualizer.particle_thin = std::clamp(std::stof(text), kVisualizerParticleThinMin, kVisualizerParticleThinMax);
+            config.visualizer.particle_thin =
+                std::clamp(std::stof(text), kVisualizerParticleThinMin, kVisualizerParticleThinMax);
             break;
         case SettingsField::visualizer_size:
             config.visualizer.particle_size = kVisualizerParticleSize;
             break;
         case SettingsField::visualizer_complexity:
-            config.visualizer.fractal_complexity = std::clamp(std::stoi(text), kVisualizerComplexityMin, kVisualizerComplexityMax);
+            config.visualizer.fractal_complexity =
+                std::clamp(std::stoi(text), kVisualizerComplexityMin, kVisualizerComplexityMax);
             break;
         case SettingsField::visualizer_glow_directions:
-            config.visualizer.glow_directions = std::clamp(std::stof(text), kVisualizerGlowDirectionsMin, kVisualizerGlowDirectionsMax);
+            config.visualizer.glow_directions = std::clamp(
+                std::stof(text), kVisualizerGlowDirectionsMin, kVisualizerGlowDirectionsMax);
             break;
         case SettingsField::visualizer_glow_quality:
-            config.visualizer.glow_quality = std::clamp(std::stof(text), kVisualizerGlowQualityMin, kVisualizerGlowQualityMax);
+            config.visualizer.glow_quality =
+                std::clamp(std::stof(text), kVisualizerGlowQualityMin, kVisualizerGlowQualityMax);
             break;
         case SettingsField::none:
             break;
         }
     } catch (const std::exception &) {
-        log::error("settings: could not parse '{}' for field {}, keeping the previous value", text, static_cast<int>(field));
+        log::error("settings: could not parse '{}' for field {}, keeping the "
+                   "previous value",
+                   text, static_cast<int>(field));
     }
 }
 
@@ -176,9 +190,7 @@ SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
     active_ = pending_ = SettingsTab::wallpaper;
 }
 
-SettingsModel::~SettingsModel() {
-    *alive_ = false;
-}
+SettingsModel::~SettingsModel() { *alive_ = false; }
 
 void SettingsModel::changed() {
     if (on_changed) {
@@ -220,7 +232,9 @@ BarStyle SettingsModel::effective_bar_style() const {
     if (std::ranges::find(caps_.bar_styles, style) != caps_.bar_styles.end()) {
         return style;
     }
-    return std::ranges::find(caps_.bar_styles, BarStyle::continuous) != caps_.bar_styles.end() ? BarStyle::continuous : caps_.bar_styles.front();
+    return std::ranges::find(caps_.bar_styles, BarStyle::continuous) != caps_.bar_styles.end()
+               ? BarStyle::continuous
+               : caps_.bar_styles.front();
 }
 
 void SettingsModel::sync() {
@@ -233,7 +247,9 @@ void SettingsModel::sync() {
         }
     }
     std::ranges::sort(monitors_);
-    auto known = [this](const std::string &name) { return std::ranges::find(monitors_, name) != monitors_.end(); };
+    auto known = [this](const std::string &name) {
+        return std::ranges::find(monitors_, name) != monitors_.end();
+    };
     if (!displays_monitor_.empty() && !known(displays_monitor_)) {
         displays_monitor_.clear();
     }
@@ -247,9 +263,11 @@ void SettingsModel::sync() {
         if (monitors_.size() == 1) {
             picker.region = monitors_[0];
         } else if (picker.region.empty() || !known(picker.region)) {
-            picker.region = known(focused) ? focused : (monitors_.empty() ? std::string() : monitors_[0]);
+            picker.region =
+                known(focused) ? focused : (monitors_.empty() ? std::string() : monitors_[0]);
         }
-        int count = picker.region.empty() ? 1 : wallpaper_column_count(current, picker.region, animated);
+        int count =
+            picker.region.empty() ? 1 : wallpaper_column_count(current, picker.region, animated);
         picker.column = std::clamp(picker.column, 0, count - 1);
     }
     if (open_ && !sequence_.closing() && active_ == SettingsTab::wallpaper) {
@@ -264,7 +282,8 @@ void SettingsModel::sync() {
 
 void SettingsModel::rescan(bool animated) {
     const Config &current = config();
-    scan(animated ? animated_picker_ : static_picker_, animated ? current.wallpaper_animated_dir : current.wallpaper_dir, animated);
+    scan(animated ? animated_picker_ : static_picker_,
+         animated ? current.wallpaper_animated_dir : current.wallpaper_dir, animated);
 }
 
 void SettingsModel::scan(WallpaperPicker &picker, const std::string &dir, bool animated) {
@@ -275,14 +294,15 @@ void SettingsModel::scan(WallpaperPicker &picker, const std::string &dir, bool a
     std::weak_ptr<bool> alive = alive_;
     std::thread([this, alive, &picker, dir, generation, animated] {
         std::vector<std::string> found = wallpaper_list_files(dir, animated, cfg::max_images);
-        DeferredCall::call_later([this, alive, &picker, found = std::move(found), generation]() mutable {
-            if (!alive.lock() || generation != picker.generation) {
-                return;
-            }
-            picker.files = std::move(found);
-            picker.scanning = false;
-            changed();
-        });
+        DeferredCall::call_later(
+            [this, alive, &picker, found = std::move(found), generation]() mutable {
+                if (!alive.lock() || generation != picker.generation) {
+                    return;
+                }
+                picker.files = std::move(found);
+                picker.scanning = false;
+                changed();
+            });
     }).detach();
 }
 
@@ -291,9 +311,16 @@ void SettingsModel::select_tab(SettingsTab tab) {
         return;
     }
     pending_ = tab;
-    animations_.animate(tab_alpha_, 0.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic, [this](float v) { tab_alpha_ = v; }, [this] {
-        active_ = pending_;
-        animations_.animate(0.0f, 1.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic, [this](float v) { tab_alpha_ = v; }, {}, owner_tab_fade); }, owner_tab_fade);
+    animations_.animate(
+        tab_alpha_, 0.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic,
+        [this](float v) { tab_alpha_ = v; },
+        [this] {
+            active_ = pending_;
+            animations_.animate(
+                0.0f, 1.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic,
+                [this](float v) { tab_alpha_ = v; }, {}, owner_tab_fade);
+        },
+        owner_tab_fade);
     sync();
 }
 
@@ -351,7 +378,9 @@ bool SettingsModel::key(const input::KeyEvent &event) {
                 return false;
             }
             auto index = static_cast<std::ptrdiff_t>(it - tabs_.begin());
-            index = std::clamp<std::ptrdiff_t>(index + (event.kind == input::KeyKind::Down ? 1 : -1), 0, static_cast<std::ptrdiff_t>(tabs_.size()) - 1);
+            index =
+                std::clamp<std::ptrdiff_t>(index + (event.kind == input::KeyKind::Down ? 1 : -1), 0,
+                                           static_cast<std::ptrdiff_t>(tabs_.size()) - 1);
             select_tab(tabs_[static_cast<std::size_t>(index)].tab);
             changed();
             return true;
@@ -410,7 +439,10 @@ void SettingsModel::toggle_caret() {
 }
 
 bool SettingsModel::clickable(double x, double y) const {
-    return std::ranges::any_of(regions_, [&](const SettingsRegion &r) { return r.box.w > 0 && x >= r.box.x && x < r.box.x + r.box.w && y >= r.box.y && y < r.box.y + r.box.h; });
+    return std::ranges::any_of(regions_, [&](const SettingsRegion &r) {
+        return r.box.w > 0 && x >= r.box.x && x < r.box.x + r.box.w && y >= r.box.y &&
+               y < r.box.y + r.box.h;
+    });
 }
 
 void SettingsModel::click(double x, double y) {
@@ -424,7 +456,8 @@ void SettingsModel::click(double x, double y) {
             return;
         }
     }
-    bool inside = x >= panel_.x && x < panel_.x + panel_.w && y >= panel_.y && y < panel_.y + panel_.h;
+    bool inside =
+        x >= panel_.x && x < panel_.x + panel_.w && y >= panel_.y && y < panel_.y + panel_.h;
     if (!inside && on_close_requested) {
         on_close_requested();
     }
@@ -443,15 +476,22 @@ void SettingsModel::scroll(float pixels) {
     float inset_h = picker.grid_height - cfg::grid_inset * 2.0f;
     int columns = cfg::thumb_columns;
     (void)inset_w;
-    std::size_t rows = (picker.files.size() + static_cast<std::size_t>(columns) - 1) / static_cast<std::size_t>(columns);
-    float content = rows == 0 ? 0.0f : static_cast<float>(rows) * (cfg::thumb_size + cfg::thumb_gap) - cfg::thumb_gap;
+    std::size_t rows = (picker.files.size() + static_cast<std::size_t>(columns) - 1) /
+                       static_cast<std::size_t>(columns);
+    float content =
+        rows == 0 ? 0.0f
+                  : static_cast<float>(rows) * (cfg::thumb_size + cfg::thumb_gap) - cfg::thumb_gap;
     picker.scroll = std::clamp(picker.scroll + pixels, 0.0f, std::max(0.0f, content - inset_h));
     changed();
 }
 
 void SettingsModel::dispatch(const SettingsRegion &region) {
     const Config &current = config();
-    auto monitor = [&](int index) { return index < 0 || static_cast<std::size_t>(index) >= monitors_.size() ? std::string() : monitors_[static_cast<std::size_t>(index)]; };
+    auto monitor = [&](int index) {
+        return index < 0 || static_cast<std::size_t>(index) >= monitors_.size()
+                   ? std::string()
+                   : monitors_[static_cast<std::size_t>(index)];
+    };
     switch (region.act) {
     case SettingsAct::close:
         if (on_close_requested) {
@@ -498,7 +538,8 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
     case SettingsAct::idle_screensaver: {
         SettingsAct act = region.act;
         edit([&](Config &config) {
-            MonitorOverride *override = target.empty() ? nullptr : &config.monitor_overrides[target];
+            MonitorOverride *override =
+                target.empty() ? nullptr : &config.monitor_overrides[target];
             auto flip = [&](bool &defaults, bool MonitorOverride::*field) {
                 bool &value = override != nullptr ? override->*field : defaults;
                 value = !value;
@@ -524,13 +565,21 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         return;
     }
     case SettingsAct::idle_enable:
-        edit([](Config &config) { config.idle_management_enabled = !config.idle_management_enabled; });
+        edit([](Config &config) {
+            config.idle_management_enabled = !config.idle_management_enabled;
+        });
         return;
     case SettingsAct::idle_ambient_reset:
-        edit([&](Config &config) { config.monitor_overrides[idle_monitor_].ambient_timeout_seconds = config.ambient_timeout_seconds; });
+        edit([&](Config &config) {
+            config.monitor_overrides[idle_monitor_].ambient_timeout_seconds =
+                config.ambient_timeout_seconds;
+        });
         return;
     case SettingsAct::idle_screensaver_reset:
-        edit([&](Config &config) { config.monitor_overrides[idle_monitor_].screensaver_timeout_seconds = config.screensaver_timeout_seconds; });
+        edit([&](Config &config) {
+            config.monitor_overrides[idle_monitor_].screensaver_timeout_seconds =
+                config.screensaver_timeout_seconds;
+        });
         return;
     case SettingsAct::bar_style:
         if (region.a >= 0 && static_cast<std::size_t>(region.a) < caps_.bar_styles.size()) {
@@ -539,13 +588,18 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         }
         return;
     case SettingsAct::rain_mode:
-        edit([&](Config &config) { config.rain.mode = region.a == 1 ? RainMode::Stiletto : RainMode::Matrix; });
+        edit([&](Config &config) {
+            config.rain.mode = region.a == 1 ? RainMode::Stiletto : RainMode::Matrix;
+        });
         return;
     case SettingsAct::rain_async:
         edit([](Config &config) { config.rain.async_speed = !config.rain.async_speed; });
         return;
     case SettingsAct::visualizer_shape:
-        edit([&](Config &config) { config.visualizer.visualizer_shape = region.a == 1 ? VisualizerShape::Sphere : VisualizerShape::Bar; });
+        edit([&](Config &config) {
+            config.visualizer.visualizer_shape =
+                region.a == 1 ? VisualizerShape::Sphere : VisualizerShape::Bar;
+        });
         return;
     case SettingsAct::visualizer_reset:
         edit([&](Config &config) {
@@ -591,10 +645,14 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
     WallpaperPicker &picker = this->picker(animated);
     switch (region.act) {
     case SettingsAct::wallpaper_default:
-        edit([](Config &config) { config.default_wallpaper_enabled = !config.default_wallpaper_enabled; });
+        edit([](Config &config) {
+            config.default_wallpaper_enabled = !config.default_wallpaper_enabled;
+        });
         return;
     case SettingsAct::wallpaper_animated:
-        edit([](Config &config) { config.wallpaper_animated_enabled = !config.wallpaper_animated_enabled; });
+        edit([](Config &config) {
+            config.wallpaper_animated_enabled = !config.wallpaper_animated_enabled;
+        });
         return;
     case SettingsAct::wallpaper_region: {
         int monitor = region.a;
@@ -610,7 +668,9 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
     case SettingsAct::wallpaper_pick:
         if (region.a >= 0 && static_cast<std::size_t>(region.a) < picker.files.size()) {
             std::string path = picker.files[static_cast<std::size_t>(region.a)];
-            edit([&](Config &config) { wallpaper_set_column(config, picker.region, picker.column, path, animated); });
+            edit([&](Config &config) {
+                wallpaper_set_column(config, picker.region, picker.column, path, animated);
+            });
         }
         return;
     case SettingsAct::wallpaper_remove:
@@ -623,11 +683,16 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
         });
         return;
     case SettingsAct::wallpaper_fill:
-        edit([&](Config &config) { wallpaper_set_fill_mode(config, picker.region, picker.column, region.a == 1 ? "fit" : "crop", animated); });
+        edit([&](Config &config) {
+            wallpaper_set_fill_mode(config, picker.region, picker.column,
+                                    region.a == 1 ? "fit" : "crop", animated);
+        });
         return;
     case SettingsAct::wallpaper_count:
         edit([&](Config &config) {
-            int count = std::clamp(wallpaper_column_count(config, picker.region, animated) + region.a, 1, cfg::max_columns);
+            int count =
+                std::clamp(wallpaper_column_count(config, picker.region, animated) + region.a, 1,
+                           cfg::max_columns);
             wallpaper_set_column_count(config, picker.region, count, animated);
         });
         return;

@@ -33,7 +33,8 @@ std::string shell_report() {
     Capabilities x11 = x11_capabilities();
     auto mark = [](bool value) { return value ? "yes" : "no"; };
     std::string text = "| Module or feature | Wayland | X11 |\n| --- | --- | --- |\n";
-    for (const char *name : {"bar", "launcher", "logout", "overview", "settings", "notification", "osd", "polkit", "wallpaper"}) {
+    for (const char *name : {"bar", "launcher", "logout", "overview", "settings", "notification",
+                             "osd", "polkit", "wallpaper"}) {
         text += std::string("| `") + name + "` | yes | yes |\n";
     }
     constexpr std::pair<const char *, bool Capabilities::*> features[] = {
@@ -47,20 +48,21 @@ std::string shell_report() {
         {"animations", &Capabilities::animations},
     };
     for (const auto &[name, member] : features) {
-        text += std::string("| `") + name + "` | " + mark(wayland.*member) + " | " + mark(x11.*member) + " |\n";
+        text += std::string("| `") + name + "` | " + mark(wayland.*member) + " | " +
+                mark(x11.*member) + " |\n";
     }
     text += "\n| Verb | Description | Wayland | X11 |\n| --- | --- | --- | --- |\n";
     for (int i = 0; i < static_cast<int>(ShellVerb::count); ++i) {
         ShellVerb verb = static_cast<ShellVerb>(i);
         const ShellVerbSpec &spec = shell_verb_spec(verb);
-        text += std::string("| `") + spec.name + "` | " + spec.description + " | " + mark(shell_verb_available(wayland, verb)) + " | " + mark(shell_verb_available(x11, verb)) + " |\n";
+        text += std::string("| `") + spec.name + "` | " + spec.description + " | " +
+                mark(shell_verb_available(wayland, verb)) + " | " +
+                mark(shell_verb_available(x11, verb)) + " |\n";
     }
     return text;
 }
 
-Capabilities wayland_capabilities() {
-    return {true, true, true, true, true, true, true, true};
-}
+Capabilities wayland_capabilities() { return {true, true, true, true, true, true, true, true}; }
 
 Capabilities x11_capabilities() {
     Capabilities capabilities;
@@ -73,9 +75,7 @@ Capabilities x11_capabilities() {
     return capabilities;
 }
 
-const ShellVerbSpec &shell_verb_spec(ShellVerb verb) {
-    return verbs[static_cast<size_t>(verb)];
-}
+const ShellVerbSpec &shell_verb_spec(ShellVerb verb) { return verbs[static_cast<size_t>(verb)]; }
 
 bool shell_verb_available(const Capabilities &capabilities, ShellVerb verb) {
     const ShellVerbSpec &spec = shell_verb_spec(verb);
@@ -137,13 +137,15 @@ std::vector<std::string> Shell::open_modules() const {
 
 std::vector<IpcHandler> Shell::handlers() {
     std::vector<IpcHandler> out;
-    out.push_back({"status", [this] { return status(); }, "show the backend, its capabilities and the open modules"});
+    out.push_back({"status", [this] { return status(); },
+                   "show the backend, its capabilities and the open modules"});
     for (size_t i = 0; i < bindings_.size(); ++i) {
         if (!bindings_[i]) {
             continue;
         }
         ShellVerb verb = static_cast<ShellVerb>(i);
-        out.push_back({verbs[i].name, [this, verb] {
+        out.push_back({verbs[i].name,
+                       [this, verb] {
                            run(verb);
                            return std::string();
                        },

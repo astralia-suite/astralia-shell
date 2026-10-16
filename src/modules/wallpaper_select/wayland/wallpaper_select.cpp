@@ -38,7 +38,8 @@ class WallpaperSelectModule final : public Module {
 
     bool create_surface(WaylandState &app, wl_output *output) override {
         output_ = output;
-        want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell, kNamespace, output);
+        want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell, kNamespace,
+                                             output);
         return want_;
     }
 
@@ -48,7 +49,8 @@ class WallpaperSelectModule final : public Module {
         if (!overlay_panel_init_egl(base_, app.egl_display, app.egl_config, app.egl_context))
             return false;
         base_.frame_clock.draw = [this] { paint(); };
-        canvas_.bind_context([this] { gl_make_current(base_.egl_display, base_.egl_surface, base_.egl_context); });
+        canvas_.bind_context(
+            [this] { gl_make_current(base_.egl_display, base_.egl_surface, base_.egl_context); });
         canvas_.on_image_ready = [this] { request_frame(); };
 
         if (!model_) {
@@ -62,7 +64,8 @@ class WallpaperSelectModule final : public Module {
                 app.suppress_wallpaper_transition = false;
             };
             hooks.settled = [] { return false; };
-            model_ = std::make_unique<astralia::WallpaperSelectModel>(std::move(hooks), app.capabilities.animated_wallpaper);
+            model_ = std::make_unique<astralia::WallpaperSelectModel>(
+                std::move(hooks), app.capabilities.animated_wallpaper);
             model_->on_close_requested = [this] { toggle(); };
             model_->on_closed = [this] { overlay_panel_release(base_); };
             model_->on_changed = [this] { request_frame(); };
@@ -91,8 +94,10 @@ class WallpaperSelectModule final : public Module {
         if (model_)
             model_->click(x, y);
     }
-    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x, double y) override {
-        hovering_card_ = model_ && base_.open && focused_surface == base_.surface && model_->clickable(x, y);
+    void handle_pointer_move(WaylandState &, wl_surface *focused_surface, double x,
+                             double y) override {
+        hovering_card_ =
+            model_ && base_.open && focused_surface == base_.surface && model_->clickable(x, y);
     }
     bool wants_pointing_hand_cursor() const override { return hovering_card_; }
     void handle_key_event(WaylandState &, const KeyEvent &event) override {
@@ -123,10 +128,15 @@ class WallpaperSelectModule final : public Module {
         if (!enabled_ || !model_ || base_.open || !model_->available())
             return;
         if (target.output.wl != bound_output_ || !base_.layer_surface) {
-            wl_output *bound = overlay_panel_retarget(base_, app.display, bound_output_, target.output.wl, target.output.name.c_str(), [&](wl_output *out) {
-                output_ = out;
-                want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell, kNamespace, out);
-                return want_; }, [&] { return init_egl(app); });
+            wl_output *bound = overlay_panel_retarget(
+                base_, app.display, bound_output_, target.output.wl, target.output.name.c_str(),
+                [&](wl_output *out) {
+                    output_ = out;
+                    want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell,
+                                                         kNamespace, out);
+                    return want_;
+                },
+                [&] { return init_egl(app); });
             if (!bound) {
                 enabled_ = false;
                 app_detail::rest_egl_current(app);
@@ -162,7 +172,8 @@ class WallpaperSelectModule final : public Module {
 
         canvas_.begin(scale);
         if (model_ && base_.open)
-            astralia::paint_wallpaper_select(canvas_, *model_, static_cast<float>(base_.width), static_cast<float>(base_.height));
+            astralia::paint_wallpaper_select(canvas_, *model_, static_cast<float>(base_.width),
+                                             static_cast<float>(base_.height));
         canvas_.flush();
         eglSwapBuffers(base_.egl_display, base_.egl_surface);
 

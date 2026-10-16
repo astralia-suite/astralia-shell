@@ -18,7 +18,9 @@ namespace {
 std::string cache_directory() {
     const char *cache_home = std::getenv("XDG_CACHE_HOME");
     const char *home = std::getenv("HOME");
-    std::string base = cache_home != nullptr && cache_home[0] != '\0' ? std::string(cache_home) : std::format("{}/.cache", home != nullptr ? home : "");
+    std::string base = cache_home != nullptr && cache_home[0] != '\0'
+                           ? std::string(cache_home)
+                           : std::format("{}/.cache", home != nullptr ? home : "");
     return std::format("{}/{}", base, cover_cache_config::dir);
 }
 
@@ -36,9 +38,11 @@ void prune(const std::filesystem::path &directory) {
         if (!entry.is_regular_file(entry_error)) {
             continue;
         }
-        entries.push_back({entry.path().filename().string(), entry.file_size(entry_error), file_seconds(entry.last_write_time(entry_error))});
+        entries.push_back({entry.path().filename().string(), entry.file_size(entry_error),
+                           file_seconds(entry.last_write_time(entry_error))});
     }
-    for (const std::string &name : cover_cache_expired(std::move(entries), file_seconds(std::filesystem::file_time_type::clock::now()))) {
+    for (const std::string &name : cover_cache_expired(
+             std::move(entries), file_seconds(std::filesystem::file_time_type::clock::now()))) {
         std::filesystem::remove(directory / name, error);
     }
 }
@@ -52,8 +56,9 @@ void store(cairo_surface_t *surface, const std::filesystem::path &stem) {
     std::filesystem::create_directories(target.parent_path(), error);
     std::filesystem::path temporary = target;
     temporary += std::format(".{:x}.tmp", std::hash<std::thread::id>{}(std::this_thread::get_id()));
-    bool encoded = opaque ? write_jpeg(surface, temporary.c_str(), cover_cache_config::jpeg_quality)
-                          : cairo_surface_write_to_png(surface, temporary.c_str()) == CAIRO_STATUS_SUCCESS;
+    bool encoded =
+        opaque ? write_jpeg(surface, temporary.c_str(), cover_cache_config::jpeg_quality)
+               : cairo_surface_write_to_png(surface, temporary.c_str()) == CAIRO_STATUS_SUCCESS;
     if (encoded) {
         std::filesystem::rename(temporary, target, error);
     }
@@ -78,7 +83,8 @@ std::vector<std::string> cover_cache_expired(std::vector<CoverCacheEntry> entrie
     for (CoverCacheEntry &entry : entries) {
         int64_t age = now - entry.used;
         bool temporary = entry.name.ends_with(".tmp");
-        if (age > (temporary ? cover_cache_config::stale_temporary_seconds : cover_cache_config::max_age_seconds)) {
+        if (age > (temporary ? cover_cache_config::stale_temporary_seconds
+                             : cover_cache_config::max_age_seconds)) {
             expired.push_back(entry.name);
         } else if (!temporary) {
             total += entry.size;
@@ -96,8 +102,10 @@ std::vector<std::string> cover_cache_expired(std::vector<CoverCacheEntry> entrie
     return expired;
 }
 
-std::string cover_cache_name(std::string_view path, uintmax_t size, int64_t modified, int width, int height, bool contained) {
-    std::size_t key = std::hash<std::string>{}(std::format("{}|{}|{}|{}x{}{}", path, size, modified, width, height, contained ? "|contain" : ""));
+std::string cover_cache_name(std::string_view path, uintmax_t size, int64_t modified, int width,
+                             int height, bool contained) {
+    std::size_t key = std::hash<std::string>{}(std::format(
+        "{}|{}|{}|{}x{}{}", path, size, modified, width, height, contained ? "|contain" : ""));
     return std::format("{:016x}", key);
 }
 
@@ -109,17 +117,20 @@ bool cached_size_matches(cairo_surface_t *surface, int width, int height, bool c
     if (!contained) {
         return cached_width == width && cached_height == height;
     }
-    return cached_width <= width && cached_height <= height && (cached_width == width || cached_height == height);
+    return cached_width <= width && cached_height <= height &&
+           (cached_width == width || cached_height == height);
 }
 
-std::expected<SurfacePtr, std::string> load(const std::string &path, int width, int height, bool contained) {
+std::expected<SurfacePtr, std::string> load(const std::string &path, int width, int height,
+                                            bool contained) {
     std::error_code error;
     uintmax_t size = std::filesystem::file_size(path, error);
     if (error) {
         return std::unexpected(error.message());
     }
     int64_t modified = std::filesystem::last_write_time(path, error).time_since_epoch().count();
-    std::filesystem::path stem = std::filesystem::path(cache_directory()) / cover_cache_name(path, size, modified, width, height, contained);
+    std::filesystem::path stem = std::filesystem::path(cache_directory()) /
+                                 cover_cache_name(path, size, modified, width, height, contained);
     for (const char *extension : {".jpg", ".png"}) {
         std::filesystem::path cached = stem;
         cached += extension;
@@ -128,12 +139,14 @@ std::expected<SurfacePtr, std::string> load(const std::string &path, int width, 
         }
         if (auto stored = decode_image(cached.string())) {
             if (cached_size_matches(stored->get(), width, height, contained)) {
-                std::filesystem::last_write_time(cached, std::filesystem::file_time_type::clock::now(), error);
+                std::filesystem::last_write_time(
+                    cached, std::filesystem::file_time_type::clock::now(), error);
                 return stored;
             }
         }
     }
-    auto image = contained ? decode_contain(path, width, height) : decode_cover(path, width, height);
+    auto image =
+        contained ? decode_contain(path, width, height) : decode_cover(path, width, height);
     if (image) {
         store(image->get(), stem);
     }
@@ -142,8 +155,13 @@ std::expected<SurfacePtr, std::string> load(const std::string &path, int width, 
 
 } // namespace
 
-std::expected<SurfacePtr, std::string> load_cover(const std::string &path, int width, int height) { return load(path, width, height, false); }
+std::expected<SurfacePtr, std::string> load_cover(const std::string &path, int width, int height) {
+    return load(path, width, height, false);
+}
 
-std::expected<SurfacePtr, std::string> load_contained(const std::string &path, int width, int height) { return load(path, width, height, true); }
+std::expected<SurfacePtr, std::string> load_contained(const std::string &path, int width,
+                                                      int height) {
+    return load(path, width, height, true);
+}
 
 } // namespace astralia

@@ -45,8 +45,11 @@ struct Harness {
 void check_commands() {
     auto plain = astralia::logout_commands(false);
     auto lock = astralia::logout_commands(true);
-    test::check(plain[0] == "systemctl poweroff" && plain[1] == "systemctl reboot", "default commands come from the config");
-    test::check(plain[astralia::logout_config::lock_index].empty() && lock[astralia::logout_config::lock_index] == "astralia lock", "the lock command exists only where lock does");
+    test::check(plain[0] == "systemctl poweroff" && plain[1] == "systemctl reboot",
+                "default commands come from the config");
+    test::check(plain[astralia::logout_config::lock_index].empty() &&
+                    lock[astralia::logout_config::lock_index] == "astralia lock",
+                "the lock command exists only where lock does");
 }
 
 void check_logout_model() {
@@ -56,39 +59,57 @@ void check_logout_model() {
     test::check(!m.open_state() && !m.key(key(KeyKind::Right)), "closed model ignores keys");
 
     m.open();
-    test::check(m.open_state() && m.input_ready() && !m.exiting() && m.logo_scale() == 1.0f && m.burst() == 1.0f, "instant open runs the whole choreography");
-    test::check(m.travel()[0] == 1.0f && m.travel()[7] == 1.0f && m.slash()[3] == 1.0f, "buttons sit on the ring");
-    test::check(m.selected() == 0 && m.highlight_scale()[0] == 1.0f && m.highlight_border()[0] == 1.0f, "the first button starts selected and highlighted");
+    test::check(m.open_state() && m.input_ready() && !m.exiting() && m.logo_scale() == 1.0f &&
+                    m.burst() == 1.0f,
+                "instant open runs the whole choreography");
+    test::check(m.travel()[0] == 1.0f && m.travel()[7] == 1.0f && m.slash()[3] == 1.0f,
+                "buttons sit on the ring");
+    test::check(m.selected() == 0 && m.highlight_scale()[0] == 1.0f &&
+                    m.highlight_border()[0] == 1.0f,
+                "the first button starts selected and highlighted");
     test::check(!m.animating(), "nothing is left animating");
 
-    test::check(m.key(key(KeyKind::Right)) && m.selected() == 1 && m.highlight_scale()[1] == 1.0f && m.highlight_scale()[0] == 0.0f, "right moves the highlight");
-    test::check(m.key(key(KeyKind::Left)) && m.key(key(KeyKind::Left)) && m.selected() == 7, "left wraps around");
+    test::check(m.key(key(KeyKind::Right)) && m.selected() == 1 && m.highlight_scale()[1] == 1.0f &&
+                    m.highlight_scale()[0] == 0.0f,
+                "right moves the highlight");
+    test::check(m.key(key(KeyKind::Left)) && m.key(key(KeyKind::Left)) && m.selected() == 7,
+                "left wraps around");
     test::check(m.key(key(KeyKind::Text, "3")) && m.selected() == 2, "digits select a button");
-    test::check(!m.key(key(KeyKind::Text, "9")) && !m.key(key(KeyKind::Text, "ab")) && m.selected() == 2, "other text is ignored");
+    test::check(!m.key(key(KeyKind::Text, "9")) && !m.key(key(KeyKind::Text, "ab")) &&
+                    m.selected() == 2,
+                "other text is ignored");
 
     test::check(m.hover(0, 0, 1920, 1200) == false, "hover on empty space changes nothing");
     astralia::Point center{960, 600};
     astralia::Point first = astralia::logout_button_center(0, center);
     test::check(m.hover(first.x, first.y, 1920, 1200) && m.hovered() == 0, "hover finds a button");
     test::check(!m.hover(first.x + 1, first.y + 1, 1920, 1200), "same button is not a change");
-    test::check(m.clear_hover() && m.hovered() == -1 && !m.clear_hover(), "leaving clears the hover once");
+    test::check(m.clear_hover() && m.hovered() == -1 && !m.clear_hover(),
+                "leaving clears the hover once");
 
     m.key(key(KeyKind::Text, "1"));
-    test::check(m.key(key(KeyKind::Enter)) && h.executed.size() == 1 && h.executed[0] == "systemctl poweroff", "enter runs the selected command");
-    test::check(!m.open_state() && h.closed == 1 && m.selected() == 0 && m.travel()[0] == 0.0f, "executing hides the card and resets");
+    test::check(m.key(key(KeyKind::Enter)) && h.executed.size() == 1 &&
+                    h.executed[0] == "systemctl poweroff",
+                "enter runs the selected command");
+    test::check(!m.open_state() && h.closed == 1 && m.selected() == 0 && m.travel()[0] == 0.0f,
+                "executing hides the card and resets");
 
     m.open();
     m.key(key(KeyKind::Text, "3"));
     m.key(key(KeyKind::Enter));
-    test::check(h.executed.size() == 2 && h.executed[1] == "astralia lock", "the lock button runs the lock command");
+    test::check(h.executed.size() == 2 && h.executed[1] == "astralia lock",
+                "the lock button runs the lock command");
 
     m.open();
     m.key(key(KeyKind::Text, "5"));
     m.key(key(KeyKind::Enter));
-    test::check(h.executed.size() == 2 && !m.open_state() && h.closed == 3, "a button without a command still closes");
+    test::check(h.executed.size() == 2 && !m.open_state() && h.closed == 3,
+                "a button without a command still closes");
 
     m.open();
-    test::check(m.key(key(KeyKind::Escape)) && !m.open_state() && h.closed == 4 && m.exit_fade() == 0.0f, "escape closes through the exit sequence");
+    test::check(m.key(key(KeyKind::Escape)) && !m.open_state() && h.closed == 4 &&
+                    m.exit_fade() == 0.0f,
+                "escape closes through the exit sequence");
 
     m.open();
     m.click(10, 10, 1920, 1200);
@@ -96,14 +117,16 @@ void check_logout_model() {
     m.open();
     astralia::Point third = astralia::logout_button_center(1, center);
     m.click(third.x, third.y, 1920, 1200);
-    test::check(h.executed.size() == 3 && h.executed[2] == "systemctl reboot" && !m.open_state(), "a click on a button runs it");
+    test::check(h.executed.size() == 3 && h.executed[2] == "systemctl reboot" && !m.open_state(),
+                "a click on a button runs it");
 }
 
 void check_logout_choreography() {
     Harness h;
     LogoutModel &m = h.model;
     m.open();
-    test::check(m.open_state() && !m.input_ready() && m.animating() && m.logo_scale() == 0.0f, "animated open starts from nothing");
+    test::check(m.open_state() && !m.input_ready() && m.animating() && m.logo_scale() == 0.0f,
+                "animated open starts from nothing");
     test::check(!m.key(key(KeyKind::Right)), "keys wait for the burst to finish");
     auto start = std::chrono::steady_clock::now();
     m.tick(start + std::chrono::milliseconds(700));
@@ -135,19 +158,24 @@ void check_logout_view() {
     h.model.open();
     test::RecordingCanvas canvas;
     astralia::paint_logout(canvas, h.model, 1920, 1200);
-    test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8, "eight buttons with a glyph each");
-    test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1, "one logo group");
+    test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8,
+                "eight buttons with a glyph each");
+    test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1,
+                "one logo group");
     constexpr float face = astralia::logout_config::button_size - astralia::metrics::shadow_offset;
     const test::Op &top = canvas.ops[1];
     test::check(top.box.w > face && top.box.w < face * 1.06, "the selected button is enlarged");
     const test::Op &next = canvas.ops[4];
     test::check(next.box.w == face, "the others keep their size");
-    const test::Op &group = canvas.ops.back().kind == Kind::end_group ? canvas.ops[canvas.ops.size() - 2] : canvas.ops.back();
+    const test::Op &group = canvas.ops.back().kind == Kind::end_group
+                                ? canvas.ops[canvas.ops.size() - 2]
+                                : canvas.ops.back();
     (void)group;
     bool centered = false;
     for (const test::Op &op : canvas.ops) {
         if (op.kind == Kind::begin_group) {
-            centered = op.box.x == 960 - astralia::logout_config::logo_size / 2.0f && op.value == 1.0f;
+            centered =
+                op.box.x == 960 - astralia::logout_config::logo_size / 2.0f && op.value == 1.0f;
         }
     }
     test::check(centered, "the logo is centered at full scale");

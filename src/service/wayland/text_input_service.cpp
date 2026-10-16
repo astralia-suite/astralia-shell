@@ -17,7 +17,8 @@ void text_input_leave(void *data, zwp_text_input_v3 *, wl_surface *surface) {
     static_cast<TextInputService *>(data)->handle_leave(surface);
 }
 
-void text_input_preedit_string(void *data, zwp_text_input_v3 *, const char *text, int32_t, int32_t) {
+void text_input_preedit_string(void *data, zwp_text_input_v3 *, const char *text, int32_t,
+                               int32_t) {
     static_cast<TextInputService *>(data)->handle_preedit_string(text);
 }
 
@@ -25,8 +26,10 @@ void text_input_commit_string(void *data, zwp_text_input_v3 *, const char *text)
     static_cast<TextInputService *>(data)->handle_commit_string(text);
 }
 
-void text_input_delete_surrounding_text(void *data, zwp_text_input_v3 *, uint32_t before_length, uint32_t after_length) {
-    static_cast<TextInputService *>(data)->handle_delete_surrounding_text(before_length, after_length);
+void text_input_delete_surrounding_text(void *data, zwp_text_input_v3 *, uint32_t before_length,
+                                        uint32_t after_length) {
+    static_cast<TextInputService *>(data)->handle_delete_surrounding_text(before_length,
+                                                                          after_length);
 }
 
 void text_input_done(void *data, zwp_text_input_v3 *, uint32_t serial) {
@@ -140,7 +143,8 @@ void TextInputService::on_keyboard_focus_surface(wl_surface *surface, bool enter
 }
 
 bool TextInputService::active_surface_accepts_text_input() const {
-    return active_surface_ != nullptr && (entered_surface_ == active_surface_ || keyboard_focus_surface_ == active_surface_);
+    return active_surface_ != nullptr &&
+           (entered_surface_ == active_surface_ || keyboard_focus_surface_ == active_surface_);
 }
 
 void TextInputService::handle_enter(wl_surface *surface) {
@@ -170,7 +174,8 @@ void TextInputService::handle_commit_string(const char *text) {
     pending_edit_.commit_text = text ? text : "";
 }
 
-void TextInputService::handle_delete_surrounding_text(uint32_t before_length, uint32_t after_length) {
+void TextInputService::handle_delete_surrounding_text(uint32_t before_length,
+                                                      uint32_t after_length) {
     pending_edit_.has_delete = true;
     pending_edit_.delete_before_length = before_length;
     pending_edit_.delete_after_length = after_length;
@@ -220,10 +225,16 @@ void TextInputService::commit_active_state(bool from_input_method) {
         return;
 
     TextInputState state = active_client_->text_input_state();
-    uint32_t purpose = state.purpose == TextInputPurpose::Password ? ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_PASSWORD : ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_NORMAL;
+    uint32_t purpose = state.purpose == TextInputPurpose::Password
+                           ? ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_PASSWORD
+                           : ZWP_TEXT_INPUT_V3_CONTENT_PURPOSE_NORMAL;
     zwp_text_input_v3_set_content_type(text_input_, ZWP_TEXT_INPUT_V3_CONTENT_HINT_NONE, purpose);
-    zwp_text_input_v3_set_text_change_cause(text_input_, from_input_method ? ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_INPUT_METHOD : ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_OTHER);
-    zwp_text_input_v3_set_cursor_rectangle(text_input_, state.cursor_rect_x, state.cursor_rect_y, std::max(1, state.cursor_rect_w), std::max(1, state.cursor_rect_h));
+    zwp_text_input_v3_set_text_change_cause(
+        text_input_, from_input_method ? ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_INPUT_METHOD
+                                       : ZWP_TEXT_INPUT_V3_CHANGE_CAUSE_OTHER);
+    zwp_text_input_v3_set_cursor_rectangle(text_input_, state.cursor_rect_x, state.cursor_rect_y,
+                                           std::max(1, state.cursor_rect_w),
+                                           std::max(1, state.cursor_rect_h));
     commit_protocol_state();
     wl_surface_commit(active_surface_);
 }

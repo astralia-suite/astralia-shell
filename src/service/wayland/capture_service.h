@@ -36,8 +36,12 @@ struct ToplevelExportState {
     std::unordered_map<std::string, ToplevelExportCapture> captures;
 };
 
-void toplevel_export_request(ToplevelExportState &state, hyprland_toplevel_export_manager_v1 *manager, wl_shm *shm, const std::string &address, int min_interval_ms);
+void toplevel_export_request(ToplevelExportState &state,
+                             hyprland_toplevel_export_manager_v1 *manager, wl_shm *shm,
+                             const std::string &address, int min_interval_ms);
 
-const Texture *toplevel_export_texture(const ToplevelExportState &state, const std::string &address);
+const Texture *toplevel_export_texture(const ToplevelExportState &state,
+                                       const std::string &address);
 
-void toplevel_export_prune(ToplevelExportState &state, const std::vector<std::string> &live_addresses);
+void toplevel_export_prune(ToplevelExportState &state,
+                           const std::vector<std::string> &live_addresses);

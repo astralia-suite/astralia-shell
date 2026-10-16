@@ -11,7 +11,8 @@ namespace astralia {
 
 class XWindow {
   public:
-    XWindow(XConnection &x, std::string_view name, uint32_t event_mask, bool override_redirect = true);
+    XWindow(XConnection &x, std::string_view name, uint32_t event_mask,
+            bool override_redirect = true);
     ~XWindow();
     XWindow(const XWindow &) = delete;
     XWindow &operator=(const XWindow &) = delete;
@@ -26,7 +27,8 @@ class XWindow {
     void set_cursor(CursorShape shape);
     void make_click_through();
     bool apply_configure(const xcb_configure_notify_event_t &event);
-    void place(const OutputGeometry &geometry, uint16_t backing_width = 0, uint16_t backing_height = 0);
+    void place(const OutputGeometry &geometry, uint16_t backing_width = 0,
+               uint16_t backing_height = 0);
     void release();
     void show(bool focus);
     void focus();
