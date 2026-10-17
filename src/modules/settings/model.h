@@ -97,6 +97,9 @@ enum class SettingsAct : uint8_t {
     wallpaper_remove,
     wallpaper_fill,
     wallpaper_rescan,
+    dropdown_toggle,
+    dropdown_dismiss,
+    capture_pick,
     field_focus,
 };
 
@@ -148,6 +151,10 @@ class SettingsModel {
     void add_region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
         regions_.push_back({box, act, a, b});
     }
+    void add_region_front(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
+        regions_.insert(regions_.begin(), {box, act, a, b});
+    }
+    int dropdown_open() const { return dropdown_open_; }
     void set_panel(const ui::Box &panel) { panel_ = panel; }
 
     void click(double x, double y);
@@ -204,6 +211,7 @@ class SettingsModel {
     ScrollSequence sequence_{animations_, 30};
     std::vector<SettingsTabInfo> tabs_;
     std::vector<SettingsRegion> regions_;
+    int dropdown_open_ = -1;
     ui::Box panel_;
     bool open_ = false;
     SettingsTab active_ = SettingsTab::wallpaper;

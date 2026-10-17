@@ -79,7 +79,11 @@ void check_config_parse() {
               cfg.wallpaper_fill_modes["eDP-1"] == std::vector<std::string>{"fit", "crop"},
           "counts and fill modes");
 
+    cfg.capture_monitor = "eDP-1";
+    cfg.capture_column = 1;
     Config round = parse_config(serialize_config(cfg));
+    check(round.capture_monitor == "eDP-1" && round.capture_column == 1,
+          "region capture round-trips");
     check(round == cfg, "serialize then parse round-trips");
     check(serialize_config(round) == serialize_config(cfg), "serialization is stable");
     std::string text = serialize_config(cfg);

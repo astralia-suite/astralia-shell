@@ -259,6 +259,8 @@ Config parse_config(std::string_view source) {
     read_columns(wallpaper, "animatedColumns", cfg.wallpaper_animated_columns, true);
     read_counts(wallpaper, "animatedColumnCounts", cfg.wallpaper_animated_column_counts);
     read_columns(wallpaper, "animatedFillModes", cfg.wallpaper_animated_fill_modes, false);
+    cfg.capture_monitor = text(wallpaper, "captureMonitor", cfg.capture_monitor);
+    cfg.capture_column = integer(wallpaper, "captureColumn", cfg.capture_column);
 
     const Json *displays = root.find("displays");
     if (displays != nullptr && displays->type != Json::Type::object) {
@@ -350,6 +352,8 @@ std::string serialize_config(const Config &cfg) {
     wallpaper.set("animatedColumns", columns_json(cfg.wallpaper_animated_columns, true));
     wallpaper.set("animatedColumnCounts", counts_json(cfg.wallpaper_animated_column_counts));
     wallpaper.set("animatedFillModes", columns_json(cfg.wallpaper_animated_fill_modes, false));
+    wallpaper.set("captureMonitor", Json::from_string(cfg.capture_monitor));
+    wallpaper.set("captureColumn", Json::from_number(cfg.capture_column));
 
     Json displays = Json::make_object();
     displays.set("defaultOsd", Json::from_bool(cfg.default_osd_enabled));

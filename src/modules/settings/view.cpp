@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -33,11 +34,18 @@ constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::title_px, true};
 constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 
+struct DropEntry {
+    std::string label;
+    int a;
+    int b;
+};
+
 struct Pane {
     ui::Canvas &canvas;
     SettingsModel &model;
     float alpha;
     ui::Box caret{};
+    std::function<void()> overlay;
 
     Color fade(const Color &c) const { return with_alpha(c, c.a * alpha); }
     void rect(const ui::Box &box, const Color &c) { canvas.rect(box, fade(c)); }
@@ -71,6 +79,41 @@ struct Pane {
     }
     void region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
         model.add_region(box, act, a, b);
+    }
+    void dropdown(const ui::Box &row, int id, std::string_view label, const std::string &current,
+                  std::vector<DropEntry> entries, size_t selected, SettingsAct pick) {
+        chip(row, palette::surface);
+        left(label, text_style, row.x + cfg::tile_margin, row,
+             with_alpha(palette::text, cfg::label_opacity));
+        float box_w = std::min(row.w * 0.5f, cfg::dropdown_max_width);
+        ui::Box box{row.x + row.w - cfg::tile_margin - box_w,
+                    row.y + (row.h - cfg::field_height) / 2.0f, box_w, cfg::field_height};
+        bool open = model.dropdown_open() == id;
+        selectable(box, open);
+        left(current, text_style, box.x + cfg::dropdown_pad, box, palette::text);
+        const char *glyph = open ? icon::chevron_up : icon::chevron_down;
+        ui::TextSize arrow = canvas.measure(glyph, icon_style);
+        canvas.text(glyph, icon_style, box.x + box.w - cfg::dropdown_pad - arrow.w,
+                    box.y + (box.h - arrow.h) / 2.0f, fade(palette::text));
+        region(box, SettingsAct::dropdown_toggle, id);
+        if (!open) {
+            return;
+        }
+        overlay = [this, box, entries = std::move(entries), selected, pick] {
+            float row_h = cfg::field_height;
+            ui::Box list{box.x, box.y + box.h + cfg::dropdown_gap, box.w,
+                         row_h * static_cast<float>(entries.size())};
+            chip(list, palette::paper);
+            model.add_region_front({0.0f, 0.0f, 1.0e5f, 1.0e5f}, SettingsAct::dropdown_dismiss);
+            for (size_t i = 0; i < entries.size(); ++i) {
+                ui::Box item{list.x, list.y + row_h * static_cast<float>(i), list.w, row_h};
+                if (i == selected) {
+                    selectable(item, true);
+                }
+                left(entries[i].label, text_style, item.x + cfg::dropdown_pad, item, palette::text);
+                model.add_region_front(item, pick, entries[i].a, entries[i].b);
+            }
+        };
     }
 };
 
@@ -115,22 +158,19 @@ void tiles(Pane &pane, float x, float y, float w, const std::vector<std::string>
 }
 
 void monitor_row(Pane &pane, float x, float y, float w, const std::string &selected,
-                 SettingsAct act) {
+                 SettingsAct act, int id) {
     const std::vector<std::string> &monitors = pane.model.monitors();
-    float count = static_cast<float>(monitors.size()) + 1.0f;
-    float tile_w = (w - cfg::selector_spacing * (count - 1.0f)) / count;
-    float cx = x;
-    auto draw = [&](const std::string &label, int index, bool active) {
-        ui::Box box{cx, y, tile_w, cfg::selector_height};
-        pane.selectable(box, active);
-        pane.centered(label, text_style, box, palette::text);
-        pane.region(box, act, index, 0);
-        cx += tile_w + cfg::selector_spacing;
-    };
-    draw("Default", -1, selected.empty());
+    std::vector<DropEntry> entries{{"Default", -1, 0}};
+    size_t active = 0;
     for (size_t i = 0; i < monitors.size(); ++i) {
-        draw(monitors[i], static_cast<int>(i), monitors[i] == selected);
+        if (monitors[i] == selected) {
+            active = entries.size();
+        }
+        entries.push_back({monitors[i], static_cast<int>(i), 0});
     }
+    std::string current = entries[active].label;
+    pane.dropdown({x, y, w, cfg::tile_height}, id, "Display", current, std::move(entries), active,
+                  act);
 }
 
 void number_field(Pane &pane, const ui::Box &box, SettingsField field, const std::string &value) {
@@ -180,8 +220,8 @@ void bar_tab(Pane &pane, float x, float y, float w) {
 void displays_tab(Pane &pane, float x, float y, float w) {
     const Config &config = pane.model.config();
     const std::string &selected = pane.model.displays_monitor();
-    monitor_row(pane, x, y, w, selected, SettingsAct::displays_monitor);
-    y += cfg::selector_height + cfg::row_gap;
+    monitor_row(pane, x, y, w, selected, SettingsAct::displays_monitor, 2);
+    y += cfg::tile_height + cfg::row_gap;
     bool is_default = selected.empty();
     const MonitorOverride *override = nullptr;
     if (!is_default) {
@@ -250,8 +290,8 @@ void idle_tab(Pane &pane, float x, float y, float w) {
         return;
     }
     const std::string &selected = pane.model.idle_monitor();
-    monitor_row(pane, x, y, w, selected, SettingsAct::idle_monitor);
-    y += cfg::selector_height + cfg::row_gap;
+    monitor_row(pane, x, y, w, selected, SettingsAct::idle_monitor, 3);
+    y += cfg::tile_height + cfg::row_gap;
     bool is_default = selected.empty();
     const MonitorOverride *override = nullptr;
     if (!is_default) {
@@ -378,22 +418,38 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
                  count > 1 ? monitors[m] + "-" + std::to_string(col + 1) : monitors[m]});
         }
     }
-    if (!chips.empty()) {
-        float chip_w = (w - cfg::region_chip_gap * static_cast<float>(chips.size() - 1)) /
-                       static_cast<float>(chips.size());
-        float cx = x;
+    {
+        std::vector<DropEntry> region_entries;
+        size_t active = std::string::npos;
         for (const Chip &chip : chips) {
-            ui::Box box{cx, y, chip_w, cfg::region_chip_height};
-            bool active = monitors[static_cast<size_t>(chip.monitor)] == picker.region &&
-                          chip.column == picker.column;
-            pane.selectable(box, active);
-            pane.centered(chip.label, text_style, box, palette::text);
-            pane.region(box, SettingsAct::wallpaper_region, chip.monitor,
-                        chip.column | (animated ? 0x100 : 0));
-            cx += chip_w + cfg::region_chip_gap;
+            if (monitors[static_cast<size_t>(chip.monitor)] == picker.region &&
+                chip.column == picker.column) {
+                active = region_entries.size();
+            }
+            region_entries.push_back(
+                {chip.label, chip.monitor, chip.column | (animated ? 0x100 : 0)});
         }
+        std::string current = active < region_entries.size() ? region_entries[active].label : "";
+        pane.dropdown({x, y, w, cfg::tile_height}, 4, "Display", current, std::move(region_entries),
+                      active, SettingsAct::wallpaper_region);
     }
-    y += cfg::region_chip_height + cfg::row_gap;
+    y += cfg::tile_height + cfg::row_gap;
+
+    {
+        std::vector<DropEntry> entries{{"Auto", -1, 0}};
+        size_t selected = 0;
+        for (const Chip &chip : chips) {
+            if (monitors[static_cast<size_t>(chip.monitor)] == config.capture_monitor &&
+                chip.column == config.capture_column) {
+                selected = entries.size();
+            }
+            entries.push_back({chip.label, chip.monitor, chip.column});
+        }
+        std::string current = entries[selected].label;
+        pane.dropdown({x, y, w, cfg::tile_height}, 1, "Region Capture", current, std::move(entries),
+                      selected, SettingsAct::capture_pick);
+        y += cfg::tile_height + cfg::row_gap;
+    }
 
     SettingsField dir_field =
         animated ? SettingsField::wallpaper_animated_dir : SettingsField::wallpaper_dir;
@@ -607,6 +663,9 @@ void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float b
         wallpaper_tab(pane, x, y, w, bottom);
         break;
     }
+    if (pane.overlay) {
+        pane.overlay();
+    }
 }
 
 } // namespace
@@ -723,7 +782,7 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
 
     float content_x = divider_x + cfg::rail_divider_gap;
     float content_w = px + pw - pad - content_x;
-    Pane pane{canvas, model, model.tab_alpha()};
+    Pane pane{canvas, model, model.tab_alpha(), {}, {}};
     tab_content(pane, model.active_tab(), content_x, content_y, content_w, py + ph - pad);
     frame.caret = pane.caret;
     canvas.set_opacity(1.0f);

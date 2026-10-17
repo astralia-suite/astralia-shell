@@ -326,6 +326,20 @@ void check_wallpaper() {
     env.click(SettingsAct::wallpaper_fill, 1, 0);
     test::check(astralia::wallpaper_fill_mode(env.config, "DP-1", 1, false) == "fit",
                 "fill mode applies");
+    env.click(SettingsAct::dropdown_toggle, 1);
+    test::check(env.model.dropdown_open() == 1, "the drop-down opens");
+    env.model.begin_frame();
+    env.model.add_region({0, 0, 10, 10}, SettingsAct::wallpaper_remove);
+    env.model.add_region_front({0, 0, 10, 10}, SettingsAct::capture_pick, 0, 1);
+    env.model.click(5, 5);
+    test::check(env.config.capture_monitor == "DP-1" && env.config.capture_column == 1 &&
+                    env.model.dropdown_open() == -1,
+                "an open list row wins over content beneath and closes the list");
+    env.click(SettingsAct::capture_pick, -1, 0);
+    test::check(env.config.capture_monitor.empty(), "Auto clears region capture");
+    env.click(SettingsAct::dropdown_toggle, 1);
+    env.click(SettingsAct::dropdown_dismiss);
+    test::check(env.model.dropdown_open() == -1, "dismiss closes the list");
     env.click(SettingsAct::wallpaper_region, 1, 0);
     env.click(SettingsAct::wallpaper_remove, 0, 0);
     test::check(astralia::wallpaper_column_override(env.config, "HDMI-1", 0, false).empty(),

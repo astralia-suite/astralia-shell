@@ -72,6 +72,13 @@ std::optional<Extraction> resolve_theme(const std::string &path,
 } // namespace
 
 std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_name) {
+    if (!cfg.capture_monitor.empty() && cfg.capture_column >= 0 &&
+        cfg.capture_column <
+            wallpaper_column_count(cfg, cfg.capture_monitor, cfg.wallpaper_animated_enabled)) {
+        return cfg.wallpaper_animated_enabled
+                   ? wallpaper_column_override(cfg, cfg.capture_monitor, cfg.capture_column, true)
+                   : wallpaper_column_path(cfg, cfg.capture_monitor, cfg.capture_column, false);
+    }
     if (cfg.wallpaper_animated_enabled) {
         if (!monitor_name.empty()) {
             return wallpaper_column_override(cfg, monitor_name, 0, true);

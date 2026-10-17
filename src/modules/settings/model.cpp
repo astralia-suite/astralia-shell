@@ -200,6 +200,7 @@ void SettingsModel::changed() {
 
 void SettingsModel::open() {
     open_ = true;
+    dropdown_open_ = -1;
     active_ = pending_ = SettingsTab::wallpaper;
     animations_.cancelForOwner(owner_tab_fade);
     tab_alpha_ = 1.0f;
@@ -311,6 +312,7 @@ void SettingsModel::select_tab(SettingsTab tab) {
         return;
     }
     pending_ = tab;
+    dropdown_open_ = -1;
     animations_.animate(
         tab_alpha_, 0.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic,
         [this](float v) { tab_alpha_ = v; },
@@ -452,6 +454,9 @@ void SettingsModel::click(double x, double y) {
     for (const SettingsRegion &region : regions_) {
         const ui::Box &b = region.box;
         if (b.w > 0 && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
+            if (region.act != SettingsAct::dropdown_toggle) {
+                dropdown_open_ = -1;
+            }
             dispatch(region);
             return;
         }
@@ -699,6 +704,21 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
     case SettingsAct::wallpaper_rescan:
         rescan(animated);
         changed();
+        return;
+    case SettingsAct::dropdown_toggle:
+        dropdown_open_ = dropdown_open_ == region.a ? -1 : region.a;
+        changed();
+        return;
+    case SettingsAct::dropdown_dismiss:
+        dropdown_open_ = -1;
+        changed();
+        return;
+    case SettingsAct::capture_pick:
+        edit([&](Config &config) {
+            bool valid = region.a >= 0 && static_cast<std::size_t>(region.a) < monitors_.size();
+            config.capture_monitor = valid ? monitors_[static_cast<std::size_t>(region.a)] : "";
+            config.capture_column = valid ? region.b : 0;
+        });
         return;
     default:
         return;

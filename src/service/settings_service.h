@@ -48,6 +48,9 @@ struct Config {
     std::map<std::string, int> wallpaper_animated_column_counts;
     std::map<std::string, std::vector<std::string>> wallpaper_animated_fill_modes;
 
+    std::string capture_monitor;
+    int capture_column = 0;
+
     bool autohide = false;
     BarStyle bar_style = BarStyle::islands;
     bool default_osd_enabled = true;
