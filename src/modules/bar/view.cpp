@@ -90,7 +90,8 @@ void paint_dock(ui::Canvas &canvas, const BarModel &model) {
         float w = std::round(size.w * scale);
         float h = std::round(size.h * scale);
         float x = std::round(layout.dock.x + pad + slot.x);
-        float alpha = slot.entry.focused ? cfg::dock_focused_alpha : cfg::dock_unfocused_alpha;
+        float alpha = (slot.entry.focused ? cfg::dock_focused_alpha : cfg::dock_unfocused_alpha) *
+                      slot.appear;
         canvas.draw_image(image,
                           {x + std::round((cfg::dock_icon - w) / 2.0f),
                            y + std::round((cfg::dock_icon - h) / 2.0f), w, h},

@@ -76,6 +76,7 @@ struct BarWorkspace {
 struct BarDockSlot {
     DockEntry entry;
     float x = 0.0f;
+    float appear = 1.0f;
 };
 
 enum class BarActionKind { none, toggle, overview, workspace };
@@ -150,7 +151,17 @@ class BarModel {
     std::unordered_map<int, float> grow_;
     std::unordered_map<int, bool> was_active_;
     std::vector<BarDockSlot> dock_;
-    std::unordered_map<std::string, float> dock_x_;
+    struct DockMotion {
+        float x = 0.0f;
+        float target = 0.0f;
+        float appear = 1.0f;
+        uint64_t owner = 0;
+    };
+    std::unordered_map<std::string, DockMotion> dock_motion_;
+    uint64_t next_dock_owner_ = 0;
+    float dock_w_ = 0.0f;
+    float dock_w_target_ = 0.0f;
+    bool dock_seen_ = false;
     BarLayout layout_;
     AnimationManager animations_;
     std::string clock_label_;

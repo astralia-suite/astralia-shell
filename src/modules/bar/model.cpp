@@ -250,18 +250,65 @@ void BarModel::refresh_dock() {
         const DockEntry &entry = entries[i];
         live.insert(entry.address);
         float target = static_cast<float>(i) * (cfg::dock_icon + cfg::dock_spacing);
-        auto slot = dock_x_.find(entry.address);
-        if (slot == dock_x_.end()) {
-            dock_x_[entry.address] = target;
-        } else if (std::fabs(slot->second - target) > 0.5f) {
+        auto found = dock_motion_.find(entry.address);
+        if (found == dock_motion_.end()) {
+            DockMotion fresh;
+            fresh.x = fresh.target = target;
+            fresh.owner = cfg::owner_dock + 2 * next_dock_owner_++;
+            fresh.appear = dock_seen_ ? 0.0f : 1.0f;
+            found = dock_motion_.emplace(entry.address, fresh).first;
+            if (fresh.appear < 1.0f) {
+                std::string address = entry.address;
+                animations_.animate(
+                    0.0f, 1.0f, cfg::dock_reorder_ms, astralia::Easing::EaseOutQuad,
+                    [this, address](float v) {
+                        if (auto m = dock_motion_.find(address); m != dock_motion_.end()) {
+                            m->second.appear = v;
+                        }
+                    },
+                    {}, fresh.owner + 1);
+            }
+        }
+        DockMotion &motion = found->second;
+        if (std::fabs(motion.target - target) > 0.5f) {
+            motion.target = target;
             std::string address = entry.address;
             animations_.animate(
-                slot->second, target, cfg::dock_reorder_ms, astralia::Easing::EaseOutQuad,
-                [this, address](float v) { dock_x_[address] = v; }, {}, cfg::owner_dock + i);
+                motion.x, target, cfg::dock_reorder_ms, astralia::Easing::EaseOutQuad,
+                [this, address](float v) {
+                    if (auto m = dock_motion_.find(address); m != dock_motion_.end()) {
+                        m->second.x = v;
+                    }
+                },
+                {}, motion.owner);
         }
-        dock_.push_back({entry, dock_x_[entry.address]});
+        dock_.push_back({entry, motion.x, motion.appear});
     }
-    std::erase_if(dock_x_, [&](const auto &kv) { return !live.contains(kv.first); });
+    for (auto it = dock_motion_.begin(); it != dock_motion_.end();) {
+        if (live.contains(it->first)) {
+            ++it;
+            continue;
+        }
+        animations_.cancelForOwner(it->second.owner);
+        animations_.cancelForOwner(it->second.owner + 1);
+        it = dock_motion_.erase(it);
+    }
+
+    float width_target =
+        entries.empty() ? 0.0f
+                        : static_cast<float>(entries.size()) * cfg::dock_icon +
+                              static_cast<float>(entries.size() - 1) * cfg::dock_spacing;
+    if (entries.empty() || !dock_seen_ || dock_w_ <= 0.0f) {
+        animations_.cancelForOwner(cfg::owner_dock_width);
+        dock_w_ = width_target;
+        dock_w_target_ = width_target;
+    } else if (std::fabs(dock_w_target_ - width_target) > 0.5f) {
+        dock_w_target_ = width_target;
+        animations_.animate(
+            dock_w_, width_target, cfg::dock_reorder_ms, astralia::Easing::EaseOutQuad,
+            [this](float v) { dock_w_ = v; }, {}, cfg::owner_dock_width);
+    }
+    dock_seen_ = dock_seen_ || !entries.empty();
 }
 
 bool BarModel::update_expand(BarItem id, bool target, bool instant) {
@@ -450,9 +497,14 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         x += row_w + cfg::capsule_gap;
         track();
     }
+    for (BarDockSlot &slot : dock_) {
+        if (auto m = dock_motion_.find(slot.entry.address); m != dock_motion_.end()) {
+            slot.x = m->second.x;
+            slot.appear = m->second.appear;
+        }
+    }
     if (!dock_.empty()) {
-        float row_w = static_cast<float>(dock_.size()) * cfg::dock_icon +
-                      static_cast<float>(dock_.size() - 1) * cfg::dock_spacing;
+        float row_w = dock_w_;
         layout_.dock = {x, 0.0f, row_w + 2.0f * pad, height};
         x += row_w + 2.0f * pad + cfg::capsule_gap;
         track();

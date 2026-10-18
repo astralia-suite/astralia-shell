@@ -42,7 +42,8 @@ inline constexpr int battery_critical_percent = 10;
 
 inline constexpr uint64_t owner_expand = 100;
 inline constexpr uint64_t owner_workspace = 200;
-inline constexpr uint64_t owner_dock = 300;
+inline constexpr uint64_t owner_dock_width = 250;
+inline constexpr uint64_t owner_dock = 1000;
 
 inline constexpr const char *clock_format = "%a %Y-%m-%d %H:%M:%S";
 

@@ -199,6 +199,47 @@ void check_bar_layout() {
     test::check(model.item(BarItem::logout).box.x == 6.0f, "okinami uses the island padding");
 }
 
+void check_bar_dock_slide() {
+    astralia::CompositorState state = make_state();
+    state.clients[0].at = {0.0, 0.0};
+    astralia::CompositorClient second = state.clients[0];
+    second.address = "0x2";
+    second.at = {100.0, 0.0};
+    state.clients.push_back(second);
+    auto now = BarModel::Clock::now();
+    BarModel model(make_sources(state), now);
+    test::RecordingCanvas canvas;
+    model.set_style(astralia::bar_style_spec(BarStyle::continuous, false));
+    model.refresh(now);
+    model.layout(canvas, 1000.0f);
+    test::check(model.dock().size() == 2 && model.dock()[1].x == 32.0f,
+                "the second dock icon starts one slot over");
+
+    state.clients.erase(state.clients.begin());
+    model.refresh(now);
+    model.tick(now + std::chrono::milliseconds(100));
+    model.layout(canvas, 1000.0f);
+    float mid = model.dock()[0].x;
+    test::check(model.dock().size() == 1 && mid > 0.0f && mid < 32.0f,
+                "the icon after a removed one slides up instead of snapping");
+    float mid_w = model.layout().dock.w;
+    test::check(mid_w > 42.0f && mid_w < 74.0f, "the dock capsule shrinks with the slide");
+    model.refresh(now + std::chrono::milliseconds(110));
+    model.tick(now + std::chrono::milliseconds(400));
+    model.layout(canvas, 1000.0f);
+    test::check(model.dock()[0].x == 0.0f && model.layout().dock.w == 42.0f,
+                "the slide settles on the new slot");
+
+    astralia::CompositorClient third = state.clients[0];
+    third.address = "0x3";
+    third.at = {200.0, 0.0};
+    state.clients.push_back(third);
+    model.refresh(now + std::chrono::milliseconds(420));
+    model.layout(canvas, 1000.0f);
+    test::check(model.dock().size() == 2 && model.dock()[1].appear < 1.0f,
+                "a new dock icon fades in");
+}
+
 void check_bar_workspace_slots() {
     Instant instant;
     astralia::CompositorState state = make_state();
@@ -328,6 +369,7 @@ void check_bar() {
     check_bar_glyphs();
     check_bar_text();
     check_bar_layout();
+    check_bar_dock_slide();
     check_bar_workspace_slots();
     check_bar_interaction();
 }
