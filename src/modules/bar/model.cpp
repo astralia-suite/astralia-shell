@@ -294,10 +294,10 @@ void BarModel::refresh_dock() {
         it = dock_motion_.erase(it);
     }
 
-    float width_target =
-        entries.empty() ? 0.0f
-                        : static_cast<float>(entries.size()) * cfg::dock_icon +
-                              static_cast<float>(entries.size() - 1) * cfg::dock_spacing;
+    float width_target = entries.empty()
+                             ? 0.0f
+                             : static_cast<float>(entries.size()) * cfg::dock_icon +
+                                   static_cast<float>(entries.size() - 1) * cfg::dock_spacing;
     if (entries.empty() || !dock_seen_ || dock_w_ <= 0.0f) {
         animations_.cancelForOwner(cfg::owner_dock_width);
         dock_w_ = width_target;

@@ -42,6 +42,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 
 - Draw each module once over `ui::Canvas` and add a hook for backend-only art. Per-backend copies drift apart within a release.
 - Rain simulates on the CPU into an ARGB buffer. Each host only uploads or blits that buffer, so both draw identical frames.
+- Bamboo follows the same buffer contract but owns its frame type and random source, because a module may not include another module's files.
 - Hooks carry backend-only art: `LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`, `LockAvatarArt`. Shared views then never include a render header.
 - Share a module's logic only where both backends' formulas and constants match. `notification`, `settings` and bar styles differ in design, so they stay per backend.
 - Keep constants only one host draws with in `<module>_style_config.h`. Constants a shared view draws with go in the module's shared config.

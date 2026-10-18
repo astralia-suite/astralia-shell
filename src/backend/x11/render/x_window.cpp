@@ -10,7 +10,8 @@
 
 namespace astralia {
 
-XWindow::XWindow(XConnection &x, std::string_view name, uint32_t event_mask, bool override_redirect)
+XWindow::XWindow(XConnection &x, std::string_view name, uint32_t event_mask, bool override_redirect,
+                 std::string_view window_class)
     : x_(x), visual_(x.argb_visual()) {
     xcb_connection_t *conn = x_.conn();
     if (visual_ == nullptr) {
@@ -27,7 +28,7 @@ XWindow::XWindow(XConnection &x, std::string_view name, uint32_t event_mask, boo
                       XCB_CW_BACK_PIXMAP | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT |
                           XCB_CW_EVENT_MASK | XCB_CW_COLORMAP,
                       values.data());
-    std::string wm_class = std::string(name) + '\0' + "astralia-shell" + '\0';
+    std::string wm_class = std::string(name) + '\0' + std::string(window_class) + '\0';
     xcb_ewmh_set_wm_name(x_.ewmh(), window_, name.size(), name.data());
     xcb_icccm_set_wm_class(conn, window_, wm_class.size(), wm_class.data());
     gc_ = xcb_generate_id(conn);

@@ -12,7 +12,7 @@ namespace astralia {
 class XWindow {
   public:
     XWindow(XConnection &x, std::string_view name, uint32_t event_mask,
-            bool override_redirect = true);
+            bool override_redirect = true, std::string_view window_class = "astralia-shell");
     ~XWindow();
     XWindow(const XWindow &) = delete;
     XWindow &operator=(const XWindow &) = delete;

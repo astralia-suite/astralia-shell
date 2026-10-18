@@ -80,6 +80,7 @@ void check_lock_layout();
 void check_lock();
 void check_settings();
 void check_rain_buffer();
+void check_bamboo_grow();
 void check_idle();
 void check_visualizer_fft();
 void check_visualizer_cpu_stages();
@@ -164,6 +165,7 @@ int main() {
     check_lock();
     check_settings();
     check_rain_buffer();
+    check_bamboo_grow();
     check_idle();
     check_visualizer_fft();
     check_visualizer_cpu_stages();

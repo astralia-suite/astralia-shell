@@ -12,7 +12,7 @@
 
 - `meson.build`: Builds `astralia-core-base`, `astralia-core-shared`, the `astralia` executable, the backend plugins and the tests.
 - `meson.options`: `backends` selects which backend plugins build; `native_cpu` tunes the x11 plugin for the X201.
-- `assets/`: Fonts, constellation bullets, logos, shaders, the PAM service and the polkit glyph, installed to `share/astralia-shell/`.
+- `assets/`: Fonts, constellation bullets, logos, the bamboo icon and desktop entry, shaders, the PAM service and the polkit glyph, installed to `share/astralia-shell/`.
 - `build.sh`: Sets up dependencies per backend, builds, tests, installs, runs or uninstalls the shell.
 - `readme.md`: Requirements, install, build options, running, backend selection and the module and verb tables.
 - `.clang-format`: Project code style.
@@ -106,6 +106,7 @@
 - `panel_config.h`: Panel card, scroll, row, slider, typography and per-panel constants.
 - `visualizer_config.h`: Visualizer constants and the `VisualizerParams` stored in the config.
 - `rain_config.h`: Rain constants and the `RainParams` stored in the config.
+- `bamboo_config.h`: Bamboo window size, timing, character grid, shoot, culm, branch and leaf constants and the colours.
 - `lock_config.h`: Lock screen card, font, dot and background constants and the layer namespace.
 - `idle_config.h`: Idle activity pulse and screensaver logo constants both hosts use.
 - `dashboard_config.h`: Dashboard window title, id and default size.
@@ -127,6 +128,7 @@
 - `<name>/<backend>/`: The backend's host: surfaces, input conversion, timers and the module-only style config.
 - `bar`, `launcher`, `lock`, `logout`, `notification`, `osd`, `overview`, `polkit`, `settings`, `wallpaper`, `wallpaper_select`: Have a host in both backends.
 - `idle`, `dashboard`, `rain`, `visualizer`: Have a host in both backends, gated by `Capabilities`.
+- `bamboo`: Has a host in both backends and needs no capability.
 
 ## `src/modules/bar/`
 
@@ -150,12 +152,15 @@
 - `wayland/`: `ext-session-lock` host that paints the shared view per output with its entrance, exit and typing motion.
 - `x11/`: Override-redirect window per output, keyboard and pointer grabs, hotplug, cached wallpaper backdrop and the PAM thread.
 
-## `src/modules/idle/`, `rain/`, `visualizer/`
+## `src/modules/idle/`, `rain/`, `bamboo/`, `visualizer/`
 
 - `idle/bounce.{h,cpp}`: Bouncing screensaver logo step shared by both hosts.
 - `idle/idle_clock.{h,cpp}`: Per-output activity clock, ambient and screensaver verdicts and the policy-change test.
 - `idle/x11/idle.{h,cpp}`: Polls `MIT-SCREEN-SAVER` idle time and shows a click-through overlay per output.
 - `rain/matrix_rain.{h,cpp}`, `rain/stiletto_rain.{h,cpp}`: CPU rain simulations into an ARGB buffer; `rain_random` seeds them and `rain_frame.h` views the buffer.
+- `bamboo/bamboo_grow.{h,cpp}`: ASCII bamboo with `│` culms on a character grid, drawn as monospace glyphs into an ARGB buffer: bare culms, then branches and alternating leaves, hold, fade, regrow.
+- `bamboo/bamboo_random.{h,cpp}`, `bamboo/bamboo_frame.h`: The seedable random source and the view of the bamboo buffer.
+- `bamboo/wayland/`, `bamboo/x11/`: Managed bamboo window that uploads or blits the buffer on a timer.
 - `visualizer/audio_capture.{h,cpp}`: PipeWire capture of the sink into overlapping left and right fragments.
 - `visualizer/fft.{h,cpp}`: The windowed radix-2 FFT that turns a fragment into spectrum bins.
 - `visualizer/cpu_stages.{h,cpp}`: CPU peak hold, gravity, averaging and smoothing of the spectrum, as the X11 host runs it.

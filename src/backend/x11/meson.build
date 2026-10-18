@@ -8,6 +8,7 @@ x11_sources = files(
   'core/pointer.cpp',
   'core/x_clipboard.cpp',
   'core/x_connection.cpp',
+  '../../modules/bamboo/x11/bamboo.cpp',
   '../../modules/bar/x11/bar.cpp',
   '../../modules/bar/x11/panel_host.cpp',
   '../../modules/bar/x11/bar_set.cpp',

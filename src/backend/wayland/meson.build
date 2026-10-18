@@ -11,6 +11,7 @@ wayland_sources = files(
   'app/wayland_registry.cpp',
   'core/log.cpp',
   'core/poll_source.cpp',
+  '../../modules/bamboo/wayland/bamboo.cpp',
   '../../modules/bar/wayland/bar.cpp',
   '../../modules/bar/wayland/panel_surface.cpp',
   '../../modules/dashboard/wayland/dashboard.cpp',

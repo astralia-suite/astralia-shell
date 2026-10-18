@@ -12,6 +12,7 @@
 #include "core/runtime_paths.h"
 #include "core/x_connection.h"
 
+#include "modules/bamboo/x11/bamboo.h"
 #include "modules/bar/x11/bar_set.h"
 #include "modules/dashboard/x11/dashboard.h"
 #include "modules/idle/x11/idle.h"
@@ -74,6 +75,7 @@ class X11Backend final : public Backend {
         };
         Dashboard dashboard(*x, *loop, shell, services);
         Rain rain(*x, *loop, shell, services);
+        Bamboo bamboo(*x, *loop, shell, services);
         Idle idle(*x, *loop, services);
         Visualizer visualizer(*x, *loop, shell, services);
         shell.attach(**ipc);

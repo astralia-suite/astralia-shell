@@ -33,6 +33,7 @@ enum class ShellVerb : int {
     wallpaper,
     dashboard,
     rain,
+    bamboo,
     visualizer,
     lock,
     panel_tray,

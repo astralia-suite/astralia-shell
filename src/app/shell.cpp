@@ -13,6 +13,7 @@ constexpr std::array<ShellVerbSpec, static_cast<size_t>(ShellVerb::count)> verbs
     {"wallpaper", "toggle the wallpaper selector", nullptr},
     {"dashboard", "toggle the dashboard window", &Capabilities::dashboard},
     {"rain", "toggle the rain overlay", &Capabilities::rain},
+    {"bamboo", "toggle the bamboo overlay", nullptr},
     {"visualizer", "toggle the audio visualizer overlay", &Capabilities::visualizer},
     {"lock", "lock the session", &Capabilities::lock},
     {"panel-tray", "toggle the tray panel", nullptr},
@@ -34,7 +35,7 @@ std::string shell_report() {
     auto mark = [](bool value) { return value ? "yes" : "no"; };
     std::string text = "| Module or feature | Wayland | X11 |\n| --- | --- | --- |\n";
     for (const char *name : {"bar", "launcher", "logout", "overview", "settings", "notification",
-                             "osd", "polkit", "wallpaper"}) {
+                             "osd", "polkit", "wallpaper", "bamboo"}) {
         text += std::string("| `") + name + "` | yes | yes |\n";
     }
     constexpr std::pair<const char *, bool Capabilities::*> features[] = {

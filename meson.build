@@ -110,6 +110,8 @@ core_shared = static_library(
     'src/modules/visualizer/bars.cpp',
     'src/modules/visualizer/cpu_stages.cpp',
     'src/modules/visualizer/fft.cpp',
+    'src/modules/bamboo/bamboo_grow.cpp',
+    'src/modules/bamboo/bamboo_random.cpp',
     'src/modules/rain/matrix_rain.cpp',
     'src/modules/rain/rain_random.cpp',
     'src/modules/rain/stiletto_rain.cpp',
@@ -183,6 +185,14 @@ install_data(
   install_dir: data_dir / 'fonts',
 )
 install_data('assets/default-wallpaper.jpg', 'assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
+install_data('assets/bamboo/bamboo.png', install_dir: data_dir / 'bamboo')
+configure_file(
+  input: 'assets/bamboo/astralia-shell-bamboo.desktop.in',
+  output: 'astralia-shell-bamboo.desktop',
+  configuration: {'icon': data_dir / 'bamboo' / 'bamboo.png'},
+  install: true,
+  install_dir: get_option('prefix') / get_option('datadir') / 'applications',
+)
 install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
 install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
 install_data('assets/pam/astralia-shell', install_dir: data_dir / 'pam')
@@ -303,6 +313,7 @@ unit = executable(
     'test/modules/polkit/test_polkit.cpp',
     'test/modules/idle/test_idle.cpp',
     'test/modules/rain/test_rain_buffer.cpp',
+    'test/modules/bamboo/test_bamboo_grow.cpp',
     'test/modules/visualizer/test_cpu_stages.cpp',
     'test/modules/visualizer/test_fft.cpp',
     'test/app/test_session.cpp',

@@ -2,6 +2,7 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
 
+#include "modules/bamboo/wayland/bamboo.h"
 #include "modules/bar/wayland/bar.h"
 #include "modules/dashboard/wayland/dashboard.h"
 #include "modules/idle/wayland/idle.h"
@@ -69,6 +70,7 @@ std::vector<std::unique_ptr<Module>> build_app_modules(const astralia::Capabilit
     modules.push_back(make_wallpaper_select_module());
     if (capabilities.rain)
         modules.push_back(make_rain_module());
+    modules.push_back(make_bamboo_module());
     if (capabilities.visualizer)
         modules.push_back(make_visualizer_module());
     if (capabilities.lock)
