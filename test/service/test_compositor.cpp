@@ -361,24 +361,4 @@ void check_i3() {
                    ? std::string(std::getenv("I3SOCK"))
                    : std::string("/fallback")),
           "the environment wins over the fallback");
-
-    auto sway = parse_json(
-        R"({"type":"root","nodes":[{"type":"output","name":"eDP-1","rect":{"x":0,"y":0,"width":1920,"height":1200},"nodes":[
-        {"type":"workspace","num":1,"name":"1","rect":{"x":0,"y":0,"width":1920,"height":1200},"nodes":[
-          {"id":11,"type":"con","window":null,"app_id":"foot","name":"shell","percent":0.5,"rect":{"x":0,"y":0,"width":960,"height":1200}},
-          {"id":12,"type":"con","window":77,"app_id":null,"name":"legacy","percent":0.5,"rect":{"x":960,"y":0,"width":960,"height":1200},"window_properties":{"class":"Steam"}}]}]}]})");
-    check(sway.has_value(), "a sway tree parses");
-    if (sway) {
-        I3Tree native = i3_parse_tree(*sway);
-        check(native.windows.size() == 2 && native.windows[0].window_class == "foot" &&
-                  native.windows[1].window_class == "Steam",
-              "native Wayland windows are named by their app id");
-    }
-    setenv("I3SOCK", "", 1);
-    setenv("SWAYSOCK", "/run/sway.sock", 1);
-    check(i3_socket_path("") == "/run/sway.sock", "the Sway socket is used when I3SOCK is empty");
-    setenv("I3SOCK", "/run/i3.sock", 1);
-    check(i3_socket_path("") == "/run/i3.sock", "I3SOCK wins over SWAYSOCK");
-    unsetenv("I3SOCK");
-    unsetenv("SWAYSOCK");
 }

@@ -70,6 +70,7 @@ class OverviewModel {
 
     std::function<void()> on_close_requested;
     std::function<void()> on_closed;
+    std::function<void(const std::string &, const std::string &)> on_notify;
 
   private:
     void select(int workspace, bool shift, bool alt);

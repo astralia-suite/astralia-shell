@@ -17,24 +17,24 @@ inline constexpr float header_divider_gap = 4.0f;
 inline constexpr float content_gap = 8.0f;
 inline constexpr float action_button_size = 22.0f;
 
-// Rail
-inline constexpr float rail_expanded_width = 200.0f;
-inline constexpr float rail_collapsed_width = 64.0f;
-inline constexpr float rail_collapse_breakpoint = 700.0f;
-inline constexpr float rail_padding = 10.0f;
-inline constexpr float rail_divider_gap = 16.0f;
-inline constexpr float rail_item_height = 36.0f;
-inline constexpr float rail_item_gap = 4.0f;
-inline constexpr float rail_icon_label_gap = 10.0f;
+// Menu
+inline constexpr int menu_columns_wide = 3;
+inline constexpr int menu_columns_narrow = 2;
+inline constexpr float menu_collapse_breakpoint = 700.0f;
+inline constexpr float menu_tile_height = 112.0f;
+inline constexpr float menu_tile_gap = 14.0f;
+inline constexpr float menu_tile_pad = 16.0f;
+inline constexpr float menu_stagger = 28.0f;
+inline constexpr float menu_label_block = 44.0f;
+inline constexpr int menu_icon_px = 30;
+inline constexpr float back_width = 84.0f;
+inline constexpr float back_height = 28.0f;
 
 // Profile
 inline constexpr float avatar_size = 40.0f;
 inline constexpr float avatar_border = 2.0f;
-inline constexpr float profile_top_padding = 4.0f;
 inline constexpr float profile_label_gap = 10.0f;
 inline constexpr float profile_line_gap = 2.0f;
-inline constexpr float profile_bottom_padding = 12.0f;
-inline constexpr float profile_divider_gap = 12.0f;
 
 // Rows and tiles
 inline constexpr float row_gap = 6.0f;
@@ -47,6 +47,7 @@ inline constexpr float tile_border = 2.0f;
 inline constexpr float tile_margin = 12.0f;
 inline constexpr float tile_spacing = 10.0f;
 inline constexpr float group_spacing = 8.0f;
+inline constexpr float section_height = 24.0f;
 inline constexpr float field_height = 28.0f;
 inline constexpr float number_field_width = 72.0f;
 inline constexpr float field_inset = 8.0f;

@@ -108,27 +108,32 @@ void check_tabs() {
     SettingsCaps full;
     full.animation = full.idle = full.launcher = full.rain = full.visualizer = true;
     Env rich(full);
-    test::check(rich.model.tabs().size() == 8 &&
-                    rich.model.tabs().front().tab == SettingsTab::animation,
+    test::check(rich.model.tabs().size() == 5 &&
+                    rich.model.tabs().front().tab == SettingsTab::ambient,
                 "capabilities add the extra tabs in order");
-    test::check(rich.model.tabs()[4].tab == SettingsTab::launcher,
-                "the launcher tab sits between idle and rain");
+    test::check(rich.model.tabs()[3].tab == SettingsTab::general,
+                "the general tab sits between displays and wallpaper");
 
     minimal.model.open();
-    test::check(minimal.model.active_tab() == SettingsTab::wallpaper,
-                "the overlay opens on the wallpaper tab");
+    test::check(minimal.model.in_menu(), "the overlay opens on the tile menu");
+    minimal.click(SettingsAct::tab, static_cast<int>(SettingsTab::displays));
+    test::check(!minimal.model.in_menu(), "picking a tile opens its page");
+    minimal.click(SettingsAct::menu);
+    test::check(minimal.model.in_menu(), "the back key returns to the menu");
     minimal.click(SettingsAct::tab, static_cast<int>(SettingsTab::displays));
     test::check(minimal.model.active_tab() == SettingsTab::displays &&
                     minimal.model.tab_alpha() == 1.0f,
                 "a tab switch settles at once when instant");
     minimal.model.close();
     minimal.model.open();
-    test::check(minimal.model.active_tab() == SettingsTab::wallpaper, "reopening starts over");
+    test::check(minimal.model.in_menu() && minimal.model.active_tab() == SettingsTab::wallpaper,
+                "reopening starts over");
 
     Env keeper{SettingsCaps{}};
     keeper.model.open();
-    test::check(keeper.model.active_tab() == SettingsTab::wallpaper,
-                "the overlay starts on wallpaper");
+    keeper.model.key(key(KeyKind::Down));
+    test::check(keeper.model.in_menu(), "arrows do nothing on the menu");
+    keeper.click(SettingsAct::tab, static_cast<int>(SettingsTab::wallpaper));
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "down stops at the last tab");
     keeper.model.key(key(KeyKind::Up));
@@ -139,7 +144,9 @@ void check_tabs() {
     int closes = 0;
     keeper.model.on_close_requested = [&] { ++closes; };
     keeper.model.key(key(KeyKind::Escape));
-    test::check(closes == 1, "escape asks to close");
+    test::check(closes == 0 && keeper.model.in_menu(), "escape on a page returns to the menu");
+    keeper.model.key(key(KeyKind::Escape));
+    test::check(closes == 1, "escape on the menu asks to close");
     keeper.model.begin_frame();
     keeper.model.set_panel({100, 100, 200, 200});
     keeper.model.click(10, 10);
@@ -253,8 +260,8 @@ void check_actions() {
 
     env.click(SettingsAct::idle_enable, 0, 1);
     test::check(!env.config.idle_management_enabled, "idle management flips");
-    env.click(SettingsAct::idle_monitor, 1);
-    test::check(env.model.idle_monitor() == "HDMI-1", "idle monitors are chosen separately");
+    env.click(SettingsAct::displays_monitor, 1);
+    test::check(env.model.displays_monitor() == "HDMI-1", "idle shares the display selection");
     env.click(SettingsAct::toggle_override, 0, 1);
     env.click(SettingsAct::idle_ambient, 0, 1);
     test::check(!env.config.monitor_overrides["HDMI-1"].ambient_enabled &&
@@ -304,6 +311,7 @@ void check_wallpaper() {
     Env env(caps);
     env.config.wallpaper_dir = root.string();
     env.model.open();
+    env.click(SettingsAct::tab, static_cast<int>(SettingsTab::wallpaper));
     test::check(env.model.picker(false).scanning && env.model.picker(false).region == "HDMI-1",
                 "opening scans and picks the focused monitor");
     test::check(test::pump_until(reactor, [&] { return !env.model.picker(false).scanning; }),
@@ -394,12 +402,12 @@ void check_view() {
     for (const test::Op &op : canvas.ops) {
         name = name || (op.kind == Kind::text && op.text == "someone");
     }
-    test::check(name, "the expanded rail shows the user name");
+    test::check(name, "the menu shows the user name");
     bool collapsed_name = false;
     for (const test::Op &op : small.ops) {
         collapsed_name = collapsed_name || (op.kind == Kind::text && op.text == "someone");
     }
-    test::check(!collapsed_name, "the collapsed rail hides it");
+    test::check(collapsed_name, "also on a small output");
 
     int closes = 0;
     env.model.on_close_requested = [&] { ++closes; };
@@ -411,20 +419,20 @@ void check_view() {
     env.model.click(close_x, close_y);
     test::check(closes == 1, "and closes");
 
-    float rail_x = frame.panel.x + cfg::card_padding + 20.0f;
+    float tile_x = frame.panel.x + cfg::card_padding + 20.0f;
     bool found_tab = false;
     for (float y = frame.panel.y; y < frame.panel.y + frame.panel.h; y += 4.0f) {
         env.model.begin_frame();
         astralia::paint_settings(canvas, env.model, art, 1920, 1200);
-        if (env.model.clickable(rail_x, y) && y > frame.panel.y + 150.0f) {
-            env.model.click(rail_x, y);
+        if (env.model.clickable(tile_x, y) && y > frame.panel.y + 150.0f) {
+            env.model.click(tile_x, y);
             found_tab = env.model.active_tab() == SettingsTab::bar ||
                         env.model.active_tab() == SettingsTab::wallpaper ||
                         env.model.active_tab() == SettingsTab::displays;
             break;
         }
     }
-    test::check(found_tab, "rail items are clickable");
+    test::check(found_tab, "menu tiles are clickable");
 }
 
 } // namespace

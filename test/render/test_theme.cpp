@@ -60,10 +60,12 @@ void check_theme() {
     check(contrast_ok, "text contrast reaches 4.5 on paper, surfaces and "
                        "accents for every seed hue");
 
-    Theme muted = theme_from_seed({{{200.0f, 0.05f, 0.7f}}, true});
-    Theme candy = theme_from_seed({{{200.0f, 0.16f, 0.7f}}, true});
+    Theme muted = theme_from_seed({{{350.0f, 0.05f, 0.7f}}, true});
+    Theme candy = theme_from_seed({{{350.0f, 0.16f, 0.7f}}, true});
     check(oklch_from_color(candy.accent).C > oklch_from_color(muted.accent).C + 0.04f,
           "a vivid seed gives a more saturated accent than a muted one");
+    check(oklch_from_color(muted.accent).C > 0.08f && oklch_from_color(muted.pop_a).C > 0.08f,
+          "a muted wallpaper still gives a visible tint");
     bool ends_ok = true;
     for (const Theme *e : {&muted, &candy}) {
         ends_ok = ends_ok && contrast_ratio(e->text, e->accent) >= 4.5f &&

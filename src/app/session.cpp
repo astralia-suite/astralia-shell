@@ -30,9 +30,8 @@ std::string executable_dir() {
 
 SessionEnvironment session_environment() {
     return {environment_value("ASTRALIA_BACKEND"), environment_value("HYPRLAND_INSTANCE_SIGNATURE"),
-            environment_value("I3SOCK"),           environment_value("SWAYSOCK"),
-            environment_value("XDG_SESSION_TYPE"), environment_value("WAYLAND_DISPLAY"),
-            environment_value("DISPLAY")};
+            environment_value("I3SOCK"),           environment_value("XDG_SESSION_TYPE"),
+            environment_value("WAYLAND_DISPLAY"),  environment_value("DISPLAY")};
 }
 
 SessionKind detect_session(const SessionEnvironment &environment) {
@@ -42,7 +41,7 @@ SessionKind detect_session(const SessionEnvironment &environment) {
     if (environment.override_name == "x11") {
         return SessionKind::x11;
     }
-    if (!environment.hyprland_signature.empty() || !environment.sway_socket.empty()) {
+    if (!environment.hyprland_signature.empty()) {
         return SessionKind::wayland;
     }
     if (!environment.i3_socket.empty()) {

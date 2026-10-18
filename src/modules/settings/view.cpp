@@ -33,6 +33,7 @@ constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::title_px, true};
 constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
+constexpr ui::TextStyle big_icon_style{ui::FontFamily::icon, cfg::menu_icon_px};
 
 struct DropEntry {
     std::string label;
@@ -217,47 +218,6 @@ void bar_tab(Pane &pane, float x, float y, float w) {
     tiles(pane, x, y, w, labels, active, SettingsAct::bar_style, 0);
 }
 
-void displays_tab(Pane &pane, float x, float y, float w) {
-    const Config &config = pane.model.config();
-    const std::string &selected = pane.model.displays_monitor();
-    monitor_row(pane, x, y, w, selected, SettingsAct::displays_monitor, 2);
-    y += cfg::tile_height + cfg::row_gap;
-    bool is_default = selected.empty();
-    const MonitorOverride *override = nullptr;
-    if (!is_default) {
-        auto it = config.monitor_overrides.find(selected);
-        override = it != config.monitor_overrides.end() ? &it->second : nullptr;
-    }
-    bool overridden = override != nullptr && override->enabled;
-    if (!is_default) {
-        y += toggle_row(pane, x, y, w, "Override default settings", overridden,
-                        SettingsAct::toggle_override, 0, 0, false) +
-             cfg::row_gap;
-    }
-    if (!is_default && !overridden) {
-        return;
-    }
-    auto value = [&](bool defaults, bool MonitorOverride::*field) {
-        return is_default ? defaults : override->*field;
-    };
-    bool first = true;
-    auto row = [&](std::string_view label, bool on, SettingsAct act) {
-        if (!first) {
-            y += cfg::group_spacing;
-        }
-        first = false;
-        y += toggle_row(pane, x, y, w, label, on, act, 0, 0, true);
-    };
-    row("OSD", value(config.default_osd_enabled, &MonitorOverride::osd), SettingsAct::toggle_osd);
-    row("Notifications",
-        value(config.default_notifications_enabled, &MonitorOverride::notifications),
-        SettingsAct::toggle_notifications);
-    if (pane.model.caps().autohide) {
-        row("Bar Autohide", value(config.autohide, &MonitorOverride::autohide),
-            SettingsAct::toggle_autohide);
-    }
-}
-
 void idle_tier(Pane &pane, float x, float y, float w, std::string_view label, SettingsField field,
                uint32_t value, uint32_t default_value, bool enabled, bool show_reset,
                SettingsAct reset_act, SettingsAct toggle_act) {
@@ -281,16 +241,15 @@ void idle_tier(Pane &pane, float x, float y, float w, std::string_view label, Se
     toggle_switch(pane, switch_x, y + (h - cfg::toggle_height) / 2.0f, enabled, toggle_act, 0, 1);
 }
 
-void idle_tab(Pane &pane, float x, float y, float w) {
+float section_label(Pane &pane, std::string_view label, float x, float y) {
+    pane.text(label, small_style, x, y, palette::text_dim);
+    return cfg::section_height;
+}
+
+void displays_tab(Pane &pane, float x, float y, float w) {
     const Config &config = pane.model.config();
-    y += toggle_row(pane, x, y, w, "Enable Idle Management", config.idle_management_enabled,
-                    SettingsAct::idle_enable, 0, 1, true) +
-         cfg::row_gap;
-    if (!config.idle_management_enabled) {
-        return;
-    }
-    const std::string &selected = pane.model.idle_monitor();
-    monitor_row(pane, x, y, w, selected, SettingsAct::idle_monitor, 3);
+    const std::string &selected = pane.model.displays_monitor();
+    monitor_row(pane, x, y, w, selected, SettingsAct::displays_monitor, 2);
     y += cfg::tile_height + cfg::row_gap;
     bool is_default = selected.empty();
     const MonitorOverride *override = nullptr;
@@ -301,10 +260,35 @@ void idle_tab(Pane &pane, float x, float y, float w) {
     bool overridden = override != nullptr && override->enabled;
     if (!is_default) {
         y += toggle_row(pane, x, y, w, "Override default settings", overridden,
-                        SettingsAct::toggle_override, 0, 1, false) +
+                        SettingsAct::toggle_override, 0, 0, false) +
              cfg::row_gap;
     }
     if (!is_default && !overridden) {
+        return;
+    }
+    auto value = [&](bool defaults, bool MonitorOverride::*field) {
+        return is_default ? defaults : override->*field;
+    };
+    y += section_label(pane, "Overlays", x, y);
+    auto row = [&](std::string_view label, bool on, SettingsAct act) {
+        y += toggle_row(pane, x, y, w, label, on, act, 0, 0, true) + cfg::group_spacing;
+    };
+    row("OSD", value(config.default_osd_enabled, &MonitorOverride::osd), SettingsAct::toggle_osd);
+    row("Notifications",
+        value(config.default_notifications_enabled, &MonitorOverride::notifications),
+        SettingsAct::toggle_notifications);
+    if (pane.model.caps().autohide) {
+        row("Bar Autohide", value(config.autohide, &MonitorOverride::autohide),
+            SettingsAct::toggle_autohide);
+    }
+    if (!pane.model.caps().idle) {
+        return;
+    }
+    y += section_label(pane, "Idle", x, y);
+    y += toggle_row(pane, x, y, w, "Enable Idle Management", config.idle_management_enabled,
+                    SettingsAct::idle_enable, 0, 1, true) +
+         cfg::group_spacing;
+    if (!config.idle_management_enabled) {
         return;
     }
     bool ambient = is_default ? config.ambient_enabled : override->ambient_enabled;
@@ -322,18 +306,16 @@ void idle_tab(Pane &pane, float x, float y, float w) {
               SettingsAct::idle_screensaver_reset, SettingsAct::idle_screensaver);
 }
 
-void rain_tab(Pane &pane, float x, float y, float w) {
+float rain_tab(Pane &pane, float x, float y, float w) {
+    float top = y;
     const RainParams &rain = pane.model.config().rain;
     tiles(pane, x, y, w, {"Matrix", "Stiletto"}, rain.mode == RainMode::Matrix ? 0 : 1,
           SettingsAct::rain_mode, 0);
     y += cfg::selector_height + cfg::row_gap;
-    toggle_row(pane, x, y, w, "Asynchronous fall speed", rain.async_speed, SettingsAct::rain_async,
-               0, 0, true);
-}
-
-void launcher_tab(Pane &pane, float x, float y, float w) {
-    toggle_row(pane, x, y, w, "Lightning entrance", pane.model.config().launcher_lightning,
-               SettingsAct::launcher_lightning, 0, 0, true);
+    y += toggle_row(pane, x, y, w, "Asynchronous fall speed", rain.async_speed,
+                    SettingsAct::rain_async, 0, 0, true) +
+         cfg::row_gap;
+    return y - top;
 }
 
 struct Knob {
@@ -350,14 +332,15 @@ constexpr std::array<Knob, 6> knobs{{
     {SettingsField::visualizer_glow_quality, "Glow quality"},
 }};
 
-void visualizer_tab(Pane &pane, float x, float y, float w) {
+float visualizer_tab(Pane &pane, float x, float y, float w) {
+    float top = y;
     const Config &config = pane.model.config();
     tiles(pane, x, y, w, {"Bar", "Sphere"},
           config.visualizer.visualizer_shape == VisualizerShape::Bar ? 0 : 1,
           SettingsAct::visualizer_shape, 0);
     y += cfg::selector_height + cfg::row_gap;
     if (config.visualizer.visualizer_shape != VisualizerShape::Sphere) {
-        return;
+        return y - top;
     }
     Config defaults;
     for (const Knob &knob : knobs) {
@@ -377,6 +360,33 @@ void visualizer_tab(Pane &pane, float x, float y, float w) {
                        static_cast<int>(knob.field), 0);
         }
         y += h + cfg::row_gap;
+    }
+    return y - top;
+}
+
+void ambient_tab(Pane &pane, float x, float y, float w) {
+    const SettingsCaps &caps = pane.model.caps();
+    if (caps.rain) {
+        y += section_label(pane, "Rain", x, y);
+        y += rain_tab(pane, x, y, w);
+    }
+    if (caps.visualizer) {
+        y += section_label(pane, "Visualizer", x, y);
+        visualizer_tab(pane, x, y, w);
+    }
+}
+
+void general_tab(Pane &pane, float x, float y, float w) {
+    const SettingsCaps &caps = pane.model.caps();
+    const Config &config = pane.model.config();
+    if (caps.animation) {
+        y += toggle_row(pane, x, y, w, "Disable Animations", config.animations_disabled,
+                        SettingsAct::animation_disable, 0, 0, true) +
+             cfg::row_gap;
+    }
+    if (caps.launcher) {
+        toggle_row(pane, x, y, w, "Launcher lightning entrance", config.launcher_lightning,
+                   SettingsAct::launcher_lightning, 0, 0, true);
     }
 }
 
@@ -637,9 +647,8 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
 
 void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float bottom) {
     switch (tab) {
-    case SettingsTab::animation:
-        toggle_row(pane, x, y, w, "Disable Animations", pane.model.config().animations_disabled,
-                   SettingsAct::animation_disable, 0, 0, true);
+    case SettingsTab::ambient:
+        ambient_tab(pane, x, y, w);
         break;
     case SettingsTab::bar:
         bar_tab(pane, x, y, w);
@@ -647,17 +656,8 @@ void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float b
     case SettingsTab::displays:
         displays_tab(pane, x, y, w);
         break;
-    case SettingsTab::idle:
-        idle_tab(pane, x, y, w);
-        break;
-    case SettingsTab::launcher:
-        launcher_tab(pane, x, y, w);
-        break;
-    case SettingsTab::rain:
-        rain_tab(pane, x, y, w);
-        break;
-    case SettingsTab::visualizer:
-        visualizer_tab(pane, x, y, w);
+    case SettingsTab::general:
+        general_tab(pane, x, y, w);
         break;
     case SettingsTab::wallpaper:
         wallpaper_tab(pane, x, y, w, bottom);
@@ -665,6 +665,87 @@ void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float b
     }
     if (pane.overlay) {
         pane.overlay();
+    }
+}
+
+std::string tab_summary(const SettingsModel &model, SettingsTab tab) {
+    const Config &config = model.config();
+    const SettingsCaps &caps = model.caps();
+    switch (tab) {
+    case SettingsTab::ambient: {
+        std::string rain = config.rain.mode == RainMode::Matrix ? "Matrix" : "Stiletto";
+        std::string shape =
+            config.visualizer.visualizer_shape == VisualizerShape::Bar ? "Bars" : "Sphere";
+        return caps.rain && caps.visualizer ? rain + " / " + shape : caps.rain ? rain : shape;
+    }
+    case SettingsTab::bar:
+        return std::string(bar_style::labels[static_cast<size_t>(model.effective_bar_style())]);
+    case SettingsTab::displays:
+        return std::to_string(model.monitors().size()) + " connected";
+    case SettingsTab::general:
+        return config.animations_disabled ? "Animations off" : "Animations on";
+    case SettingsTab::wallpaper:
+        return config.wallpaper_animated_enabled ? "Animated" : "Static";
+    }
+    return {};
+}
+
+void profile_strip(Pane &pane, const SettingsArt &art, float x, float y) {
+    ui::Canvas &canvas = pane.canvas;
+    ui::Box avatar{x, y, cfg::avatar_size, cfg::avatar_size};
+    ui::ImageId face = art.face.empty()
+                           ? ui::no_image
+                           : canvas.image(art.face, static_cast<int>(cfg::avatar_size) * 2);
+    if (face != ui::no_image) {
+        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::surface);
+        canvas.begin_group(avatar, {1.0f, true, cfg::avatar_size / 2.0f});
+        canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
+        canvas.end_group();
+        canvas.rounded(avatar, cfg::avatar_size / 2.0f, transparent, cfg::avatar_border,
+                       palette::ink);
+    } else {
+        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::text_alpha04, cfg::avatar_border,
+                       palette::ink);
+        ui::TextSize glyph = canvas.measure(icon::user, icon_style);
+        canvas.text(icon::user, icon_style, avatar.x + (avatar.w - glyph.w) / 2.0f,
+                    avatar.y + (avatar.h - glyph.h) / 2.0f, palette::text);
+    }
+    float text_x = x + cfg::avatar_size + cfg::profile_label_gap;
+    ui::TextSize name = canvas.measure(art.user_name, text_style);
+    canvas.text(art.user_name, text_style, text_x, y, palette::text);
+    canvas.text(art.uptime, small_style, text_x, y + name.h + cfg::profile_line_gap,
+                palette::text_dim);
+}
+
+void menu_page(Pane &pane, const SettingsArt &art, float x, float y, float w) {
+    profile_strip(pane, art, x, y);
+    y += cfg::avatar_size + cfg::menu_tile_gap;
+    int columns =
+        w > cfg::menu_collapse_breakpoint ? cfg::menu_columns_wide : cfg::menu_columns_narrow;
+    float stagger = cfg::menu_stagger;
+    float tile_w = (w - stagger - cfg::menu_tile_gap * static_cast<float>(columns - 1)) /
+                   static_cast<float>(columns);
+    const Color *tints[] = {&palette::pop_a, &palette::pop_b, &palette::pop_c};
+    int index = 0;
+    for (const SettingsTabInfo &info : pane.model.tabs()) {
+        int row = index / columns;
+        int col = index % columns;
+        ui::Box box{x + (row % 2 == 1 ? stagger : 0.0f) +
+                        static_cast<float>(col) * (tile_w + cfg::menu_tile_gap),
+                    y + static_cast<float>(row) * (cfg::menu_tile_height + cfg::menu_tile_gap),
+                    tile_w, cfg::menu_tile_height};
+        pane.chip(box, *tints[index % 3]);
+        float ix = box.x + cfg::menu_tile_pad;
+        float iy = box.y + cfg::menu_tile_pad;
+        pane.text(info.icon, big_icon_style, ix, iy, palette::text);
+        ui::TextSize label =
+            pane.text(info.label, title_style, ix,
+                      box.y + box.h - cfg::menu_tile_pad - cfg::menu_label_block, palette::text);
+        pane.text(tab_summary(pane.model, info.tab), small_style, ix,
+                  box.y + box.h - cfg::menu_tile_pad - cfg::menu_label_block + label.h,
+                  with_alpha(palette::text, cfg::label_opacity));
+        pane.region(box, SettingsAct::tab, static_cast<int>(info.tab));
+        ++index;
     }
 }
 
@@ -696,8 +777,29 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
 
     float pad = cfg::card_padding;
     float header_y = py + pad;
-    ui::TextSize title = canvas.measure("Settings", title_style);
-    canvas.text("Settings", title_style, px + pad, header_y + (cfg::header_height - title.h) / 2.0f,
+    bool menu = model.in_menu();
+    float title_x = px + pad;
+    std::string_view title_text = "Settings";
+    if (!menu) {
+        ui::Box back{px + pad, header_y + (cfg::header_height - cfg::back_height) / 2.0f,
+                     cfg::back_width, cfg::back_height};
+        selectable(canvas, back, metrics::radius_widget, false, false, palette::accent_container);
+        ui::TextSize arrow = canvas.measure(icon::chevron_left, icon_style);
+        canvas.text(icon::chevron_left, icon_style, back.x + cfg::tile_margin / 2.0f,
+                    back.y + (back.h - arrow.h) / 2.0f, palette::text);
+        ui::TextSize back_label = canvas.measure("Menu", text_style);
+        canvas.text("Menu", text_style, back.x + cfg::tile_margin + arrow.w,
+                    back.y + (back.h - back_label.h) / 2.0f, palette::text);
+        model.add_region(back, SettingsAct::menu);
+        title_x = back.x + back.w + cfg::tile_margin;
+        for (const SettingsTabInfo &info : model.tabs()) {
+            if (info.tab == model.active_tab()) {
+                title_text = info.label;
+            }
+        }
+    }
+    ui::TextSize title = canvas.measure(title_text, title_style);
+    canvas.text(title_text, title_style, title_x, header_y + (cfg::header_height - title.h) / 2.0f,
                 palette::text);
     ui::Box close{px + pw - pad - cfg::action_button_size,
                   header_y + (cfg::header_height - cfg::action_button_size) / 2.0f,
@@ -712,78 +814,15 @@ SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const Set
     canvas.rect({px + pad, content_y, pw - 2.0f * pad, 1.0f}, palette::text_alpha11);
     content_y += 1.0f + cfg::content_gap;
 
-    bool expanded = pw > cfg::rail_collapse_breakpoint;
-    float rail_w = expanded ? cfg::rail_expanded_width : cfg::rail_collapsed_width;
-    float rail_x = px + pad;
-
-    ui::Box avatar{rail_x + (rail_w - cfg::avatar_size) / 2.0f,
-                   content_y + cfg::profile_top_padding, cfg::avatar_size, cfg::avatar_size};
-    ui::ImageId face = art.face.empty()
-                           ? ui::no_image
-                           : canvas.image(art.face, static_cast<int>(cfg::avatar_size) * 2);
-    if (face != ui::no_image) {
-        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::surface);
-        canvas.begin_group(avatar, {1.0f, true, cfg::avatar_size / 2.0f});
-        canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
-        canvas.end_group();
-        canvas.rounded(avatar, cfg::avatar_size / 2.0f, {0.0f, 0.0f, 0.0f, 0.0f},
-                       cfg::avatar_border, palette::ink);
-    } else {
-        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::text_alpha04, cfg::avatar_border,
-                       palette::ink);
-        ui::TextSize glyph = canvas.measure(icon::user, icon_style);
-        canvas.text(icon::user, icon_style, avatar.x + (avatar.w - glyph.w) / 2.0f,
-                    avatar.y + (avatar.h - glyph.h) / 2.0f, palette::text);
-    }
-    float block_h = cfg::profile_top_padding + cfg::avatar_size;
-    if (expanded) {
-        float info_y = avatar.y + cfg::avatar_size + cfg::profile_label_gap;
-        ui::TextSize name = canvas.measure(art.user_name, text_style);
-        canvas.text(art.user_name, text_style, rail_x + (rail_w - name.w) / 2.0f, info_y,
-                    palette::text);
-        info_y += name.h + cfg::profile_line_gap;
-        ui::TextSize uptime = canvas.measure(art.uptime, small_style);
-        canvas.text(art.uptime, small_style, rail_x + (rail_w - uptime.w) / 2.0f, info_y,
-                    palette::text_dim);
-        info_y += uptime.h;
-        block_h = info_y - content_y;
-    }
-    block_h += cfg::profile_bottom_padding;
-    canvas.rect({rail_x, content_y + block_h, rail_w, 1.0f}, palette::text_alpha11);
-    float rail_y = content_y + block_h + cfg::profile_divider_gap;
-    float rail_h = py + ph - pad - rail_y;
-
-    sticker(canvas, {rail_x, rail_y, rail_w, rail_h}, metrics::radius_card, palette::surface,
-            palette::ink, metrics::border_thin, metrics::shadow_widget);
-    float row_y = rail_y + cfg::rail_padding;
-    for (const SettingsTabInfo &info : model.tabs()) {
-        bool active = info.tab == model.active_tab();
-        const Color &color = active ? palette::text : palette::text_dim;
-        ui::Box row{rail_x, row_y, rail_w, cfg::rail_item_height};
-        if (active) {
-            selectable(canvas, row, metrics::radius_widget, true);
-        }
-        float icon_x = rail_x + cfg::rail_padding;
-        ui::TextSize glyph = canvas.measure(info.icon, icon_style);
-        canvas.text(info.icon, icon_style, icon_x, row_y + (cfg::rail_item_height - glyph.h) / 2.0f,
-                    color);
-        if (expanded) {
-            ui::TextSize label = canvas.measure(info.label, text_style);
-            canvas.text(info.label, text_style, icon_x + glyph.w + cfg::rail_icon_label_gap,
-                        row_y + (cfg::rail_item_height - label.h) / 2.0f, color);
-        }
-        model.add_region(row, SettingsAct::tab, static_cast<int>(info.tab));
-        row_y += cfg::rail_item_height + cfg::rail_item_gap;
-    }
-
-    float divider_x = rail_x + rail_w + cfg::rail_divider_gap;
-    canvas.rect({divider_x, content_y, 1.0f, rail_h + block_h + cfg::profile_divider_gap},
-                palette::text_alpha11);
-
-    float content_x = divider_x + cfg::rail_divider_gap;
-    float content_w = px + pw - pad - content_x;
+    float content_x = px + pad;
+    float content_w = pw - 2.0f * pad;
+    float bottom = py + ph - pad;
     Pane pane{canvas, model, model.tab_alpha(), {}, {}};
-    tab_content(pane, model.active_tab(), content_x, content_y, content_w, py + ph - pad);
+    if (menu) {
+        menu_page(pane, art, content_x, content_y, content_w);
+    } else {
+        tab_content(pane, model.active_tab(), content_x, content_y, content_w, bottom);
+    }
     frame.caret = pane.caret;
     canvas.set_opacity(1.0f);
     return frame;

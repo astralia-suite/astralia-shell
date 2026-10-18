@@ -61,13 +61,10 @@ MonitorOverride &enable_defaults(MonitorOverride &override, const Config &config
 
 const std::vector<SettingsTabInfo> &settings_all_tabs() {
     static const std::vector<SettingsTabInfo> tabs{
-        {SettingsTab::animation, "Animation", icon::adjustments},
+        {SettingsTab::ambient, "Ambient", icon::wave_sine},
         {SettingsTab::bar, "Bar", icon::layout_navbar},
         {SettingsTab::displays, "Displays", icon::device_desktop},
-        {SettingsTab::idle, "Idle", icon::moon_stars},
-        {SettingsTab::launcher, "Launcher", icon::apps},
-        {SettingsTab::rain, "Rain", icon::code},
-        {SettingsTab::visualizer, "Visualizer", icon::wave_sine},
+        {SettingsTab::general, "General", icon::adjustments},
         {SettingsTab::wallpaper, "Wallpaper", icon::wallpaper},
     };
     return tabs;
@@ -165,20 +162,11 @@ SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
     for (const SettingsTabInfo &info : settings_all_tabs()) {
         bool present = true;
         switch (info.tab) {
-        case SettingsTab::animation:
-            present = caps_.animation;
+        case SettingsTab::ambient:
+            present = caps_.rain || caps_.visualizer;
             break;
-        case SettingsTab::idle:
-            present = caps_.idle;
-            break;
-        case SettingsTab::launcher:
-            present = caps_.launcher;
-            break;
-        case SettingsTab::rain:
-            present = caps_.rain;
-            break;
-        case SettingsTab::visualizer:
-            present = caps_.visualizer;
+        case SettingsTab::general:
+            present = caps_.animation || caps_.launcher;
             break;
         default:
             break;
@@ -202,6 +190,7 @@ void SettingsModel::open() {
     open_ = true;
     dropdown_open_ = -1;
     active_ = pending_ = SettingsTab::wallpaper;
+    menu_ = pending_menu_ = true;
     animations_.cancelForOwner(owner_tab_fade);
     tab_alpha_ = 1.0f;
     sequence_.open();
@@ -254,9 +243,6 @@ void SettingsModel::sync() {
     if (!displays_monitor_.empty() && !known(displays_monitor_)) {
         displays_monitor_.clear();
     }
-    if (!idle_monitor_.empty() && !known(idle_monitor_)) {
-        idle_monitor_.clear();
-    }
     std::string focused = hooks_.focused_monitor ? hooks_.focused_monitor() : std::string();
     const Config &current = config();
     for (bool animated : {false, true}) {
@@ -271,7 +257,7 @@ void SettingsModel::sync() {
             picker.region.empty() ? 1 : wallpaper_column_count(current, picker.region, animated);
         picker.column = std::clamp(picker.column, 0, count - 1);
     }
-    if (open_ && !sequence_.closing() && active_ == SettingsTab::wallpaper) {
+    if (open_ && !sequence_.closing() && !menu_ && active_ == SettingsTab::wallpaper) {
         bool animated = caps_.animated_wallpaper && current.wallpaper_animated_enabled;
         const std::string &dir = animated ? current.wallpaper_animated_dir : current.wallpaper_dir;
         WallpaperPicker &picker = animated ? animated_picker_ : static_picker_;
@@ -307,17 +293,24 @@ void SettingsModel::scan(WallpaperPicker &picker, const std::string &dir, bool a
     }).detach();
 }
 
-void SettingsModel::select_tab(SettingsTab tab) {
-    if (tab == active_) {
+void SettingsModel::select_tab(SettingsTab tab) { go(false, tab); }
+
+void SettingsModel::show_menu() { go(true, active_); }
+
+void SettingsModel::go(bool menu, SettingsTab tab) {
+    if (menu ? pending_menu_ : (!pending_menu_ && tab == pending_)) {
         return;
     }
+    pending_menu_ = menu;
     pending_ = tab;
     dropdown_open_ = -1;
     animations_.animate(
         tab_alpha_, 0.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic,
         [this](float v) { tab_alpha_ = v; },
         [this] {
+            menu_ = pending_menu_;
             active_ = pending_;
+            sync();
             animations_.animate(
                 0.0f, 1.0f, cfg::tab_fade_ms, astralia::Easing::EaseOutCubic,
                 [this](float v) { tab_alpha_ = v; }, {}, owner_tab_fade);
@@ -332,7 +325,7 @@ void SettingsModel::focus_field(SettingsField field) {
     }
     commit_field();
     focused_ = field;
-    field_.text = settings_field_text(config(), field, idle_monitor_);
+    field_.text = settings_field_text(config(), field, displays_monitor_);
     field_.preedit.clear();
     field_.cursor_idle_visible = true;
     text_field_type_anim_settle(field_anim_, animations_, owner_field_anim, field_.text);
@@ -347,7 +340,7 @@ void SettingsModel::commit_field() {
     }
     SettingsField field = focused_;
     std::string text = field_.text;
-    std::string monitor = idle_monitor_;
+    std::string monitor = displays_monitor_;
     focused_ = SettingsField::none;
     field_.preedit.clear();
     text_field_type_anim_clear(field_anim_, animations_, owner_field_anim);
@@ -369,12 +362,18 @@ bool SettingsModel::key(const input::KeyEvent &event) {
     }
     if (focused_ == SettingsField::none) {
         if (event.kind == input::KeyKind::Escape) {
+            if (!pending_menu_) {
+                show_menu();
+                changed();
+                return true;
+            }
             if (on_close_requested) {
                 on_close_requested();
             }
             return true;
         }
-        if (event.kind == input::KeyKind::Up || event.kind == input::KeyKind::Down) {
+        if (!pending_menu_ &&
+            (event.kind == input::KeyKind::Up || event.kind == input::KeyKind::Down)) {
             auto it = std::ranges::find(tabs_, pending_, &SettingsTabInfo::tab);
             if (it == tabs_.end()) {
                 return false;
@@ -472,7 +471,7 @@ void SettingsModel::scroll(float pixels) {
     if (!open_ || sequence_.closing() || !sequence_.settled()) {
         return;
     }
-    if (active_ != SettingsTab::wallpaper) {
+    if (menu_ || active_ != SettingsTab::wallpaper) {
         return;
     }
     bool animated = caps_.animated_wallpaper && config().wallpaper_animated_enabled;
@@ -508,6 +507,11 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         select_tab(static_cast<SettingsTab>(region.a));
         changed();
         return;
+    case SettingsAct::menu:
+        commit_field();
+        show_menu();
+        changed();
+        return;
     case SettingsAct::field_focus:
         focus_field(static_cast<SettingsField>(region.a));
         changed();
@@ -516,16 +520,11 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         displays_monitor_ = monitor(region.a);
         changed();
         return;
-    case SettingsAct::idle_monitor:
-        commit_field();
-        idle_monitor_ = monitor(region.a);
-        changed();
-        return;
     default:
         break;
     }
     commit_field();
-    const std::string &target = region.b == 1 ? idle_monitor_ : displays_monitor_;
+    const std::string &target = displays_monitor_;
     switch (region.act) {
     case SettingsAct::toggle_override:
         edit([&](Config &config) {
@@ -576,13 +575,13 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         return;
     case SettingsAct::idle_ambient_reset:
         edit([&](Config &config) {
-            config.monitor_overrides[idle_monitor_].ambient_timeout_seconds =
+            config.monitor_overrides[displays_monitor_].ambient_timeout_seconds =
                 config.ambient_timeout_seconds;
         });
         return;
     case SettingsAct::idle_screensaver_reset:
         edit([&](Config &config) {
-            config.monitor_overrides[idle_monitor_].screensaver_timeout_seconds =
+            config.monitor_overrides[displays_monitor_].screensaver_timeout_seconds =
                 config.screensaver_timeout_seconds;
         });
         return;

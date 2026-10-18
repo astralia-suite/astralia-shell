@@ -22,6 +22,9 @@ Overview::Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
       keyboard_(x.conn()), model_(*services.compositor) {
     model_.on_close_requested = [this] { toggle(); };
     model_.on_closed = [this] { closed(); };
+    model_.on_notify = [this](const std::string &summary, const std::string &body) {
+        services_.notifications.post("astralia-shell", summary, body);
+    };
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     services_.compositor->structure_changed.connect([this] { paint(); });
     services_.compositor->active_changed.connect([this] { paint(); });

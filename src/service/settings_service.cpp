@@ -38,6 +38,11 @@ const Json *section(const Json &root, std::string_view key, std::string_view leg
     return nullptr;
 }
 
+const Json *object_in(const Json *parent, std::string_view key) {
+    const Json *found = parent == nullptr ? nullptr : parent->find(key);
+    return found != nullptr && found->type == Json::Type::object ? found : nullptr;
+}
+
 bool flag(const Json *object, std::string_view key, std::string_view legacy_key, bool fallback) {
     if (object == nullptr) {
         return fallback;
@@ -115,7 +120,8 @@ void read_counts(const Json *wallpaper, std::string_view key, std::map<std::stri
 bool is_reserved_displays_key(const std::string &key) {
     return key == "defaultBar" || key == "defaultOsd" || key == "defaultNotifications" ||
            key == "defaultWallpaper" || key == "defaultLock" || key == "defaultSpark" ||
-           key == "defaultHeralds" || key == "defaultExpanse" || key == "defaultPenance";
+           key == "defaultHeralds" || key == "defaultExpanse" || key == "defaultPenance" ||
+           key == "idle";
 }
 
 Json from_float(float value) {
@@ -295,13 +301,18 @@ Config parse_config(std::string_view source) {
         }
     }
 
-    const Json *launcher = section(root, "launcher", "launcher");
-    cfg.launcher_lightning = flag(launcher, "lightning", cfg.launcher_lightning);
+    const Json *general = object_in(&root, "general");
+    cfg.launcher_lightning =
+        flag(general, "launcherLightning",
+             flag(section(root, "launcher", "launcher"), "lightning", cfg.launcher_lightning));
+    cfg.animations_disabled =
+        flag(general, "animationsDisabled",
+             flag(section(root, "animation", "animation"), "disabled", cfg.animations_disabled));
 
-    const Json *animation = section(root, "animation", "animation");
-    cfg.animations_disabled = flag(animation, "disabled", cfg.animations_disabled);
-
-    const Json *idle = section(root, "idle", "blink");
+    const Json *idle = object_in(displays, "idle");
+    if (idle == nullptr) {
+        idle = section(root, "idle", "blink");
+    }
     cfg.idle_management_enabled = flag(idle, "enabled", cfg.idle_management_enabled);
     cfg.ambient_enabled = flag(idle, "ambientEnabled", cfg.ambient_enabled);
     cfg.ambient_timeout_seconds =
@@ -310,7 +321,11 @@ Config parse_config(std::string_view source) {
     cfg.screensaver_timeout_seconds =
         seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout_seconds);
 
-    const Json *visualizer = section(root, "visualizer", "resonance");
+    const Json *ambient = object_in(&root, "ambient");
+    const Json *visualizer = object_in(ambient, "visualizer");
+    if (visualizer == nullptr) {
+        visualizer = section(root, "visualizer", "resonance");
+    }
     cfg.visualizer.fps = std::clamp(integer(visualizer, "fps", cfg.visualizer.fps),
                                     kVisualizerFpsMin, kVisualizerFpsMax);
     cfg.visualizer.particle_thin =
@@ -330,9 +345,9 @@ Config parse_config(std::string_view source) {
                                           ? VisualizerShape::Sphere
                                           : VisualizerShape::Bar;
 
-    const Json *rain = root.find("rain");
-    if (rain != nullptr && rain->type != Json::Type::object) {
-        rain = nullptr;
+    const Json *rain = object_in(ambient, "rain");
+    if (rain == nullptr) {
+        rain = object_in(&root, "rain");
     }
     cfg.rain.mode =
         text(rain, "mode", "matrix") == "stiletto" ? RainMode::Stiletto : RainMode::Matrix;
@@ -355,11 +370,19 @@ std::string serialize_config(const Config &cfg) {
     wallpaper.set("captureMonitor", Json::from_string(cfg.capture_monitor));
     wallpaper.set("captureColumn", Json::from_number(cfg.capture_column));
 
+    Json idle = Json::make_object();
+    idle.set("enabled", Json::from_bool(cfg.idle_management_enabled));
+    idle.set("ambientEnabled", Json::from_bool(cfg.ambient_enabled));
+    idle.set("ambientTimeoutSeconds", Json::from_number(cfg.ambient_timeout_seconds));
+    idle.set("screensaverEnabled", Json::from_bool(cfg.screensaver_enabled));
+    idle.set("screensaverTimeoutSeconds", Json::from_number(cfg.screensaver_timeout_seconds));
+
     Json displays = Json::make_object();
     displays.set("defaultOsd", Json::from_bool(cfg.default_osd_enabled));
     displays.set("defaultNotifications", Json::from_bool(cfg.default_notifications_enabled));
     displays.set("defaultWallpaper", Json::from_bool(cfg.default_wallpaper_enabled));
     displays.set("defaultLock", Json::from_bool(cfg.default_lock_panel_enabled));
+    displays.set("idle", std::move(idle));
     for (const auto &[name, ov] : cfg.monitor_overrides) {
         Json mo = Json::make_object();
         mo.set("_enabled", Json::from_bool(ov.enabled));
@@ -373,13 +396,6 @@ std::string serialize_config(const Config &cfg) {
         mo.set("lock", Json::from_bool(ov.lock));
         displays.set(name, std::move(mo));
     }
-
-    Json idle = Json::make_object();
-    idle.set("enabled", Json::from_bool(cfg.idle_management_enabled));
-    idle.set("ambientEnabled", Json::from_bool(cfg.ambient_enabled));
-    idle.set("ambientTimeoutSeconds", Json::from_number(cfg.ambient_timeout_seconds));
-    idle.set("screensaverEnabled", Json::from_bool(cfg.screensaver_enabled));
-    idle.set("screensaverTimeoutSeconds", Json::from_number(cfg.screensaver_timeout_seconds));
 
     Json visualizer = Json::make_object();
     visualizer.set("fps", Json::from_number(cfg.visualizer.fps));
@@ -403,21 +419,20 @@ std::string serialize_config(const Config &cfg) {
     bar.set("style", Json::from_string(
                          std::string(bar_style::names[static_cast<std::size_t>(cfg.bar_style)])));
 
-    Json launcher = Json::make_object();
-    launcher.set("lightning", Json::from_bool(cfg.launcher_lightning));
+    Json general = Json::make_object();
+    general.set("animationsDisabled", Json::from_bool(cfg.animations_disabled));
+    general.set("launcherLightning", Json::from_bool(cfg.launcher_lightning));
 
-    Json animation = Json::make_object();
-    animation.set("disabled", Json::from_bool(cfg.animations_disabled));
+    Json ambient = Json::make_object();
+    ambient.set("rain", std::move(rain));
+    ambient.set("visualizer", std::move(visualizer));
 
     Json root = Json::make_object();
+    root.set("ambient", std::move(ambient));
     root.set("bar", std::move(bar));
-    root.set("wallpaper", std::move(wallpaper));
     root.set("displays", std::move(displays));
-    root.set("launcher", std::move(launcher));
-    root.set("animation", std::move(animation));
-    root.set("idle", std::move(idle));
-    root.set("visualizer", std::move(visualizer));
-    root.set("rain", std::move(rain));
+    root.set("general", std::move(general));
+    root.set("wallpaper", std::move(wallpaper));
     return write_json(root, true) + "\n";
 }
 

@@ -19,7 +19,6 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 
 - Tests set `XDG_STATE_HOME` to a temporary directory first. `log` opens the real state file on first use and would fill it.
 - A session-named path comes from `WAYLAND_DISPLAY`, else `DISPLAY`. Hyprland also exports `DISPLAY` for XWayland, so the order matters.
-- Sway exports `I3SOCK` as well as `SWAYSOCK`. Check `SWAYSOCK` first, or a Sway session starts the X11 backend.
 - Link `astralia-core-base` into the executable with `link_whole` and `export_dynamic`. Plugins resolve those symbols at `dlopen`.
 - Plugins link `astralia-core-shared` statically with hidden visibility and `--gc-sections`. Each plugin keeps only what it uses.
 - The plugins export only `astralia_backend_create`. Hidden visibility lets the linker drop unused functions.
@@ -152,7 +151,6 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Subscribe to i3 `workspace` and `window` events on a dedicated socket. A refresh per event replaces watching root properties.
 - An i3 workspace exists only while it holds windows or is visible. The list is not a fixed ten, so X11 shows ten pills through `workspace_slots`.
 - The i3 compositor numbers workspaces globally and drops unnumbered names. It ignores the `global` paging flag.
-- Sway windows carry `app_id`, not `window_properties.class`. The i3 tree parser names native Wayland windows by it.
 - Derive tiled rects from `layout` and `percent`, not `GET_TREE` rects. i3 skips rendering hidden workspaces, leaving them stale.
 - Wait for the i3 `RUN_COMMAND` reply before querying again. Otherwise the tree read can precede the command's effect.
 - Ignore focus loss briefly after an i3 command, then refocus. i3 hands focus to a client on workspace switches.
@@ -345,7 +343,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] Release a pending `wl_callback` with `wl_callback_destroy`, never by nulling. `wl_surface_destroy` does not free it.
 - [wayland] Release an `EGLSurface` from the current context before `wl_egl_window_destroy`. A current surface defers teardown into freed memory.
 - [wayland] Every `EGLSurface` teardown calls `gl_release_if_current` first. It unbinds only that surface, keeping the context bound surfacelessly.
-- [wayland] A bottom-anchored layer surface changes size and buffer in one commit. Sway repositions at once; a separate commit dropped hover.
+- [wayland] A bottom-anchored layer surface changes size and buffer in one commit. A separate commit dropped hover.
 - [wayland] Keep layer overlays mapped across same-output toggles. Recreating a same-namespace surface left it uncomposited or unrouted on Hyprland.
 - [wayland] A hand-rolled toggle can miss a shared lifecycle fix. `launcher_toggle` hit the uncomposited-surface bug independently.
 - [wayland] A destroy-on-close toplevel can reuse an earlier window's address. State keyed by address must clear when the window goes.

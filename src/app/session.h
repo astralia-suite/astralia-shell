@@ -16,7 +16,6 @@ struct SessionEnvironment {
     std::string override_name;
     std::string hyprland_signature;
     std::string i3_socket;
-    std::string sway_socket;
     std::string session_type;
     std::string wayland_display;
     std::string display;

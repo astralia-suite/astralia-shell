@@ -22,16 +22,7 @@
 
 namespace astralia {
 
-enum class SettingsTab : uint8_t {
-    animation,
-    bar,
-    displays,
-    idle,
-    launcher,
-    rain,
-    visualizer,
-    wallpaper
-};
+enum class SettingsTab : uint8_t { ambient, bar, displays, general, wallpaper };
 
 struct SettingsTabInfo {
     SettingsTab tab;
@@ -71,8 +62,8 @@ enum class SettingsField : uint8_t {
 enum class SettingsAct : uint8_t {
     close,
     tab,
+    menu,
     displays_monitor,
-    idle_monitor,
     toggle_override,
     toggle_osd,
     toggle_notifications,
@@ -169,6 +160,7 @@ class SettingsModel {
     const SettingsCaps &caps() const { return caps_; }
     const std::vector<SettingsTabInfo> &tabs() const { return tabs_; }
     SettingsTab active_tab() const { return active_; }
+    bool in_menu() const { return menu_; }
     float tab_alpha() const { return tab_alpha_; }
     bool animating() const { return animations_.hasActive(); }
     bool is_open() const { return open_; }
@@ -180,7 +172,6 @@ class SettingsModel {
     const Config &config() const { return hooks_.config(); }
     const std::vector<std::string> &monitors() const { return monitors_; }
     const std::string &displays_monitor() const { return displays_monitor_; }
-    const std::string &idle_monitor() const { return idle_monitor_; }
     WallpaperPicker &picker(bool animated) { return animated ? animated_picker_ : static_picker_; }
     bool cpu_fallback(const std::string &monitor, int column) const {
         return hooks_.cpu_fallback && hooks_.cpu_fallback(monitor, column);
@@ -196,6 +187,8 @@ class SettingsModel {
   private:
     void changed();
     void select_tab(SettingsTab tab);
+    void show_menu();
+    void go(bool menu, SettingsTab tab);
     void focus_field(SettingsField field);
     void commit_field();
     void scan(WallpaperPicker &picker, const std::string &dir, bool animated);
@@ -216,13 +209,14 @@ class SettingsModel {
     bool open_ = false;
     SettingsTab active_ = SettingsTab::wallpaper;
     SettingsTab pending_ = SettingsTab::wallpaper;
+    bool menu_ = true;
+    bool pending_menu_ = true;
     float tab_alpha_ = 1.0f;
     SettingsField focused_ = SettingsField::none;
     TextFieldState field_;
     TextFieldTypeAnim field_anim_;
     std::vector<std::string> monitors_;
     std::string displays_monitor_;
-    std::string idle_monitor_;
     WallpaperPicker static_picker_;
     WallpaperPicker animated_picker_;
 };

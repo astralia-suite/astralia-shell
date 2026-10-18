@@ -18,7 +18,7 @@ constexpr float warn_hue = 75.0f;
 
 float byte_alpha(int value) { return static_cast<float>(value) / 255.0f; }
 
-constexpr float dusty_chroma = 0.04f;
+constexpr float dusty_chroma = 0.07f;
 constexpr float candy_chroma = 0.16f;
 
 float lerp(float a, float b, float t) { return a + (b - a) * t; }
@@ -51,15 +51,15 @@ Theme theme_from_seed(const Extraction &extraction) {
     t.surface_alt = color_from_oklch({0.890f, c(0.040f, 0.070f), hue});
     t.shadow = color_from_oklch({0.14f, 0.050f, hue});
 
-    t.accent = color_from_oklch({0.74f, c(0.060f, 0.190f), hue});
+    t.accent = color_from_oklch({0.74f, c(0.090f, 0.190f), hue});
     t.accent_alpha12 = with_alpha(t.accent, byte_alpha(0x1F));
     t.accent_alpha19 = with_alpha(t.accent, byte_alpha(0x30));
     t.accent_alpha25 = with_alpha(t.accent, byte_alpha(0x40));
-    t.accent_container = color_from_oklch({0.90f, c(0.040f, 0.080f), hue});
+    t.accent_container = color_from_oklch({0.90f, c(0.060f, 0.080f), hue});
 
-    t.accent_alt = color_from_oklch({0.80f, c(0.050f, 0.170f), alt_hue});
+    t.accent_alt = color_from_oklch({0.80f, c(0.080f, 0.170f), alt_hue});
     t.accent_alt_alpha50 = with_alpha(t.accent_alt, byte_alpha(0x80));
-    t.accent_alt_container = color_from_oklch({0.92f, c(0.035f, 0.070f), alt_hue});
+    t.accent_alt_container = color_from_oklch({0.92f, c(0.050f, 0.070f), alt_hue});
 
     t.pop_a = color_from_oklch({0.76f, c(0.110f, 0.200f), seed_hue(1, pop_a_offset)});
     t.pop_b = color_from_oklch({0.86f, c(0.100f, 0.180f), seed_hue(2, pop_b_offset)});

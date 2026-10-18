@@ -26,12 +26,33 @@ void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui:
     }
 }
 
-void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView &view) {
+Color function_fill(BarItem id, const BarStyleSpec &style) {
+    switch (id) {
+    case BarItem::resource:
+    case BarItem::battery:
+        return palette::pop_c;
+    case BarItem::network:
+    case BarItem::media:
+        return palette::accent_alt;
+    case BarItem::bluetooth:
+        return palette::pop_a;
+    case BarItem::volume:
+    case BarItem::clock:
+        return palette::accent;
+    case BarItem::brightness:
+        return palette::pop_b;
+    default:
+        return style.bg;
+    }
+}
+
+void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView &view,
+                BarItem id) {
     if (!view.visible || view.box.w <= 0.0f) {
         return;
     }
     float pad = view.box.h * style.pad_ratio;
-    capsule_background(canvas, style, view.box, view.tint.value_or(style.bg));
+    capsule_background(canvas, style, view.box, view.tint.value_or(function_fill(id, style)));
     canvas.begin_group(view.box, {1.0f, true});
     ui::Box local{0.0f, 0.0f, view.box.w, view.box.h};
     ui::TextSize icon = canvas.measure(view.glyph, icon_style);
@@ -108,9 +129,10 @@ void paint_bar(ui::Canvas &canvas, const BarModel &model, const ui::Box *dirty) 
         return dirty == nullptr || (box.x < dirty->x + dirty->w && box.x + box.w > dirty->x);
     };
     for (size_t i = 0; i < bar_item_count; ++i) {
-        const BarItemView &view = model.item(static_cast<BarItem>(i));
+        BarItem id = static_cast<BarItem>(i);
+        const BarItemView &view = model.item(id);
         if (touches(view.box)) {
-            paint_item(canvas, style, view);
+            paint_item(canvas, style, view, id);
         }
     }
     if (touches(layout.workspaces)) {

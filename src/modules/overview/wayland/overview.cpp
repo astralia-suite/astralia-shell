@@ -27,6 +27,11 @@ astralia::OverviewModel &ensure_model(OverviewState &state, WaylandState &app) {
         state.model = std::make_unique<astralia::OverviewModel>(*app.desktop);
         state.model->on_close_requested = [&state, &app] { overview_toggle(state, app); };
         state.model->on_closed = [&state] { overlay_panel_release(state.base); };
+        state.model->on_notify = [&app](const std::string &summary, const std::string &body) {
+            if (app.notifications) {
+                app.notifications->post("astralia-shell", summary, body);
+            }
+        };
     }
     return *state.model;
 }

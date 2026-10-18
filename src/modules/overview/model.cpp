@@ -5,8 +5,6 @@
 
 #include "config/overview_config.h"
 
-#include "core/spawn.h"
-
 #include "modules/overview/model.h"
 
 #include "render/scroll.h"
@@ -412,7 +410,9 @@ bool OverviewModel::key(const input::KeyEvent &event) {
     }
     case input::KeyKind::Tab:
         if (!global_mode_ && compositor_.state().monitors.size() < 2) {
-            spawn_detached("notify-send 'Overview' 'This device only has one display.'");
+            if (on_notify) {
+                on_notify("Overview", "This device only has one display.");
+            }
             return true;
         }
         global_mode_ = !global_mode_;

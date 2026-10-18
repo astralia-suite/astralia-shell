@@ -100,6 +100,22 @@ void check_config_parse() {
           "legacy section names still load");
     check(parse_config(R"({"displays": {"defaultSpark": false}})").default_osd_enabled == false,
           "legacy display keys still load");
+    Config grouped = parse_config(R"({
+        "general": {"animationsDisabled": true, "launcherLightning": false},
+        "displays": {"idle": {"enabled": false, "ambientTimeoutSeconds": 20}},
+        "ambient": {"rain": {"mode": "stiletto"}, "visualizer": {"fps": 30}}})");
+    check(grouped.animations_disabled && !grouped.launcher_lightning, "the general section loads");
+    check(!grouped.idle_management_enabled && grouped.ambient_timeout_seconds == 20,
+          "idle loads from the displays section");
+    check(grouped.rain.mode == RainMode::Stiletto && grouped.visualizer.fps == 30,
+          "rain and visualizer load from the ambient section");
+    check(parse_config(R"({"animation": {"disabled": true}, "idle": {"enabled": false},
+                           "rain": {"mode": "stiletto"}})")
+                  .animations_disabled &&
+              !parse_config(R"({"idle": {"enabled": false}})").idle_management_enabled &&
+              parse_config(R"({"rain": {"mode": "stiletto"}})").rain.mode == RainMode::Stiletto,
+          "the previous top-level sections still load");
+    check(parse_config(serialize_config(grouped)) == grouped, "the grouped layout round-trips");
     check(parse_config(R"({"visualizer": {"fps": 9999, "glowQuality": 100}})").visualizer.fps ==
               kVisualizerFpsMax,
           "visualizer values are clamped");

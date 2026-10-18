@@ -22,18 +22,12 @@ void check_session() {
     environment.hyprland_signature = "abc_123";
     check(detect_session(environment) == SessionKind::wayland,
           "the Hyprland signature wins over I3SOCK");
-    environment.hyprland_signature.clear();
-    environment.sway_socket = "/run/user/1000/sway-ipc.1000.1.sock";
-    check(detect_session(environment) == SessionKind::wayland,
-          "the Sway socket wins over I3SOCK, which Sway sets too");
-    environment.hyprland_signature = "abc_123";
     environment.override_name = "x11";
     check(detect_session(environment) == SessionKind::x11, "the override wins over everything");
     environment.override_name = "wayland";
     environment.hyprland_signature.clear();
     check(detect_session(environment) == SessionKind::wayland, "the override can force wayland");
     environment.override_name = "bogus";
-    environment.sway_socket.clear();
     environment.i3_socket.clear();
     environment.session_type.clear();
     environment.wayland_display.clear();

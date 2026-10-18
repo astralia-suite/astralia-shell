@@ -45,9 +45,6 @@ I3Window make_window(const Json &node, uint32_t workspace, const std::string &ou
     if (const Json *properties = node.find("window_properties")) {
         entry.window_class = properties->string_or("class");
     }
-    if (entry.window_class.empty()) {
-        entry.window_class = node.string_or("app_id");
-    }
     entry.title = node.string_or("name");
     entry.x = box.x;
     entry.y = box.y;
@@ -63,11 +60,7 @@ I3Window make_window(const Json &node, uint32_t workspace, const std::string &ou
 
 bool is_window(const Json &node) {
     const Json *window = node.find("window");
-    if (window != nullptr && window->type == Json::Type::number) {
-        return true;
-    }
-    const Json *app_id = node.find("app_id");
-    return app_id != nullptr && app_id->type == Json::Type::string;
+    return window != nullptr && window->type == Json::Type::number;
 }
 
 void place_tiled(const Json &node, const Box &box, const Box &area, uint32_t workspace,
@@ -330,10 +323,8 @@ std::size_t i3_decode(std::string_view buffer, std::vector<I3Message> &out) {
 }
 
 std::string i3_socket_path(std::string_view fallback) {
-    for (const char *name : {"I3SOCK", "SWAYSOCK"}) {
-        if (const char *env = std::getenv(name); env != nullptr && *env != '\0') {
-            return env;
-        }
+    if (const char *env = std::getenv("I3SOCK"); env != nullptr && *env != '\0') {
+        return env;
     }
     return std::string(fallback);
 }

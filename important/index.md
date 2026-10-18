@@ -14,7 +14,7 @@
 - `meson.options`: `backends` selects which backend plugins build; `native_cpu` tunes the x11 plugin for the X201.
 - `assets/`: Fonts, constellation bullets, logos, the bamboo icon and desktop entry, shaders, the PAM service and the polkit glyph, installed to `share/astralia-shell/`.
 - `build.sh`: Sets up dependencies per backend, builds, tests, installs, runs or uninstalls the shell.
-- `readme.md`: Requirements, install, build options, running, backend selection and the module and verb tables.
+- `readme.md`: Overview, features, requirements, install, build options, usage, configuration and how to test.
 - `.clang-format`: Project code style.
 
 ## `important/`
@@ -188,8 +188,8 @@
 
 ## `src/modules/settings/`
 
-- `model.{h,cpp}`: Tabs by capability (animation, bar, displays, idle, launcher, rain, visualizer, wallpaper), monitor selections, fields, pickers and actions.
-- `view.{h,cpp}`: Paints the scroll, each tab, fields, pickers and thumbnails over the canvas.
+- `model.{h,cpp}`: Opens on a tile menu; tabs by capability (ambient: rain and visualizer, bar, displays: overlays and idle per monitor, general: animations and launcher, wallpaper) open as pages with a back key, plus monitor selections, fields, pickers and actions.
+- `view.{h,cpp}`: Paints the scroll, the staggered tile menu with live summaries, each tab page, fields, pickers and thumbnails over the canvas.
 
 ## `src/modules/wallpaper/`, `wallpaper_select/`
 
@@ -230,7 +230,7 @@
 - `telemetry_service.{h,cpp}`: CPU and GPU temperature, usage, clock and system statistics from `sysfs` and `/proc`.
 - `compositor_service.{h,cpp}`: The `Compositor` interface, shared state types, work-area maths and `make_compositor`.
 - `hyprland_service.{h,cpp}`: Hyprland compositor over its request and event sockets, with Lua dispatch commands and workspace paging.
-- `i3_service.{h,cpp}`: i3 and Sway compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
+- `i3_service.{h,cpp}`: i3 compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
 - `dock_service.{h,cpp}`: Per-output dock entries from the compositor client list, ordered left to right.
 - `user_service.{h,cpp}`: Display name, OS name, uptime text and the profile picture path.
 - `wayland/`: Wayland-only services: `capture`, `clipboard`, `frame`, `idle`, `input`, `media` decoder, `output`, settings editing and `text_input`.
@@ -246,6 +246,6 @@
 - `backend/wayland/`: The Wayland unit tests that are not module tests, run as `wayland-unit`.
 - `backend/x11/test_x11.cpp`: Checks for the X11 pure logic: colours, the cairo frame, image placement and decoding and input conversion.
 - `modules/<name>/`: Checks for each module's model, view and layout; `<backend>/` holds host-level checks.
-- `app/`: Checks for session detection, library names, search directories, the Sway session and the shell.
+- `app/`: Checks for session detection, library names, search directories and the shell.
 - `core/test_*.cpp`: Checks for the `src/core/` files.
 - `service/test_*.cpp`: Checks for the pure parsing and decision logic of the shared services.
