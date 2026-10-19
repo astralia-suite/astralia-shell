@@ -150,14 +150,14 @@ void check_logout_view() {
     using Kind = test::Op::Kind;
     Harness idle;
     test::RecordingCanvas none;
-    astralia::paint_logout(none, idle.model, 1920, 1200);
+    astralia::paint_logout(none, idle.model, 1920, 1200, "");
     test::check(none.ops.empty(), "a closed card draws nothing");
 
     Instant instant;
     Harness h;
     h.model.open();
     test::RecordingCanvas canvas;
-    astralia::paint_logout(canvas, h.model, 1920, 1200);
+    astralia::paint_logout(canvas, h.model, 1920, 1200, "");
     test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8,
                 "eight buttons with a glyph each");
     test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1,

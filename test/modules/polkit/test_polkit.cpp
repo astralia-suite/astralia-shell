@@ -143,7 +143,7 @@ void check_polkit_view() {
     }
     test::RecordingCanvas typed;
     astralia::paint_polkit(typed, model, 1920, 1080);
-    test::check(typed.count(Kind::image) == 3, "one echo image per character");
+    test::check(typed.count(Kind::rounded) == 5 + 3, "one dot per character");
     test::check(typed.ops[typed.ops.size() - 2].box.w == cfg::dot_size,
                 "dots have the configured size");
 
@@ -152,13 +152,7 @@ void check_polkit_view() {
     }
     test::RecordingCanvas many;
     astralia::paint_polkit(many, model, 1920, 1080);
-    test::check(many.count(Kind::image) == 25, "dots are limited to what fits");
-
-    test::RecordingCanvas fallback;
-    fallback.image_id = astralia::ui::no_image;
-    astralia::paint_polkit(fallback, model, 1920, 1080);
-    test::check(fallback.count(Kind::image) == 0 && fallback.count(Kind::rounded) == 30,
-                "missing echo art falls back to round dots");
+    test::check(many.count(Kind::rounded) == 5 + 25, "dots are limited to what fits");
 
     model.set_prompt(prompt(false, "Touch the sensor"));
     test::RecordingCanvas waiting;

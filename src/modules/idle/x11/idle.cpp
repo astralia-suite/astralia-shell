@@ -18,7 +18,6 @@ namespace {
 constexpr std::chrono::milliseconds poll_interval{1000};
 constexpr std::chrono::milliseconds frame_interval{33};
 constexpr float max_frame_seconds = 0.5f;
-constexpr const char *logo_asset = "stellar-restoration.svg";
 
 } // namespace
 
@@ -185,10 +184,15 @@ void Idle::paint(const Output &output, Overlay &overlay) {
         cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
         cairo_paint(cr);
         overlay.canvas.bind(cr);
-        ui::ImageId logo = overlay.canvas.image(logo_asset, static_cast<int>(kIdleLogoSize));
-        ui::TextSize size = overlay.canvas.image_size(logo);
-        overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h},
-                                  palette::white);
+        const std::string &logo_path = services_.settings.config().idle_logo_path;
+        ui::ImageId logo =
+            logo_path.empty() ? ui::no_image
+                              : overlay.canvas.image(logo_path, static_cast<int>(kIdleLogoSize));
+        if (logo != ui::no_image) {
+            ui::TextSize size = overlay.canvas.image_size(logo);
+            overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h},
+                                      palette::white);
+        }
     } else {
         paint_wallpaper(cr, services_.settings.config(), output.name, 0, 0, width, height);
     }

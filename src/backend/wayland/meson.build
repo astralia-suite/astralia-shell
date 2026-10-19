@@ -82,9 +82,7 @@ wayland_data_dir = get_option('prefix') / get_option('datadir') / 'astralia-shel
 
 wayland_args = [
   '-DASTRALIA_SHELL_SHADER_DIR="@0@"'.format(wayland_data_dir / 'shaders'),
-  '-DASTRALIA_SHELL_DEFAULT_WALLPAPER="@0@"'.format(wayland_data_dir / 'stellar-restoration.png'),
-  '-DASTRALIA_SHELL_BULLET_DIR="@0@"'.format(wayland_data_dir / 'constellation'),
-  '-DASTRALIA_SHELL_INPUT_ECHO="@0@"'.format(wayland_data_dir / 'polkit' / 'electro.png'),
+  '-DASTRALIA_SHELL_DEFAULT_WALLPAPER="@0@"'.format(meson.project_source_root() / 'assets' / 'wallpaper' / 'default.jpg'),
   '-DASTRALIA_SHELL_PAM_DIR="@0@"'.format(wayland_data_dir / 'pam'),
   '-DASTRALIA_SHELL_MEDIA_PLUGIN="@0@"'.format(wayland_data_dir / 'plugins' / 'libastralia-shell-media.so'),
 ]
@@ -125,8 +123,4 @@ wayland_media_deps = [
   dependency('libdrm'),
 ]
 
-install_data(
-  '../../../assets/stellar-restoration.png',
-  install_dir: wayland_data_dir,
-)
 install_subdir('../../../assets/shaders', install_dir: wayland_data_dir)

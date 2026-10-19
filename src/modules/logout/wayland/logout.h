@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <GLES3/gl32.h>
 #include <chrono>
 #include <memory>
@@ -28,6 +29,7 @@ struct LogoutState {
     GlCanvas canvas;
     astralia::LogoutModel model{astralia::logout_commands(true)};
     bool opened_by_widget = false;
+    std::string logo_path;
     wl_output *bound_output = nullptr;
 
     ThunderBurst thunder;

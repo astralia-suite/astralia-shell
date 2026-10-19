@@ -18,7 +18,8 @@ constexpr ui::TextStyle glyph_style{ui::FontFamily::glyph, cfg::glyph_px};
 
 } // namespace
 
-void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, float height) {
+void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, float height,
+                  std::string_view logo_path) {
     if (!model.open_state()) {
         return;
     }
@@ -65,7 +66,7 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
     constexpr float logo_size = cfg::logo_size;
     canvas.begin_group({cx - logo_size / 2.0f, cy - logo_size / 2.0f, logo_size, logo_size},
                        {model.logo_scale(), false});
-    ui::ImageId logo = canvas.image(cfg::logo_asset, cfg::logo_size);
+    ui::ImageId logo = logo_path.empty() ? ui::no_image : canvas.image(logo_path, cfg::logo_size);
     if (logo != ui::no_image) {
         ui::TextSize extent = canvas.image_size(logo);
         float fit = std::min(logo_size / extent.w, logo_size / extent.h);

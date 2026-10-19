@@ -28,7 +28,7 @@ hidden = ['-fvisibility=hidden', '-fvisibility-inlines-hidden']
 
 data_dir = get_option('prefix') / get_option('datadir') / 'astralia-shell'
 add_project_arguments(
-  '-DASTRALIA_DEFAULT_WALLPAPER="@0@"'.format(data_dir / 'default-wallpaper.jpg'),
+  '-DASTRALIA_DEFAULT_WALLPAPER="@0@"'.format(data_dir / 'wallpaper' / 'default.jpg'),
   '-DASTRALIA_ASSET_DIR="@0@"'.format(data_dir),
   '-DASTRALIA_SOURCE_ASSET_DIR="@0@"'.format(meson.project_source_root() / 'assets'),
   language: 'cpp',
@@ -184,7 +184,8 @@ install_data(
   'assets/fonts/YujiMai.ttf',
   install_dir: data_dir / 'fonts',
 )
-install_data('assets/default-wallpaper.jpg', 'assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
+install_data('assets/stiletto.svg', install_dir: data_dir)
+install_data('assets/wallpaper/default.jpg', install_dir: data_dir / 'wallpaper')
 install_data('assets/bamboo/bamboo.png', install_dir: data_dir / 'bamboo')
 configure_file(
   input: 'assets/bamboo/astralia-shell-bamboo.desktop.in',
@@ -193,18 +194,7 @@ configure_file(
   install: true,
   install_dir: get_option('prefix') / get_option('datadir') / 'applications',
 )
-install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
-install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
 install_data('assets/pam/astralia-shell', install_dir: data_dir / 'pam')
-install_data(
-  'assets/constellation/C1.png',
-  'assets/constellation/C2.png',
-  'assets/constellation/C3.png',
-  'assets/constellation/C4.png',
-  'assets/constellation/C5.png',
-  'assets/constellation/C6.png',
-  install_dir: data_dir / 'constellation',
-)
 
 wayland_enabled = 'wayland' in get_option('backends')
 

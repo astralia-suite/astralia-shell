@@ -58,6 +58,8 @@ bindsym $mod+d exec astralia launcher
 
 Logs go to `~/.local/state/astralia/astralia.log`.
 
+Optional logos are not bundled. Set `general.logoutLogoPath` for the logout screen and `displays.idle.logoPath` for the idle screensaver to an image path in the config, and leave them empty to draw no logo.
+
 ## Configuration
 
 The config is `~/.config/astralia/config.json`. When it does not exist, the defaults apply and the file is written on the first change. Most options can also be changed from `astralia settings`.
@@ -71,3 +73,20 @@ The session is detected automatically. Set `ASTRALIA_BACKEND=wayland` or `ASTRAL
 ```
 
 This builds and runs the unit tests and a backend smoke test.
+
+## Credits
+
+Astralia-shell can never be built without the inspiration of existing major works, and i am grateful to all of them.
+
+**The foundations**
+- `noctalia` (MIT): The only public desktop shell with C++ and opengl es 2.0. I had learned a lot about communication with wayland through this shell.
+- `caelestia` (GPL-3.0): One of the most beautiful desktop shell to ever released. The lock screen design mostly adopted from here.
+- `end4pc` (GPL-3.0): Settings panel was inspired by this project's settings panel.
+- `quickshell-overview` (GPL): Where the overview's initial design was adopted from.
+- `sekaipop` (GPL-3.0): A relatively new shell with gorgeous eyecandy and animations.
+- `GLava` (GPL-3.0): The audio visualizer transforms and FFT are adapted from it.
+
+## License
+
+Astralia Shell is licensed under GPL-3.0, see `LICENSE`. Bundled third-party notices are in `THIRD_PARTY_LICENSES` and `assets/shaders/NOTICE`.
+

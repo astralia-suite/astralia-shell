@@ -41,7 +41,6 @@ inline constexpr float flash_frac = 0.28f;
 inline constexpr int star_step = 3;
 inline constexpr int lock_index = 2;
 inline constexpr const char *lock_command = "astralia lock";
-inline constexpr const char *logo_asset = "logout/logo.png";
 
 // Ring angles
 inline constexpr double start_angle = -std::numbers::pi / 2.0;

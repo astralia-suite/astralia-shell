@@ -37,7 +37,6 @@ void dots(ui::Canvas &canvas, const PolkitModel &model, float x0, float width, f
     size_t visible = polkit_visible_dots(length, width);
     size_t first = length - visible;
     float x = x0 + (width - static_cast<float>(visible) * dot) / 2.0f;
-    ui::ImageId echo = canvas.image(cfg::echo_file_path, cfg::dot_size);
     const auto &chars = model.dot_anim().chars;
     for (size_t i = 0; i < visible; ++i) {
         size_t index = first + i;
@@ -45,11 +44,7 @@ void dots(ui::Canvas &canvas, const PolkitModel &model, float x0, float width, f
         float size = dot * scale;
         float cell_x = x + static_cast<float>(i) * dot;
         ui::Box box{cell_x + (dot - size) / 2.0f, cy - size / 2.0f, size, size};
-        if (echo != ui::no_image) {
-            canvas.draw_image(echo, box, palette::white);
-        } else {
-            canvas.rounded(box, size / 2.0f, palette::text);
-        }
+        canvas.rounded(box, size / 2.0f, palette::accent);
     }
 }
 

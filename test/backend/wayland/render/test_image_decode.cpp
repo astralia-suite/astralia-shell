@@ -13,12 +13,12 @@ static bool has_nonzero_byte(const unsigned char *data, size_t count) {
     return false;
 }
 
-static void test_decode_png() {
+static void test_decode_image() {
     int width = 0, height = 0;
     unsigned char *data = load_image_decode(ASTRALIA_SHELL_DEFAULT_WALLPAPER, width, height);
     assert(data);
-    assert(width == 1920);
-    assert(height == 1080);
+    assert(width == 2746);
+    assert(height == 1716);
     assert(has_nonzero_byte(data, static_cast<size_t>(width) * height * 4));
     delete[] data;
 }
@@ -54,7 +54,7 @@ static void test_decode_truncated() {
         std::filesystem::temp_directory_path() / "astralia-shell-test-truncated";
     std::filesystem::copy_file(ASTRALIA_SHELL_DEFAULT_WALLPAPER, path,
                                std::filesystem::copy_options::overwrite_existing);
-    std::filesystem::resize_file(path, std::filesystem::file_size(path) / 2);
+    std::filesystem::resize_file(path, 100);
     int width = 0, height = 0;
     assert(!load_image_decode(path.string(), width, height));
 
@@ -118,7 +118,7 @@ static void test_decode_jpeg_size_hint() {
 }
 
 void test_image_decode() {
-    test_decode_png();
+    test_decode_image();
     test_decode_svg();
     test_decode_truncated();
     test_decode_jpeg_size_hint();

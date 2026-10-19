@@ -12,7 +12,7 @@
 
 - `meson.build`: Builds `astralia-core-base`, `astralia-core-shared`, the `astralia` executable, the backend plugins and the tests.
 - `meson.options`: `backends` selects which backend plugins build; `native_cpu` tunes the x11 plugin for the X201.
-- `assets/`: Fonts, constellation bullets, logos, the bamboo icon and desktop entry, shaders, the PAM service and the polkit glyph, installed to `share/astralia-shell/`.
+- `assets/`: Fonts, the default wallpaper (`wallpaper/default.jpg`), the stiletto sprite, the bamboo icon and desktop entry, shaders and the PAM service, installed to `share/astralia-shell/`.
 - `build.sh`: Sets up dependencies per backend, builds, tests, installs, runs or uninstalls the shell.
 - `readme.md`: Overview, features, requirements, install, build options, usage, configuration and how to test.
 - `.clang-format`: Project code style.

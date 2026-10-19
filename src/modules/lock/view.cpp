@@ -137,7 +137,6 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     int visible = static_cast<int>(std::min(length, capacity));
     float row_x = text_field_row_slide(motion.row, motion.animations, kLockOwnerDotRowX,
                                        mid_x + lock_dot_x(0, visible, mid_w));
-    ui::ImageId echo = canvas.image(kLockEchoAsset, static_cast<int>(kLockDotSize));
     for (int i = 0; i < visible; ++i) {
         const TextFieldCharAnim *anim = static_cast<size_t>(i) < motion.dots.chars.size()
                                             ? &motion.dots.chars[static_cast<size_t>(i)]
@@ -146,11 +145,7 @@ void draw_pill(Pane &pane, float x, float y, float w) {
         float dx = row_x + static_cast<float>(i) * kLockDotSize + (anim ? anim->slide_x : 0.0f);
         ui::Box box{std::round(dx + (kLockDotSize - size) * 0.5f), std::round(cy - size * 0.5f),
                     size, size};
-        if (echo != ui::no_image) {
-            canvas.draw_image(echo, box, palette::white);
-        } else {
-            canvas.rounded(box, size * 0.5f, palette::text);
-        }
+        canvas.rounded(box, size * 0.5f, palette::accent);
     }
 }
 

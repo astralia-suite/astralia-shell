@@ -76,8 +76,10 @@ void idle_overlay_paint(IdleOverlayState &state) {
         state.canvas.rect({0, 0, static_cast<float>(state.width), static_cast<float>(state.height)},
                           {0.0f, 0.0f, 0.0f, state.screensaver_opacity});
         astralia::ui::ImageId logo =
-            state.canvas.image(astralia::kIdleLogoAsset, static_cast<int>(astralia::kIdleLogoSize) *
-                                                             state.output_scale.scale);
+            state.logo_path.empty()
+                ? astralia::ui::no_image
+                : state.canvas.image(state.logo_path, static_cast<int>(astralia::kIdleLogoSize) *
+                                                          state.output_scale.scale);
         if (logo != astralia::ui::no_image) {
             astralia::ui::TextSize extent = state.canvas.image_size(logo);
             float fit =
@@ -243,6 +245,7 @@ void IdlePerMonitorModule::timer_tick(WaylandState &app, MonitorOutput &mon) {
                            is_idle(app.idle, mon.output.name,
                                    screensaver_effective_timeout_seconds(app.cfg, mon.output.name));
 
+    state_.logo_path = app.cfg.idle_logo_path;
     idle_overlay_set_active(state_, ambient_now, screensaver_now);
 
     if (screensaver_now != screensaver_was_active_) {

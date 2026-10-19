@@ -175,7 +175,7 @@ std::string default_wallpaper_path() {
     if (std::filesystem::exists(ASTRALIA_DEFAULT_WALLPAPER, ec)) {
         return ASTRALIA_DEFAULT_WALLPAPER;
     }
-    return std::string(ASTRALIA_SOURCE_ASSET_DIR) + "/default-wallpaper.jpg";
+    return std::string(ASTRALIA_SOURCE_ASSET_DIR) + "/wallpaper/default.jpg";
 }
 
 Config::Config()
@@ -320,6 +320,8 @@ Config parse_config(std::string_view source) {
     cfg.screensaver_enabled = flag(idle, "screensaverEnabled", cfg.screensaver_enabled);
     cfg.screensaver_timeout_seconds =
         seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout_seconds);
+    cfg.idle_logo_path = path_expand_home(text(idle, "logoPath", cfg.idle_logo_path));
+    cfg.logout_logo_path = path_expand_home(text(general, "logoutLogoPath", cfg.logout_logo_path));
 
     const Json *ambient = object_in(&root, "ambient");
     const Json *visualizer = object_in(ambient, "visualizer");
@@ -376,6 +378,7 @@ std::string serialize_config(const Config &cfg) {
     idle.set("ambientTimeoutSeconds", Json::from_number(cfg.ambient_timeout_seconds));
     idle.set("screensaverEnabled", Json::from_bool(cfg.screensaver_enabled));
     idle.set("screensaverTimeoutSeconds", Json::from_number(cfg.screensaver_timeout_seconds));
+    idle.set("logoPath", Json::from_string(path_collapse_home(cfg.idle_logo_path)));
 
     Json displays = Json::make_object();
     displays.set("defaultOsd", Json::from_bool(cfg.default_osd_enabled));
@@ -422,6 +425,7 @@ std::string serialize_config(const Config &cfg) {
     Json general = Json::make_object();
     general.set("animationsDisabled", Json::from_bool(cfg.animations_disabled));
     general.set("launcherLightning", Json::from_bool(cfg.launcher_lightning));
+    general.set("logoutLogoPath", Json::from_string(path_collapse_home(cfg.logout_logo_path)));
 
     Json ambient = Json::make_object();
     ambient.set("rain", std::move(rain));

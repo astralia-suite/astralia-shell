@@ -298,7 +298,6 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
         panel_widgets::centered_text(canvas, "Password\xE2\x80\xA6", text_style, field,
                                      palette::text_dim);
     } else {
-        ui::ImageId echo = canvas.image(polkit_config::echo_file_path, static_cast<int>(dot));
         size_t visible =
             std::min(count, static_cast<size_t>(std::max(
                                 1.0f, (width - 2.0f * cfg::row_icon_gap + gap) / (dot + gap))));
@@ -315,11 +314,7 @@ void NetworkPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelPai
             float size = dot * scale;
             ui::Box d{dx + static_cast<float>(i) * (dot + gap) + (dot - size) / 2.0f + slide,
                       cy - size / 2.0f, size, size};
-            if (echo != ui::no_image) {
-                canvas.draw_image(echo, d, palette::white);
-            } else {
-                canvas.rounded(d, size / 2.0f, palette::text);
-            }
+            canvas.rounded(d, size / 2.0f, palette::accent);
         }
         if (!password_.preedit.empty()) {
             ui::TextSize size = canvas.measure(password_.preedit, text_style);

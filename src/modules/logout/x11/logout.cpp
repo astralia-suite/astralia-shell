@@ -113,7 +113,8 @@ void Logout::paint() {
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     canvas_.bind(cr);
     paint_logout(canvas_, model_, static_cast<float>(window_.geometry().width),
-                 static_cast<float>(window_.geometry().height));
+                 static_cast<float>(window_.geometry().height),
+                 services_.settings.config().logout_logo_path);
     window_.present();
 }
 

@@ -57,16 +57,9 @@ x11_deps = [
 ]
 
 x11_data_dir = get_option('prefix') / get_option('datadir') / 'astralia-shell'
-x11_source_assets = meson.project_source_root() / 'assets'
 
 x11_args = [
-  '-DASTRALIA_CONSTELLATION_DIR="@0@"'.format(x11_data_dir / 'constellation'),
-  '-DASTRALIA_SOURCE_CONSTELLATION_DIR="@0@"'.format(x11_source_assets / 'constellation'),
-  '-DASTRALIA_LOGOUT_DIR="@0@"'.format(x11_data_dir / 'logout'),
-  '-DASTRALIA_SOURCE_LOGOUT_DIR="@0@"'.format(x11_source_assets / 'logout'),
   '-DASTRALIA_PAM_DIR="@0@"'.format(x11_data_dir / 'pam'),
-  '-DASTRALIA_POLKIT_DIR="@0@"'.format(x11_data_dir / 'polkit'),
-  '-DASTRALIA_SOURCE_POLKIT_DIR="@0@"'.format(x11_source_assets / 'polkit'),
 ]
 if get_option('native_cpu')
   x11_args += ['-march=westmere']

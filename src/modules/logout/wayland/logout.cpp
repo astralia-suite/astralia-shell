@@ -108,6 +108,7 @@ std::vector<astralia::ShellBinding> logout_shell_bindings(LogoutState &logout,
                                      state.egl_context, target->output.wl,
                                      target->output.name.c_str());
              }
+             logout.logo_path = state.cfg.logout_logo_path;
              logout_toggle(logout);
          }},
     };
@@ -144,7 +145,7 @@ void logout_paint(LogoutState &state) {
     state.canvas.set_opacity(state.base.opacity);
     if (state.base.open) {
         astralia::paint_logout(state.canvas, state.model, static_cast<float>(state.base.width),
-                               static_cast<float>(state.base.height));
+                               static_cast<float>(state.base.height), state.logo_path);
     }
     state.canvas.flush();
 
@@ -303,6 +304,7 @@ class LogoutModule final : public Module {
                                 app.egl_display, app.egl_config, app.egl_context, target->output.wl,
                                 target->output.name.c_str());
         }
+        state_.logo_path = app.cfg.logout_logo_path;
         logout_toggle(state_, true);
     }
 

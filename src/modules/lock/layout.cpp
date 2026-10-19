@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cstdlib>
+#include <string_view>
 
 #include "config/lock_config.h"
 
@@ -55,7 +57,12 @@ float lock_dot_x(int index, int count, float field_width) {
 }
 
 bool lock_dev_unlock_hit(double x, double y, double output_h) {
-    return x <= kLockDevUnlockWidth && y >= output_h - kLockDevUnlockHeight;
+    // ASTRALIA_DEBUG_UNLOCK=1 enables the corner, so a normal session cannot bypass the lock
+    static const bool enabled = [] {
+        const char *env = std::getenv("ASTRALIA_DEBUG_UNLOCK");
+        return env != nullptr && std::string_view(env) == "1";
+    }();
+    return enabled && x <= kLockDevUnlockWidth && y >= output_h - kLockDevUnlockHeight;
 }
 
 void lock_panel_origin(float output_w, float output_h, float panel_w, float panel_h, float &out_x,

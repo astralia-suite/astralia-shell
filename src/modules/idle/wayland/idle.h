@@ -49,6 +49,7 @@ struct IdleOverlayState {
     float screensaver_opacity = 0.0f;
     bool ambient_active = false;
     bool screensaver_active = false;
+    std::string logo_path;
 
     astralia::Bounce bounce{40.0f, 40.0f, astralia::kIdleLogoSpeed,
                             astralia::kIdleLogoSpeed * 0.75f};

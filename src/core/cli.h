@@ -11,7 +11,6 @@ enum class Mode { daemon, debug, client };
 struct Invocation {
     Mode mode;
     std::string command;
-    bool locked = false;
 };
 
 Invocation parse_invocation(std::span<const std::string_view> args);

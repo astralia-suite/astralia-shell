@@ -63,6 +63,9 @@ struct Config {
 
     bool animations_disabled = false;
 
+    std::string logout_logo_path;
+    std::string idle_logo_path;
+
     bool idle_management_enabled = true;
     bool ambient_enabled = true;
     uint32_t ambient_timeout_seconds = 150;
