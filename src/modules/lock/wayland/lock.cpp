@@ -9,6 +9,7 @@
 #include "wayland/app/user_info.h"
 #include "wayland/app/wayland_state.h"
 
+#include "app/session.h"
 #include "core/deferred_call.h"
 #include "wayland/core/log.h"
 
@@ -171,6 +172,10 @@ void handle_locked(void *data, ext_session_lock_v1 *) {
     auto *st = static_cast<LockState *>(data);
     if (!st->active)
         return;
+    if (st->acknowledge_startup) {
+        st->acknowledge_startup = false;
+        astralia::start_locked_acknowledge();
+    }
     st->locked = true;
     st->locked_at = std::chrono::steady_clock::now();
     if (st->app)
@@ -332,11 +337,11 @@ bool lock_request(LockState &st, WaylandState &app) {
     return true;
 }
 
-void lock_begin(LockState &st, WaylandState &app) {
+void lock_begin(LockState &st, WaylandState &app, bool animate) {
     if (st.active || st.transition.active)
         return;
     st.app = &app;
-    bool animated = !app.cfg.animations_disabled && app.session_lock_manager &&
+    bool animated = animate && !app.cfg.animations_disabled && app.session_lock_manager &&
                     !app.outputs.empty() && transition_open(st.transition, app);
     if (!animated) {
         lock_request(st, app);
@@ -589,6 +594,19 @@ LockModule *find_lock_module(WaylandState &app) {
 
 std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper) {
     return std::make_unique<LockModule>(std::move(draw_wallpaper));
+}
+
+void lock_at_startup(WaylandState &app) {
+    auto *lm = find_lock_module(app);
+    if (!lm) {
+        klog("lock: start locked requested but the lock module is not loaded");
+        return;
+    }
+    astralia::cpu_temp_poll(app.cpu_temp);
+    astralia::system_stats_poll(app.system_stats);
+    astralia::gpu_temp_poll(app.gpu_temp);
+    lm->state().acknowledge_startup = true;
+    lock_begin(lm->state(), app, false);
 }
 
 void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name) {

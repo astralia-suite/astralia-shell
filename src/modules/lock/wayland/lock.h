@@ -57,6 +57,7 @@ struct LockState {
     bool active = false;
     bool locked = false;
     bool unlocking = false;
+    bool acknowledge_startup = false;
     std::chrono::steady_clock::time_point locked_at{};
 
     std::vector<std::unique_ptr<LockOutputSurface>> surfaces;
@@ -71,7 +72,7 @@ struct LockState {
 };
 
 bool lock_request(LockState &st, WaylandState &app);
-void lock_begin(LockState &st, WaylandState &app);
+void lock_begin(LockState &st, WaylandState &app, bool animate = true);
 void lock_teardown(LockState &st);
 void lock_begin_unlock(LockState &st);
 void lock_handle_key(LockState &st, const KeyEvent &ev);
@@ -86,5 +87,6 @@ using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::str
                                                GlCanvas &canvas, int32_t w, int32_t h)>;
 
 std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper);
+void lock_at_startup(WaylandState &app);
 void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name);
 void lock_notify_output_removed(WaylandState &app, wl_output *output);

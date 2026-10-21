@@ -1,6 +1,7 @@
 #include <cstdlib>
 
 #include "app/backend.h"
+#include "app/session.h"
 #include "app/services.h"
 #include "app/shell.h"
 
@@ -79,6 +80,12 @@ class X11Backend final : public Backend {
         Idle idle(*x, *loop, services);
         Visualizer visualizer(*x, *loop, shell, services);
         shell.attach(**ipc);
+        if (start_locked_pending()) {
+            shell.run(ShellVerb::lock);
+            if (lock.locked()) {
+                start_locked_acknowledge();
+            }
+        }
         return loop->run();
     }
 };

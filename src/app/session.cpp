@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <dlfcn.h>
 #include <filesystem>
+#include <fstream>
 #include <format>
 #include <unistd.h>
 
@@ -32,6 +33,21 @@ SessionEnvironment session_environment() {
     return {environment_value("ASTRALIA_BACKEND"), environment_value("HYPRLAND_INSTANCE_SIGNATURE"),
             environment_value("I3SOCK"),           environment_value("XDG_SESSION_TYPE"),
             environment_value("WAYLAND_DISPLAY"),  environment_value("DISPLAY")};
+}
+
+bool start_locked(std::string_view value) { return value == "1"; }
+
+std::string start_locked_ack_path(unsigned uid) {
+    return std::format("/tmp/astralia-start-locked-{}", uid);
+}
+
+bool start_locked_pending() {
+    return start_locked(environment_value("ASTRALIA_START_LOCKED")) &&
+           access(start_locked_ack_path(getuid()).c_str(), F_OK) != 0;
+}
+
+void start_locked_acknowledge() {
+    std::ofstream(start_locked_ack_path(getuid()));
 }
 
 SessionKind detect_session(const SessionEnvironment &environment) {

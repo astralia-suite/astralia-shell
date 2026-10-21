@@ -22,6 +22,10 @@ struct SessionEnvironment {
 };
 
 SessionEnvironment session_environment();
+bool start_locked(std::string_view value);
+std::string start_locked_ack_path(unsigned uid);
+bool start_locked_pending();
+void start_locked_acknowledge();
 SessionKind detect_session(const SessionEnvironment &environment);
 std::string_view session_name(SessionKind kind);
 std::string backend_library_name(SessionKind kind);

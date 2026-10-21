@@ -34,6 +34,12 @@ void check_session() {
     environment.display = ":1";
     check(detect_session(environment) == SessionKind::x11, "an unknown override is ignored");
 
+    check(start_locked("1") && !start_locked("") && !start_locked("0") && !start_locked("true"),
+          "only ASTRALIA_START_LOCKED=1 locks at startup");
+
+    check(start_locked_ack_path(1000) == "/tmp/astralia-start-locked-1000",
+          "the startup lock acknowledgement lives in /tmp per user");
+
     check(session_name(SessionKind::wayland) == "wayland" &&
               session_name(SessionKind::x11) == "x11" && session_name(SessionKind::none) == "none",
           "session names");

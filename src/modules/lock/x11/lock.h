@@ -26,6 +26,8 @@ class Lock {
   public:
     Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
+    bool locked() const { return locked_; }
+
   private:
     struct Surface {
         Surface(XConnection &x, size_t index);

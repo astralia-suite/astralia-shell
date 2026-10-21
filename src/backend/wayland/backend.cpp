@@ -17,6 +17,7 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/service_registry.h"
 #include "wayland/app/wayland_registry.h"
+#include "modules/lock/wayland/lock.h"
 
 #include "core/deferred_call.h"
 #include "wayland/core/log.h"
@@ -26,6 +27,7 @@
 #include "wayland/render/gl.h"
 
 #include "app/backend.h"
+#include "app/session.h"
 
 #include "app/shell.h"
 #include "core/dbus.h"
@@ -181,6 +183,8 @@ int WaylandBackend::run() {
     klog("started: %zu monitor(s)", app.outputs.size());
     for (auto &mon : app.outputs)
         request_all_frames(*mon);
+    if (astralia::start_locked_pending())
+        lock_at_startup(app);
 
     struct SourceRange {
         PollSource *src;
