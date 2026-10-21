@@ -93,16 +93,133 @@ inline constexpr float kLockScaleHidden = 0.0f;
 inline constexpr float kLockScaleFull = 1.0f;
 
 // animation durations
-inline constexpr float kLockAnimContentFadeInMs = 350.0f;
 inline constexpr float kLockAnimContentFadeOutMs = 200.0f;
-inline constexpr float kLockAnimContentScaleInMs = 400.0f;
 inline constexpr float kLockAnimContentScaleOutMs = 300.0f;
-inline constexpr float kLockAnimExpandMs = 400.0f;
 inline constexpr float kLockAnimFastMs = 100.0f;
 inline constexpr float kLockAnimIconFadeInMs = 250.0f;
-inline constexpr float kLockAnimIconFadeOutMs = 300.0f;
 inline constexpr float kLockAnimShrinkMs = 350.0f;
 inline constexpr float kLockAnimSpinMs = 500.0f;
+
+// transition timeline in milliseconds
+inline constexpr float kLockSlashMs = 2800.0f;
+inline constexpr int kLockStarCount = 5;
+inline constexpr int kLockFlurryCount = 14;
+inline constexpr int kLockSlashCount = kLockStarCount + kLockFlurryCount;
+inline constexpr float kLockSlashFirstStartMs = 40.0f;
+inline constexpr float kLockSlashStrikeMs = 260.0f;
+inline constexpr float kLockStarAdvanceMs = 100.0f;
+inline constexpr float kLockSlashWaitMs = 600.0f;
+inline constexpr float kLockSlashFinalDrawMs = 70.0f;
+inline constexpr float kLockSlashFinalFadeMs = 280.0f;
+inline constexpr float kLockSlashImpactMs = 60.0f;
+inline constexpr float kLockSlashShockMs = 200.0f;
+inline constexpr float kLockSlashFlashHoldMs = 60.0f;
+inline constexpr float kLockSlashFlashMs = 400.0f;
+inline constexpr float kLockSlashFinalBeamMs = 280.0f;
+inline constexpr float kLockSlashSliverMs = 420.0f;
+inline constexpr float kLockSlashDimRampMs = 300.0f;
+inline constexpr float kLockSlashDimLiftMs = 320.0f;
+inline constexpr float kLockSlashShatterHoldMs = 25.0f;
+inline constexpr float kLockSlashShatterSpreadMs = 200.0f;
+inline constexpr float kLockSlashFallMs = 320.0f;
+
+// transition star
+struct LockStarCorner {
+    float x;
+    float y;
+};
+
+inline constexpr LockStarCorner kLockStarCorners[kLockStarCount] = {
+    {0.50f, 0.24f}, {0.78f, 0.77f}, {0.24f, 0.36f}, {0.80f, 0.36f}, {0.16f, 0.79f},
+};
+
+// transition flurry
+struct LockFlurrySlash {
+    float degrees;
+    float offset;
+    float start_ms;
+};
+
+inline constexpr float kLockReferenceWidth = 16.0f;
+inline constexpr float kLockReferenceHeight = 9.0f;
+inline constexpr LockFlurrySlash kLockFlurrySlashes[kLockFlurryCount] = {
+    {-89.0f, 0.00f, 480.0f},  {34.0f, 0.10f, 560.0f},    {-10.0f, -0.12f, 720.0f},
+    {-32.0f, 0.16f, 800.0f},  {-63.0f, -0.22f, 830.0f},  {11.0f, 0.26f, 880.0f},
+    {77.0f, -0.30f, 910.0f},  {53.0f, 0.34f, 960.0f},    {-79.0f, -0.34f, 1040.0f},
+    {69.0f, 0.30f, 1070.0f},  {-71.0f, -0.26f, 1120.0f}, {-55.0f, 0.22f, 1200.0f},
+    {85.0f, -0.16f, 1220.0f}, {61.0f, 0.12f, 1240.0f},
+};
+
+// transition timeline as shares of progress
+inline constexpr float kLockSlashFirstStart = kLockSlashFirstStartMs / kLockSlashMs;
+inline constexpr float kLockSlashDrawSpan = kLockSlashStrikeMs / kLockSlashMs;
+inline constexpr float kLockSlashFinalStart =
+    (kLockSlashFirstStartMs + kLockFlurrySlashes[kLockFlurryCount - 1].start_ms +
+     kLockSlashStrikeMs + kLockSlashWaitMs) /
+    kLockSlashMs;
+inline constexpr float kLockSlashFinalDrawSpan = kLockSlashFinalDrawMs / kLockSlashMs;
+inline constexpr float kLockSlashFinalFade = kLockSlashFinalFadeMs / kLockSlashMs;
+inline constexpr float kLockSlashImpactSpan = kLockSlashImpactMs / kLockSlashMs;
+inline constexpr float kLockSlashShockSpan = kLockSlashShockMs / kLockSlashMs;
+inline constexpr float kLockSlashFlashHold = kLockSlashFlashHoldMs / kLockSlashMs;
+inline constexpr float kLockSlashFlashSpan = kLockSlashFlashMs / kLockSlashMs;
+inline constexpr float kLockSlashFinalBeamSpan = kLockSlashFinalBeamMs / kLockSlashMs;
+inline constexpr float kLockSlashSliverSpan = kLockSlashSliverMs / kLockSlashMs;
+inline constexpr float kLockSlashDimRamp = kLockSlashDimRampMs / kLockSlashMs;
+inline constexpr float kLockSlashDimLift = kLockSlashDimLiftMs / kLockSlashMs;
+inline constexpr float kLockSlashShatterHold = kLockSlashShatterHoldMs / kLockSlashMs;
+inline constexpr float kLockSlashShatterSpread = kLockSlashShatterSpreadMs / kLockSlashMs;
+inline constexpr float kLockSlashFallSpan = kLockSlashFallMs / kLockSlashMs;
+
+// transition geometry
+inline constexpr float kLockSlashGapFrac = 0.012f;
+inline constexpr float kLockSlashMinPieceArea = 1.0f;
+inline constexpr float kLockSlashFinalReach = 0.05f;
+inline constexpr float kLockFinalTilt = 0.14f;
+inline constexpr int kLockSliverCount = 36;
+inline constexpr float kLockSliverLengthMin = 24.0f;
+inline constexpr float kLockSliverLengthMax = 80.0f;
+inline constexpr float kLockSliverThickMin = 2.0f;
+inline constexpr float kLockSliverThickMax = 4.0f;
+inline constexpr float kLockSliverSpreadFrac = 0.14f;
+inline constexpr float kLockSliverDriftFrac = 0.10f;
+inline constexpr float kLockSliverAlongFrac = 0.12f;
+inline constexpr float kLockSlashStrikeOvershoot = 0.05f;
+inline constexpr float kLockSlashShardDrift = 0.06f;
+inline constexpr float kLockSlashShardSpin = 0.25f;
+inline constexpr float kLockSlashShardRankNoise = 0.25f;
+inline constexpr int kLockSlashRayCount = 18;
+inline constexpr float kLockSlashRayHalfAngle = 0.012f;
+
+// transition thunder, taken from the logout slashes
+inline constexpr float kLockStrikeAmp = 13.0f;
+inline constexpr float kLockStrikePeak = 1.2f;
+inline constexpr float kLockFinalThick = 3.4f;
+inline constexpr float kLockFinalAmpMult = 2.4f;
+inline constexpr float kLockFinalIntensity = 2.8f;
+inline constexpr float kLockFinalSeed = 21.0f;
+inline constexpr float kLockShockRadiusFrac = 0.6f;
+inline constexpr float kLockShockIntensity = 1.3f;
+
+// transition paint
+inline constexpr float kLockCutmarkWidth = 4.0f;
+inline constexpr float kLockCutmarkAlpha = 0.85f;
+inline constexpr float kLockFallbackBoltWidth = 3.0f;
+inline constexpr float kLockBoltGlowNearScale = 2.8f;
+inline constexpr float kLockBoltGlowFarScale = 6.0f;
+inline constexpr float kLockBoltGlowNearAlpha = 0.35f;
+inline constexpr float kLockBoltGlowFarAlpha = 0.15f;
+inline constexpr float kLockSlashRayAlpha = 0.5f;
+inline constexpr float kLockSlashFlashPeak = 0.9f;
+inline constexpr float kLockDimPeak = 0.5f;
+inline constexpr const char *kLockDimHex = "#0B0620";
+inline constexpr const char *kLockFlashHex = "#EDE6FF";
+inline constexpr float kLockBeamPeakFrac = 0.05f;
+inline constexpr float kLockFinalBeamFrac = 0.3f;
+inline constexpr float kLockFinalThinFrac = 0.012f;
+inline constexpr float kLockBeamGlowScale = 1.8f;
+inline constexpr float kLockBeamGlowAlpha = 0.3f;
+inline constexpr float kLockSliverAlpha = 0.9f;
 
 // fail timer
 inline constexpr float kLockTimerFailMs = 3000.0f;

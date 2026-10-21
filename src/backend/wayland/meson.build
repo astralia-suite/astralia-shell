@@ -58,6 +58,8 @@ wayland_sources = files(
   '../../service/wayland/text_input_service.cpp',
 )
 
+wayland_sources += files(meson.project_source_root() / 'src/modules/lock/wayland/transition.cpp')
+
 add_languages('c', native: false, required: true)
 
 wayland_deps = [

@@ -82,6 +82,13 @@ void check_lock() {
     test::check(has("12") && has("34") && has(info.date.c_str()) && has(kLockPlaceholderText),
                 "the view draws the clock, date and placeholder");
     test::check(model.hits().pill_button.w > 0.0f, "the view reports the submit button");
+    astralia::LockMotion fresh;
+    astralia::lock_motion_fit(fresh, 900.0f, 600.0f);
+    test::check(!fresh.animations.hasActive() && fresh.panel_w == 900.0f &&
+                    fresh.panel_h == 600.0f && fresh.panel_rotation == 0.0f &&
+                    fresh.panel_scale == kLockScaleFull && fresh.content_alpha == 1.0f &&
+                    fresh.icon_alpha == 0.0f,
+                "the lock card enters at rest, with no spin");
     model.key(text("z"));
     model.begin_auth();
     model.finish_auth(model.generation(), false);

@@ -75,42 +75,13 @@ namespace {
 void enter(LockMotion &m, float card_w, float card_h) {
     m.started = true;
     m.unlocking = false;
-    float box = lock_icon_box_size();
-    m.panel_scale = kLockScaleHidden;
+    m.panel_scale = kLockScaleFull;
     m.panel_rotation = 0.0f;
-    m.panel_w = box;
-    m.panel_h = box;
-    m.icon_alpha = 1.0f;
-    m.content_alpha = 0.0f;
-    m.content_scale = kLockScaleHidden;
-
-    AnimationManager &a = m.animations;
-    a.animate(
-        kLockScaleHidden, kLockScaleFull, kLockAnimSpinMs, Easing::EaseOutBack,
-        [&m](float v) { m.panel_scale = v; }, {}, kLockOwnerPanelScale);
-    a.animate(
-        0.0f, 360.0f, kLockAnimSpinMs, Easing::EaseInOutCubic,
-        [&m](float v) { m.panel_rotation = v; },
-        [&m, card_w, card_h] {
-            m.panel_rotation = 0.0f;
-            AnimationManager &b = m.animations;
-            b.animate(
-                m.panel_w, card_w, kLockAnimExpandMs, Easing::EaseOutCubic,
-                [&m](float v) { m.panel_w = v; }, {}, kLockOwnerPanelWidth);
-            b.animate(
-                m.panel_h, card_h, kLockAnimExpandMs, Easing::EaseOutCubic,
-                [&m](float v) { m.panel_h = v; }, {}, kLockOwnerPanelHeight);
-            b.animate(
-                1.0f, 0.0f, kLockAnimIconFadeOutMs, Easing::EaseOutCubic,
-                [&m](float v) { m.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
-            b.animate(
-                0.0f, 1.0f, kLockAnimContentFadeInMs, Easing::EaseOutCubic,
-                [&m](float v) { m.content_alpha = v; }, {}, kLockOwnerContentAlpha);
-            b.animate(
-                kLockScaleHidden, kLockScaleFull, kLockAnimContentScaleInMs, Easing::EaseOutBack,
-                [&m](float v) { m.content_scale = v; }, {}, kLockOwnerContentScale);
-        },
-        kLockOwnerPanelRotation);
+    m.panel_w = card_w;
+    m.panel_h = card_h;
+    m.icon_alpha = 0.0f;
+    m.content_alpha = 1.0f;
+    m.content_scale = kLockScaleFull;
 }
 
 } // namespace

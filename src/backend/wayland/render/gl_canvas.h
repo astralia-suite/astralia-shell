@@ -31,6 +31,12 @@ class GlCanvas final : public astralia::ui::Canvas {
     void fillet(const astralia::ui::Box &box, bool circle_on_right,
                 const astralia::Color &color) override;
     void set_erase(bool on) override { erase_ = on; }
+    void polygon(std::span<const astralia::ui::Point> points, const astralia::Color &fill) override;
+    void cut_polygon(std::span<const astralia::ui::Point> points) override;
+    void snapshot() override;
+    void snapshot_polygon(std::span<const astralia::ui::Point> source,
+                          std::span<const astralia::ui::Point> target, float alpha) override;
+    void release_snapshot() { snapshot_.reset(); }
     astralia::ui::TextSize measure(std::string_view text,
                                    const astralia::ui::TextStyle &style) override;
     float advance(const astralia::ui::TextStyle &style) override;
@@ -69,6 +75,7 @@ class GlCanvas final : public astralia::ui::Canvas {
 
     Renderer *renderer_ = nullptr;
     TextureCache cache_;
+    Texture snapshot_;
     std::vector<Group> groups_;
     std::vector<std::unique_ptr<Texture>> images_;
     std::unordered_map<std::string, astralia::ui::ImageId> image_ids_;

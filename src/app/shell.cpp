@@ -16,6 +16,7 @@ constexpr std::array<ShellVerbSpec, static_cast<size_t>(ShellVerb::count)> verbs
     {"bamboo", "toggle the bamboo overlay", nullptr},
     {"visualizer", "toggle the audio visualizer overlay", &Capabilities::visualizer},
     {"lock", "lock the session", &Capabilities::lock},
+    {"lock now", "lock the session at once, without the transition", &Capabilities::lock},
     {"panel-tray", "toggle the tray panel", nullptr},
     {"panel-resource", "toggle the resource panel", &Capabilities::resource_panel},
     {"panel-network", "toggle the network panel", nullptr},
@@ -47,6 +48,7 @@ std::string shell_report() {
         {"animated_wallpaper", &Capabilities::animated_wallpaper},
         {"resource_panel", &Capabilities::resource_panel},
         {"animations", &Capabilities::animations},
+        {"lock_transition", &Capabilities::lock_transition},
     };
     for (const auto &[name, member] : features) {
         text += std::string("| `") + name + "` | " + mark(wayland.*member) + " | " +
@@ -63,7 +65,9 @@ std::string shell_report() {
     return text;
 }
 
-Capabilities wayland_capabilities() { return {true, true, true, true, true, true, true, true}; }
+Capabilities wayland_capabilities() {
+    return {true, true, true, true, true, true, true, true, true};
+}
 
 Capabilities x11_capabilities() {
     Capabilities capabilities;
@@ -165,6 +169,7 @@ std::string Shell::status() const {
         {"animated_wallpaper", &Capabilities::animated_wallpaper},
         {"resource_panel", &Capabilities::resource_panel},
         {"animations", &Capabilities::animations},
+        {"lock_transition", &Capabilities::lock_transition},
     };
     std::string text = "backend: " + backend_ + "\ncapabilities:";
     bool any = false;

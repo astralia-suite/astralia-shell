@@ -60,6 +60,7 @@ Lock::Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     timer_ = loop.add_timer([this] { return next_tick(); }, [this] { poll(); });
     shell.track("lock", [this] { return locked_; });
     shell.bind(ShellVerb::lock, [this] { lock(); });
+    shell.bind(ShellVerb::lock_now, [this] { lock(); });
     auto repaint = [this] {
         if (locked_) {
             paint_all(true);

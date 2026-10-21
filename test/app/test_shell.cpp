@@ -33,6 +33,9 @@ void check_shell() {
     check(shell_verb_available(x11, ShellVerb::dashboard) &&
               shell_verb_available(x11, ShellVerb::rain),
           "X11 offers the dashboard and the rain");
+    check(shell_verb_available(wayland, ShellVerb::lock_now) &&
+              shell_verb_available(x11, ShellVerb::lock_now),
+          "the instant lock is offered on both backends");
     check(shell_verb_available(x11, ShellVerb::overview) &&
               shell_verb_available(x11, ShellVerb::panel_network),
           "shared verbs need none");

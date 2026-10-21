@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <string_view>
 
 #include "render/geometry.h"
@@ -67,6 +68,11 @@ class Canvas {
     virtual void set_opacity(float opacity) = 0;
 
     virtual void gauge(const Box &, float, float, const Color &) {}
+
+    virtual void polygon(std::span<const Point>, const Color &) {}
+    virtual void cut_polygon(std::span<const Point>) {}
+    virtual void snapshot() {}
+    virtual void snapshot_polygon(std::span<const Point>, std::span<const Point>, float) {}
 
     std::function<void()> on_image_ready;
 };

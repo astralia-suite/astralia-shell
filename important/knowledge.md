@@ -369,6 +369,14 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] An `xdg_popup` needs the parent layer surface, an anchor rectangle and the triggering input serial. Without the serial the compositor denies the grab.
 - [wayland] A popup's `done` event dismisses it. Destroy the popup and notify the panel, since the compositor has already dropped the grab.
 - [wayland] `ext-session-lock` withholds `locked` until every output presents a non-null buffer. Paint all lock surfaces before flushing.
+- [wayland] The lock transition plays on transparent `Overlay` surfaces before the session lock engages. A lock surface can never show the desktop, so the slash cuts erase the overlay to reveal the live one.
+- [wayland] The transition overlays stay mapped until the `locked` event, which only arrives once every lock surface presented a buffer. Destroying them earlier shows the bare desktop for a frame.
+- [wayland] Unlocking has no transition. The card spins out, `unlock_and_destroy` runs and the desktop is shown at once.
+- [wayland] The transition strikes use the logout `thunder_burst` and `thunder_shock` shaders through the `LockThunder` hook. The shared view falls back to plain strokes when no hook is set.
+- [wayland] The overlays take exclusive keyboard focus while the lock transition plays. The session is not locked yet, and keystrokes must not reach windows.
+- [wayland] An external idle or sleep hook locks with `astralia lock now`. `lock` plays the transition first, leaving the session unlocked for about 2.7 s.
+- [wayland] A 1 s timer forces a stuck transition to finish, so `lock_request` always runs and the session never stays unlocked.
+- [x11] The lock stays instant. X11 does not animate, so `lock now` and `lock` are the same verb there.
 - [wayland] `unlock_and_destroy` needs a `wl_display_roundtrip` before teardown. Otherwise the server may kill the client with a protocol error.
 - [wayland] Ack a lock-surface `configure` before any commit and on every resend. Defer the `wl_egl_window` resize past the handler.
 - [wayland] The startup overlay `init_egl` loop must not gate on `surface()`. The lock owns none until locked.

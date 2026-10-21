@@ -62,6 +62,13 @@ class Renderer {
     void draw_custom(GLuint program, float x, float y, float w, float h,
                      const std::function<void(GLuint)> &set_uniforms);
 
+    void draw_polygon(const float *xy, int count, const float color[4]);
+
+    void draw_textured_polygon(const float *xy_uv, int count, const Texture &tex,
+                               const float tint[4]);
+
+    void grab_framebuffer(Texture &tex);
+
   private:
     struct ClipRect {
         float x0, y0, x1, y1;
@@ -80,6 +87,11 @@ class Renderer {
     GLuint fillet_program_ = 0;
     GLuint video_program_ = 0;
     GLuint quad_vbo_ = 0;
+    GLuint polygon_program_ = 0;
+    GLuint polygon_vbo_ = 0;
+    bool polygon_tried_ = false;
+    GLuint polygon_tex_program_ = 0;
+    bool polygon_tex_tried_ = false;
     float viewport_[2] = {0, 0};
     int32_t scale_ = 1;
     float opacity_ = 1.0f;

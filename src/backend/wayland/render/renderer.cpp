@@ -57,6 +57,12 @@ void Renderer::destroy() {
         glDeleteProgram(video_program_);
     if (quad_vbo_)
         glDeleteBuffers(1, &quad_vbo_);
+    if (polygon_program_)
+        glDeleteProgram(polygon_program_);
+    if (polygon_tex_program_)
+        glDeleteProgram(polygon_tex_program_);
+    if (polygon_vbo_)
+        glDeleteBuffers(1, &polygon_vbo_);
     *this = Renderer{};
 }
 
@@ -217,6 +223,89 @@ void Renderer::draw_custom(GLuint program, float x, float y, float w, float h,
         set_uniforms(program);
     draw_quad(program);
     gl_check("draw_custom");
+}
+
+void Renderer::draw_polygon(const float *xy, int count, const float color[4]) {
+    if (count < 3)
+        return;
+    if (!polygon_tried_) {
+        polygon_tried_ = true;
+        polygon_program_ =
+            gl_compile_program_files("renderer/polygon.vert", "renderer/rect.frag", "polygon");
+        glGenBuffers(1, &polygon_vbo_);
+    }
+    if (!polygon_program_)
+        return;
+    glUseProgram(polygon_program_);
+    set_common_uniforms(polygon_program_, 0.0f, 0.0f, 0.0f, 0.0f);
+    float c[4] = {color[0], color[1], color[2], color[3] * opacity_};
+    glUniform4fv(glGetUniformLocation(polygon_program_, "u_color"), 1, c);
+    glBindBuffer(GL_ARRAY_BUFFER, polygon_vbo_);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(count) * 2 * sizeof(float), xy,
+                 GL_STREAM_DRAW);
+    GLint loc = glGetAttribLocation(polygon_program_, "a_pos");
+    glEnableVertexAttribArray(loc);
+    glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, count);
+    glDisableVertexAttribArray(loc);
+    gl_check("draw_polygon");
+}
+
+void Renderer::draw_textured_polygon(const float *xy_uv, int count, const Texture &tex,
+                                     const float tint[4]) {
+    if (count < 3 || !tex.id)
+        return;
+    if (!polygon_tex_tried_) {
+        polygon_tex_tried_ = true;
+        polygon_tex_program_ = gl_compile_program_files("renderer/polygon_tex.vert",
+                                                        "renderer/tex.frag", "polygon_tex");
+        if (!polygon_vbo_)
+            glGenBuffers(1, &polygon_vbo_);
+    }
+    if (!polygon_tex_program_)
+        return;
+    glUseProgram(polygon_tex_program_);
+    set_common_uniforms(polygon_tex_program_, 0.0f, 0.0f, 0.0f, 0.0f);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex.id);
+    glUniform1i(glGetUniformLocation(polygon_tex_program_, "u_tex"), 0);
+    float tc[4] = {tint[0], tint[1], tint[2], tint[3] * opacity_};
+    glUniform4fv(glGetUniformLocation(polygon_tex_program_, "u_color"), 1, tc);
+    glBindBuffer(GL_ARRAY_BUFFER, polygon_vbo_);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(count) * 4 * sizeof(float), xy_uv,
+                 GL_STREAM_DRAW);
+    GLint pos = glGetAttribLocation(polygon_tex_program_, "a_pos");
+    GLint uv = glGetAttribLocation(polygon_tex_program_, "a_uv");
+    glEnableVertexAttribArray(pos);
+    glVertexAttribPointer(pos, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(uv);
+    glVertexAttribPointer(uv, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          reinterpret_cast<const void *>(2 * sizeof(float)));
+    glDrawArrays(GL_TRIANGLE_FAN, 0, count);
+    glDisableVertexAttribArray(pos);
+    glDisableVertexAttribArray(uv);
+    gl_check("draw_textured_polygon");
+}
+
+void Renderer::grab_framebuffer(Texture &tex) {
+    int width = static_cast<int>(viewport_[0]) * scale_;
+    int height = static_cast<int>(viewport_[1]) * scale_;
+    if (width <= 0 || height <= 0)
+        return;
+    if (!tex.id) {
+        glGenTextures(1, &tex.id);
+        glBindTexture(GL_TEXTURE_2D, tex.id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+    glBindTexture(GL_TEXTURE_2D, tex.id);
+    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, width, height, 0);
+    tex.width = width;
+    tex.height = height;
+    tex.scale = scale_;
+    gl_check("grab_framebuffer");
 }
 
 void Renderer::apply_clip(const ClipRect &r) {

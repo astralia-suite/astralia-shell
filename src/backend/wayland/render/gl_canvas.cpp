@@ -93,6 +93,54 @@ void GlCanvas::rect(const ui::Box &box, const astralia::Color &fill) {
     });
 }
 
+void GlCanvas::polygon(std::span<const ui::Point> points, const astralia::Color &fill) {
+    std::vector<float> xy;
+    xy.reserve(points.size() * 2);
+    for (const ui::Point &point : points) {
+        xy.push_back(ox() + point.x);
+        xy.push_back(oy() + point.y);
+    }
+    int count = static_cast<int>(points.size());
+    shape([&](bool erase) {
+        renderer_->draw_polygon(xy.data(), count, erase ? kWhite : astralia::rgba(fill));
+    });
+}
+
+void GlCanvas::cut_polygon(std::span<const ui::Point> points) {
+    std::vector<float> xy;
+    xy.reserve(points.size() * 2);
+    for (const ui::Point &point : points) {
+        xy.push_back(ox() + point.x);
+        xy.push_back(oy() + point.y);
+    }
+    renderer_->set_erase_blend(true);
+    renderer_->draw_polygon(xy.data(), static_cast<int>(points.size()), kWhite);
+    renderer_->set_erase_blend(false);
+}
+
+void GlCanvas::snapshot() { renderer_->grab_framebuffer(snapshot_); }
+
+void GlCanvas::snapshot_polygon(std::span<const ui::Point> source,
+                                std::span<const ui::Point> target, float alpha) {
+    if (!snapshot_.id) {
+        cut_polygon(target);
+        return;
+    }
+    float width = static_cast<float>(snapshot_.width) / static_cast<float>(snapshot_.scale);
+    float height = static_cast<float>(snapshot_.height) / static_cast<float>(snapshot_.scale);
+    size_t count = std::min(source.size(), target.size());
+    std::vector<float> xy_uv;
+    xy_uv.reserve(count * 4);
+    for (size_t i = 0; i < count; ++i) {
+        xy_uv.push_back(ox() + target[i].x);
+        xy_uv.push_back(oy() + target[i].y);
+        xy_uv.push_back(source[i].x / width);
+        xy_uv.push_back(1.0f - source[i].y / height);
+    }
+    const float tint[4] = {1.0f, 1.0f, 1.0f, alpha};
+    renderer_->draw_textured_polygon(xy_uv.data(), static_cast<int>(count), snapshot_, tint);
+}
+
 void GlCanvas::rounded(const ui::Box &box, float radius, const astralia::Color &fill,
                        float border_width, const astralia::Color &border) {
     shape([&](bool erase) {

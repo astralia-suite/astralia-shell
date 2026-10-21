@@ -15,6 +15,7 @@
 #include "config/lock_config.h"
 
 #include "modules/lock/model.h"
+#include "modules/lock/wayland/transition.h"
 
 #include "wayland/render/gl_canvas.h"
 
@@ -61,6 +62,7 @@ struct LockState {
     std::vector<std::unique_ptr<LockOutputSurface>> surfaces;
 
     astralia::LockModel model;
+    LockTransition transition;
     std::string user;
 
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>
@@ -69,6 +71,7 @@ struct LockState {
 };
 
 bool lock_request(LockState &st, WaylandState &app);
+void lock_begin(LockState &st, WaylandState &app);
 void lock_teardown(LockState &st);
 void lock_begin_unlock(LockState &st);
 void lock_handle_key(LockState &st, const KeyEvent &ev);

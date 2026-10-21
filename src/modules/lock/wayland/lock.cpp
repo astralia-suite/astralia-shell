@@ -196,6 +196,8 @@ void handle_locked(void *data, ext_session_lock_v1 *) {
         klog("lock:   '%s' configured=%d egl=%d %dx%d", up->output_name.c_str(), up->configured,
              up->egl_surface != EGL_NO_SURFACE, up->width, up->height);
     request_all(*st);
+    if (!st->transition.playing)
+        transition_stop(st->transition);
 }
 
 void handle_finished(void *data, ext_session_lock_v1 *) {
@@ -210,6 +212,7 @@ void handle_finished(void *data, ext_session_lock_v1 *) {
     st->lock = nullptr;
     st->locked = false;
     lock_teardown(*st);
+    transition_stop(st->transition);
 }
 
 constexpr ext_session_lock_v1_listener kLockListener = {
@@ -301,6 +304,7 @@ void finish_unlock(LockState &st) {
     st.lock = nullptr;
     wl_display_roundtrip(st.app->display);
     lock_teardown(st);
+    transition_stop(st.transition);
     klog("lock: session unlocked");
 }
 
@@ -334,6 +338,22 @@ bool lock_request(LockState &st, WaylandState &app) {
     wl_display_flush(app.display);
     klog("lock: requested (%zu surface(s))", st.surfaces.size());
     return true;
+}
+
+void lock_begin(LockState &st, WaylandState &app) {
+    if (st.active || st.transition.active)
+        return;
+    st.app = &app;
+    bool animated = !app.cfg.animations_disabled && app.session_lock_manager &&
+                    !app.outputs.empty() && transition_open(st.transition, app);
+    if (!animated) {
+        lock_request(st, app);
+        return;
+    }
+    transition_play(st.transition, [&st, &app] {
+        if (!lock_request(st, app))
+            transition_stop(st.transition);
+    });
 }
 
 void lock_teardown(LockState &st) {
@@ -488,6 +508,19 @@ class LockModule final : public Module {
             if (draw_wallpaper_)
                 draw_wallpaper_(app, output_name, canvas, w, h);
         };
+        state_.transition.draw_wallpaper = state_.draw_wallpaper;
+        state_.transition.draw_lock = [this](const std::string &output_name, GlCanvas &canvas,
+                                             int32_t w, int32_t h, astralia::LockMotion &motion) {
+            state_.draw_wallpaper(output_name, canvas, w, h);
+            if (state_.panel_gated_for && !state_.panel_gated_for(output_name))
+                return;
+            if (state_.user.empty())
+                state_.user = user_info::username();
+            float oh = static_cast<float>(h);
+            astralia::lock_motion_fit(motion, lock_card_width(oh), lock_card_height(oh));
+            astralia::paint_lock(canvas, state_.model, motion, lock_info(state_),
+                                 static_cast<float>(w), oh);
+        };
         state_.panel_gated_for = [&app](const std::string &output_name) {
             return lock_effective_enabled(app.cfg, output_name);
         };
@@ -500,6 +533,7 @@ class LockModule final : public Module {
     void request_frame() override {}
 
     bool timer_tick(WaylandState &app) override {
+        transition_check_deadline(state_.transition);
         if (!state_.active)
             return false;
         ++poll_tick_;
@@ -520,11 +554,19 @@ class LockModule final : public Module {
     }
 
     std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override {
-        return {{astralia::ShellVerb::lock, [this, &app] {
+        return {{astralia::ShellVerb::lock,
+                 [this, &app] {
                      astralia::cpu_temp_poll(app.cpu_temp);
                      astralia::system_stats_poll(app.system_stats);
                      astralia::gpu_temp_poll(app.gpu_temp);
-                     lock_request(state_, app);
+                     lock_begin(state_, app);
+                 }},
+                {astralia::ShellVerb::lock_now, [this, &app] {
+                     astralia::cpu_temp_poll(app.cpu_temp);
+                     astralia::system_stats_poll(app.system_stats);
+                     astralia::gpu_temp_poll(app.gpu_temp);
+                     if (!state_.transition.active)
+                         lock_request(state_, app);
                  }}};
     }
 
@@ -553,8 +595,10 @@ void lock_notify_output_added(WaylandState &app, wl_output *output, const char *
 }
 
 void lock_notify_output_removed(WaylandState &app, wl_output *output) {
-    if (auto *lm = find_lock_module(app))
+    if (auto *lm = find_lock_module(app)) {
+        transition_output_removed(lm->state().transition, output);
         lock_hotplug_remove(lm->state(), output);
+    }
 }
 
 void lock_start(WaylandState &app) {

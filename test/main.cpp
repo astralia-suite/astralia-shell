@@ -78,6 +78,7 @@ void check_polkit_layout();
 void check_polkit();
 void check_lock_layout();
 void check_lock();
+void check_slash();
 void check_settings();
 void check_rain_buffer();
 void check_bamboo_grow();
@@ -163,6 +164,7 @@ int main() {
     check_polkit();
     check_lock_layout();
     check_lock();
+    check_slash();
     check_settings();
     check_rain_buffer();
     check_bamboo_grow();
