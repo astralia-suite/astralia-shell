@@ -17,7 +17,6 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/service_registry.h"
 #include "wayland/app/wayland_registry.h"
-#include "modules/lock/wayland/lock.h"
 
 #include "core/deferred_call.h"
 #include "wayland/core/log.h"
@@ -28,12 +27,13 @@
 
 #include "app/backend.h"
 #include "app/session.h"
-
 #include "app/shell.h"
 #include "core/dbus.h"
 #include "core/ipc.h"
 #include "core/poll_reactor.h"
 #include "core/runtime_paths.h"
+
+#include "modules/lock/wayland/lock.h"
 
 namespace {
 

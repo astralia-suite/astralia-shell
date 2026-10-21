@@ -1,8 +1,8 @@
 #include <cstdlib>
 
 #include "app/backend.h"
-#include "app/session.h"
 #include "app/services.h"
+#include "app/session.h"
 #include "app/shell.h"
 
 #include "core/animation.h"

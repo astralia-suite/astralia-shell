@@ -2,8 +2,8 @@
 #include <cstdlib>
 #include <dlfcn.h>
 #include <filesystem>
-#include <fstream>
 #include <format>
+#include <fstream>
 #include <unistd.h>
 
 #include "app/session.h"
@@ -46,9 +46,7 @@ bool start_locked_pending() {
            access(start_locked_ack_path(getuid()).c_str(), F_OK) != 0;
 }
 
-void start_locked_acknowledge() {
-    std::ofstream(start_locked_ack_path(getuid()));
-}
+void start_locked_acknowledge() { std::ofstream(start_locked_ack_path(getuid())); }
 
 SessionKind detect_session(const SessionEnvironment &environment) {
     if (environment.override_name == "wayland") {
