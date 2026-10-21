@@ -479,13 +479,7 @@ void wallpaper_paint(WallpaperState &wp) {
     if (sw > 5.0f)
         klog("wallpaper: eglSwapBuffers %.1fms", sw);
 
-    bool zero_copy = false;
-    for (auto &c : wp.columns)
-        if (c && c->zero_copy)
-            zero_copy = true;
-    if (++wp.dbg_frame % 60 == 0)
-        klog("wallpaper: '%s' paint #%d zero_copy=%d", wp.output_name.c_str(), wp.dbg_frame,
-             zero_copy);
+    ++wp.dbg_frame;
 }
 
 } // namespace

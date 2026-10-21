@@ -37,7 +37,6 @@ enum class ShellVerb : int {
     bamboo,
     visualizer,
     lock,
-    lock_now,
     panel_tray,
     panel_resource,
     panel_network,

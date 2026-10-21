@@ -17,7 +17,6 @@
 #include "modules/dashboard/x11/dashboard.h"
 #include "modules/idle/x11/idle.h"
 #include "modules/launcher/x11/launcher.h"
-#include "modules/lock/start_locked.h"
 #include "modules/lock/x11/lock.h"
 #include "modules/logout/x11/logout.h"
 #include "modules/notification/x11/notification.h"
@@ -80,9 +79,6 @@ class X11Backend final : public Backend {
         Idle idle(*x, *loop, services);
         Visualizer visualizer(*x, *loop, shell, services);
         shell.attach(**ipc);
-        if (lock_consume_start_locked()) {
-            shell.run(ShellVerb::lock);
-        }
         return loop->run();
     }
 };

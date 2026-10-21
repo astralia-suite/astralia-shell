@@ -138,11 +138,11 @@ struct LockFlurrySlash {
 inline constexpr float kLockReferenceWidth = 16.0f;
 inline constexpr float kLockReferenceHeight = 9.0f;
 inline constexpr LockFlurrySlash kLockFlurrySlashes[kLockFlurryCount] = {
-    {-89.0f, 0.00f, 480.0f},  {34.0f, 0.10f, 560.0f},    {-10.0f, -0.12f, 720.0f},
-    {-32.0f, 0.16f, 800.0f},  {-63.0f, -0.22f, 830.0f},  {11.0f, 0.26f, 880.0f},
+    {-89.0f, 0.28f, 480.0f},  {34.0f, 0.16f, 560.0f},    {-10.0f, -0.22f, 720.0f},
+    {-32.0f, 0.16f, 800.0f},  {-63.0f, -0.29f, 830.0f},  {11.0f, 0.26f, 880.0f},
     {77.0f, -0.30f, 910.0f},  {53.0f, 0.34f, 960.0f},    {-79.0f, -0.34f, 1040.0f},
-    {69.0f, 0.30f, 1070.0f},  {-71.0f, -0.26f, 1120.0f}, {-55.0f, 0.22f, 1200.0f},
-    {85.0f, -0.16f, 1220.0f}, {61.0f, 0.12f, 1240.0f},
+    {69.0f, 0.30f, 1070.0f},  {-71.0f, -0.30f, 1120.0f}, {-55.0f, 0.23f, 1200.0f},
+    {85.0f, -0.29f, 1220.0f}, {61.0f, 0.25f, 1240.0f},
 };
 
 // transition timeline as shares of progress

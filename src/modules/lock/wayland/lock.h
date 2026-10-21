@@ -88,4 +88,3 @@ using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::str
 std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper);
 void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name);
 void lock_notify_output_removed(WaylandState &app, wl_output *output);
-void lock_start(WaylandState &app);

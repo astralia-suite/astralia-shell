@@ -16,7 +16,6 @@ constexpr std::array<ShellVerbSpec, static_cast<size_t>(ShellVerb::count)> verbs
     {"bamboo", "toggle the bamboo overlay", nullptr},
     {"visualizer", "toggle the audio visualizer overlay", &Capabilities::visualizer},
     {"lock", "lock the session", &Capabilities::lock},
-    {"lock now", "lock the session at once, without the transition", &Capabilities::lock},
     {"panel-tray", "toggle the tray panel", nullptr},
     {"panel-resource", "toggle the resource panel", &Capabilities::resource_panel},
     {"panel-network", "toggle the network panel", nullptr},

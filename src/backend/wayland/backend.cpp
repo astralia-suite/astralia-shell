@@ -33,8 +33,6 @@
 #include "core/poll_reactor.h"
 #include "core/runtime_paths.h"
 
-#include "modules/lock/start_locked.h"
-
 namespace {
 
 Module *find_overlay_for_surface(WaylandState &app, wl_surface *surface) {
@@ -150,9 +148,6 @@ int WaylandBackend::run() {
     for (auto &s : app.services)
         if (!s->init(app))
             klog("%s: init failed", s->name());
-
-    if (app.capabilities.lock && astralia::lock_consume_start_locked())
-        start_session_lock(app);
 
     auto rest_egl_current = [&app] { app_detail::rest_egl_current(app); };
 

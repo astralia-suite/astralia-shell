@@ -32,6 +32,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - The shell is zsh. `${var^}` and unquoted word splitting fail in a heredoc loop; generate files from a script instead.
 - `pkill -f` with a pattern also matches the shell running the command. Kill by the PID captured from `$!`.
 - Never live-test lock-screen or input-grabbing code carelessly. A past test hung the keyboard and forced a reboot.
+- The state log rotates to `astralia.log.1` at startup above 1 MB. Per-frame logging would otherwise grow it without bound.
 - A test must not start a second shell in the user's session. The Wayland smoke test only checks that the plugin loads and fails cleanly.
 - Test the bar's three styles through a scratch `XDG_CONFIG_HOME`. The real config stays untouched and the style shows in a screenshot.
 - `grim` captures the whole screen, private windows included. Delete each screenshot right after viewing it.
@@ -285,6 +286,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] One `libav` plugin, `media_plugin`, decodes every animated wallpaper. `media_service` owns the cache path, key, decode and existence check.
 - [wayland] The `.rgba` cache key includes every decode-shaping parameter, such as `fit`. Otherwise old-shape frames are reused silently.
 - [wayland] Decode frames into a `.tmp` directory and rename on success. A killed decode left a partial set that later runs trusted.
+- [wayland] The decoded-wallpaper `.rgba` cache prunes oldest-first to 512 MB after each write. Reads touch the file so use orders eviction.
 - [wayland] Remove the rename target first. `rename(2)` into a non-empty directory fails, and a stale `.png` cache blocked every promotion.
 - [wayland] Pick the hardware decoder from a preference list of `AVHWDeviceType`s. Try `CUDA`, then `VAAPI`, then software.
 - [wayland] Zero-copy texture import is vendor-specific. `VAAPI` uses `DMA-BUF` and `EGLImage` on Mesa; `CUDA` interop is separate.
@@ -369,14 +371,11 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] An `xdg_popup` needs the parent layer surface, an anchor rectangle and the triggering input serial. Without the serial the compositor denies the grab.
 - [wayland] A popup's `done` event dismisses it. Destroy the popup and notify the panel, since the compositor has already dropped the grab.
 - [wayland] `ext-session-lock` withholds `locked` until every output presents a non-null buffer. Paint all lock surfaces before flushing.
-- [wayland] The lock transition plays on transparent `Overlay` surfaces before the session lock engages. A lock surface can never show the desktop, so the slash cuts erase the overlay to reveal the live one.
-- [wayland] The transition overlays stay mapped until the `locked` event, which only arrives once every lock surface presented a buffer. Destroying them earlier shows the bare desktop for a frame.
-- [wayland] Unlocking has no transition. The card spins out, `unlock_and_destroy` runs and the desktop is shown at once.
+- [wayland] Grab a transition snapshot with `glCopyTexImage2D` after `flush` and before the swap. The texture then outlives the frame.
 - [wayland] The transition strikes use the logout `thunder_burst` and `thunder_shock` shaders through the `LockThunder` hook. The shared view falls back to plain strokes when no hook is set.
-- [wayland] The overlays take exclusive keyboard focus while the lock transition plays. The session is not locked yet, and keystrokes must not reach windows.
-- [wayland] An external idle or sleep hook locks with `astralia lock now`. `lock` plays the transition first, leaving the session unlocked for about 2.7 s.
-- [wayland] A 1 s timer forces a stuck transition to finish, so `lock_request` always runs and the session never stays unlocked.
-- [x11] The lock stays instant. X11 does not animate, so `lock now` and `lock` are the same verb there.
+- [wayland] Transition overlays that outlive the lock must set keyboard interactivity to none and commit. Otherwise they keep exclusive focus.
+- [wayland] Never release the session lock inside a transition `configure` handler. Defer it with `DeferredCall`.
+- [wayland] Poll a deadline from the module timer to finish a stuck transition, so `lock_request` still runs.
 - [wayland] `unlock_and_destroy` needs a `wl_display_roundtrip` before teardown. Otherwise the server may kill the client with a protocol error.
 - [wayland] Ack a lock-surface `configure` before any commit and on every resend. Defer the `wl_egl_window` resize past the handler.
 - [wayland] The startup overlay `init_egl` loop must not gate on `surface()`. The lock owns none until locked.

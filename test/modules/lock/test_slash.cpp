@@ -103,6 +103,31 @@ void check_slash() {
                     std::fabs(cuts[kLockStarCount].a.x - cuts[kLockStarCount].b.x) < w * 0.1f,
                 "the flurry opens with a stroke straight up");
 
+    std::vector<astralia::ui::Point> core;
+    for (int i = 0; i < kLockStarCount; ++i) {
+        const astralia::SlashCut &p = cuts[i];
+        const astralia::SlashCut &q = cuts[(i + 2) % kLockStarCount];
+        float cross = p.direction.x * q.direction.y - p.direction.y * q.direction.x;
+        float t = ((q.center.x - p.center.x) * q.direction.y -
+                   (q.center.y - p.center.y) * q.direction.x) /
+                  cross;
+        core.push_back({p.center.x + p.direction.x * t, p.center.y + p.direction.y * t});
+    }
+    bool clear = true;
+    for (size_t k = kLockStarCount; k < cuts.size(); ++k) {
+        const astralia::SlashCut &cut = cuts[k];
+        bool below = false;
+        bool above = false;
+        for (const astralia::ui::Point &p : core) {
+            float side =
+                cut.direction.x * (p.y - cut.center.y) - cut.direction.y * (p.x - cut.center.x);
+            below = below || side < 0.0f;
+            above = above || side > 0.0f;
+        }
+        clear = clear && !(below && above);
+    }
+    test::check(clear, "no flurry slash cuts through the star's inner pentagon");
+
     bool spans = true;
     bool near_centre = true;
     std::vector<float> angles;

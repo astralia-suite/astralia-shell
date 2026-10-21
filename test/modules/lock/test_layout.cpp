@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdlib>
 
 #include "config/lock_config.h"
 
@@ -40,6 +41,7 @@ void check_lock_layout() {
                             kLockGapAvatarInput + kLockInputHeight + kLockGapInputMessage + 20.0f),
                 "lock layout");
 
+    setenv("ASTRALIA_DEBUG_UNLOCK", "1", 1);
     test::check(lock_dev_unlock_hit(0.0, 1200.0, 1200.0) &&
                     lock_dev_unlock_hit(140.0, 1152.0, 1200.0),
                 "the bottom-left corner unlocks");

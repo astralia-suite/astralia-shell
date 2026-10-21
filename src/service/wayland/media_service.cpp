@@ -5,7 +5,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <filesystem>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <sys/stat.h>
 #include <thread>
@@ -20,6 +23,8 @@
 #include "service/wayland/media_service.h"
 
 namespace {
+
+constexpr uintmax_t kRgbaCacheMaxBytes = 512ull * 1024 * 1024;
 
 using StreamFn = decltype(&astralia_shell_media_plugin_stream);
 using FramesFn = decltype(&astralia_shell_media_plugin_frames);
@@ -110,9 +115,35 @@ unsigned char *rgba_read(const std::string &cache_path, int &out_width, int &out
         delete[] data;
         return nullptr;
     }
+    utimensat(AT_FDCWD, cache_path.c_str(), nullptr, 0);
     out_width = width;
     out_height = height;
     return data;
+}
+
+void rgba_prune(const std::filesystem::path &directory) {
+    struct Entry {
+        std::filesystem::path path;
+        uintmax_t size;
+        std::filesystem::file_time_type used;
+    };
+    static std::mutex mutex;
+    std::lock_guard lock(mutex);
+    std::vector<Entry> entries;
+    uintmax_t total = 0;
+    std::error_code error;
+    for (const auto &entry : std::filesystem::directory_iterator(directory, error)) {
+        std::error_code entry_error;
+        if (!entry.is_regular_file(entry_error) || entry.path().extension() != ".rgba")
+            continue;
+        uintmax_t size = entry.file_size(entry_error);
+        entries.push_back({entry.path(), size, entry.last_write_time(entry_error)});
+        total += size;
+    }
+    std::ranges::sort(entries, {}, &Entry::used);
+    for (size_t i = 0; i + 1 < entries.size() && total > kRgbaCacheMaxBytes; ++i)
+        if (std::filesystem::remove(entries[i].path, error))
+            total -= entries[i].size;
 }
 
 void rgba_write(const std::string &cache_path, int width, int height, const unsigned char *data) {
@@ -123,6 +154,7 @@ void rgba_write(const std::string &cache_path, int width, int height, const unsi
     fwrite(header, sizeof(uint32_t), 2, fp);
     fwrite(data, 1, static_cast<size_t>(width) * height * 4, fp);
     fclose(fp);
+    rgba_prune(std::filesystem::path(cache_path).parent_path());
 }
 
 void box_downsample_rgba(const unsigned char *src, int sw, int sh, unsigned char *dst, int dw,
@@ -259,10 +291,8 @@ unsigned char *animate_decode_scaled(const std::string &path, int target_w, int 
     std::string cache_path;
     if (cacheable) {
         cache_path = rgba_cache_path(path, st.st_mtime, target_w, target_h);
-        if (unsigned char *cached = rgba_read(cache_path, out_width, out_height)) {
-            klog("media_decode: cache hit '%s' (%dx%d)", path.c_str(), out_width, out_height);
+        if (unsigned char *cached = rgba_read(cache_path, out_width, out_height))
             return cached;
-        }
     }
 
     unsigned char *data = decode_first_frame(path, out_width, out_height, target_w, target_h);

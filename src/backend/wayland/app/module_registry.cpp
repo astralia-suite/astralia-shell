@@ -91,5 +91,3 @@ build_per_monitor_modules(const astralia::Capabilities &capabilities) {
             make_idle_per_monitor_module({draw_monitor_wallpaper, set_wallpaper_paused}));
     return modules;
 }
-
-void start_session_lock(WaylandState &app) { lock_start(app); }

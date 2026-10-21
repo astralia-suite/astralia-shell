@@ -83,19 +83,12 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
 
     static int frame = 0;
     int f = ++frame;
-    bool trace = f <= 90;
-    auto step = [&](const char *what) {
-        if (trace)
-            klog("lock: paint #%d '%s' %s", f, los.output_name.c_str(), what);
-    };
 
     Renderer &r = st.app->renderer;
     los.canvas.bind(r);
-    step("enter -> eglMakeCurrent");
     if (!gl_make_current(st.app->egl_display, los.egl_surface, st.app->egl_context))
         return;
     t_make = clk::now();
-    step("begin_frame");
     r.begin_frame(los.width, los.height, los.output_scale.scale);
     glClearColor(astralia::palette::base.r, astralia::palette::base.g, astralia::palette::base.b,
                  1.0f);
@@ -105,12 +98,10 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     los.motion.animations.tick(now);
 
     los.canvas.begin(los.output_scale.scale);
-    step("draw_wallpaper");
     if (st.draw_wallpaper)
         st.draw_wallpaper(los.output_name, los.canvas, los.width, los.height);
     t_wallpaper = clk::now();
 
-    step("paint_panel");
     los.hits = {};
     if (!los.panel_gated) {
         float oh = static_cast<float>(los.height);
@@ -123,12 +114,10 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     t_panel = clk::now();
     gl_check("lock_paint");
     t_draw = clk::now();
-    step("eglSwapBuffers");
     if (!eglSwapBuffers(st.app->egl_display, los.egl_surface))
         klog("lock: eglSwapBuffers failed on '%s', egl error 0x%04x", los.output_name.c_str(),
              eglGetError());
     t_swap = clk::now();
-    step("swapped");
 
     auto ms = [](clk::time_point a, clk::time_point b) {
         return std::chrono::duration<float, std::milli>(b - a).count();
@@ -138,11 +127,6 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
              "draw=%.1f swap=%.1f",
              f, los.output_name.c_str(), ms(t_begin, t_make), ms(t_make, t_wallpaper),
              ms(t_wallpaper, t_panel), ms(t_panel, t_draw), ms(t_draw, t_swap));
-    else if (f % 30 == 0)
-        klog("lock: paint #%d '%s' locked=%d unlocking=%d gated=%d "
-             "scale=%.2f content=%.2f",
-             f, los.output_name.c_str(), st.locked, st.unlocking, los.panel_gated,
-             los.motion.panel_scale, los.motion.content_alpha);
 
     if (los.motion.animations.hasActive())
         request_frame(los.frame_clock);
@@ -220,6 +204,7 @@ constexpr ext_session_lock_v1_listener kLockListener = {
 };
 
 void deliver_auth(LockState &st, uint64_t gen, pam_auth::Result res) {
+    klog("lock: auth result success=%d locked=%d", res.success, st.locked);
     if (!st.locked)
         return;
     bool current = gen == st.model.generation();
@@ -235,8 +220,12 @@ void deliver_auth(LockState &st, uint64_t gen, pam_auth::Result res) {
 }
 
 void try_authenticate(LockState &st) {
-    if (st.model.authenticating() || st.model.password().empty())
+    if (st.model.authenticating() || st.model.password().empty()) {
+        klog("lock: submit ignored (authenticating=%d empty=%d)", st.model.authenticating(),
+             st.model.password().empty());
         return;
+    }
+    klog("lock: auth started");
     std::string pw = st.model.begin_auth();
     uint64_t gen = st.model.generation();
     std::thread([&st, gen, pw = std::move(pw)]() mutable {
@@ -385,11 +374,13 @@ void lock_begin_unlock(LockState &st) {
     bool animated =
         st.app && !st.app->cfg.animations_disabled && !st.surfaces.empty() &&
         (reuse || transition_open(st.transition, *st.app, astralia::LockTransitionMode::unlock));
+    klog("lock: unlock begin (reuse=%d animated=%d)", reuse, animated);
     if (!animated) {
         astralia::DeferredCall::call_later([&st] { finish_unlock(st); });
         return;
     }
     st.transition.on_ready = [&st](bool held) {
+        klog("lock: unlock overlays ready=%d", held);
         if (!st.lock)
             return;
         if (!held) {
@@ -573,19 +564,11 @@ class LockModule final : public Module {
     }
 
     std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override {
-        return {{astralia::ShellVerb::lock,
-                 [this, &app] {
+        return {{astralia::ShellVerb::lock, [this, &app] {
                      astralia::cpu_temp_poll(app.cpu_temp);
                      astralia::system_stats_poll(app.system_stats);
                      astralia::gpu_temp_poll(app.gpu_temp);
                      lock_begin(state_, app);
-                 }},
-                {astralia::ShellVerb::lock_now, [this, &app] {
-                     astralia::cpu_temp_poll(app.cpu_temp);
-                     astralia::system_stats_poll(app.system_stats);
-                     astralia::gpu_temp_poll(app.gpu_temp);
-                     if (!state_.transition.active)
-                         lock_request(state_, app);
                  }}};
     }
 
@@ -618,9 +601,4 @@ void lock_notify_output_removed(WaylandState &app, wl_output *output) {
         transition_output_removed(lm->state().transition, output);
         lock_hotplug_remove(lm->state(), output);
     }
-}
-
-void lock_start(WaylandState &app) {
-    if (auto *lm = find_lock_module(app))
-        lock_request(lm->state(), app);
 }

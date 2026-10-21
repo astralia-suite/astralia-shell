@@ -96,7 +96,6 @@ core_shared = static_library(
     'src/modules/lock/model.cpp',
     'src/modules/lock/pam_authenticator.cpp',
     'src/modules/lock/slash.cpp',
-    'src/modules/lock/start_locked.cpp',
     'src/modules/lock/transition_view.cpp',
     'src/modules/lock/view.cpp',
     'src/modules/logout/layout.cpp',
