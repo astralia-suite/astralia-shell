@@ -37,7 +37,7 @@ void check_session() {
     check(start_locked("1") && !start_locked("") && !start_locked("0") && !start_locked("true"),
           "only ASTRALIA_START_LOCKED=1 locks at startup");
 
-    check(start_locked_ack_path(1000) == "/tmp/astralia-start-locked-1000",
+    check(start_locked_ack_path(1000) == "/tmp/astralia-1000",
           "the startup lock acknowledgement lives in /tmp per user");
 
     check(session_name(SessionKind::wayland) == "wayland" &&
