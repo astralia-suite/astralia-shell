@@ -13,8 +13,10 @@ struct LockThunder {
     std::function<void(const SlashShock &)> shock;
 };
 
+enum class LockTransitionMode { lock, unlock };
+
 void paint_lock_transition(ui::Canvas &canvas, const SlashPlan &plan, float progress,
-                           const std::function<void()> &paint_base,
-                           const LockThunder &thunder = {});
+                           const std::function<void()> &paint_base, const LockThunder &thunder = {},
+                           LockTransitionMode mode = LockTransitionMode::lock);
 
 } // namespace astralia

@@ -185,9 +185,9 @@ void Idle::paint(const Output &output, Overlay &overlay) {
         cairo_paint(cr);
         overlay.canvas.bind(cr);
         const std::string &logo_path = services_.settings.config().idle_logo_path;
-        ui::ImageId logo =
-            logo_path.empty() ? ui::no_image
-                              : overlay.canvas.image(logo_path, static_cast<int>(kIdleLogoSize));
+        ui::ImageId logo = logo_path.empty()
+                               ? ui::no_image
+                               : overlay.canvas.image(logo_path, static_cast<int>(kIdleLogoSize));
         if (logo != ui::no_image) {
             ui::TextSize size = overlay.canvas.image_size(logo);
             overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h},

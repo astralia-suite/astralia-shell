@@ -66,15 +66,17 @@ void fallback_strike(ui::Canvas &canvas, const SlashStrike &strike) {
 } // namespace
 
 void paint_lock_transition(ui::Canvas &canvas, const SlashPlan &plan, float progress,
-                           const std::function<void()> &paint_base, const LockThunder &thunder) {
-    if (paint_base) {
+                           const std::function<void()> &paint_base, const LockThunder &thunder,
+                           LockTransitionMode mode) {
+    bool unlock = mode == LockTransitionMode::unlock;
+    if (paint_base && !unlock) {
         paint_base();
     }
     SlashFrame frame = plan.sample(progress);
 
     for (size_t i = 0; i < frame.desktop.size(); ++i) {
         const SlashPolygon &piece = frame.desktop[i];
-        if (frame.shattered && i < frame.sources.size()) {
+        if ((frame.shattered || unlock) && i < frame.sources.size()) {
             canvas.snapshot_polygon(frame.sources[i], piece, 1.0f);
         } else {
             canvas.cut_polygon(piece);

@@ -12,6 +12,7 @@
 
 #include "modules/lock/model.h"
 #include "modules/lock/slash.h"
+#include "modules/lock/transition_view.h"
 
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/thunder.h"
@@ -36,6 +37,7 @@ struct TransitionSurface {
     int32_t height = 0;
     bool configured = false;
     bool snapshotted = false;
+    bool held = false;
     OutputScale output_scale;
     FrameClock frame_clock;
     GlCanvas canvas;
@@ -53,9 +55,11 @@ struct LockTransition {
     bool playing = false;
     bool running = false;
     bool finishing = false;
+    astralia::LockTransitionMode mode = astralia::LockTransitionMode::lock;
     uint32_t seed = 0;
     std::chrono::steady_clock::time_point started{};
     std::chrono::steady_clock::time_point deadline{};
+    std::chrono::steady_clock::time_point ready_deadline{};
     std::vector<std::unique_ptr<TransitionSurface>> surfaces;
     ThunderBurst thunder;
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>
@@ -64,9 +68,13 @@ struct LockTransition {
                        astralia::LockMotion &motion)>
         draw_lock;
     std::function<void()> on_finished;
+    std::function<void(bool held)> on_ready;
 };
 
-bool transition_open(LockTransition &transition, WaylandState &app);
+bool transition_open(LockTransition &transition, WaylandState &app,
+                     astralia::LockTransitionMode mode = astralia::LockTransitionMode::lock);
+void transition_release_keyboard(LockTransition &transition);
+void transition_rehold(LockTransition &transition, astralia::LockTransitionMode mode);
 bool transition_play(LockTransition &transition, std::function<void()> on_finished = {});
 void transition_stop(LockTransition &transition);
 void transition_check_deadline(LockTransition &transition);

@@ -150,8 +150,8 @@
 - `layout.{h,cpp}`: Card, column and password dot geometry and the development unlock corner shared by both hosts.
 - `pam_authenticator.{h,cpp}`: Blocking PAM check for a user and password against a service directory.
 - `slash.{h,cpp}`: Display-free `SlashPlan` that samples the thunder-slash transition at a progress: shard polygons, straight cutmarks, logout-style strike parameters, impact flash, rays and shock, plus the run timeline.
-- `transition_view.{h,cpp}`: Paints the transition over the canvas: the lock wallpaper, then the desktop shards cut out, bolts, rays and flash.
-- `wayland/`: `ext-session-lock` host that paints the shared view per output with its entrance, exit and typing motion, and the transition host that plays the slash transition on transparent overlay surfaces before the lock, drawing the strikes with the `thunder_burst` and `thunder_shock` shaders. Unlocking keeps the original card spin-out.
+- `transition_view.{h,cpp}`: Paints the transition over the canvas in `lock` mode (the lock wallpaper, then the desktop shards cut out) or `unlock` mode (the held lock picture cut into snapshot shards over a transparent overlay), with bolts, rays and flash.
+- `wayland/`: `ext-session-lock` host that paints the shared view per output with its typing motion, and the transition host that plays the slash transition on transparent overlay surfaces: before the lock, and again after a correct password. Unlocking first paints and snapshots the lock picture on the overlays, then releases the session lock, then plays the slash, so the desktop never flashes; with animations disabled it unlocks at once. The strikes use the `thunder_burst` and `thunder_shock` shaders. X11 stays instant for both.
 - `x11/`: Override-redirect window per output, keyboard and pointer grabs, hotplug, cached wallpaper backdrop and the PAM thread.
 
 ## `src/modules/idle/`, `rain/`, `bamboo/`, `visualizer/`

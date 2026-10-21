@@ -2,7 +2,6 @@
 
 #include "config/lock_config.h"
 
-#include "modules/lock/layout.h"
 #include "modules/lock/model.h"
 
 namespace astralia {
@@ -74,7 +73,6 @@ namespace {
 
 void enter(LockMotion &m, float card_w, float card_h) {
     m.started = true;
-    m.unlocking = false;
     m.panel_scale = kLockScaleFull;
     m.panel_rotation = 0.0f;
     m.panel_w = card_w;
@@ -89,44 +87,10 @@ void enter(LockMotion &m, float card_w, float card_h) {
 void lock_motion_fit(LockMotion &motion, float card_w, float card_h) {
     if (!motion.started) {
         enter(motion, card_w, card_h);
-    } else if (!motion.animations.hasActive() && !motion.unlocking) {
+    } else if (!motion.animations.hasActive()) {
         motion.panel_w = card_w;
         motion.panel_h = card_h;
     }
-}
-
-void lock_motion_exit(LockMotion &motion, std::function<void()> done) {
-    LockMotion &m = motion;
-    m.unlocking = true;
-    float box = lock_icon_box_size();
-    AnimationManager &a = m.animations;
-    a.animate(
-        m.panel_w, box, kLockAnimShrinkMs, Easing::EaseInCubic, [&m](float v) { m.panel_w = v; },
-        {}, kLockOwnerPanelWidth);
-    a.animate(
-        m.panel_h, box, kLockAnimShrinkMs, Easing::EaseInCubic, [&m](float v) { m.panel_h = v; },
-        {}, kLockOwnerPanelHeight);
-    a.animate(
-        m.icon_alpha, 1.0f, kLockAnimIconFadeInMs, Easing::EaseInCubic,
-        [&m](float v) { m.icon_alpha = v; }, {}, kLockOwnerIconAlpha);
-    a.animate(
-        m.content_alpha, 0.0f, kLockAnimContentFadeOutMs, Easing::EaseInCubic,
-        [&m](float v) { m.content_alpha = v; }, {}, kLockOwnerContentAlpha);
-    a.animate(
-        m.content_scale, kLockScaleHidden, kLockAnimContentScaleOutMs, Easing::EaseInBack,
-        [&m](float v) { m.content_scale = v; }, {}, kLockOwnerContentScale);
-    a.animate(
-        0.0f, 1.0f, kLockAnimShrinkMs, Easing::Linear, [](float) {},
-        [&m, done = std::move(done)] {
-            AnimationManager &b = m.animations;
-            b.animate(
-                m.panel_scale, kLockScaleHidden, kLockAnimSpinMs, Easing::EaseInBack,
-                [&m](float v) { m.panel_scale = v; }, {}, kLockOwnerPanelScale);
-            b.animate(
-                0.0f, -360.0f, kLockAnimSpinMs, Easing::EaseInOutCubic,
-                [&m](float v) { m.panel_rotation = v; }, done, kLockOwnerPanelRotation);
-        },
-        kLockOwnerSequence);
 }
 
 void lock_motion_type(LockMotion &motion, const std::string &password) {

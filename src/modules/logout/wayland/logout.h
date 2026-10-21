@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
 #include <GLES3/gl32.h>
 #include <chrono>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "wayland/app/ipc.h"

@@ -552,7 +552,7 @@ void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const 
     sticker(canvas, {0.0f, 0.0f, pw, ph}, metrics::radius_card, palette::paper);
 
     if (motion.icon_alpha > 0.001f) {
-        const char *glyph = motion.unlocking ? icon::lock_open : icon::lock;
+        const char *glyph = icon::lock;
         ui::TextStyle style = icon_style(static_cast<int>(kLockFontIcon));
         ui::TextSize size = canvas.measure(glyph, style);
         canvas.text(glyph, style, std::round((pw - size.w) * 0.5f),

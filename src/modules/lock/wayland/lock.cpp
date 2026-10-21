@@ -196,8 +196,7 @@ void handle_locked(void *data, ext_session_lock_v1 *) {
         klog("lock:   '%s' configured=%d egl=%d %dx%d", up->output_name.c_str(), up->configured,
              up->egl_surface != EGL_NO_SURFACE, up->width, up->height);
     request_all(*st);
-    if (!st->transition.playing)
-        transition_stop(st->transition);
+    transition_release_keyboard(st->transition);
 }
 
 void handle_finished(void *data, ext_session_lock_v1 *) {
@@ -297,15 +296,19 @@ void destroy_output_surface(LockState &st, LockOutputSurface &los) {
     }
 }
 
-void finish_unlock(LockState &st) {
-    if (!st.lock)
-        return;
+void release_session(LockState &st) {
     ext_session_lock_v1_unlock_and_destroy(st.lock);
     st.lock = nullptr;
     wl_display_roundtrip(st.app->display);
     lock_teardown(st);
-    transition_stop(st.transition);
     klog("lock: session unlocked");
+}
+
+void finish_unlock(LockState &st) {
+    if (!st.lock)
+        return;
+    release_session(st);
+    transition_stop(st.transition);
 }
 
 } // namespace
@@ -378,17 +381,28 @@ void lock_begin_unlock(LockState &st) {
     if (st.unlocking || !st.locked)
         return;
     st.unlocking = true;
-    for (auto &up : st.surfaces) {
-        bool primary = up.get() == st.surfaces.front().get();
-        astralia::lock_motion_exit(up->motion, [&st, primary] {
-            if (primary)
-                astralia::DeferredCall::call_later([&st] { finish_unlock(st); });
-        });
-        if (up->frame_clock.surface)
-            request_frame(up->frame_clock);
+    bool reuse = st.transition.active && !st.transition.playing && !st.transition.surfaces.empty();
+    bool animated =
+        st.app && !st.app->cfg.animations_disabled && !st.surfaces.empty() &&
+        (reuse || transition_open(st.transition, *st.app, astralia::LockTransitionMode::unlock));
+    if (!animated) {
+        astralia::DeferredCall::call_later([&st] { finish_unlock(st); });
+        return;
     }
-    if (st.app)
-        app_detail::rest_egl_current(*st.app);
+    st.transition.on_ready = [&st](bool held) {
+        if (!st.lock)
+            return;
+        if (!held) {
+            finish_unlock(st);
+            return;
+        }
+        release_session(st);
+        if (!transition_play(st.transition, [&st] { transition_stop(st.transition); }))
+            transition_stop(st.transition);
+    };
+    if (reuse)
+        transition_rehold(st.transition, astralia::LockTransitionMode::unlock);
+    app_detail::rest_egl_current(*st.app);
 }
 
 void lock_handle_key(LockState &st, const KeyEvent &ev) {
@@ -516,9 +530,14 @@ class LockModule final : public Module {
                 return;
             if (state_.user.empty())
                 state_.user = user_info::username();
+            astralia::LockMotion *shown = &motion;
+            if (state_.unlocking)
+                for (auto &up : state_.surfaces)
+                    if (up->output_name == output_name)
+                        shown = &up->motion;
             float oh = static_cast<float>(h);
-            astralia::lock_motion_fit(motion, lock_card_width(oh), lock_card_height(oh));
-            astralia::paint_lock(canvas, state_.model, motion, lock_info(state_),
+            astralia::lock_motion_fit(*shown, lock_card_width(oh), lock_card_height(oh));
+            astralia::paint_lock(canvas, state_.model, *shown, lock_info(state_),
                                  static_cast<float>(w), oh);
         };
         state_.panel_gated_for = [&app](const std::string &output_name) {

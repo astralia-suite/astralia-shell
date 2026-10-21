@@ -265,4 +265,17 @@ void check_slash() {
     astralia::paint_lock_transition(canvas, plan, kLockSlashFirstStart + 0.005f, base);
     test::check(canvas.count(test::Op::Kind::polygon) > 1,
                 "without a thunder hook the strike falls back to plain strokes");
+
+    canvas.ops.clear();
+    astralia::paint_lock_transition(canvas, plan, 0.0f, base, {},
+                                    astralia::LockTransitionMode::unlock);
+    test::check(canvas.ops.size() == 1 && canvas.ops[0].kind == test::Op::Kind::snapshot_polygon,
+                "unlocking at progress 0 paints the held lock picture and no base");
+    canvas.ops.clear();
+    astralia::paint_lock_transition(canvas, plan, kLockSlashFirstStart + 0.005f, base, {},
+                                    astralia::LockTransitionMode::unlock);
+    test::check(canvas.count(test::Op::Kind::snapshot_polygon) == 1 &&
+                    canvas.count(test::Op::Kind::cut_polygon) == 0 &&
+                    canvas.count(test::Op::Kind::rect) == 0,
+                "unlocking cuts the lock picture, never the desktop, and skips the base");
 }

@@ -93,12 +93,7 @@ inline constexpr float kLockScaleHidden = 0.0f;
 inline constexpr float kLockScaleFull = 1.0f;
 
 // animation durations
-inline constexpr float kLockAnimContentFadeOutMs = 200.0f;
-inline constexpr float kLockAnimContentScaleOutMs = 300.0f;
 inline constexpr float kLockAnimFastMs = 100.0f;
-inline constexpr float kLockAnimIconFadeInMs = 250.0f;
-inline constexpr float kLockAnimShrinkMs = 350.0f;
-inline constexpr float kLockAnimSpinMs = 500.0f;
 
 // transition timeline in milliseconds
 inline constexpr float kLockSlashMs = 2800.0f;
@@ -191,7 +186,7 @@ inline constexpr float kLockSlashShardRankNoise = 0.25f;
 inline constexpr int kLockSlashRayCount = 18;
 inline constexpr float kLockSlashRayHalfAngle = 0.012f;
 
-// transition thunder, taken from the logout slashes
+// transition thunder
 inline constexpr float kLockStrikeAmp = 13.0f;
 inline constexpr float kLockStrikePeak = 1.2f;
 inline constexpr float kLockFinalThick = 3.4f;
@@ -235,15 +230,7 @@ inline constexpr int kLockGrabAttempts = 100;
 inline constexpr int kLockGrabRetryMs = 10;
 
 enum LockAnimOwner : uint64_t {
-    kLockOwnerPanelScale = 1,
-    kLockOwnerPanelRotation = 2,
-    kLockOwnerPanelWidth = 3,
-    kLockOwnerPanelHeight = 4,
-    kLockOwnerIconAlpha = 5,
-    kLockOwnerContentAlpha = 6,
-    kLockOwnerContentScale = 7,
     kLockOwnerDotRowX = 8,
-    kLockOwnerSequence = 9,
     kLockOwnerAvatarFrame = 10,
     kLockOwnerDotBase = 1000,
 };

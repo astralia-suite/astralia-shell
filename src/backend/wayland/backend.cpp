@@ -33,6 +33,8 @@
 #include "core/poll_reactor.h"
 #include "core/runtime_paths.h"
 
+#include "modules/lock/start_locked.h"
+
 namespace {
 
 Module *find_overlay_for_surface(WaylandState &app, wl_surface *surface) {
@@ -48,10 +50,10 @@ class WaylandBackend final : public astralia::Backend {
   public:
     const char *name() const override { return "wayland"; }
     int malloc_arenas() const override { return 2; }
-    int run(bool start_locked) override;
+    int run() override;
 };
 
-int WaylandBackend::run(bool start_locked) {
+int WaylandBackend::run() {
     mallopt(M_TRIM_THRESHOLD, 256 * 1024);
 
     WaylandState &app = *new WaylandState;
@@ -149,7 +151,7 @@ int WaylandBackend::run(bool start_locked) {
         if (!s->init(app))
             klog("%s: init failed", s->name());
 
-    if (start_locked && app.capabilities.lock)
+    if (app.capabilities.lock && astralia::lock_consume_start_locked())
         start_session_lock(app);
 
     auto rest_egl_current = [&app] { app_detail::rest_egl_current(app); };

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "modules/logout/model.h"
-
 #include <string_view>
+
+#include "modules/logout/model.h"
 
 #include "render/canvas.h"
 

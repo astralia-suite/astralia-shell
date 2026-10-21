@@ -57,7 +57,6 @@ float lock_dot_x(int index, int count, float field_width) {
 }
 
 bool lock_dev_unlock_hit(double x, double y, double output_h) {
-    // ASTRALIA_DEBUG_UNLOCK=1 enables the corner, so a normal session cannot bypass the lock
     static const bool enabled = [] {
         const char *env = std::getenv("ASTRALIA_DEBUG_UNLOCK");
         return env != nullptr && std::string_view(env) == "1";

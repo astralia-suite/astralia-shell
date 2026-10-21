@@ -1,8 +1,5 @@
 #include <csignal>
 #include <cstdlib>
-#include <filesystem>
-#include <fstream>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -18,24 +15,6 @@
 #include "core/log.h"
 #include "core/runtime_paths.h"
 #include "core/single_instance.h"
-
-namespace {
-
-// ASTRALIA_START_LOCKED=1 locks once per login: the marker file makes restarts start normally.
-bool consume_start_locked() {
-    const char *env = std::getenv("ASTRALIA_START_LOCKED");
-    if (!env || std::string_view(env) != "1") {
-        return false;
-    }
-    std::string marker = astralia::runtime_path(".locked");
-    if (std::filesystem::exists(marker)) {
-        return false;
-    }
-    std::ofstream(marker) << "locked\n";
-    return true;
-}
-
-} // namespace
 
 int main(int argc, char **argv) {
     std::signal(SIGPIPE, SIG_IGN);
@@ -65,5 +44,5 @@ int main(int argc, char **argv) {
     }
     astralia::log::info("starting the {} backend from {}", loaded->backend->name(), loaded->path);
     astralia::tune_allocator(loaded->backend->malloc_arenas());
-    return loaded->backend->run(consume_start_locked());
+    return loaded->backend->run();
 }

@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <cstdint>
-#include <functional>
 #include <string>
 
 #include "core/animation.h"
@@ -60,7 +59,6 @@ struct LockMotion {
     float content_alpha = 1.0f;
     float content_scale = 1.0f;
     bool started = false;
-    bool unlocking = false;
     TextFieldTypeAnim dots;
     TextFieldRowSlide row;
 
@@ -70,7 +68,6 @@ struct LockMotion {
 };
 
 void lock_motion_fit(LockMotion &motion, float card_w, float card_h);
-void lock_motion_exit(LockMotion &motion, std::function<void()> done);
 void lock_motion_type(LockMotion &motion, const std::string &password);
 void lock_motion_clear_dots(LockMotion &motion);
 
