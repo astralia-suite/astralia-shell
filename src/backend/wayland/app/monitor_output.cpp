@@ -105,13 +105,12 @@ void theme_sync(WaylandState &app) {
 }
 
 void apply_config_update(WaylandState &app, Config new_cfg) {
-    bool idle_changed =
-        app.cfg.idle_management_enabled != new_cfg.idle_management_enabled ||
-        app.cfg.ambient_enabled != new_cfg.ambient_enabled ||
-        app.cfg.ambient_timeout_seconds != new_cfg.ambient_timeout_seconds ||
-        app.cfg.screensaver_enabled != new_cfg.screensaver_enabled ||
-        app.cfg.screensaver_timeout_seconds != new_cfg.screensaver_timeout_seconds ||
-        app.cfg.monitor_overrides != new_cfg.monitor_overrides;
+    bool idle_changed = app.cfg.idle_enabled != new_cfg.idle_enabled ||
+                        app.cfg.ambient_enabled != new_cfg.ambient_enabled ||
+                        app.cfg.ambient_timeout != new_cfg.ambient_timeout ||
+                        app.cfg.screensaver_enabled != new_cfg.screensaver_enabled ||
+                        app.cfg.screensaver_timeout != new_cfg.screensaver_timeout ||
+                        app.cfg.monitor_overrides != new_cfg.monitor_overrides;
     if (idle_changed) {
         std::vector<std::string> names;
         for (auto &mon : app.outputs)
@@ -137,7 +136,7 @@ void apply_config_update(WaylandState &app, Config new_cfg) {
 void save_and_apply_config_update(WaylandState &app, Config new_cfg) {
     apply_config_update(app, new_cfg);
     settings_service_save(app.cfg);
-    app.config_own_write_pending = true;
+    app.own_write_pending = true;
 }
 
 MonitorOutput *active_target_monitor(WaylandState &app) {

@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-using MediaDecodeFrameCallback =
+using MediaFrameCallback =
     std::function<void(unsigned char *rgba, int width, int height, int stride_px)>;
 
 struct MediaDrmPlane {
@@ -27,7 +27,7 @@ struct MediaDrmFrame {
     void *avframe_handle = nullptr;
 };
 
-using MediaDecodeDrmFrameCallback = std::function<void(MediaDrmFrame frame)>;
+using MediaDrmCallback = std::function<void(MediaDrmFrame frame)>;
 
 enum class MediaDecodeStatus { Idle, ZeroCopy, CpuFallback };
 
@@ -66,8 +66,8 @@ struct MediaDecodePlayback {
 
 MediaDecodePlayback media_decode_stream(const std::string &path, const std::string &filter_desc,
                                         int fps, bool supports_row_length,
-                                        MediaDecodeFrameCallback on_frame,
-                                        MediaDecodeDrmFrameCallback on_drm_frame = nullptr);
+                                        MediaFrameCallback on_frame,
+                                        MediaDrmCallback on_drm_frame = nullptr);
 
 void media_decode_stop(MediaDecodePlayback &playback);
 void media_decode_pause(MediaDecodePlayback &playback);

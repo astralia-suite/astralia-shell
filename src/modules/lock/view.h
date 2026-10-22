@@ -12,9 +12,9 @@
 #include "service/notification_service.h"
 #include "service/telemetry_service.h"
 
-namespace astralia {
+namespace astralia::lock {
 
-struct LockInfo {
+struct Info {
     std::string user;
     std::string os;
     std::string wm;
@@ -31,7 +31,7 @@ struct LockInfo {
     const std::vector<Notification> *notifications = nullptr;
 };
 
-void paint_lock(ui::Canvas &canvas, LockModel &model, LockMotion &motion, const LockInfo &info,
-                float width, float height);
+void paint(ui::Canvas &canvas, Model &model, Motion &motion, const Info &info, float width,
+           float height);
 
-} // namespace astralia
+} // namespace astralia::lock

@@ -17,7 +17,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::visualizer {
 
 class Visualizer {
   public:
@@ -41,8 +41,8 @@ class Visualizer {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    VisualizerAudioCapture capture_;
-    VisualizerCpuStages stages_;
+    AudioCapture capture_;
+    CpuStages stages_;
     std::vector<float> left_;
     std::vector<float> right_;
     int audio_size_ = 0;
@@ -50,4 +50,4 @@ class Visualizer {
     bool open_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::visualizer

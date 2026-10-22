@@ -8,7 +8,7 @@
 #include "render/sticker.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -427,4 +427,4 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
     return card_;
 }
 
-} // namespace astralia
+} // namespace astralia::bar

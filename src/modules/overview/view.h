@@ -6,11 +6,10 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::overview {
 
-using OverviewTileArt =
-    std::function<bool(ui::Canvas &, const OverviewTile &, const ui::Box &, float radius)>;
+using TileArt = std::function<bool(ui::Canvas &, const Tile &, const ui::Box &, float radius)>;
 
-void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTileArt &art);
+void paint(ui::Canvas &canvas, Model &model, const TileArt &art);
 
-} // namespace astralia
+} // namespace astralia::overview

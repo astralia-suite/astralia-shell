@@ -17,15 +17,15 @@ enum class Easing : uint8_t {
     EaseInBack,
 };
 
-float applyEasing(Easing easing, float t);
+float apply_easing(Easing easing, float t);
 
 void animation_set_instant(bool value);
 
 bool animation_instant();
 
 struct Animation {
-    float start_value = 0.0f;
-    float end_value = 0.0f;
+    float from = 0.0f;
+    float to = 0.0f;
     float duration_ms = 0.0f;
     std::chrono::steady_clock::time_point started_at;
     Easing easing = Easing::EaseOutCubic;
@@ -41,15 +41,15 @@ class AnimationManager {
     Id animate(float from, float to, float duration_ms, Easing easing,
                std::function<void(float)> setter, std::function<void()> on_complete = {},
                uint64_t owner = 0) {
-        return animate_internal(from, to, duration_ms, easing, std::move(setter),
-                                std::move(on_complete), owner);
+        return start(from, to, duration_ms, easing, std::move(setter), std::move(on_complete),
+                     owner);
     }
 
-    void cancelForOwner(uint64_t owner);
+    void cancel_owner(uint64_t owner);
 
     void tick(std::chrono::steady_clock::time_point now);
 
-    bool hasActive() const { return !entries_.empty(); }
+    bool has_active() const { return !entries_.empty(); }
 
   private:
     struct Entry {
@@ -58,9 +58,8 @@ class AnimationManager {
         Animation anim;
     };
 
-    Id animate_internal(float from, float to, float duration_ms, Easing easing,
-                        std::function<void(float)> setter, std::function<void()> on_complete,
-                        uint64_t owner);
+    Id start(float from, float to, float duration_ms, Easing easing,
+             std::function<void(float)> setter, std::function<void()> on_complete, uint64_t owner);
 
     std::vector<Entry> entries_;
     Id next_id_ = 1;

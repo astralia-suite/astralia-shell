@@ -12,28 +12,28 @@
 
 #include "modules/visualizer/audio_capture.h"
 
-namespace astralia {
+namespace astralia::visualizer {
 
 namespace {
 
-constexpr int kHalfSample = kVisualizerSampleSize / 2;
-constexpr int kQuarterSample = kVisualizerSampleSize / 4;
+constexpr int kHalfSample = visualizer_config::kSampleSize / 2;
+constexpr int kQuarterSample = visualizer_config::kSampleSize / 4;
 constexpr int kSlide = kQuarterSample + kQuarterSample;
-constexpr int kTail = kVisualizerFragmentSize - kQuarterSample - kQuarterSample;
+constexpr int kTail = visualizer_config::kFragmentSize - kQuarterSample - kQuarterSample;
 
 } // namespace
 
-VisualizerAudioCapture::~VisualizerAudioCapture() { stop(); }
+AudioCapture::~AudioCapture() { stop(); }
 
-bool VisualizerAudioCapture::start() {
+bool AudioCapture::start() {
     if (loop_)
         return true;
 
     audio_buffer_.assign(static_cast<size_t>(kHalfSample + 1), 0.0f);
-    br_.assign(static_cast<size_t>(kVisualizerSampleSize * 4), 0.0f);
-    bl_.assign(static_cast<size_t>(kVisualizerSampleSize * 4), 0.0f);
-    rb_.assign(static_cast<size_t>(kVisualizerFragmentSize), 0.0f);
-    lb_.assign(static_cast<size_t>(kVisualizerFragmentSize), 0.0f);
+    br_.assign(static_cast<size_t>(visualizer_config::kSampleSize * 4), 0.0f);
+    bl_.assign(static_cast<size_t>(visualizer_config::kSampleSize * 4), 0.0f);
+    rb_.assign(static_cast<size_t>(visualizer_config::kFragmentSize), 0.0f);
+    lb_.assign(static_cast<size_t>(visualizer_config::kFragmentSize), 0.0f);
     filled_idx_ = 0;
     modified_ = false;
     have_data_ = false;
@@ -62,9 +62,9 @@ bool VisualizerAudioCapture::start() {
     static const pw_stream_events events = [] {
         pw_stream_events e{};
         e.version = PW_VERSION_STREAM_EVENTS;
-        e.state_changed = &VisualizerAudioCapture::on_state_changed;
-        e.param_changed = &VisualizerAudioCapture::on_param_changed;
-        e.process = &VisualizerAudioCapture::on_process;
+        e.state_changed = &AudioCapture::on_state_changed;
+        e.param_changed = &AudioCapture::on_param_changed;
+        e.process = &AudioCapture::on_process;
         return e;
     }();
     pw_stream_add_listener(stream_, &stream_listener_, &events, this);
@@ -74,8 +74,8 @@ bool VisualizerAudioCapture::start() {
     spa_pod_builder_init(&b, buf.data(), static_cast<uint32_t>(buf.size()));
     spa_audio_info_raw raw{};
     raw.format = SPA_AUDIO_FORMAT_F32_LE;
-    raw.rate = kVisualizerSampleRate;
-    raw.channels = static_cast<uint32_t>(kVisualizerChannels);
+    raw.rate = visualizer_config::kSampleRate;
+    raw.channels = static_cast<uint32_t>(visualizer_config::kChannels);
     const spa_pod *params[1];
     params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &raw);
 
@@ -90,7 +90,7 @@ bool VisualizerAudioCapture::start() {
     return true;
 }
 
-void VisualizerAudioCapture::stop() {
+void AudioCapture::stop() {
     if (loop_)
         pw_thread_loop_stop(loop_);
     if (stream_) {
@@ -111,14 +111,14 @@ void VisualizerAudioCapture::stop() {
     }
 }
 
-void VisualizerAudioCapture::on_state_changed(void *, pw_stream_state, pw_stream_state state,
-                                              const char *error) {
+void AudioCapture::on_state_changed(void *, pw_stream_state, pw_stream_state state,
+                                    const char *error) {
     if (state == PW_STREAM_STATE_ERROR)
         log::error("visualizer_audio: stream error: {}", error ? error : "unknown");
 }
 
-void VisualizerAudioCapture::on_param_changed(void *data, uint32_t id, const spa_pod *param) {
-    auto *self = static_cast<VisualizerAudioCapture *>(data);
+void AudioCapture::on_param_changed(void *data, uint32_t id, const spa_pod *param) {
+    auto *self = static_cast<AudioCapture *>(data);
     if (!param || id != SPA_PARAM_Format)
         return;
 
@@ -134,11 +134,9 @@ void VisualizerAudioCapture::on_param_changed(void *data, uint32_t id, const spa
     self->channels_ = static_cast<int>(raw.channels);
 }
 
-void VisualizerAudioCapture::on_process(void *data) {
-    static_cast<VisualizerAudioCapture *>(data)->process_buffer();
-}
+void AudioCapture::on_process(void *data) { static_cast<AudioCapture *>(data)->process_buffer(); }
 
-void VisualizerAudioCapture::process_buffer() {
+void AudioCapture::process_buffer() {
     if (!stream_)
         return;
 
@@ -169,9 +167,11 @@ void VisualizerAudioCapture::process_buffer() {
             }
 
             std::memmove(br_.data(), br_.data() + kSlide,
-                         static_cast<size_t>(kVisualizerFragmentSize - kSlide) * sizeof(float));
+                         static_cast<size_t>(visualizer_config::kFragmentSize - kSlide) *
+                             sizeof(float));
             std::memmove(bl_.data(), bl_.data() + kSlide,
-                         static_cast<size_t>(kVisualizerFragmentSize - kSlide) * sizeof(float));
+                         static_cast<size_t>(visualizer_config::kFragmentSize - kSlide) *
+                             sizeof(float));
 
             for (int k = 0, i = 0; i < kHalfSample; i += 2, k += 2) {
                 int idx = kTail + k;
@@ -191,9 +191,9 @@ void VisualizerAudioCapture::process_buffer() {
 
             filled_idx_ = 0;
             std::memcpy(rb_.data(), br_.data(),
-                        static_cast<size_t>(kVisualizerFragmentSize) * sizeof(float));
+                        static_cast<size_t>(visualizer_config::kFragmentSize) * sizeof(float));
             std::memcpy(lb_.data(), bl_.data(),
-                        static_cast<size_t>(kVisualizerFragmentSize) * sizeof(float));
+                        static_cast<size_t>(visualizer_config::kFragmentSize) * sizeof(float));
             modified_ = true;
             have_data_ = true;
         }
@@ -202,7 +202,7 @@ void VisualizerAudioCapture::process_buffer() {
     pw_stream_queue_buffer(stream_, pwb);
 }
 
-bool VisualizerAudioCapture::take(std::vector<float> &l, std::vector<float> &r, bool &modified) {
+bool AudioCapture::take(std::vector<float> &l, std::vector<float> &r, bool &modified) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!have_data_) {
         modified = false;
@@ -217,4 +217,4 @@ bool VisualizerAudioCapture::take(std::vector<float> &l, std::vector<float> &r, 
     return true;
 }
 
-} // namespace astralia
+} // namespace astralia::visualizer

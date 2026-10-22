@@ -92,9 +92,8 @@ void check_network_parse() {
     check(!astralia::network_parse_wifi_device("wlan0:wifi:unmanaged\neth0:ethernet:connected\n"),
           "unmanaged wifi ignored");
     NetworkMap self_only = astralia::network_parse_networks("home:WPA2:80:*\n", {});
-    check(astralia::network_scan_would_collapse(networks, self_only),
-          "a self-only rescan is discarded");
-    check(!astralia::network_scan_would_collapse(self_only, networks), "a fuller rescan is kept");
+    check(astralia::network_scan_collapses(networks, self_only), "a self-only rescan is discarded");
+    check(!astralia::network_scan_collapses(self_only, networks), "a fuller rescan is kept");
 }
 
 void check_media() {
@@ -106,9 +105,8 @@ void check_media() {
     check(astralia::media_format_position(0) == "0:00", "zero position");
     check(astralia::media_format_position(65'000'000) == "1:05", "pads seconds");
     check(astralia::media_format_position(-5) == "0:00", "negative clamps");
-    check(astralia::media_is_local_art_url("file:///tmp/a.png") &&
-              !astralia::media_is_local_art_url("https://x/a.png") &&
-              !astralia::media_is_local_art_url(""),
+    check(astralia::media_is_local_art("file:///tmp/a.png") &&
+              !astralia::media_is_local_art("https://x/a.png") && !astralia::media_is_local_art(""),
           "only file URLs are local art");
     check(astralia::media_select_player({}) == -1, "no players");
     check(astralia::media_select_player(
@@ -336,11 +334,10 @@ void check_network_more() {
         astralia::network_parse_device_status("eth0:ethernet:connected:Lab\\:Wired\n");
     check(colon.ethernet_name == "Lab:Wired", "escaped colon in a connection name");
 
-    check(astralia::network_connectivity_name(2) == "portal" &&
-              astralia::network_connectivity_name(4) == "full" &&
-              astralia::network_connectivity_name(3) == "limited" &&
-              astralia::network_connectivity_name(1) == "none" &&
-              astralia::network_connectivity_name(0) == "unknown",
+    check(astralia::connectivity_name(2) == "portal" && astralia::connectivity_name(4) == "full" &&
+              astralia::connectivity_name(3) == "limited" &&
+              astralia::connectivity_name(1) == "none" &&
+              astralia::connectivity_name(0) == "unknown",
           "connectivity names");
 
     NetworkInfo connected;
@@ -363,12 +360,11 @@ void check_network_more() {
     NetworkInfo c;
     c.in_range = true;
     NetworkMap populated{{"A", a}, {"B", b}, {"C", c}};
-    check(astralia::network_scan_would_collapse(populated, {{"A", a}}), "self-only scan collapses");
-    check(!astralia::network_scan_would_collapse(populated, {{"Z", c}}),
-          "neighbour-only scan is kept");
-    check(!astralia::network_scan_would_collapse(populated, {{"A", a}, {"B", b}}),
+    check(astralia::network_scan_collapses(populated, {{"A", a}}), "self-only scan collapses");
+    check(!astralia::network_scan_collapses(populated, {{"Z", c}}), "neighbour-only scan is kept");
+    check(!astralia::network_scan_collapses(populated, {{"A", a}, {"B", b}}),
           "fuller scan is kept");
-    check(!astralia::network_scan_would_collapse({{"Only", a}}, {{"A", a}}),
+    check(!astralia::network_scan_collapses({{"Only", a}}, {{"A", a}}),
           "a sparse list never collapses");
 }
 
@@ -401,7 +397,7 @@ void check_user_and_icons() {
               astralia::icon_direct_path("/a/b.svg").empty() &&
               astralia::icon_direct_path("name").empty(),
           "direct icon paths are absolute PNG files");
-    check(astralia::resolve_app_icon_path("").empty(), "an empty icon field resolves to nothing");
+    check(astralia::app_icon_path("").empty(), "an empty icon field resolves to nothing");
 }
 
 void check_audio_percent() {

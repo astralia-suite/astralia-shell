@@ -30,7 +30,7 @@ class Module {
     virtual bool timer_tick(WaylandState &) { return false; }
     virtual void handle_pointer_move(WaylandState &, wl_surface *, double, double) {}
     virtual void handle_pointer_release() {}
-    virtual bool wants_pointing_hand_cursor() const { return false; }
+    virtual bool wants_hand_cursor() const { return false; }
     virtual bool opened_by_widget() const { return false; }
     virtual wl_output *bound_output() const { return nullptr; }
     virtual void toggle_from_widget(WaylandState &) {}

@@ -1,16 +1,16 @@
 #pragma once
 
-namespace astralia {
+namespace astralia::overview {
 
-struct OverviewGrid {
+struct Grid {
     int columns;
     int rows;
 
     int per_page() const { return columns * rows; }
 };
 
-int overview_workspace_at(OverviewGrid grid, int page, int row, int col);
-int overview_page_of(OverviewGrid grid, int workspace);
-int overview_step(OverviewGrid grid, int page, int workspace, int d_col, int d_row);
+int workspace_at(Grid grid, int page, int row, int col);
+int page_of(Grid grid, int workspace);
+int step(Grid grid, int page, int workspace, int d_col, int d_row);
 
-} // namespace astralia
+} // namespace astralia::overview

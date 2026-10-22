@@ -6,7 +6,7 @@
 
 #include "modules/launcher/x11/launcher.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 namespace {
 
@@ -110,8 +110,8 @@ void Launcher::handle(const xcb_generic_event_t &event) {
         }
         if (int row = row_at(press.event_x, press.event_y); row >= 0) {
             model_.click_row(row);
-        } else if (launcher_field_hit(frame_, press.event_x, press.event_y)) {
-            model_.pointer_down(launcher_field_column(frame_, press.event_x),
+        } else if (field_hit(frame_, press.event_x, press.event_y)) {
+            model_.pointer_down(field_column(frame_, press.event_x),
                                 std::chrono::steady_clock::now());
         } else if (const ui::Box &box = frame_.box;
                    !(press.event_x >= box.x && press.event_x < box.x + box.w &&
@@ -133,7 +133,7 @@ void Launcher::handle(const xcb_generic_event_t &event) {
         break;
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
-        model_.pointer_drag(launcher_field_column(frame_, motion.event_x));
+        model_.pointer_drag(field_column(frame_, motion.event_x));
         if (model_.hover(row_at(motion.event_x, motion.event_y)) && model_.is_open()) {
             window_.set_cursor(model_.hovered() >= 0 ? CursorShape::hand : CursorShape::arrow);
             paint();
@@ -162,9 +162,9 @@ void Launcher::paint() {
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     model_.sync_layout();
     canvas_.bind(cr);
-    frame_ = paint_launcher(canvas_, model_, static_cast<float>(window_.geometry().width),
-                            static_cast<float>(window_.geometry().height));
+    frame_ = launcher::paint(canvas_, model_, static_cast<float>(window_.geometry().width),
+                             static_cast<float>(window_.geometry().height));
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

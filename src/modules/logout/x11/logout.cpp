@@ -9,7 +9,7 @@
 #include "modules/logout/view.h"
 #include "modules/logout/x11/logout.h"
 
-namespace astralia {
+namespace astralia::logout {
 
 Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
@@ -112,10 +112,10 @@ void Logout::paint() {
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     canvas_.bind(cr);
-    paint_logout(canvas_, model_, static_cast<float>(window_.geometry().width),
-                 static_cast<float>(window_.geometry().height),
-                 services_.settings.config().logout_logo_path);
+    logout::paint(canvas_, model_, static_cast<float>(window_.geometry().width),
+                  static_cast<float>(window_.geometry().height),
+                  services_.settings.config().logout_logo_path);
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::logout

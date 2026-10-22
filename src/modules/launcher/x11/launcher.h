@@ -17,7 +17,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 class Launcher {
   public:
@@ -38,10 +38,10 @@ class Launcher {
     Keyboard keyboard_;
     X11Clipboard clipboard_;
     CairoCanvas canvas_;
-    LauncherModel model_;
-    LauncherFrame frame_;
+    Model model_;
+    Frame frame_;
     std::string bound_output_;
     int caret_timer_ = 0;
 };
 
-} // namespace astralia
+} // namespace astralia::launcher

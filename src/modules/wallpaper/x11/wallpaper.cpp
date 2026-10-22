@@ -18,7 +18,7 @@
 
 #include "service/wallpaper_service.h"
 
-namespace astralia {
+namespace astralia::wallpaper {
 
 namespace {
 
@@ -232,7 +232,7 @@ void Wallpaper::paint_menu() {
     }
     menu_window_.clear();
     menu_canvas_.bind(menu_window_.cr());
-    paint_desktop_menu(menu_canvas_, menu_, 0.0f, 0.0f);
+    paint(menu_canvas_, menu_, 0.0f, 0.0f);
     menu_window_.present();
 }
 
@@ -285,4 +285,4 @@ void Wallpaper::handle_menu(const xcb_generic_event_t &event) {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::wallpaper

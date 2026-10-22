@@ -22,9 +22,9 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::bar {
 
-enum class BarItem : int {
+enum class Item : int {
     logout,
     tray,
     resource,
@@ -38,9 +38,9 @@ enum class BarItem : int {
     count
 };
 
-inline constexpr size_t bar_item_count = static_cast<size_t>(BarItem::count);
+inline constexpr size_t item_count = static_cast<size_t>(Item::count);
 
-struct BarSources {
+struct Sources {
     AudioService *audio = nullptr;
     BatteryService *battery = nullptr;
     BluetoothService *bluetooth = nullptr;
@@ -52,7 +52,7 @@ struct BarSources {
     int workspace_slots = 0;
 };
 
-struct BarItemView {
+struct ItemView {
     const char *glyph = nullptr;
     std::string label;
     std::optional<Color> tint;
@@ -73,21 +73,21 @@ struct BarWorkspace {
     ui::Box box;
 };
 
-struct BarDockSlot {
+struct DockSlot {
     DockEntry entry;
     float x = 0.0f;
     float appear = 1.0f;
 };
 
-enum class BarActionKind { none, toggle, overview, workspace };
+enum class ActionKind { none, toggle, overview, workspace };
 
-struct BarAction {
-    BarActionKind kind = BarActionKind::none;
-    BarItem item = BarItem::count;
+struct Action {
+    ActionKind kind = ActionKind::none;
+    Item item = Item::count;
     int workspace = 0;
 };
 
-struct BarLayout {
+struct Layout {
     std::vector<float> dividers;
     std::optional<float> left_end;
     std::optional<IslandSpan> center;
@@ -99,58 +99,58 @@ struct BarLayout {
     float width = 0.0f;
 };
 
-const char *bar_wifi_glyph(int strength);
-const char *bar_bluetooth_glyph(const BluetoothStatus &status);
-std::string bar_bluetooth_label(const BluetoothStatus &status);
+const char *wifi_glyph(int strength);
+const char *bluetooth_glyph(const BluetoothStatus &status);
+std::string bluetooth_label(const BluetoothStatus &status);
 std::chrono::milliseconds ms_until_next_second(std::chrono::system_clock::time_point now);
-const char *bar_battery_glyph(const BatteryStatus &status);
-std::string bar_battery_label(const BatteryStatus &status);
+const char *battery_glyph(const BatteryStatus &status);
+std::string battery_label(const BatteryStatus &status);
 
-class BarModel {
+class Model {
   public:
     using Clock = std::chrono::steady_clock;
 
-    BarModel(BarSources sources, Clock::time_point now);
+    Model(Sources sources, Clock::time_point now);
 
-    void set_style(const BarStyleSpec &style) { style_ = &style; }
-    const BarStyleSpec &style() const { return *style_; }
+    void set_style(const StyleSpec &style) { style_ = &style; }
+    const StyleSpec &style() const { return *style_; }
     void set_clock_label(std::string label) { clock_label_ = std::move(label); }
     void refresh(Clock::time_point now);
-    void set_open(std::optional<BarItem> item, Clock::time_point now);
+    void set_open(std::optional<Item> item, Clock::time_point now);
     bool hover(std::optional<double> x, std::optional<double> y, Clock::time_point now);
     bool tick(Clock::time_point now);
     void layout(ui::Canvas &canvas, float width);
 
-    BarAction press(double x, double y) const;
+    Action press(double x, double y) const;
     bool clickable(double x, double y) const;
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     bool peeking() const { return peek_active_; }
     std::chrono::milliseconds until_idle(Clock::time_point now) const;
 
-    const BarItemView &item(BarItem id) const { return items_[static_cast<size_t>(id)]; }
+    const ItemView &item(Item id) const { return items_[static_cast<size_t>(id)]; }
     const std::vector<BarWorkspace> &workspaces() const { return workspaces_; }
-    const std::vector<BarDockSlot> &dock() const { return dock_; }
-    const BarLayout &layout() const { return layout_; }
-    BarFrame frame() const;
-    std::optional<BarItem> open() const { return open_; }
+    const std::vector<DockSlot> &dock() const { return dock_; }
+    const Layout &layout() const { return layout_; }
+    Frame frame() const;
+    std::optional<Item> open() const { return open_; }
 
   private:
     bool apply_hover(Clock::time_point now);
     void refresh_workspaces();
     void refresh_dock();
-    bool update_expand(BarItem id, bool target, bool instant);
-    float item_width(const BarItemView &view, float pad) const;
-    BarItemView &mut(BarItem id) { return items_[static_cast<size_t>(id)]; }
-    std::array<std::string, bar_item_count> measured_glyph_;
-    std::array<std::string, bar_item_count> measured_label_;
+    bool update_expand(Item id, bool target, bool instant);
+    float item_width(const ItemView &view, float pad) const;
+    ItemView &mut(Item id) { return items_[static_cast<size_t>(id)]; }
+    std::array<std::string, item_count> measured_glyph_;
+    std::array<std::string, item_count> measured_label_;
 
-    BarSources sources_;
-    const BarStyleSpec *style_;
-    std::array<BarItemView, bar_item_count> items_{};
+    Sources sources_;
+    const StyleSpec *style_;
+    std::array<ItemView, item_count> items_{};
     std::vector<BarWorkspace> workspaces_;
     std::unordered_map<int, float> grow_;
     std::unordered_map<int, bool> was_active_;
-    std::vector<BarDockSlot> dock_;
+    std::vector<DockSlot> dock_;
     struct DockMotion {
         float x = 0.0f;
         float target = 0.0f;
@@ -162,12 +162,12 @@ class BarModel {
     float dock_w_ = 0.0f;
     float dock_w_target_ = 0.0f;
     bool dock_seen_ = false;
-    BarLayout layout_;
+    Layout layout_;
     AnimationManager animations_;
     std::string clock_label_;
-    std::optional<BarItem> open_;
-    std::optional<BarItem> hovered_;
-    std::optional<BarItem> linger_;
+    std::optional<Item> open_;
+    std::optional<Item> hovered_;
+    std::optional<Item> linger_;
     Clock::time_point linger_until_{};
     std::optional<double> pointer_x_;
     std::optional<double> pointer_y_;
@@ -179,4 +179,4 @@ class BarModel {
     bool peek_muted_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

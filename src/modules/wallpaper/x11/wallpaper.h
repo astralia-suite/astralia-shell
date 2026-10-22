@@ -15,7 +15,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::wallpaper {
 
 class Wallpaper {
   public:
@@ -52,4 +52,4 @@ class Wallpaper {
     size_t menu_output_ = 0;
 };
 
-} // namespace astralia
+} // namespace astralia::wallpaper

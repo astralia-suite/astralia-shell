@@ -99,7 +99,7 @@ std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_n
             return columns.front();
         }
     }
-    return cfg.default_wallpaper_enabled ? cfg.wallpaper_path : "";
+    return cfg.default_wallpaper ? cfg.wallpaper_path : "";
 }
 
 ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
@@ -118,7 +118,7 @@ ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
     return source;
 }
 
-bool theme_extraction_differs(const std::optional<Extraction> &a, const Extraction &b) {
+bool extraction_differs(const std::optional<Extraction> &a, const Extraction &b) {
     if (!a || a->seeds.size() != b.seeds.size()) {
         return true;
     }
@@ -161,7 +161,7 @@ void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
 }
 
 void ThemeService::apply(const Extraction &extraction) {
-    if (!theme_extraction_differs(applied_, extraction)) {
+    if (!extraction_differs(applied_, extraction)) {
         return;
     }
     applied_ = extraction;

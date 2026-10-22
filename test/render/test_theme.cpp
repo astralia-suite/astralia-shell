@@ -105,12 +105,13 @@ void check_theme() {
               near(other.text_alpha20, palette::text_alpha20) &&
               near(other.overlay, palette::overlay),
           "theme_apply sets the palette to the derived values");
-    check(near(bar_style_spec(BarStyle::islands, true).border, other.ink) &&
-              near(bar_style_spec(BarStyle::islands, true).shadow_color, other.shadow) &&
-              near(bar_style_spec(BarStyle::okinami, true).border, other.ink) &&
-              near(bar_style_spec(BarStyle::okinami, true).bg, other.accent_container) &&
-              near(bar_style_spec(BarStyle::continuous, true).bg, other.accent_container),
-          "bar styles follow the live palette");
+    check(
+        near(astralia::bar::style_spec(BarStyle::islands, true).border, other.ink) &&
+            near(astralia::bar::style_spec(BarStyle::islands, true).shadow_color, other.shadow) &&
+            near(astralia::bar::style_spec(BarStyle::okinami, true).border, other.ink) &&
+            near(astralia::bar::style_spec(BarStyle::okinami, true).bg, other.accent_container) &&
+            near(astralia::bar::style_spec(BarStyle::continuous, true).bg, other.accent_container),
+        "bar styles follow the live palette");
     test::apply_base_theme();
     check(near(base.accent, palette::accent), "theme_apply restores the base theme");
 }

@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
         return astralia::run_ipc_client(astralia::runtime_path(".sock"), invocation.command);
     }
     astralia::log::install_crash_handler();
-    astralia::SessionKind kind = astralia::detect_session(astralia::session_environment());
+    astralia::SessionKind kind = astralia::detect_session(astralia::session_env());
     auto loaded = astralia::load_backend(kind);
     if (!loaded) {
         astralia::log::error("{}", loaded.error());

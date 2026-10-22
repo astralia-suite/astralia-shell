@@ -6,7 +6,7 @@
 
 #include "modules/launcher/desktop_entry.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 std::optional<DesktopEntry> parse_desktop_entry(std::istream &in, const std::string &id) {
     DesktopEntry entry;
@@ -56,7 +56,7 @@ std::optional<DesktopEntry> parse_desktop_entry(std::istream &in, const std::str
     return entry;
 }
 
-std::string strip_exec_field_codes(const std::string &exec) {
+std::string strip_field_codes(const std::string &exec) {
     std::string out;
     out.reserve(exec.size());
     for (std::size_t i = 0; i < exec.size(); ++i) {
@@ -125,4 +125,4 @@ std::vector<DesktopEntry> scan_desktop_entries() {
     return result;
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

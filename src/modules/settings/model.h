@@ -21,17 +21,17 @@
 #include "render/scroll_sequence.h"
 #include "render/text_field.h"
 
-namespace astralia {
+namespace astralia::settings {
 
-enum class SettingsTab : uint8_t { ambient, bar, displays, general, lock, wallpaper };
+enum class Tab : uint8_t { ambient, bar, displays, general, lock, wallpaper };
 
-struct SettingsTabInfo {
-    SettingsTab tab;
+struct TabInfo {
+    Tab tab;
     const char *label;
     const char *icon;
 };
 
-struct SettingsCaps {
+struct Caps {
     bool animation = false;
     bool idle = false;
     bool launcher = false;
@@ -45,9 +45,9 @@ struct SettingsCaps {
     std::vector<BarStyle> bar_styles{BarStyle::islands, BarStyle::okinami, BarStyle::continuous};
 };
 
-SettingsCaps settings_caps(const Capabilities &capabilities);
+Caps settings_caps(const Capabilities &capabilities);
 
-enum class SettingsField : uint8_t {
+enum class Field : uint8_t {
     none,
     wallpaper_dir,
     wallpaper_animated_dir,
@@ -62,7 +62,7 @@ enum class SettingsField : uint8_t {
     visualizer_glow_quality
 };
 
-enum class SettingsAct : uint8_t {
+enum class Act : uint8_t {
     close,
     tab,
     menu,
@@ -98,14 +98,14 @@ enum class SettingsAct : uint8_t {
     field_focus,
 };
 
-struct SettingsRegion {
+struct Region {
     ui::Box box;
-    SettingsAct act = SettingsAct::close;
+    Act act = Act::close;
     int a = 0;
     int b = 0;
 };
 
-struct SettingsHooks {
+struct Hooks {
     std::function<const Config &()> config;
     std::function<void(const std::function<void(Config &)> &)> update;
     std::function<std::vector<std::string>()> monitors;
@@ -125,28 +125,26 @@ struct WallpaperPicker {
     float grid_height = 0.0f;
 };
 
-const std::vector<SettingsTabInfo> &settings_all_tabs();
-std::string settings_field_text(const Config &config, SettingsField field,
-                                const std::string &monitor);
-void settings_apply_field(Config &config, SettingsField field, const std::string &text,
-                          const std::string &monitor);
+const std::vector<TabInfo> &all_tabs();
+std::string field_text(const Config &config, Field field, const std::string &monitor);
+void apply_field(Config &config, Field field, const std::string &text, const std::string &monitor);
 
-class SettingsModel {
+class Model {
   public:
-    SettingsModel(SettingsCaps caps, SettingsHooks hooks);
-    ~SettingsModel();
-    SettingsModel(const SettingsModel &) = delete;
-    SettingsModel &operator=(const SettingsModel &) = delete;
+    Model(Caps caps, Hooks hooks);
+    ~Model();
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
 
     void open();
     void close();
     void sync();
     void tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
     void begin_frame() { regions_.clear(); }
-    void add_region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
+    void add_region(const ui::Box &box, Act act, int a = 0, int b = 0) {
         regions_.push_back({box, act, a, b});
     }
-    void add_region_front(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
+    void add_region_front(const ui::Box &box, Act act, int a = 0, int b = 0) {
         regions_.insert(regions_.begin(), {box, act, a, b});
     }
     int dropdown_open() const { return dropdown_open_; }
@@ -161,15 +159,15 @@ class SettingsModel {
     void toggle_caret();
     bool clickable(double x, double y) const;
 
-    const SettingsCaps &caps() const { return caps_; }
-    const std::vector<SettingsTabInfo> &tabs() const { return tabs_; }
-    SettingsTab active_tab() const { return active_; }
+    const Caps &caps() const { return caps_; }
+    const std::vector<TabInfo> &tabs() const { return tabs_; }
+    Tab active_tab() const { return active_; }
     bool in_menu() const { return menu_; }
     float tab_alpha() const { return tab_alpha_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     bool is_open() const { return open_; }
     const ScrollSequence &sequence() const { return sequence_; }
-    SettingsField focused() const { return focused_; }
+    Field focused() const { return focused_; }
     const TextFieldState &field() const { return field_; }
     TextFieldState &field() { return field_; }
     const TextFieldTypeAnim &field_anim() const { return field_anim_; }
@@ -200,33 +198,33 @@ class SettingsModel {
 
   private:
     void changed();
-    void select_tab(SettingsTab tab);
+    void select_tab(Tab tab);
     void show_menu();
-    void go(bool menu, SettingsTab tab);
-    void focus_field(SettingsField field);
+    void go(bool menu, Tab tab);
+    void focus_field(Field field);
     void commit_field();
     void scan(WallpaperPicker &picker, const std::string &dir, bool animated);
-    void dispatch(const SettingsRegion &region);
+    void dispatch(const Region &region);
     void edit(const std::function<void(Config &)> &apply);
-    void dispatch_wallpaper(const SettingsRegion &region);
-    void dispatch_idle(const SettingsRegion &region);
+    void dispatch_wallpaper(const Region &region);
+    void dispatch_idle(const Region &region);
 
-    SettingsCaps caps_;
-    SettingsHooks hooks_;
+    Caps caps_;
+    Hooks hooks_;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     AnimationManager animations_;
     ScrollSequence sequence_{animations_, 30};
-    std::vector<SettingsTabInfo> tabs_;
-    std::vector<SettingsRegion> regions_;
+    std::vector<TabInfo> tabs_;
+    std::vector<Region> regions_;
     int dropdown_open_ = -1;
     ui::Box panel_;
     bool open_ = false;
-    SettingsTab active_ = SettingsTab::wallpaper;
-    SettingsTab pending_ = SettingsTab::wallpaper;
+    Tab active_ = Tab::wallpaper;
+    Tab pending_ = Tab::wallpaper;
     bool menu_ = true;
     bool pending_menu_ = true;
     float tab_alpha_ = 1.0f;
-    SettingsField focused_ = SettingsField::none;
+    Field focused_ = Field::none;
     TextFieldState field_;
     TextFieldTypeAnim field_anim_;
     std::vector<std::string> monitors_;
@@ -236,4 +234,4 @@ class SettingsModel {
     WallpaperPicker lock_picker_;
 };
 
-} // namespace astralia
+} // namespace astralia::settings

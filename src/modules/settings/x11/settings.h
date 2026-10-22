@@ -17,7 +17,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::settings {
 
 class Settings {
   public:
@@ -39,7 +39,7 @@ class Settings {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    SettingsModel model_;
+    Model model_;
     bool open_ = false;
     bool repaint_pending_ = false;
     int repaint_timer_ = 0;
@@ -48,4 +48,4 @@ class Settings {
     std::chrono::steady_clock::time_point refocus_until_{};
 };
 
-} // namespace astralia
+} // namespace astralia::settings

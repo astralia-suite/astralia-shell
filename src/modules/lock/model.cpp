@@ -4,33 +4,33 @@
 
 #include "modules/lock/model.h"
 
-namespace astralia {
+namespace astralia::lock {
 
-LockKey LockModel::key(const input::KeyEvent &event) {
+Key Model::key(const input::KeyEvent &event) {
     switch (text_field_handle_key(field_, event)) {
     case TextFieldResult::Committed:
-        return field_.text.empty() || authenticating_ ? LockKey::none : LockKey::submit;
+        return field_.text.empty() || authenticating_ ? Key::none : Key::submit;
     case TextFieldResult::Cancelled:
         clear_password();
         failed_ = false;
-        return LockKey::changed;
+        return Key::changed;
     case TextFieldResult::Changed:
         failed_ = false;
-        return LockKey::changed;
+        return Key::changed;
     case TextFieldResult::None:
         break;
     }
-    return LockKey::none;
+    return Key::none;
 }
 
-std::string LockModel::begin_auth() {
+std::string Model::begin_auth() {
     authenticating_ = true;
     failed_ = false;
     ++generation_;
     return field_.text;
 }
 
-bool LockModel::finish_auth(uint64_t generation, bool success) {
+bool Model::finish_auth(uint64_t generation, bool success) {
     if (generation != generation_) {
         return false;
     }
@@ -40,11 +40,12 @@ bool LockModel::finish_auth(uint64_t generation, bool success) {
     }
     clear_password();
     failed_ = true;
-    fail_clear_at_ = Clock::now() + std::chrono::milliseconds(static_cast<int>(kLockTimerFailMs));
+    fail_clear_at_ =
+        Clock::now() + std::chrono::milliseconds(static_cast<int>(lock_config::kTimerFailMs));
     return false;
 }
 
-bool LockModel::tick(Clock::time_point now) {
+bool Model::tick(Clock::time_point now) {
     if (!failed_ || now < fail_clear_at_) {
         return false;
     }
@@ -52,11 +53,11 @@ bool LockModel::tick(Clock::time_point now) {
     return true;
 }
 
-LockModel::Clock::duration LockModel::until_fail_clear(Clock::time_point now) const {
+Model::Clock::duration Model::until_fail_clear(Clock::time_point now) const {
     return failed_ && fail_clear_at_ > now ? fail_clear_at_ - now : Clock::duration::zero();
 }
 
-void LockModel::reset() {
+void Model::reset() {
     clear_password();
     failed_ = false;
     authenticating_ = false;
@@ -64,42 +65,42 @@ void LockModel::reset() {
     hits_ = {};
 }
 
-void LockModel::clear_password() {
+void Model::clear_password() {
     explicit_bzero(field_.text.data(), field_.text.size());
     field_.text.clear();
 }
 
 namespace {
 
-void enter(LockMotion &m, float card_w, float card_h) {
+void enter(Motion &m, float card_w, float card_h) {
     m.started = true;
-    m.panel_scale = kLockScaleFull;
+    m.panel_scale = lock_config::kScaleFull;
     m.panel_rotation = 0.0f;
     m.panel_w = card_w;
     m.panel_h = card_h;
     m.icon_alpha = 0.0f;
     m.content_alpha = 1.0f;
-    m.content_scale = kLockScaleFull;
+    m.content_scale = lock_config::kScaleFull;
 }
 
 } // namespace
 
-void lock_motion_fit(LockMotion &motion, float card_w, float card_h) {
+void motion_fit(Motion &motion, float card_w, float card_h) {
     if (!motion.started) {
         enter(motion, card_w, card_h);
-    } else if (!motion.animations.hasActive()) {
+    } else if (!motion.animations.has_active()) {
         motion.panel_w = card_w;
         motion.panel_h = card_h;
     }
 }
 
-void lock_motion_type(LockMotion &motion, const std::string &password) {
-    text_field_type_anim_sync(motion.dots, motion.animations, kLockOwnerDotBase, password);
+void motion_type(Motion &motion, const std::string &password) {
+    text_field_type_anim_sync(motion.dots, motion.animations, lock_config::kOwnerDotBase, password);
 }
 
-void lock_motion_clear_dots(LockMotion &motion) {
-    text_field_type_anim_clear(motion.dots, motion.animations, kLockOwnerDotBase);
-    text_field_row_slide_reset(motion.row, motion.animations, kLockOwnerDotRowX);
+void motion_clear_dots(Motion &motion) {
+    text_field_type_anim_clear(motion.dots, motion.animations, lock_config::kOwnerDotBase);
+    text_field_row_slide_reset(motion.row, motion.animations, lock_config::kOwnerDotRowX);
 }
 
-} // namespace astralia
+} // namespace astralia::lock

@@ -40,9 +40,11 @@
 
 - A module is `src/modules/<name>/`: display-independent files at the top, and each backend's view and module-only config under `<name>/wayland/` and `<name>/x11/`. A backend's meson list compiles only its own subdirectory.
 - A module's `wayland/` and `x11/` files never include each other.
+- A module's code, shared and per backend, lives in `astralia::<module>`; a name drops the module word that the namespace already says (`launcher::toggle`, `lock::Model`).
+- A module's constants live in `astralia::<module>_config` with the `k` prefix and no module word (`lock_config::kSlashMs`).
 - A module is not allowed to include files from another module, its private components included, except `bar` panels, which use `service/` and `render/` only.
 - A module is a model (state, logic and animation targets, no display include), one view over `ui::Canvas`, and a thin host per backend.
-- A view never includes a backend header; backend-only drawing goes through a hook the host supplies (`LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`).
+- A view never includes a backend header; backend-only drawing goes through a hook the host supplies (`LogoutLogoPainter`, `overview::TileArt`, `settings::Art`).
 - Only Wayland animates: models call `AnimationManager` freely and X11 sets `animation_set_instant(true)`, so nothing in a model checks the backend.
 - A feature one backend lacks is a `Capabilities` flag in `app/shell.h`; hosts and verbs register only for flags the backend reports.
 - Bar panel content is shared and window-free; the tray popup and the panel surface are backend hosts (`PanelSurface` with `popup_window` on Wayland, `PanelHost` on X11).

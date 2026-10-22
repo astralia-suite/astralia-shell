@@ -16,7 +16,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::overview {
 
 class Overview {
   public:
@@ -35,9 +35,9 @@ class Overview {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    OverviewModel model_;
+    Model model_;
     std::string bound_output_;
     std::chrono::steady_clock::time_point focus_grace_until_{};
 };
 
-} // namespace astralia
+} // namespace astralia::overview

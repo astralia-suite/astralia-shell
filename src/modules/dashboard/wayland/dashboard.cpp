@@ -9,16 +9,18 @@
 
 #include "render/tokens.h"
 
-void dashboard_request_frame(DashboardState &state) { toplevel_window_request_frame(state.base); }
+namespace astralia::dashboard {
 
-void dashboard_toggle(DashboardState &state, WaylandState &app) {
+void request_frame(State &state) { toplevel_window_request_frame(state.base); }
+
+void toggle(State &state, WaylandState &app) {
     bool opening = !state.base.open;
     if (opening) {
         if (state.base.egl_surface == EGL_NO_SURFACE) {
             if (!toplevel_window_create_surface(
-                    state.base, app.compositor, app.wm_base, astralia::kDashboardTitle,
-                    astralia::kDashboardAppId, astralia::kDashboardDefaultWidth,
-                    astralia::kDashboardDefaultHeight))
+                    state.base, app.compositor, app.wm_base, astralia::dashboard_config::kTitle,
+                    astralia::dashboard_config::kAppId, astralia::dashboard_config::kDefaultWidth,
+                    astralia::dashboard_config::kDefaultHeight))
                 return;
             while (!state.base.configured)
                 wl_display_dispatch(app.display);
@@ -28,8 +30,8 @@ void dashboard_toggle(DashboardState &state, WaylandState &app) {
                 return;
             }
             state.renderer = &app.renderer;
-            state.base.frame_clock.draw = [&state] { dashboard_paint(state); };
-            state.base.on_close_request = [&state, &app] { dashboard_toggle(state, app); };
+            state.base.frame_clock.draw = [&state] { render(state); };
+            state.base.on_close_request = [&state, &app] { toggle(state, app); };
         }
         state.base.open = true;
         state.base.animations.animate(
@@ -37,27 +39,25 @@ void dashboard_toggle(DashboardState &state, WaylandState &app) {
             [&state](float v) { state.base.opacity = v; }, {}, kOverlayFadeOwner);
         toplevel_window_request_frame(state.base);
     } else {
-        state.base.animations.cancelForOwner(kOverlayFadeOwner);
+        state.base.animations.cancel_owner(kOverlayFadeOwner);
         state.base.open = false;
         toplevel_window_destroy_surface(state.base);
         app_detail::rest_egl_current(app);
     }
 }
 
-void dashboard_handle_key_event(DashboardState &state, WaylandState &app, const KeyEvent &event) {
+void handle_key_event(State &state, WaylandState &app, const KeyEvent &event) {
     if (event.kind == KeyKind::Escape)
-        dashboard_toggle(state, app);
+        toggle(state, app);
 }
 
-std::vector<astralia::ShellBinding> dashboard_shell_bindings(DashboardState &dashboard,
-                                                             WaylandState &state) {
+std::vector<astralia::ShellBinding> shell_bindings(State &dashboard, WaylandState &state) {
     return {
-        {astralia::ShellVerb::dashboard,
-         [&dashboard, &state] { dashboard_toggle(dashboard, state); }},
+        {astralia::ShellVerb::dashboard, [&dashboard, &state] { toggle(dashboard, state); }},
     };
 }
 
-void dashboard_paint(DashboardState &state) {
+void render(State &state) {
     if (state.base.egl_surface == EGL_NO_SURFACE)
         return;
     state.base.animations.tick(std::chrono::steady_clock::now());
@@ -74,13 +74,13 @@ void dashboard_paint(DashboardState &state) {
     state.renderer->set_opacity(1.0f);
     eglSwapBuffers(state.base.egl_display, state.base.egl_surface);
 
-    if (state.base.animations.hasActive())
+    if (state.base.animations.has_active())
         toplevel_window_request_frame(state.base);
 }
 
 namespace {
 
-class DashboardModule final : public Module {
+class Adapter final : public Module {
   public:
     const char *name() const override { return "dashboard"; }
     bool is_open() const override { return state_.base.open; }
@@ -89,20 +89,22 @@ class DashboardModule final : public Module {
     bool init_egl(WaylandState &) override { return true; }
     bool configured() const override { return true; }
     wl_surface *surface() const override { return state_.base.surface; }
-    void request_frame() override { dashboard_request_frame(state_); }
+    void request_frame() override { dashboard::request_frame(state_); }
 
     void handle_key_event(WaylandState &app, const KeyEvent &event) override {
-        dashboard_handle_key_event(state_, app, event);
+        dashboard::handle_key_event(state_, app, event);
     }
 
     std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override {
-        return dashboard_shell_bindings(state_, app);
+        return dashboard::shell_bindings(state_, app);
     }
 
   private:
-    DashboardState state_;
+    State state_;
 };
 
 } // namespace
 
-std::unique_ptr<Module> make_dashboard_module() { return std::make_unique<DashboardModule>(); }
+std::unique_ptr<Module> make_module() { return std::make_unique<Adapter>(); }
+
+} // namespace astralia::dashboard

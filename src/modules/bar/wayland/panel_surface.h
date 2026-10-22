@@ -14,6 +14,8 @@
 
 #include "service/wayland/text_input_service.h"
 
+namespace astralia::bar {
+
 class PanelSurface final : public TextInputClient {
   public:
     PanelSurface(WaylandState &app, MonitorOutput &mon);
@@ -28,8 +30,8 @@ class PanelSurface final : public TextInputClient {
     }
     void request_frame();
 
-    astralia::PanelSet &panels() { return set_; }
-    const astralia::PanelSet &panels() const { return set_; }
+    PanelSet &panels() { return set_; }
+    const PanelSet &panels() const { return set_; }
     bool is_open() const { return set_.any_open(); }
 
     void press(wl_surface *surface, int button, double x, double y, uint32_t serial);
@@ -47,7 +49,7 @@ class PanelSurface final : public TextInputClient {
 
   private:
     void paint();
-    void state_changed(astralia::PanelId id, bool open);
+    void state_changed(PanelId id, bool open);
     void sync_text_input();
     float card_top() const;
     void send_key(const astralia::input::KeyEvent &event);
@@ -58,7 +60,7 @@ class PanelSurface final : public TextInputClient {
 
     WaylandState &app_;
     MonitorOutput &mon_;
-    astralia::PanelSet set_;
+    PanelSet set_;
     OverlayPanelBase base_;
     GlCanvas canvas_;
     bool text_focused_ = false;
@@ -69,3 +71,5 @@ class PanelSurface final : public TextInputClient {
     float popup_height_ = 0.0f;
     uint32_t press_serial_ = 0;
 };
+
+} // namespace astralia::bar

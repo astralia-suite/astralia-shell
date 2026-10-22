@@ -23,45 +23,47 @@
 
 struct WaylandState;
 
-struct OverviewState {
+namespace astralia::overview {
+
+struct State {
     OverlayPanelBase base;
     Renderer *renderer = nullptr;
     GlCanvas canvas;
     ToplevelExportState capture;
-    std::unique_ptr<astralia::OverviewModel> model;
+    std::unique_ptr<Model> model;
     bool opened_by_widget = false;
     wl_output *bound_output = nullptr;
     WaylandState *app_ptr = nullptr;
 };
 
-bool overview_create_surface(OverviewState &state, wl_compositor *compositor,
-                             zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+                    wl_output *output = nullptr);
 
-bool overview_init_egl(OverviewState &state, Renderer &renderer, EGLDisplay display,
-                       EGLConfig config, EGLContext context);
+bool init_egl(State &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+              EGLContext context);
 
-void overview_retarget(OverviewState &state, wl_compositor *compositor,
-                       zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
-                       EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
-                       wl_output *target_output, const char *target_name);
+void retarget(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+              wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config,
+              EGLContext egl_context, wl_output *target_output, const char *target_name);
 
-void overview_request_frame(OverviewState &state);
+void request_frame(State &state);
 
-void overview_toggle(OverviewState &state, WaylandState &app, bool by_widget = false);
+void toggle(State &state, WaylandState &app, bool by_widget = false);
 
-std::vector<astralia::ShellBinding> overview_shell_bindings(OverviewState &overview,
-                                                            WaylandState &state);
+std::vector<astralia::ShellBinding> shell_bindings(State &overview, WaylandState &state);
 
-void overview_handle_click(OverviewState &state, WaylandState &app, double px, double py);
+void handle_click(State &state, WaylandState &app, double px, double py);
 
-void overview_handle_pointer_move(OverviewState &state, WaylandState &app, double px, double py);
+void handle_pointer_move(State &state, WaylandState &app, double px, double py);
 
-bool overview_point_is_clickable(OverviewState &state, WaylandState &app, double px, double py);
+bool point_is_clickable(State &state, WaylandState &app, double px, double py);
 
-void overview_handle_pointer_release(OverviewState &state, WaylandState &app);
+void handle_pointer_release(State &state, WaylandState &app);
 
-void overview_handle_key_event(OverviewState &state, WaylandState &app, const KeyEvent &event);
+void handle_key_event(State &state, WaylandState &app, const KeyEvent &event);
 
-void overview_paint(OverviewState &state, WaylandState &app);
+void render(State &state, WaylandState &app);
 
-std::unique_ptr<Module> make_overview_module();
+std::unique_ptr<Module> make_module();
+
+} // namespace astralia::overview

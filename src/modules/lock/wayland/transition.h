@@ -23,10 +23,13 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 struct WaylandState;
-struct LockTransition;
+
+namespace astralia::lock {
+
+struct Transition;
 
 struct TransitionSurface {
-    LockTransition *owner = nullptr;
+    Transition *owner = nullptr;
     wl_output *output = nullptr;
     std::string output_name;
     wl_surface *surface = nullptr;
@@ -41,21 +44,21 @@ struct TransitionSurface {
     OutputScale output_scale;
     FrameClock frame_clock;
     GlCanvas canvas;
-    astralia::LockMotion motion;
-    std::unique_ptr<astralia::SlashPlan> plan;
+    Motion motion;
+    std::unique_ptr<SlashPlan> plan;
 
     TransitionSurface() = default;
     TransitionSurface(const TransitionSurface &) = delete;
     TransitionSurface &operator=(const TransitionSurface &) = delete;
 };
 
-struct LockTransition {
+struct Transition {
     WaylandState *app = nullptr;
     bool active = false;
     bool playing = false;
     bool running = false;
     bool finishing = false;
-    astralia::LockTransitionMode mode = astralia::LockTransitionMode::lock;
+    TransitionMode mode = TransitionMode::lock;
     uint32_t seed = 0;
     std::chrono::steady_clock::time_point started{};
     std::chrono::steady_clock::time_point deadline{};
@@ -65,17 +68,20 @@ struct LockTransition {
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>
         draw_wallpaper;
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h,
-                       astralia::LockMotion &motion)>
+                       Motion &motion)>
         draw_lock;
+    std::function<bool(const std::string &output_name)> wallpaper_ready;
     std::function<void()> on_finished;
     std::function<void(bool held)> on_ready;
 };
 
-bool transition_open(LockTransition &transition, WaylandState &app,
-                     astralia::LockTransitionMode mode = astralia::LockTransitionMode::lock);
-void transition_release_keyboard(LockTransition &transition);
-void transition_rehold(LockTransition &transition, astralia::LockTransitionMode mode);
-bool transition_play(LockTransition &transition, std::function<void()> on_finished = {});
-void transition_stop(LockTransition &transition);
-void transition_check_deadline(LockTransition &transition);
-void transition_output_removed(LockTransition &transition, wl_output *output);
+bool transition_open(Transition &transition, WaylandState &app,
+                     TransitionMode mode = TransitionMode::lock);
+void transition_release_keyboard(Transition &transition);
+void transition_rehold(Transition &transition, TransitionMode mode);
+bool transition_play(Transition &transition, std::function<void()> on_finished = {});
+void transition_stop(Transition &transition);
+void transition_check_deadline(Transition &transition);
+void transition_output_removed(Transition &transition, wl_output *output);
+
+} // namespace astralia::lock

@@ -7,7 +7,7 @@
 void check_session() {
     using namespace astralia;
     using test::check;
-    SessionEnvironment environment;
+    SessionEnv environment;
     check(detect_session(environment) == SessionKind::none, "an empty environment has no session");
     environment.display = ":0";
     check(detect_session(environment) == SessionKind::x11, "DISPLAY alone means x11");

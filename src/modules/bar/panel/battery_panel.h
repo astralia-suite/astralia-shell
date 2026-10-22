@@ -7,7 +7,7 @@
 
 #include "service/battery_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 enum class BatteryRowKind { empty_plugged_in, empty_no_battery, device, spacer };
 
@@ -33,4 +33,4 @@ class BatteryPanel final : public PanelContent {
     BatteryService &battery_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

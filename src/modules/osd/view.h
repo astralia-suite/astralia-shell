@@ -4,8 +4,8 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::osd {
 
-void paint_osd(ui::Canvas &canvas, const OsdModel &model);
+void paint(ui::Canvas &canvas, const Model &model);
 
-} // namespace astralia
+} // namespace astralia::osd

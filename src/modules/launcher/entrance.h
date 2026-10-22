@@ -4,7 +4,7 @@
 
 #include "render/geometry.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 struct EntranceBolt {
     float ax = 0.0f;
@@ -42,4 +42,4 @@ struct EntranceFrame {
 
 EntranceFrame entrance_sample(const EntranceState &state, const ui::Box &box);
 
-} // namespace astralia
+} // namespace astralia::launcher

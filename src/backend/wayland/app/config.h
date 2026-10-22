@@ -12,15 +12,15 @@
 using Config = astralia::Config;
 using MonitorOverride = astralia::MonitorOverride;
 
-using astralia::ambient_effective_enabled;
-using astralia::ambient_effective_timeout_seconds;
-using astralia::autohide_effective_enabled;
+using astralia::ambient_enabled_for;
+using astralia::ambient_timeout_for;
+using astralia::autohide_enabled_for;
 using astralia::BarStyle;
-using astralia::lock_effective_enabled;
-using astralia::notifications_effective_enabled;
-using astralia::osd_effective_enabled;
-using astralia::screensaver_effective_enabled;
-using astralia::screensaver_effective_timeout_seconds;
+using astralia::lock_enabled_for;
+using astralia::notifications_enabled_for;
+using astralia::osd_enabled_for;
+using astralia::screensaver_enabled_for;
+using astralia::screensaver_timeout_for;
 
 std::string config_path();
 

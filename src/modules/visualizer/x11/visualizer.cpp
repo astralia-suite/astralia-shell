@@ -13,7 +13,7 @@
 
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::visualizer {
 
 namespace {
 
@@ -38,7 +38,7 @@ Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false),
       keyboard_(x.conn()) {
-    window_.make_managed(kVisualizerDefaultWindow, kVisualizerDefaultWindow);
+    window_.make_managed(visualizer_config::kDefaultWindow, visualizer_config::kDefaultWindow);
     timer_ = loop.add_timer(
         [this] { return open_ ? std::chrono::milliseconds(1000 / fps()) : idle_interval; },
         [this] { step(); });
@@ -50,7 +50,8 @@ Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &
 Visualizer::~Visualizer() { capture_.stop(); }
 
 int Visualizer::fps() const {
-    return std::clamp(kVisualizerBarFps, kVisualizerFpsMin, kVisualizerFpsMax);
+    return std::clamp(visualizer_config::kBarFps, visualizer_config::kFpsMin,
+                      visualizer_config::kFpsMax);
 }
 
 void Visualizer::toggle() {
@@ -63,9 +64,11 @@ void Visualizer::toggle() {
 
 void Visualizer::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
-    int16_t x = static_cast<int16_t>(target.x + (target.width - kVisualizerDefaultWindow) / 2);
-    int16_t y = static_cast<int16_t>(target.y + (target.height - kVisualizerDefaultWindow) / 2);
-    window_.place({x, y, kVisualizerDefaultWindow, kVisualizerDefaultWindow});
+    int16_t x =
+        static_cast<int16_t>(target.x + (target.width - visualizer_config::kDefaultWindow) / 2);
+    int16_t y =
+        static_cast<int16_t>(target.y + (target.height - visualizer_config::kDefaultWindow) / 2);
+    window_.place({x, y, visualizer_config::kDefaultWindow, visualizer_config::kDefaultWindow});
     keyboard_.reload();
     stages_ = {};
     audio_size_ = 0;
@@ -97,15 +100,15 @@ void Visualizer::step() {
     std::vector<float> right;
     bool modified = false;
     capture_.take(left, right, modified);
-    if (modified && static_cast<int>(left.size()) >= kVisualizerFragmentSize &&
-        static_cast<int>(right.size()) >= kVisualizerFragmentSize) {
+    if (modified && static_cast<int>(left.size()) >= visualizer_config::kFragmentSize &&
+        static_cast<int>(right.size()) >= visualizer_config::kFragmentSize) {
         left_ = std::move(left);
         right_ = std::move(right);
-        visualizer_fft(left_.data(), kVisualizerFragmentSize, kVisualizerFftScale,
-                       kVisualizerFftCutOff);
-        visualizer_fft(right_.data(), kVisualizerFragmentSize, kVisualizerFftScale,
-                       kVisualizerFftCutOff);
-        audio_size_ = kVisualizerFragmentSize;
+        fft(left_.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
+            visualizer_config::kFftCutOff);
+        fft(right_.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
+            visualizer_config::kFftCutOff);
+        audio_size_ = visualizer_config::kFragmentSize;
     }
     if (audio_size_ > 0) {
         stages_.run(audio_size_, left_, right_, fps());
@@ -153,25 +156,26 @@ void Visualizer::paint() {
     window_.clear();
     canvas_.bind(cr);
     canvas_.rect({0.0f, 0.0f, width, height}, palette::window_backdrop);
-    int count = visualizer_bar_count(width);
-    double total = count * kVisualizerBarWidth + (count - 1) * kVisualizerBarSpacing;
+    int count = bar_count(width);
+    double total =
+        count * visualizer_config::kBarWidth + (count - 1) * visualizer_config::kBarSpacing;
     double start = (width - total) / 2.0;
-    double slot = kVisualizerBarWidth + kVisualizerBarSpacing;
-    double radius = std::min(kVisualizerBarRadius, kVisualizerBarWidth * 0.5f);
+    double slot = visualizer_config::kBarWidth + visualizer_config::kBarSpacing;
+    double radius = std::min(visualizer_config::kBarRadius, visualizer_config::kBarWidth * 0.5f);
     cairo_set_source_rgba(cr, palette::accent.r, palette::accent.g, palette::accent.b,
-                          kVisualizerBarOpacity);
+                          visualizer_config::kBarOpacity);
     for (int i = 0; i < count; ++i) {
         float magnitude = 0.0f;
         if (stages_.ready()) {
-            int texel = visualizer_bar_texel(i, count, stages_.size());
+            int texel = bar_texel(i, count, stages_.size());
             magnitude = std::max(stages_.smooth_texel(0, texel), stages_.smooth_texel(1, texel));
         }
         double bar_height = visualizer_bar_height(magnitude, height);
-        top_rounded(cr, start + i * slot, height - bar_height, kVisualizerBarWidth, bar_height,
-                    std::min(radius, bar_height));
+        top_rounded(cr, start + i * slot, height - bar_height, visualizer_config::kBarWidth,
+                    bar_height, std::min(radius, bar_height));
         cairo_fill(cr);
     }
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::visualizer

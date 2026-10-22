@@ -56,7 +56,7 @@ std::string tray_item_icon_path(const TrayItem &item) {
             return candidate;
         }
     }
-    return resolve_app_icon_path(item.icon_name);
+    return app_icon_path(item.icon_name);
 }
 
 std::string tray_strip_mnemonic(const std::string &label) {

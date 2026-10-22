@@ -7,7 +7,7 @@
 
 #include "modules/bar/panel/widgets.h"
 
-namespace astralia::panel_widgets {
+namespace astralia::bar::widgets {
 
 namespace cfg = panel_config;
 
@@ -165,20 +165,20 @@ void confirm_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view lab
     float x = box.x + cfg::padding;
     float width = box.w - 2.0f * cfg::padding;
     float y = box.y + cfg::padding + cfg::dialog_spacer;
-    panel_widgets::centered_text(canvas, prompt, text_style, {x, y, width, cfg::dialog_label},
-                                 palette::text);
+    widgets::centered_text(canvas, prompt, text_style, {x, y, width, cfg::dialog_label},
+                           palette::text);
     y += cfg::dialog_label + cfg::row_gap;
     float ok_w = canvas.measure(confirm_label, text_style).w + cfg::dialog_button_pad;
     float cancel_w = canvas.measure("Cancel", text_style).w + cfg::dialog_button_pad;
     float bx = x + (width - (ok_w + cfg::row_gap + cancel_w)) / 2.0f;
     ui::Box ok{bx, y, ok_w, cfg::dialog_button};
     selectable(canvas, ok, metrics::radius_widget, false, false, palette::critical_container);
-    panel_widgets::centered_text(canvas, confirm_label, text_style, ok, palette::text);
+    widgets::centered_text(canvas, confirm_label, text_style, ok, palette::text);
     paint.region(ok, confirm_id);
     ui::Box cancel{bx + ok_w + cfg::row_gap, y, cancel_w, cfg::dialog_button};
     selectable(canvas, cancel, metrics::radius_widget, false, false, palette::accent_container);
-    panel_widgets::centered_text(canvas, "Cancel", text_style, cancel, palette::text);
+    widgets::centered_text(canvas, "Cancel", text_style, cancel, palette::text);
     paint.region(cancel, cancel_id);
 }
 
-} // namespace astralia::panel_widgets
+} // namespace astralia::bar::widgets

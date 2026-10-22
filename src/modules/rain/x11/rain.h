@@ -13,13 +13,13 @@
 
 #include "config/rain_config.h"
 
-#include "modules/rain/matrix_rain.h"
-#include "modules/rain/stiletto_rain.h"
+#include "modules/rain/matrix.h"
+#include "modules/rain/stiletto.h"
 
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::rain {
 
 class Rain {
   public:
@@ -34,7 +34,7 @@ class Rain {
     void step();
     void handle(const xcb_generic_event_t &event);
     void paint();
-    RainFrame frame() const;
+    Frame frame() const;
 
     XConnection &x_;
     EventLoop &loop_;
@@ -49,4 +49,4 @@ class Rain {
     bool open_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::rain

@@ -7,7 +7,7 @@
 
 #include "render/geometry.h"
 
-namespace astralia {
+namespace astralia::lock {
 
 using SlashPolygon = std::vector<ui::Point>;
 
@@ -105,4 +105,4 @@ class SlashPlan {
     std::vector<float> shard_spin_;
 };
 
-} // namespace astralia
+} // namespace astralia::lock

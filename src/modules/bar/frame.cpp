@@ -2,10 +2,10 @@
 
 #include "render/sticker.h"
 
-namespace astralia {
+namespace astralia::bar {
 
-void bar_frame_base(ui::Canvas &canvas, const BarStyleSpec &style, const BarFrame &frame,
-                    float width, float height) {
+void frame_base(ui::Canvas &canvas, const StyleSpec &style, const Frame &frame, float width,
+                float height) {
     if (style.continuous) {
         sticker(canvas, {0.0f, 0.0f, width, height}, style.radius, style.bg, style.border,
                 style.border_width, style.shadow, style.shadow_color, style.shadow_dx);
@@ -27,9 +27,8 @@ void bar_frame_base(ui::Canvas &canvas, const BarStyleSpec &style, const BarFram
     canvas.set_erase(false);
 }
 
-void bar_frame_overlay(ui::Canvas &canvas, const BarStyleSpec &style, const BarFrame &frame,
-                       float width, float height, float hug_radius, bool left_flush,
-                       bool right_flush) {
+void frame_overlay(ui::Canvas &canvas, const StyleSpec &style, const Frame &frame, float width,
+                   float height, float hug_radius, bool left_flush, bool right_flush) {
     if (!style.has_rail())
         return;
     float bw = style.border_width;
@@ -63,4 +62,4 @@ void bar_frame_overlay(ui::Canvas &canvas, const BarStyleSpec &style, const BarF
     }
 }
 
-} // namespace astralia
+} // namespace astralia::bar

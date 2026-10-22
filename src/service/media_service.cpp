@@ -66,7 +66,7 @@ std::string media_format_position(int64_t position_us) {
     return result + std::to_string(seconds % 60);
 }
 
-bool media_is_local_art_url(const std::string &url) { return url.starts_with("file://"); }
+bool media_is_local_art(const std::string &url) { return url.starts_with("file://"); }
 
 int media_select_player(const std::vector<MediaPlayer> &players) {
     for (std::size_t i = 0; i < players.size(); ++i) {
@@ -77,8 +77,7 @@ int media_select_player(const std::vector<MediaPlayer> &players) {
     return players.empty() ? -1 : 0;
 }
 
-MediaService::MediaService(SystemBus &bus)
-    : bus_(bus), daemon_(bus_.proxy(daemon_service, daemon_path)) {
+MediaService::MediaService(Bus &bus) : bus_(bus), daemon_(bus_.proxy(daemon_service, daemon_path)) {
     owner_match_ =
         bus_.add_match("type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',"
                        "arg0namespace='org.mpris.MediaPlayer2'",

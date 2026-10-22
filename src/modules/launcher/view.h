@@ -8,9 +8,9 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
-struct LauncherFrame {
+struct Frame {
     ui::Box box;
     ui::Box caret;
     std::vector<std::pair<ui::Box, int>> rows;
@@ -21,11 +21,11 @@ struct LauncherFrame {
     size_t first_column = 0;
 };
 
-bool launcher_field_hit(const LauncherFrame &frame, double x, double y);
+bool field_hit(const Frame &frame, double x, double y);
 
-float launcher_field_column(const LauncherFrame &frame, double x);
+float field_column(const Frame &frame, double x);
 
-LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float width, float height,
-                             const EntranceState *entrance = nullptr);
+Frame paint(ui::Canvas &canvas, Model &model, float width, float height,
+            const EntranceState *entrance = nullptr);
 
-} // namespace astralia
+} // namespace astralia::launcher

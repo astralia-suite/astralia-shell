@@ -7,7 +7,7 @@
 #include "modules/notification/view.h"
 #include "modules/notification/x11/notification.h"
 
-namespace astralia {
+namespace astralia::notification {
 
 namespace {
 
@@ -59,7 +59,7 @@ void Notifications::sync() {
     }
     for (const Output &output : outputs) {
         bool wanted = !model_.entries().empty() &&
-                      notifications_effective_enabled(services_.settings.config(), output.name);
+                      notifications_enabled_for(services_.settings.config(), output.name);
         auto existing = views_.find(output.name);
         if (!wanted) {
             if (existing != views_.end()) {
@@ -88,7 +88,7 @@ void Notifications::sync() {
 
 void Notifications::apply_input_region(View &view) {
     std::vector<std::pair<uint32_t, ui::Box>> boxes =
-        notification_close_boxes(view.layout, view.state);
+        notification::close_boxes(view.layout, view.state);
     if (boxes == view.close_boxes) {
         return;
     }
@@ -147,9 +147,9 @@ void Notifications::handle(View &view, const xcb_generic_event_t &event) {
 void Notifications::paint(View &view) {
     view.window.clear();
     view.canvas.bind(view.window.cr());
-    paint_notifications(view.canvas, view.state, view.layout);
+    notification::paint(view.canvas, view.state, view.layout);
     apply_input_region(view);
     view.window.present();
 }
 
-} // namespace astralia
+} // namespace astralia::notification

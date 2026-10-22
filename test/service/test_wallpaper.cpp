@@ -39,7 +39,7 @@ void check_wallpaper_resolve() {
     check(wallpaper_column_count(cfg, "DP-1", false) == 2,
           "wallpaper_column_count(cfg, \"DP-1\", false) == 2");
 
-    cfg.default_wallpaper_enabled = false;
+    cfg.default_wallpaper = false;
     check(wallpaper_column_path(cfg, "HDMI-1", 0, false).empty(),
           "wallpaper_column_path(cfg, \"HDMI-1\", 0, false).empty()");
     check(wallpaper_column_path(cfg, "DP-1", 1, false).empty(),
@@ -51,7 +51,7 @@ void check_wallpaper_resolve() {
           "wallpaper_column_override(cfg, \"HDMI-1\", 0, false).empty()");
     check(wallpaper_column_override(cfg, "DP-1", 0, false) == "/dp1.png",
           "wallpaper_column_override(cfg, \"DP-1\", 0, false) == \"/dp1.png\"");
-    cfg.default_wallpaper_enabled = true;
+    cfg.default_wallpaper = true;
     check(wallpaper_column_override(cfg, "HDMI-1", 0, false).empty(),
           "wallpaper_column_override(cfg, \"HDMI-1\", 0, false).empty()");
 
@@ -75,7 +75,7 @@ void check_wallpaper_resolve() {
     check(wallpaper_column_count(cfg, "DP-1", true) == 3,
           "wallpaper_column_count(cfg, \"DP-1\", true) == 3");
 
-    cfg.default_wallpaper_enabled = false;
+    cfg.default_wallpaper = false;
     check(wallpaper_column_path(cfg, "HDMI-1", 0, true).empty(),
           "wallpaper_column_path(cfg, \"HDMI-1\", 0, true).empty()");
     check(wallpaper_column_path(cfg, "DP-1", 0, true) == "/dp1.mp4",
@@ -119,7 +119,7 @@ void check_wallpaper_lock_slot() {
               wallpaper_fill_mode(cfg, "DP-1", 1, still) == "crop",
           "the desktop slot is untouched");
 
-    cfg.default_wallpaper_enabled = false;
+    cfg.default_wallpaper = false;
     check(wallpaper_column_path(cfg, "DP-1", 0, lock).empty() &&
               wallpaper_column_path(cfg, "DP-1", 1, lock) == "/lock.png",
           "without the default wallpaper an empty lock column stays empty");

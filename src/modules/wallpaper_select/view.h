@@ -4,9 +4,8 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::wallpaper_select {
 
-void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width,
-                            float height);
+void paint(ui::Canvas &canvas, Model &model, float width, float height);
 
-} // namespace astralia
+} // namespace astralia::wallpaper_select

@@ -15,7 +15,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::wallpaper_select {
 
 class WallpaperSelect {
   public:
@@ -37,7 +37,7 @@ class WallpaperSelect {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    WallpaperSelectModel model_;
+    Model model_;
     bool open_ = false;
     bool shown_ = false;
     bool repaint_pending_ = false;
@@ -45,4 +45,4 @@ class WallpaperSelect {
     std::string bound_output_;
 };
 
-} // namespace astralia
+} // namespace astralia::wallpaper_select

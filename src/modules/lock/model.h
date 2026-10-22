@@ -10,22 +10,22 @@
 #include "render/geometry.h"
 #include "render/text_field.h"
 
-namespace astralia {
+namespace astralia::lock {
 
-enum class LockKey { none, changed, submit };
+enum class Key { none, changed, submit };
 
-struct LockHits {
+struct Hits {
     ui::Box pill_button{};
     ui::Box media_prev{};
     ui::Box media_play{};
     ui::Box media_next{};
 };
 
-class LockModel {
+class Model {
   public:
     using Clock = std::chrono::steady_clock;
 
-    LockKey key(const input::KeyEvent &event);
+    Key key(const input::KeyEvent &event);
     std::string begin_auth();
     bool finish_auth(uint64_t generation, bool success);
     bool tick(Clock::time_point now);
@@ -36,7 +36,7 @@ class LockModel {
     bool failed() const { return failed_; }
     bool authenticating() const { return authenticating_; }
     uint64_t generation() const { return generation_; }
-    LockHits &hits() { return hits_; }
+    Hits &hits() { return hits_; }
 
   private:
     void clear_password();
@@ -46,10 +46,10 @@ class LockModel {
     bool authenticating_ = false;
     uint64_t generation_ = 0;
     Clock::time_point fail_clear_at_{};
-    LockHits hits_;
+    Hits hits_;
 };
 
-struct LockMotion {
+struct Motion {
     AnimationManager animations;
     float panel_scale = 1.0f;
     float panel_rotation = 0.0f;
@@ -62,13 +62,13 @@ struct LockMotion {
     TextFieldTypeAnim dots;
     TextFieldRowSlide row;
 
-    LockMotion() = default;
-    LockMotion(const LockMotion &) = delete;
-    LockMotion &operator=(const LockMotion &) = delete;
+    Motion() = default;
+    Motion(const Motion &) = delete;
+    Motion &operator=(const Motion &) = delete;
 };
 
-void lock_motion_fit(LockMotion &motion, float card_w, float card_h);
-void lock_motion_type(LockMotion &motion, const std::string &password);
-void lock_motion_clear_dots(LockMotion &motion);
+void motion_fit(Motion &motion, float card_w, float card_h);
+void motion_type(Motion &motion, const std::string &password);
+void motion_clear_dots(Motion &motion);
 
-} // namespace astralia
+} // namespace astralia::lock

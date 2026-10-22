@@ -7,7 +7,7 @@
 
 #include "render/sticker.h"
 
-namespace astralia {
+namespace astralia::polkit {
 
 namespace {
 
@@ -31,10 +31,10 @@ void line_text(ui::Canvas &canvas, std::string_view text, const ui::TextStyle &s
     canvas.text(text, style, x, y + (line_height - size.h) / 2.0f, color);
 }
 
-void dots(ui::Canvas &canvas, const PolkitModel &model, float x0, float width, float cy) {
+void dots(ui::Canvas &canvas, const Model &model, float x0, float width, float cy) {
     constexpr float dot = cfg::dot_size;
     size_t length = utf8_length(model.password());
-    size_t visible = polkit_visible_dots(length, width);
+    size_t visible = visible_dots(length, width);
     size_t first = length - visible;
     float x = x0 + (width - static_cast<float>(visible) * dot) / 2.0f;
     const auto &chars = model.dot_anim().chars;
@@ -50,13 +50,12 @@ void dots(ui::Canvas &canvas, const PolkitModel &model, float x0, float width, f
 
 } // namespace
 
-void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width,
-                  float surface_height) {
+void paint(ui::Canvas &canvas, Model &model, float surface_width, float surface_height) {
     if (!model.open()) {
         return;
     }
-    const PolkitPrompt &prompt = model.prompt();
-    float card_h = static_cast<float>(polkit_card_height(model.show_info()));
+    const Prompt &prompt = model.prompt();
+    float card_h = static_cast<float>(card_height(model.show_info()));
     float card_w = cfg::card_width;
     ui::Box card{(surface_width - card_w) / 2.0f, (surface_height - card_h) / 2.0f, card_w, card_h};
 
@@ -115,4 +114,4 @@ void paint_polkit(ui::Canvas &canvas, PolkitModel &model, float surface_width,
     canvas.end_group();
 }
 
-} // namespace astralia
+} // namespace astralia::polkit

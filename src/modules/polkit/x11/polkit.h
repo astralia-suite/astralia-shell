@@ -15,7 +15,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::polkit {
 
 class Polkit {
   public:
@@ -32,8 +32,8 @@ class Polkit {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    PolkitModel model_;
+    Model model_;
     PolkitService &service_;
 };
 
-} // namespace astralia
+} // namespace astralia::polkit

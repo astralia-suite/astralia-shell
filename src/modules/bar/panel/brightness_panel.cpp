@@ -8,7 +8,7 @@
 #include "modules/bar/panel/brightness_panel.h"
 #include "modules/bar/panel/widgets.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -60,13 +60,13 @@ void BrightnessPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, Pane
 
     std::string label = enabled_ ? std::format("{}%", percent_) : std::string("-");
     float pct_right = row.x + row.w;
-    panel_widgets::right_text(canvas, label, text_style, pct_right, row, palette::text_dim);
+    widgets::right_text(canvas, label, text_style, pct_right, row, palette::text_dim);
 
     float slider_x = row.x + icon_size.w + cfg::brightness_icon_gap;
     float slider_right = pct_right - cfg::brightness_pct_width - cfg::brightness_slider_gap;
     ui::Box track{slider_x, row.y, std::max(0.0f, slider_right - slider_x), row.h};
-    panel_widgets::slider(canvas, track, enabled_ ? static_cast<float>(percent_) / 100.0f : 0.0f,
-                          false, enabled_ && (dragging_ || hovered_));
+    widgets::slider(canvas, track, enabled_ ? static_cast<float>(percent_) / 100.0f : 0.0f, false,
+                    enabled_ && (dragging_ || hovered_));
     if (enabled_) {
         paint.region(track, slider_id, 0, 0, true);
     }
@@ -83,12 +83,12 @@ bool BrightnessPanel::hover(int id, int) {
 
 bool BrightnessPanel::activate(const PanelRegion &region, double x, double) {
     dragging_ = true;
-    apply(static_cast<int>(std::lround(panel_widgets::slider_value(region.box, x) * 100.0f)));
+    apply(static_cast<int>(std::lround(widgets::slider_value(region.box, x) * 100.0f)));
     return true;
 }
 
 bool BrightnessPanel::drag(const PanelRegion &region, double x, double) {
-    apply(static_cast<int>(std::lround(panel_widgets::slider_value(region.box, x) * 100.0f)));
+    apply(static_cast<int>(std::lround(widgets::slider_value(region.box, x) * 100.0f)));
     return true;
 }
 
@@ -115,4 +115,4 @@ bool BrightnessPanel::wheel(double, double, double dy) {
     return true;
 }
 
-} // namespace astralia
+} // namespace astralia::bar

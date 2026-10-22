@@ -29,8 +29,8 @@ struct Services {
     Services(const Services &) = delete;
     Services &operator=(const Services &) = delete;
 
-    SystemBus system;
-    SystemBus session;
+    Bus system;
+    Bus session;
     std::unique_ptr<Compositor> compositor;
     NetworkService network;
     BluetoothService bluetooth;

@@ -14,7 +14,7 @@
 #include "modules/bar/panel/volume_panel.h"
 #include "modules/bar/x11/panel_host.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -254,4 +254,4 @@ void PanelHost::handle(const xcb_generic_event_t &event) {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -1,7 +1,7 @@
 #pragma once
 
-namespace astralia {
+namespace astralia::visualizer {
 
-void visualizer_fft(float *samples, int n_samples, float fft_scale, float fft_cutoff);
+void fft(float *samples, int n_samples, float fft_scale, float fft_cutoff);
 
-} // namespace astralia
+} // namespace astralia::visualizer

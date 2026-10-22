@@ -23,9 +23,9 @@ namespace {
 
 namespace cfg = astralia::launcher_config;
 using astralia::LauncherMode;
-using astralia::LauncherModel;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
+using astralia::launcher::Model;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
@@ -39,7 +39,7 @@ KeyEvent key(KeyKind kind, std::string text = "") {
     return event;
 }
 
-void type(LauncherModel &model, const std::string &text) {
+void type(astralia::launcher::Model &model, const std::string &text) {
     for (char c : text) {
         model.key(key(KeyKind::Text, std::string(1, c)));
     }
@@ -53,7 +53,7 @@ astralia::PollReactor make_reactor() {
 void check_modes_and_layout() {
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     int changes = 0;
     model.on_changed = [&] { ++changes; };
@@ -74,11 +74,11 @@ void check_modes_and_layout() {
     test::check(model.hovered() == -1, "a key press clears the hover");
 
     model.sync_layout();
-    test::check(model.box_height() == astralia::launcher_content_height(0),
+    test::check(model.box_height() == astralia::launcher::content_height(0),
                 "an empty list shows only the search row");
-    test::check(astralia::launcher_content_height(6) == cfg::menu_pad * 2 + cfg::search_height +
-                                                            cfg::list_gap + 6 * cfg::row_height +
-                                                            5 * cfg::row_spacing,
+    test::check(astralia::launcher::content_height(6) == cfg::menu_pad * 2 + cfg::search_height +
+                                                             cfg::list_gap + 6 * cfg::row_height +
+                                                             5 * cfg::row_spacing,
                 "full list height");
 
     model.set_preedit("ni");
@@ -113,7 +113,7 @@ void check_search_flow() {
     std::ofstream(root / "firefox_notes.txt").put('x');
 
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     model.set_search_root(root.string());
     model.set_apps({{"firefox.desktop", "Firefox", "firefox", "", false, false, false}});
@@ -137,7 +137,7 @@ void check_search_flow() {
                 "then the file");
     test::check(model.selected() == 0, "the first result is selected");
 
-    std::vector<astralia::LauncherRow> rows = model.rows();
+    std::vector<astralia::launcher::Row> rows = model.rows();
     test::check(rows.size() == 3 && rows[0].label == "Firefox" &&
                     rows[1].subtitle.find("firefoxdir") != std::string::npos,
                 "rows describe the results");
@@ -180,10 +180,10 @@ void check_search_flow() {
 void check_layout_animation() {
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.sync_layout();
     float closed = model.box_height();
-    test::check(closed == astralia::launcher_content_height(0), "starts at the search row");
+    test::check(closed == astralia::launcher::content_height(0), "starts at the search row");
     test::check(model.highlight_offset() == 0.0f && model.scroll_offset() == 0.0f,
                 "nothing selected, nothing offset");
 }
@@ -192,13 +192,13 @@ void check_view() {
     using Kind = test::Op::Kind;
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     model.set_apps({});
     type(model, "xy");
     model.sync_layout();
     test::RecordingCanvas canvas;
-    astralia::LauncherFrame frame = astralia::paint_launcher(canvas, model, 1920, 1200);
+    astralia::launcher::Frame frame = astralia::launcher::paint(canvas, model, 1920, 1200);
     test::check(frame.box.w == cfg::width && frame.box.x == (1920 - cfg::width) / 2 &&
                     frame.rows.empty(),
                 "the card is centered and has no rows");
@@ -221,9 +221,10 @@ void check_view() {
         }
         return ops;
     };
-    astralia::EntranceState finished{1.0f, 3.0f};
+    astralia::launcher::EntranceState finished{1.0f, 3.0f};
     test::RecordingCanvas animated;
-    astralia::LauncherFrame done = astralia::paint_launcher(animated, model, 1920, 1200, &finished);
+    astralia::launcher::Frame done =
+        astralia::launcher::paint(animated, model, 1920, 1200, &finished);
     std::vector<test::Op> expected = plain(canvas);
     std::vector<test::Op> actual = plain(animated);
     bool identical = expected.size() == actual.size() && done.box.y == frame.box.y;
@@ -233,9 +234,9 @@ void check_view() {
     }
     test::check(identical, "a finished entrance paints the same card as none");
 
-    astralia::EntranceState tracing{0.2f, 3.0f};
+    astralia::launcher::EntranceState tracing{0.2f, 3.0f};
     test::RecordingCanvas start;
-    astralia::LauncherFrame early = astralia::paint_launcher(start, model, 1920, 1200, &tracing);
+    astralia::launcher::Frame early = astralia::launcher::paint(start, model, 1920, 1200, &tracing);
     test::check(early.box.y == frame.box.y && early.entrance.opacity == 0.0f &&
                     !early.entrance.bolts.empty() &&
                     start.count(Kind::rect) == canvas.count(Kind::rect) + 1,
@@ -276,14 +277,14 @@ struct FakeClipboard : astralia::Clipboard {
     }
 };
 
-std::string selected(const LauncherModel &model) {
+std::string selected(const astralia::launcher::Model &model) {
     return astralia::text_cursor_selected_text(model.field().text, model.cursor());
 }
 
 void check_caret_editing() {
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     model.set_search_root("/nonexistent-root");
     model.set_apps({});
@@ -337,7 +338,7 @@ void check_caret_editing() {
     model.key(key(KeyKind::Backspace));
     test::check(model.field().text == "g", "backspace deletes the selection");
 
-    LauncherModel words(reactor);
+    astralia::launcher::Model words(reactor);
     words.open(false);
     words.set_apps({});
     type(words, "foo bar");
@@ -351,7 +352,7 @@ void check_caret_editing() {
     test::check(selected(words) == " bar" && words.cursor().pos == 7,
                 "ctrl, shift and right select by word");
 
-    LauncherModel utf(reactor);
+    astralia::launcher::Model utf(reactor);
     utf.open(false);
     utf.set_apps({});
     type(utf, "a");
@@ -373,7 +374,7 @@ void check_caret_editing() {
 void check_clipboard_keys() {
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     model.set_search_root("/nonexistent-root");
     model.set_apps({});
@@ -422,7 +423,7 @@ void check_clipboard_keys() {
     clipboard.waiting("late");
     test::check(model.field().text.empty(), "a paste that arrives after closing is dropped");
 
-    LauncherModel loose(reactor);
+    astralia::launcher::Model loose(reactor);
     loose.open(false);
     loose.set_apps({});
     type(loose, "abc");
@@ -433,10 +434,10 @@ void check_clipboard_keys() {
 }
 
 void check_pointer_editing() {
-    using Clock = LauncherModel::Clock;
+    using Clock = astralia::launcher::Model::Clock;
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     model.set_search_root("/nonexistent-root");
     model.set_apps({});
@@ -485,34 +486,34 @@ void check_field_paint() {
     using Kind = test::Op::Kind;
     Instant instant;
     astralia::PollReactor reactor = make_reactor();
-    LauncherModel model(reactor);
+    astralia::launcher::Model model(reactor);
     model.open(false);
     model.set_apps({});
     type(model, "abc");
     model.sync_layout();
 
     test::RecordingCanvas plain;
-    astralia::LauncherFrame frame = astralia::paint_launcher(plain, model, 1920, 1200);
-    test::check(frame.field.w > 0.0f &&
-                    astralia::launcher_field_hit(frame, frame.field.x + 1.0f, frame.field.y + 1.0f),
+    astralia::launcher::Frame frame = astralia::launcher::paint(plain, model, 1920, 1200);
+    test::check(frame.field.w > 0.0f && astralia::launcher::field_hit(frame, frame.field.x + 1.0f,
+                                                                      frame.field.y + 1.0f),
                 "the field is reported for pointer hits");
-    test::check(!astralia::launcher_field_hit(frame, frame.field.x - 1.0f, frame.field.y + 1.0f),
+    test::check(!astralia::launcher::field_hit(frame, frame.field.x - 1.0f, frame.field.y + 1.0f),
                 "points outside the field miss");
-    test::check(astralia::launcher_field_column(frame, frame.text_x) == 0.0f &&
-                    astralia::launcher_field_column(frame, frame.text_x - 50.0f) == 0.0f,
+    test::check(astralia::launcher::field_column(frame, frame.text_x) == 0.0f &&
+                    astralia::launcher::field_column(frame, frame.text_x - 50.0f) == 0.0f,
                 "columns start at the text origin");
     float caret_at_end = frame.caret.x;
 
     model.key(key(KeyKind::Left));
     test::RecordingCanvas moved;
-    astralia::LauncherFrame left = astralia::paint_launcher(moved, model, 1920, 1200);
+    astralia::launcher::Frame left = astralia::launcher::paint(moved, model, 1920, 1200);
     test::check(left.caret.x < caret_at_end, "the caret follows the cursor");
     test::check(moved.count(Kind::rect) == plain.count(Kind::rect),
                 "no selection draws no highlight");
 
     model.key(chord(KeyKind::Left, true));
     test::RecordingCanvas highlighted;
-    astralia::paint_launcher(highlighted, model, 1920, 1200);
+    astralia::launcher::paint(highlighted, model, 1920, 1200);
     test::check(highlighted.count(Kind::rect) == plain.count(Kind::rect) + 1,
                 "a selection draws one highlight");
     model.close();

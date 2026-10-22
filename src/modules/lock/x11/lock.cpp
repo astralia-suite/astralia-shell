@@ -13,7 +13,7 @@
 #include "config/lock_config.h"
 
 #include "modules/lock/layout.h"
-#include "modules/lock/pam_authenticator.h"
+#include "modules/lock/pam.h"
 #include "modules/lock/x11/lock.h"
 
 #include "render/draw.h"
@@ -23,7 +23,7 @@
 #define ASTRALIA_PAM_DIR ""
 #endif
 
-namespace astralia {
+namespace astralia::lock {
 
 namespace {
 
@@ -74,9 +74,9 @@ std::chrono::milliseconds Lock::next_tick() const {
     if (!locked_) {
         return std::chrono::hours(1);
     }
-    auto tick = std::chrono::milliseconds(kLockTickMs);
+    auto tick = std::chrono::milliseconds(lock_config::kTickMs);
     auto fail = std::chrono::duration_cast<std::chrono::milliseconds>(
-        model_.until_fail_clear(LockModel::Clock::now()));
+        model_.until_fail_clear(Model::Clock::now()));
     return model_.failed() ? std::min(tick, std::max(fail, std::chrono::milliseconds(1))) : tick;
 }
 
@@ -175,7 +175,8 @@ bool Lock::grab() {
     xcb_window_t window = surfaces_[grab_index_]->window.id();
     bool keyboard = false;
     bool pointer = false;
-    for (int attempt = 0; attempt < kLockGrabAttempts && !(keyboard && pointer); ++attempt) {
+    for (int attempt = 0; attempt < lock_config::kGrabAttempts && !(keyboard && pointer);
+         ++attempt) {
         if (!keyboard) {
             xcb_grab_keyboard_reply_t *reply =
                 xcb_grab_keyboard_reply(conn,
@@ -195,7 +196,7 @@ bool Lock::grab() {
             std::free(reply);
         }
         if (!(keyboard && pointer)) {
-            usleep(kLockGrabRetryMs * 1000);
+            usleep(lock_config::kGrabRetryMs * 1000);
         }
     }
     if (!pointer) {
@@ -252,13 +253,13 @@ void Lock::handle(size_t index, const xcb_generic_event_t &event) {
 
 void Lock::press(const xcb_key_press_event_t &event) {
     switch (model_.key(to_neutral(keyboard_.press(event.detail, event.state)))) {
-    case LockKey::changed:
+    case Key::changed:
         paint_all(true);
         break;
-    case LockKey::submit:
+    case Key::submit:
         submit();
         break;
-    case LockKey::none:
+    case Key::none:
         break;
     }
 }
@@ -275,7 +276,7 @@ void Lock::click(const xcb_button_press_event_t &event) {
         }
         double x = event.root_x - area.x;
         double y = event.root_y - area.y;
-        if (lock_dev_unlock_hit(x, y, area.height)) {
+        if (dev_unlock_hit(x, y, area.height)) {
             unlock();
         } else if (contains(surface->hits.pill_button, x, y)) {
             if (!model_.password().empty() && !model_.authenticating()) {
@@ -296,8 +297,8 @@ void Lock::submit() {
     std::string password = model_.begin_auth();
     uint64_t generation = model_.generation();
     std::thread([this, generation, password = std::move(password)]() mutable {
-        pam_auth::Result result = pam_auth::authenticate(user_, password, ASTRALIA_PAM_DIR);
-        pam_auth::secure_clear(password);
+        pam::Result result = pam::authenticate(user_, password, ASTRALIA_PAM_DIR);
+        pam::secure_clear(password);
         DeferredCall::call_later(
             [this, generation, success = result.success] { finished(generation, success); });
     }).detach();
@@ -320,14 +321,14 @@ void Lock::poll() {
     if (!locked_) {
         return;
     }
-    model_.tick(LockModel::Clock::now());
+    model_.tick(Model::Clock::now());
     cpu_temp_poll(services_.cpu_temp);
     gpu_temp_poll(services_.gpu_temp);
     system_stats_poll(services_.system_stats);
     paint_all(true);
 }
 
-LockInfo Lock::info() const {
+Info Lock::info() const {
     return {user_,
             services_.user.os_name(),
             services_.compositor->name(),
@@ -377,13 +378,13 @@ void Lock::paint(Surface &surface, bool with_wallpaper) {
         cairo_set_source_surface(cr, surface.wallpaper.get(), 0, 0);
         cairo_paint(cr);
         surface.hits = {};
-        if (lock_effective_enabled(config, surface.output.name)) {
+        if (lock_enabled_for(config, surface.output.name)) {
             surface.canvas.bind(cr);
-            paint_lock(surface.canvas, model_, surface.motion, info(), area.width, area.height);
+            lock::paint(surface.canvas, model_, surface.motion, info(), area.width, area.height);
             surface.hits = model_.hits();
         }
     }
     surface.window.present();
 }
 
-} // namespace astralia
+} // namespace astralia::lock

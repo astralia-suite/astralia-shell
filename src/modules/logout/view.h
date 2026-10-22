@@ -6,9 +6,9 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::logout {
 
-void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, float height,
-                  std::string_view logo_path);
+void paint(ui::Canvas &canvas, const Model &model, float width, float height,
+           std::string_view logo_path);
 
-} // namespace astralia
+} // namespace astralia::logout

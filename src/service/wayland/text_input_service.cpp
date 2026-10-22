@@ -88,7 +88,7 @@ void TextInputService::cleanup() {
     manager_ = nullptr;
     seat_ = nullptr;
     entered_surface_ = nullptr;
-    keyboard_focus_surface_ = nullptr;
+    focus_surface_ = nullptr;
     active_surface_ = nullptr;
     active_client_ = nullptr;
     pending_edit_ = {};
@@ -134,17 +134,17 @@ void TextInputService::clear_focused_client(TextInputClient *client) {
 
 void TextInputService::on_keyboard_focus_surface(wl_surface *surface, bool entered) {
     if (entered)
-        keyboard_focus_surface_ = surface;
-    else if (keyboard_focus_surface_ == surface)
-        keyboard_focus_surface_ = nullptr;
+        focus_surface_ = surface;
+    else if (focus_surface_ == surface)
+        focus_surface_ = nullptr;
 
-    if (active_client_ && entered && active_surface_accepts_text_input())
+    if (active_client_ && entered && accepts_text_input())
         enable_active();
 }
 
-bool TextInputService::active_surface_accepts_text_input() const {
+bool TextInputService::accepts_text_input() const {
     return active_surface_ != nullptr &&
-           (entered_surface_ == active_surface_ || keyboard_focus_surface_ == active_surface_);
+           (entered_surface_ == active_surface_ || focus_surface_ == active_surface_);
 }
 
 void TextInputService::handle_enter(wl_surface *surface) {
@@ -195,7 +195,7 @@ void TextInputService::handle_done(uint32_t serial) {
 void TextInputService::enable_active() {
     if (!text_input_ || !active_client_ || !active_surface_)
         return;
-    if (!active_surface_accepts_text_input())
+    if (!accepts_text_input())
         return;
 
     if (!enabled_) {
@@ -210,7 +210,7 @@ void TextInputService::disable_active() {
         enabled_ = false;
         return;
     }
-    if (active_surface_accepts_text_input()) {
+    if (accepts_text_input()) {
         zwp_text_input_v3_disable(text_input_);
         commit_protocol_state();
         wl_surface_commit(active_surface_);
@@ -221,7 +221,7 @@ void TextInputService::disable_active() {
 void TextInputService::commit_active_state(bool from_input_method) {
     if (!text_input_ || !active_client_ || !active_surface_ || !enabled_)
         return;
-    if (!active_surface_accepts_text_input())
+    if (!accepts_text_input())
         return;
 
     TextInputState state = active_client_->text_input_state();

@@ -11,7 +11,7 @@
 
 #include "service/icon_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -26,7 +26,7 @@ bool inside(const ui::Box &box, double x, double y) {
 
 } // namespace
 
-const char *bar_wifi_glyph(int strength) {
+const char *wifi_glyph(int strength) {
     if (strength > 75) {
         return icon::wifi;
     }
@@ -39,14 +39,14 @@ const char *bar_wifi_glyph(int strength) {
     return icon::wifi0;
 }
 
-const char *bar_bluetooth_glyph(const BluetoothStatus &status) {
+const char *bluetooth_glyph(const BluetoothStatus &status) {
     if (!status.powered) {
         return icon::bluetooth_off;
     }
     return status.connected ? icon::bluetooth_connected : icon::bluetooth_on;
 }
 
-std::string bar_bluetooth_label(const BluetoothStatus &status) {
+std::string bluetooth_label(const BluetoothStatus &status) {
     if (!status.present) {
         return "";
     }
@@ -61,7 +61,7 @@ std::chrono::milliseconds ms_until_next_second(std::chrono::system_clock::time_p
     return std::chrono::ceil<std::chrono::milliseconds>(next - now);
 }
 
-const char *bar_battery_glyph(const BatteryStatus &status) {
+const char *battery_glyph(const BatteryStatus &status) {
     if (status.full) {
         return icon::plugged_in;
     }
@@ -80,28 +80,28 @@ const char *bar_battery_glyph(const BatteryStatus &status) {
     return icon::battery4;
 }
 
-std::string bar_battery_label(const BatteryStatus &status) {
+std::string battery_label(const BatteryStatus &status) {
     return status.full ? "Plugged in" : std::to_string(status.percent) + "%";
 }
 
-BarModel::BarModel(BarSources sources, Clock::time_point now)
-    : sources_(std::move(sources)), style_(&bar_style_spec(BarStyle::continuous, false)),
+Model::Model(Sources sources, Clock::time_point now)
+    : sources_(std::move(sources)), style_(&style_spec(BarStyle::continuous, false)),
       started_(now) {}
 
-void BarModel::refresh(Clock::time_point now) {
-    auto set = [&](BarItem id, const char *glyph, std::string label, bool visible) {
-        BarItemView &view = mut(id);
+void Model::refresh(Clock::time_point now) {
+    auto set = [&](Item id, const char *glyph, std::string label, bool visible) {
+        ItemView &view = mut(id);
         view.glyph = visible ? glyph : nullptr;
         view.label = visible ? std::move(label) : std::string();
         view.visible = visible && glyph != nullptr;
         view.tint.reset();
         view.alert = false;
     };
-    set(BarItem::logout, icon::power, "Logout", true);
-    set(BarItem::tray, icon::tray, "Tray", true);
-    set(BarItem::resource, icon::cpu, "Resource", sources_.resource);
-    set(BarItem::media, icon::music_note, "Media", true);
-    set(BarItem::clock, icon::clock, clock_label_, true);
+    set(Item::logout, icon::power, "Logout", true);
+    set(Item::tray, icon::tray, "Tray", true);
+    set(Item::resource, icon::cpu, "Resource", sources_.resource);
+    set(Item::media, icon::music_note, "Media", true);
+    set(Item::clock, icon::clock, clock_label_, true);
 
     if (sources_.network != nullptr) {
         const NetworkService &net = *sources_.network;
@@ -115,28 +115,28 @@ void BarModel::refresh(Clock::time_point now) {
             glyph = icon::router;
             label = "Ethernet";
         } else if (net.status().kind == NetworkKind::wifi) {
-            glyph = bar_wifi_glyph(net.status().strength);
+            glyph = wifi_glyph(net.status().strength);
             label = net.status().ssid;
         } else if (net.ethernet_available() && !net.wifi_available()) {
             glyph = icon::router;
         }
-        set(BarItem::network, glyph, label.empty() ? "Wi-Fi" : label, true);
+        set(Item::network, glyph, label.empty() ? "Wi-Fi" : label, true);
     } else {
-        set(BarItem::network, nullptr, "", false);
+        set(Item::network, nullptr, "", false);
     }
 
     if (sources_.bluetooth != nullptr && sources_.bluetooth->status().present) {
         const BluetoothStatus &status = sources_.bluetooth->status();
-        const char *glyph = bar_bluetooth_glyph(status);
-        std::string label = bar_bluetooth_label(status);
-        set(BarItem::bluetooth, glyph, label, true);
+        const char *glyph = bluetooth_glyph(status);
+        std::string label = bluetooth_label(status);
+        set(Item::bluetooth, glyph, label, true);
     } else {
-        set(BarItem::bluetooth, nullptr, "", false);
+        set(Item::bluetooth, nullptr, "", false);
     }
 
     if (sources_.audio != nullptr && sources_.audio->sink().present) {
         AudioLevel level = sources_.audio->sink();
-        set(BarItem::volume, icon::volume_threshold(level.muted, level.percent),
+        set(Item::volume, icon::volume_threshold(level.muted, level.percent),
             level.muted ? "muted" : std::to_string(level.percent) + "%", true);
         if (!peek_ready_ && now - started_ >= cfg::peek_ready_delay) {
             peek_ready_ = true;
@@ -155,21 +155,21 @@ void BarModel::refresh(Clock::time_point now) {
             peek_muted_ = level.muted;
         }
     } else {
-        set(BarItem::volume, nullptr, "", false);
+        set(Item::volume, nullptr, "", false);
     }
 
     if (sources_.brightness != nullptr && sources_.brightness->available()) {
         int percent = sources_.brightness->percent();
-        set(BarItem::brightness, icon::brightness_threshold(percent), std::to_string(percent) + "%",
+        set(Item::brightness, icon::brightness_threshold(percent), std::to_string(percent) + "%",
             true);
     } else {
-        set(BarItem::brightness, nullptr, "", false);
+        set(Item::brightness, nullptr, "", false);
     }
 
     if (sources_.battery != nullptr && sources_.battery->status().present) {
         const BatteryStatus &status = sources_.battery->status();
-        set(BarItem::battery, bar_battery_glyph(status), bar_battery_label(status), true);
-        BarItemView &view = mut(BarItem::battery);
+        set(Item::battery, battery_glyph(status), battery_label(status), true);
+        ItemView &view = mut(Item::battery);
         if (status.full) {
             view.tint.reset();
         } else {
@@ -180,7 +180,7 @@ void BarModel::refresh(Clock::time_point now) {
         view.alert =
             !status.charging && !status.full && status.percent <= cfg::battery_critical_percent;
     } else {
-        set(BarItem::battery, nullptr, "", false);
+        set(Item::battery, nullptr, "", false);
     }
 
     refresh_workspaces();
@@ -188,7 +188,7 @@ void BarModel::refresh(Clock::time_point now) {
     apply_hover(now);
 }
 
-void BarModel::refresh_workspaces() {
+void Model::refresh_workspaces() {
     workspaces_.clear();
     if (!sources_.compositor) {
         return;
@@ -239,7 +239,7 @@ void BarModel::refresh_workspaces() {
     std::erase_if(was_active_, [&](const auto &kv) { return !live.contains(kv.first); });
 }
 
-void BarModel::refresh_dock() {
+void Model::refresh_dock() {
     std::vector<DockEntry> entries;
     if (sources_.compositor) {
         entries = dock_entries_for_monitor(sources_.compositor(), sources_.output);
@@ -289,8 +289,8 @@ void BarModel::refresh_dock() {
             ++it;
             continue;
         }
-        animations_.cancelForOwner(it->second.owner);
-        animations_.cancelForOwner(it->second.owner + 1);
+        animations_.cancel_owner(it->second.owner);
+        animations_.cancel_owner(it->second.owner + 1);
         it = dock_motion_.erase(it);
     }
 
@@ -299,7 +299,7 @@ void BarModel::refresh_dock() {
                              : static_cast<float>(entries.size()) * cfg::dock_icon +
                                    static_cast<float>(entries.size() - 1) * cfg::dock_spacing;
     if (entries.empty() || !dock_seen_ || dock_w_ <= 0.0f) {
-        animations_.cancelForOwner(cfg::owner_dock_width);
+        animations_.cancel_owner(cfg::owner_dock_width);
         dock_w_ = width_target;
         dock_w_target_ = width_target;
     } else if (std::fabs(dock_w_target_ - width_target) > 0.5f) {
@@ -311,8 +311,8 @@ void BarModel::refresh_dock() {
     dock_seen_ = dock_seen_ || !entries.empty();
 }
 
-bool BarModel::update_expand(BarItem id, bool target, bool instant) {
-    BarItemView &view = mut(id);
+bool Model::update_expand(Item id, bool target, bool instant) {
+    ItemView &view = mut(id);
     if (view.hovered == target) {
         return false;
     }
@@ -325,9 +325,9 @@ bool BarModel::update_expand(BarItem id, bool target, bool instant) {
     return true;
 }
 
-bool BarModel::apply_hover(Clock::time_point now) {
+bool Model::apply_hover(Clock::time_point now) {
     bool changed = false;
-    std::optional<BarItem> target;
+    std::optional<Item> target;
     if (open_) {
         target = open_;
     } else if (linger_ && now < linger_until_) {
@@ -336,18 +336,18 @@ bool BarModel::apply_hover(Clock::time_point now) {
         target = hovered_;
     }
     if (!target && peek_active_) {
-        target = BarItem::volume;
+        target = Item::volume;
     }
-    for (size_t i = 0; i < bar_item_count; ++i) {
-        BarItem id = static_cast<BarItem>(i);
-        const BarItemView &view = items_[i];
+    for (size_t i = 0; i < item_count; ++i) {
+        Item id = static_cast<Item>(i);
+        const ItemView &view = items_[i];
         bool want = view.visible && target == id && !view.label.empty();
         changed |= update_expand(id, want, want && open_ == id);
     }
     return changed;
 }
 
-void BarModel::set_open(std::optional<BarItem> item, Clock::time_point now) {
+void Model::set_open(std::optional<Item> item, Clock::time_point now) {
     if (item == open_) {
         return;
     }
@@ -359,15 +359,15 @@ void BarModel::set_open(std::optional<BarItem> item, Clock::time_point now) {
     apply_hover(now);
 }
 
-bool BarModel::hover(std::optional<double> x, std::optional<double> y, Clock::time_point now) {
+bool Model::hover(std::optional<double> x, std::optional<double> y, Clock::time_point now) {
     pointer_x_ = x;
     pointer_y_ = y;
     hovered_.reset();
     if (x && y) {
-        for (size_t i = 0; i < bar_item_count; ++i) {
-            const BarItemView &view = items_[i];
+        for (size_t i = 0; i < item_count; ++i) {
+            const ItemView &view = items_[i];
             if (view.visible && inside(view.box, *x, *y)) {
-                hovered_ = static_cast<BarItem>(i);
+                hovered_ = static_cast<Item>(i);
                 break;
             }
         }
@@ -375,7 +375,7 @@ bool BarModel::hover(std::optional<double> x, std::optional<double> y, Clock::ti
     return apply_hover(now);
 }
 
-bool BarModel::tick(Clock::time_point now) {
+bool Model::tick(Clock::time_point now) {
     if (peek_active_ && now >= peek_deadline_) {
         peek_active_ = false;
     }
@@ -383,7 +383,7 @@ bool BarModel::tick(Clock::time_point now) {
     return apply_hover(now);
 }
 
-std::chrono::milliseconds BarModel::until_idle(Clock::time_point now) const {
+std::chrono::milliseconds Model::until_idle(Clock::time_point now) const {
     std::chrono::milliseconds wait = std::chrono::hours(1);
     auto consider = [&](Clock::time_point at) {
         auto left = std::chrono::ceil<std::chrono::milliseconds>(at - now);
@@ -395,13 +395,13 @@ std::chrono::milliseconds BarModel::until_idle(Clock::time_point now) const {
     if (linger_ && now < linger_until_) {
         consider(linger_until_);
     }
-    if (animations_.hasActive()) {
+    if (animations_.has_active()) {
         consider(now + std::chrono::milliseconds(16));
     }
     return wait;
 }
 
-float BarModel::item_width(const BarItemView &view, float pad) const {
+float Model::item_width(const ItemView &view, float pad) const {
     float collapsed = view.icon_w + 2.0f * pad;
     if (view.label.empty() || view.label_w <= 0.0f) {
         return collapsed;
@@ -410,8 +410,8 @@ float BarModel::item_width(const BarItemView &view, float pad) const {
     return collapsed + (expanded - collapsed) * view.expand;
 }
 
-void BarModel::layout(ui::Canvas &canvas, float width) {
-    const BarStyleSpec &style = *style_;
+void Model::layout(ui::Canvas &canvas, float width) {
+    const StyleSpec &style = *style_;
     float height = cfg::height;
     float pad = height * style.pad_ratio;
     bool rail = style.has_rail();
@@ -421,8 +421,8 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     layout_.width = width;
     layout_.height = height;
 
-    for (size_t i = 0; i < bar_item_count; ++i) {
-        BarItemView &view = items_[i];
+    for (size_t i = 0; i < item_count; ++i) {
+        ItemView &view = items_[i];
         view.box = {};
         if (!view.visible) {
             continue;
@@ -437,14 +437,14 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         }
     }
 
-    auto place = [&](BarItem id, float x) {
-        BarItemView &view = mut(id);
+    auto place = [&](Item id, float x) {
+        ItemView &view = mut(id);
         view.box = {x, 0.0f, item_width(view, pad), height};
         return view.box.w;
     };
-    auto run = [&](std::initializer_list<BarItem> ids, float x, std::vector<float> &dividers) {
+    auto run = [&](std::initializer_list<Item> ids, float x, std::vector<float> &dividers) {
         bool first = true;
-        for (BarItem id : ids) {
+        for (Item id : ids) {
             if (!item(id).visible) {
                 continue;
             }
@@ -469,7 +469,7 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         }
         item_from = x;
     };
-    x += place(BarItem::logout, x) + cfg::capsule_gap;
+    x += place(Item::logout, x) + cfg::capsule_gap;
     track();
 
     float grow_w = 0.0f;
@@ -497,7 +497,7 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
         x += row_w + cfg::capsule_gap;
         track();
     }
-    for (BarDockSlot &slot : dock_) {
+    for (DockSlot &slot : dock_) {
         if (auto m = dock_motion_.find(slot.entry.address); m != dock_motion_.end()) {
             slot.x = m->second.x;
             slot.appear = m->second.appear;
@@ -520,7 +520,7 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
 
     float center_w = 0.0f;
     bool first = true;
-    for (BarItem id : {BarItem::media, BarItem::clock}) {
+    for (Item id : {Item::media, Item::clock}) {
         if (item(id).visible) {
             center_w += (first ? 0.0f : cfg::capsule_gap) + item_width(item(id), pad);
             first = false;
@@ -528,19 +528,18 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     }
     if (center_w > 0.0f) {
         float center_x = (width - center_w) / 2.0f;
-        run({BarItem::media, BarItem::clock}, center_x, layout_.dividers);
+        run({Item::media, Item::clock}, center_x, layout_.dividers);
         if (rail) {
             layout_.center = IslandSpan{std::round(center_x - island_pad),
                                         std::round(center_x + center_w + island_pad)};
         }
     }
 
-    constexpr BarItem right_items[] = {BarItem::tray,      BarItem::resource, BarItem::network,
-                                       BarItem::bluetooth, BarItem::volume,   BarItem::brightness,
-                                       BarItem::battery};
+    constexpr Item right_items[] = {Item::tray,   Item::resource,   Item::network, Item::bluetooth,
+                                    Item::volume, Item::brightness, Item::battery};
     float right_w = 0.0f;
     first = true;
-    for (BarItem id : right_items) {
+    for (Item id : right_items) {
         if (item(id).visible) {
             right_w += (first ? 0.0f : cfg::capsule_gap) + item_width(item(id), pad);
             first = false;
@@ -548,8 +547,8 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     }
     if (right_w > 0.0f) {
         float right_x = width - island_pad - right_w;
-        run({BarItem::tray, BarItem::resource, BarItem::network, BarItem::bluetooth,
-             BarItem::volume, BarItem::brightness, BarItem::battery},
+        run({Item::tray, Item::resource, Item::network, Item::bluetooth, Item::volume,
+             Item::brightness, Item::battery},
             right_x, layout_.dividers);
         if (rail) {
             layout_.right_start = std::round(right_x - island_pad);
@@ -557,32 +556,30 @@ void BarModel::layout(ui::Canvas &canvas, float width) {
     }
 }
 
-BarFrame BarModel::frame() const {
+Frame Model::frame() const {
     return bar_frame(*style_, layout_.left_end, layout_.center, layout_.right_start, layout_.width);
 }
 
-BarAction BarModel::press(double x, double y) const {
-    for (size_t i = 0; i < bar_item_count; ++i) {
-        const BarItemView &view = items_[i];
+Action Model::press(double x, double y) const {
+    for (size_t i = 0; i < item_count; ++i) {
+        const ItemView &view = items_[i];
         if (view.visible && inside(view.box, x, y)) {
-            return {BarActionKind::toggle, static_cast<BarItem>(i), 0};
+            return {ActionKind::toggle, static_cast<Item>(i), 0};
         }
     }
     if (inside(layout_.overview, x, y)) {
-        return {BarActionKind::overview};
+        return {ActionKind::overview};
     }
     for (const BarWorkspace &ws : workspaces_) {
         ui::Box hit{ws.box.x - cfg::workspace_pill_spacing / 2.0f, 0.0f,
                     ws.box.w + cfg::workspace_pill_spacing, layout_.height};
         if (inside(hit, x, y)) {
-            return {BarActionKind::workspace, BarItem::count, ws.id};
+            return {ActionKind::workspace, Item::count, ws.id};
         }
     }
     return {};
 }
 
-bool BarModel::clickable(double x, double y) const {
-    return press(x, y).kind != BarActionKind::none;
-}
+bool Model::clickable(double x, double y) const { return press(x, y).kind != ActionKind::none; }
 
-} // namespace astralia
+} // namespace astralia::bar

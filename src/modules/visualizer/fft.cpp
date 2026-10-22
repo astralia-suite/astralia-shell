@@ -5,7 +5,7 @@
 
 #include "modules/visualizer/fft.h"
 
-namespace astralia {
+namespace astralia::visualizer {
 
 namespace {
 
@@ -15,7 +15,7 @@ double hann(double t, double sz) { return 0.53836 - (0.46164 * std::cos(kTwoPi *
 
 } // namespace
 
-void visualizer_fft(float *samples, int n_samples, float fft_scale, float fft_cutoff) {
+void fft(float *samples, int n_samples, float fft_scale, float fft_cutoff) {
     float *data = samples;
     unsigned long nn = static_cast<unsigned long>(n_samples) / 2;
 
@@ -83,4 +83,4 @@ void visualizer_fft(float *samples, int n_samples, float fft_scale, float fft_cu
     }
 }
 
-} // namespace astralia
+} // namespace astralia::visualizer

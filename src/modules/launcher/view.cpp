@@ -8,10 +8,10 @@
 #include "render/sticker.h"
 #include "render/tokens.h"
 
-#include "modules/launcher/files_provider.h"
+#include "modules/launcher/files.h"
 #include "modules/launcher/view.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 namespace {
 
@@ -40,12 +40,12 @@ const char *mode_icon(LauncherMode mode) {
 
 } // namespace
 
-bool launcher_field_hit(const LauncherFrame &frame, double x, double y) {
+bool field_hit(const Frame &frame, double x, double y) {
     const ui::Box &f = frame.field;
     return f.w > 0.0f && x >= f.x && x < f.x + f.w && y >= f.y && y < f.y + f.h;
 }
 
-float launcher_field_column(const LauncherFrame &frame, double x) {
+float field_column(const Frame &frame, double x) {
     if (frame.cell_w <= 0.0f) {
         return 0.0f;
     }
@@ -54,9 +54,9 @@ float launcher_field_column(const LauncherFrame &frame, double x) {
     return std::max(column, 0.0f);
 }
 
-LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float width, float height,
-                             const EntranceState *entrance) {
-    LauncherFrame frame;
+Frame paint(ui::Canvas &canvas, Model &model, float width, float height,
+            const EntranceState *entrance) {
+    Frame frame;
     constexpr float inset = cfg::clip_inset;
     float box_h = model.box_height();
     float box_x = (width - cfg::width) / 2.0f;
@@ -130,7 +130,7 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
 
     float row_x = content_x - mode_x;
     float row_w = box_x + cfg::width - cfg::menu_pad - content_x;
-    std::vector<LauncherRow> rows = model.rows();
+    std::vector<Row> rows = model.rows();
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         float y = static_cast<float>(i) * cfg::row_pitch - model.scroll_offset();
         if (y + cfg::row_height > 0.0f && y < list_h) {
@@ -152,7 +152,7 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
         if (y >= 0.0f && y + cfg::row_height <= list_h) {
             frame.rows.push_back({{content_x, list_top + y, row_w, cfg::row_height}, i});
         }
-        const LauncherRow &row = rows[static_cast<size_t>(i)];
+        const Row &row = rows[static_cast<size_t>(i)];
 
         float x = row_x + cfg::pad;
         ui::ImageId image =
@@ -203,4 +203,4 @@ LauncherFrame paint_launcher(ui::Canvas &canvas, LauncherModel &model, float wid
     return frame;
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

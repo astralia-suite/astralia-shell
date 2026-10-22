@@ -10,7 +10,7 @@
 
 #include "service/icon_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -19,7 +19,7 @@ namespace cfg = bar_layout;
 constexpr ui::TextStyle icon_style{ui::FontFamily::icon, static_cast<int>(cfg::icon_px)};
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
 
-void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui::Box &box,
+void capsule_background(ui::Canvas &canvas, const StyleSpec &style, const ui::Box &box,
                         const Color &fill) {
     if (style.has_pill_bg()) {
         sticker(canvas, {box.x, box.y, box.w, box.h}, style.radius, fill, style.border,
@@ -27,28 +27,27 @@ void capsule_background(ui::Canvas &canvas, const BarStyleSpec &style, const ui:
     }
 }
 
-Color function_fill(BarItem id, const BarStyleSpec &style) {
+Color function_fill(Item id, const StyleSpec &style) {
     switch (id) {
-    case BarItem::resource:
-    case BarItem::battery:
+    case Item::resource:
+    case Item::battery:
         return palette::pop_c;
-    case BarItem::network:
-    case BarItem::media:
+    case Item::network:
+    case Item::media:
         return palette::accent_alt;
-    case BarItem::bluetooth:
+    case Item::bluetooth:
         return palette::pop_a;
-    case BarItem::volume:
-    case BarItem::clock:
+    case Item::volume:
+    case Item::clock:
         return palette::accent;
-    case BarItem::brightness:
+    case Item::brightness:
         return palette::pop_b;
     default:
         return style.bg;
     }
 }
 
-void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView &view,
-                BarItem id) {
+void paint_item(ui::Canvas &canvas, const StyleSpec &style, const ItemView &view, Item id) {
     if (!view.visible || view.box.w <= 0.0f) {
         return;
     }
@@ -69,12 +68,12 @@ void paint_item(ui::Canvas &canvas, const BarStyleSpec &style, const BarItemView
     }
 }
 
-void paint_workspaces(ui::Canvas &canvas, const BarModel &model) {
-    const BarLayout &layout = model.layout();
+void paint_workspaces(ui::Canvas &canvas, const Model &model) {
+    const Layout &layout = model.layout();
     if (layout.workspaces.w <= 0.0f) {
         return;
     }
-    const BarStyleSpec &style = model.style();
+    const StyleSpec &style = model.style();
     capsule_background(canvas, style, layout.workspaces, style.bg);
     for (const BarWorkspace &ws : model.workspaces()) {
         const Color &fill = ws.active     ? palette::accent
@@ -87,17 +86,17 @@ void paint_workspaces(ui::Canvas &canvas, const BarModel &model) {
     canvas.text(icon::overview, icon_style, x, (layout.height - glyph.h) / 2.0f, palette::text);
 }
 
-void paint_dock(ui::Canvas &canvas, const BarModel &model) {
-    const BarLayout &layout = model.layout();
+void paint_dock(ui::Canvas &canvas, const Model &model) {
+    const Layout &layout = model.layout();
     if (layout.dock.w <= 0.0f) {
         return;
     }
-    const BarStyleSpec &style = model.style();
+    const StyleSpec &style = model.style();
     capsule_background(canvas, style, layout.dock, style.bg);
     float pad = layout.height * style.pad_ratio;
     float y = std::round((layout.height - cfg::dock_icon) / 2.0f);
-    for (const BarDockSlot &slot : model.dock()) {
-        std::string path = resolve_window_icon_path(slot.entry.window_class);
+    for (const DockSlot &slot : model.dock()) {
+        std::string path = window_icon_path(slot.entry.window_class);
         if (path.empty()) {
             continue;
         }
@@ -123,15 +122,15 @@ void paint_dock(ui::Canvas &canvas, const BarModel &model) {
 
 } // namespace
 
-void paint_bar(ui::Canvas &canvas, const BarModel &model, const ui::Box *dirty) {
-    const BarLayout &layout = model.layout();
-    const BarStyleSpec &style = model.style();
+void paint(ui::Canvas &canvas, const Model &model, const ui::Box *dirty) {
+    const Layout &layout = model.layout();
+    const StyleSpec &style = model.style();
     auto touches = [&](const ui::Box &box) {
         return dirty == nullptr || (box.x < dirty->x + dirty->w && box.x + box.w > dirty->x);
     };
-    for (size_t i = 0; i < bar_item_count; ++i) {
-        BarItem id = static_cast<BarItem>(i);
-        const BarItemView &view = model.item(id);
+    for (size_t i = 0; i < item_count; ++i) {
+        Item id = static_cast<Item>(i);
+        const ItemView &view = model.item(id);
         if (touches(view.box)) {
             paint_item(canvas, style, view, id);
         }
@@ -152,4 +151,4 @@ void paint_bar(ui::Canvas &canvas, const BarModel &model, const ui::Box *dirty) 
     }
 }
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -10,7 +10,7 @@
 
 #include "service/wallpaper_service.h"
 
-namespace astralia {
+namespace astralia::wallpaper_select {
 
 namespace {
 
@@ -33,14 +33,14 @@ bool same_file(const std::string &a, const std::string &b) {
 
 } // namespace
 
-WallpaperSelectModel::WallpaperSelectModel(WallpaperSelectHooks hooks, bool animated_wallpaper)
+Model::Model(Hooks hooks, bool animated_wallpaper)
     : hooks_(std::move(hooks)), animated_wallpaper_(animated_wallpaper) {}
 
-WallpaperSelectModel::~WallpaperSelectModel() { *alive_ = false; }
+Model::~Model() { *alive_ = false; }
 
-bool WallpaperSelectModel::available() const { return true; }
+bool Model::available() const { return true; }
 
-void WallpaperSelectModel::open(const std::string &monitor, int column) {
+void Model::open(const std::string &monitor, int column) {
     if (open_) {
         return;
     }
@@ -74,13 +74,13 @@ void WallpaperSelectModel::open(const std::string &monitor, int column) {
     changed();
 }
 
-void WallpaperSelectModel::start_zoom() {
+void Model::start_zoom() {
     animations_.animate(
         0.0f, 1.0f, cfg::zoom_ms, Easing::EaseOutCubic, [this](float v) { zoom_ = v; }, {},
         owner_zoom);
 }
 
-void WallpaperSelectModel::reveal() {
+void Model::reveal() {
     if (!waiting_ || !open_ || closing_) {
         return;
     }
@@ -93,13 +93,13 @@ void WallpaperSelectModel::reveal() {
     changed();
 }
 
-void WallpaperSelectModel::reveal_if_overdue(Clock::time_point now) {
+void Model::reveal_if_overdue(Clock::time_point now) {
     if (waiting_ && now - opened_at_ >= millis(cfg::reveal_timeout_ms)) {
         reveal();
     }
 }
 
-void WallpaperSelectModel::tick(Clock::time_point now) {
+void Model::tick(Clock::time_point now) {
     animations_.tick(now);
     if (holding_ && (now >= hold_deadline_ ||
                      (settled_ && now >= settled_at_ + millis(cfg::handoff_settle_ms)))) {
@@ -107,7 +107,7 @@ void WallpaperSelectModel::tick(Clock::time_point now) {
     }
 }
 
-void WallpaperSelectModel::wallpaper_settled(const std::string &monitor, int column) {
+void Model::wallpaper_settled(const std::string &monitor, int column) {
     if (!applying_ || settled_ || monitor != monitor_ || column != column_) {
         return;
     }
@@ -116,7 +116,7 @@ void WallpaperSelectModel::wallpaper_settled(const std::string &monitor, int col
     changed();
 }
 
-float WallpaperSelectModel::fade(const std::string &path, bool ready) {
+float Model::fade(const std::string &path, bool ready) {
     if (animation_instant()) {
         return 1.0f;
     }
@@ -133,14 +133,14 @@ float WallpaperSelectModel::fade(const std::string &path, bool ready) {
     return t;
 }
 
-void WallpaperSelectModel::close() {
+void Model::close() {
     if (!open_ || closing_) {
         return;
     }
     closing_ = true;
     waiting_ = false;
     ++generation_;
-    animations_.cancelForOwner(owner_step);
+    animations_.cancel_owner(owner_step);
     animations_.animate(
         zoom_, 0.0f, cfg::zoom_ms, Easing::EaseInCubic, [this](float v) { zoom_ = v; },
         [this] {
@@ -156,7 +156,7 @@ void WallpaperSelectModel::close() {
     changed();
 }
 
-void WallpaperSelectModel::finish_close() {
+void Model::finish_close() {
     open_ = false;
     closing_ = false;
     scanning_ = false;
@@ -171,7 +171,7 @@ void WallpaperSelectModel::finish_close() {
     }
 }
 
-void WallpaperSelectModel::scan() {
+void Model::scan() {
     scanning_ = true;
     uint64_t generation = ++generation_;
     std::weak_ptr<bool> alive = alive_;
@@ -192,14 +192,14 @@ void WallpaperSelectModel::scan() {
             files_ = std::move(found);
             selected_ = at == files_.end() ? 0 : static_cast<int>(at - files_.begin());
             position_ = static_cast<float>(selected_);
-            animations_.cancelForOwner(owner_step);
+            animations_.cancel_owner(owner_step);
             scanning_ = false;
             changed();
         });
     }).detach();
 }
 
-void WallpaperSelectModel::select(int index) {
+void Model::select(int index) {
     if (!open_ || closing_ || files_.empty()) {
         return;
     }
@@ -218,9 +218,9 @@ void WallpaperSelectModel::select(int index) {
     changed();
 }
 
-void WallpaperSelectModel::step(int delta) { select(selected_ + delta); }
+void Model::step(int delta) { select(selected_ + delta); }
 
-void WallpaperSelectModel::scroll(float notches) {
+void Model::scroll(float notches) {
     if (!open_ || closing_) {
         return;
     }
@@ -235,7 +235,7 @@ void WallpaperSelectModel::scroll(float notches) {
     }
 }
 
-void WallpaperSelectModel::apply() {
+void Model::apply() {
     if (!open_ || closing_ || files_.empty()) {
         return;
     }
@@ -252,7 +252,7 @@ void WallpaperSelectModel::apply() {
     request_close();
 }
 
-void WallpaperSelectModel::request_close() {
+void Model::request_close() {
     if (on_close_requested) {
         on_close_requested();
     } else {
@@ -260,7 +260,7 @@ void WallpaperSelectModel::request_close() {
     }
 }
 
-const WallpaperCard *WallpaperSelectModel::card_at(double x, double y) const {
+const WallpaperCard *Model::card_at(double x, double y) const {
     for (auto it = cards_.rbegin(); it != cards_.rend(); ++it) {
         const ui::Box &box = it->box;
         if (x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h) {
@@ -270,11 +270,11 @@ const WallpaperCard *WallpaperSelectModel::card_at(double x, double y) const {
     return nullptr;
 }
 
-bool WallpaperSelectModel::clickable(double x, double y) const {
+bool Model::clickable(double x, double y) const {
     return open_ && !closing_ && card_at(x, y) != nullptr;
 }
 
-void WallpaperSelectModel::click(double x, double y) {
+void Model::click(double x, double y) {
     if (!open_ || closing_) {
         return;
     }
@@ -288,7 +288,7 @@ void WallpaperSelectModel::click(double x, double y) {
     }
 }
 
-bool WallpaperSelectModel::key(const input::KeyEvent &event) {
+bool Model::key(const input::KeyEvent &event) {
     if (!open_ || closing_) {
         return false;
     }
@@ -316,10 +316,10 @@ bool WallpaperSelectModel::key(const input::KeyEvent &event) {
     }
 }
 
-void WallpaperSelectModel::changed() {
+void Model::changed() {
     if (on_changed) {
         on_changed();
     }
 }
 
-} // namespace astralia
+} // namespace astralia::wallpaper_select

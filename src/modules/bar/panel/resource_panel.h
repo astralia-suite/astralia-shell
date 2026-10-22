@@ -6,7 +6,7 @@
 
 #include "service/telemetry_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 std::string resource_format_ghz(float ghz);
 std::string resource_format_percent(float value01);
@@ -34,4 +34,4 @@ class ResourcePanel final : public PanelContent {
     SystemStatsState &stats_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

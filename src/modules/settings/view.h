@@ -6,20 +6,19 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::settings {
 
-struct SettingsArt {
+struct Art {
     std::string user_name;
     std::string uptime;
     std::string face;
 };
 
-struct SettingsFrame {
+struct Frame {
     ui::Box caret;
     ui::Box panel;
 };
 
-SettingsFrame paint_settings(ui::Canvas &canvas, SettingsModel &model, const SettingsArt &art,
-                             float width, float height);
+Frame paint(ui::Canvas &canvas, Model &model, const Art &art, float width, float height);
 
-} // namespace astralia
+} // namespace astralia::settings

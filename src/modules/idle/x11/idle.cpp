@@ -11,7 +11,7 @@
 
 #include "modules/idle/x11/idle.h"
 
-namespace astralia {
+namespace astralia::idle {
 
 namespace {
 
@@ -38,7 +38,7 @@ Idle::Idle(XConnection &x, EventLoop &loop, Services &services)
     timer_ = loop_.add_timer([this] { return until_step(); }, [this] { step(); });
     services_.settings.changed.connect([this] {
         const Config &config = services_.settings.config();
-        if (idle_policy_changed(applied_, config)) {
+        if (policy_changed(applied_, config)) {
             std::vector<std::string> outputs;
             for (const Output &output : services_.outputs.outputs()) {
                 outputs.push_back(output.name);
@@ -48,7 +48,7 @@ Idle::Idle(XConnection &x, EventLoop &loop, Services &services)
         applied_ = config;
         for (const Output &output : services_.outputs.outputs()) {
             if (auto it = overlays_.find(output.name);
-                it != overlays_.end() && it->second->shown != IdleVerdict{}) {
+                it != overlays_.end() && it->second->shown != Verdict{}) {
                 paint(output, *it->second);
             }
         }
@@ -97,7 +97,7 @@ void Idle::poll() {
     }
     uint32_t idle_ms = reply->ms_since_user_input;
     std::free(reply);
-    if (idle_ms >= kIdleRecentActivityPulseSeconds * 1000u) {
+    if (idle_ms >= idle_config::kRecentActivityPulseSeconds * 1000u) {
         return;
     }
     const std::string &focused = services_.compositor->state().focused_monitor;
@@ -122,7 +122,7 @@ void Idle::step() {
         if (!clock_.known(output.name)) {
             clock_.activity(output.name, now);
         }
-        IdleVerdict verdict = idle_verdict(clock_, config, output.name, now);
+        Verdict verdict = idle_verdict(clock_, config, output.name, now);
         auto it = overlays_.find(output.name);
         if (it == overlays_.end() && !verdict.ambient && !verdict.screensaver) {
             continue;
@@ -131,14 +131,14 @@ void Idle::step() {
         apply(output, overlay, verdict);
         if (overlay.shown.screensaver && seconds > 0.0f && seconds <= max_frame_seconds) {
             bounce_step(overlay.bounce, seconds, output.geometry.width, output.geometry.height,
-                        kIdleLogoSize);
+                        idle_config::kLogoSize);
             paint(output, overlay);
         }
     }
 }
 
-void Idle::apply(const Output &output, Overlay &overlay, IdleVerdict verdict) {
-    IdleVerdict next{verdict.ambient && !verdict.screensaver, verdict.screensaver};
+void Idle::apply(const Output &output, Overlay &overlay, Verdict verdict) {
+    Verdict next{verdict.ambient && !verdict.screensaver, verdict.screensaver};
     if (next == overlay.shown) {
         return;
     }
@@ -152,7 +152,7 @@ void Idle::apply(const Output &output, Overlay &overlay, IdleVerdict verdict) {
     }
     overlay.window.place(output.geometry);
     if (next.screensaver) {
-        overlay.bounce = {40.0f, 40.0f, kIdleLogoSpeed, kIdleLogoSpeed * 0.75f};
+        overlay.bounce = {40.0f, 40.0f, idle_config::kLogoSpeed, idle_config::kLogoSpeed * 0.75f};
     }
     paint(output, overlay);
     overlay.window.show(false);
@@ -185,9 +185,10 @@ void Idle::paint(const Output &output, Overlay &overlay) {
         cairo_paint(cr);
         overlay.canvas.bind(cr);
         const std::string &logo_path = services_.settings.config().idle_logo_path;
-        ui::ImageId logo = logo_path.empty()
-                               ? ui::no_image
-                               : overlay.canvas.image(logo_path, static_cast<int>(kIdleLogoSize));
+        ui::ImageId logo =
+            logo_path.empty()
+                ? ui::no_image
+                : overlay.canvas.image(logo_path, static_cast<int>(idle_config::kLogoSize));
         if (logo != ui::no_image) {
             ui::TextSize size = overlay.canvas.image_size(logo);
             overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h},
@@ -199,4 +200,4 @@ void Idle::paint(const Output &output, Overlay &overlay) {
     overlay.window.present();
 }
 
-} // namespace astralia
+} // namespace astralia::idle

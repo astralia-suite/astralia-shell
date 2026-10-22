@@ -6,7 +6,7 @@
 #include "modules/osd/view.h"
 #include "modules/osd/x11/osd.h"
 
-namespace astralia {
+namespace astralia::osd {
 
 namespace {
 
@@ -46,12 +46,12 @@ Osd::Surface &Osd::surface_for(const std::string &output) {
 }
 
 void Osd::show(OsdKind kind, int percent, bool muted) {
-    if (!model_.show(kind, percent, muted, OsdModel::Clock::now())) {
+    if (!model_.show(kind, percent, muted, Model::Clock::now())) {
         return;
     }
     bool shown = false;
     for (const Output &output : services_.outputs.outputs()) {
-        if (!osd_effective_enabled(services_.settings.config(), output.name)) {
+        if (!osd_enabled_for(services_.settings.config(), output.name)) {
             continue;
         }
         Surface &surface = surface_for(output.name);
@@ -70,7 +70,7 @@ void Osd::show(OsdKind kind, int percent, bool muted) {
 }
 
 void Osd::hide() {
-    if (OsdModel::Clock::now() < model_.hide_at()) {
+    if (Model::Clock::now() < model_.hide_at()) {
         return;
     }
     model_.hide();
@@ -85,14 +85,14 @@ std::chrono::milliseconds Osd::until_hide() const {
     if (!visible) {
         return std::chrono::hours(1);
     }
-    return model_.until_hide(OsdModel::Clock::now());
+    return model_.until_hide(Model::Clock::now());
 }
 
 void Osd::paint(Surface &surface) {
     surface.window.clear();
     surface.canvas.bind(surface.window.cr());
-    paint_osd(surface.canvas, model_);
+    osd::paint(surface.canvas, model_);
     surface.window.present();
 }
 
-} // namespace astralia
+} // namespace astralia::osd

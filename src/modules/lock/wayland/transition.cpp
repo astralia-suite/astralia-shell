@@ -16,14 +16,23 @@
 
 #include "render/tokens.h"
 
+namespace astralia::lock {
+
 namespace {
 
 constexpr int kTransitionDeadlineMarginMs = 1500;
 constexpr int kTransitionReadyMs = 400;
 
-void transition_paint(LockTransition &transition, TransitionSurface &surface);
+void transition_paint(Transition &transition, TransitionSurface &surface);
 
-void finish(LockTransition &transition) {
+bool wallpaper_pending(const Transition &transition, const TransitionSurface &surface,
+                       float progress) {
+    return transition.mode == TransitionMode::lock && transition.wallpaper_ready &&
+           progress < lock_config::kSlashFinalStart &&
+           !transition.wallpaper_ready(surface.output_name);
+}
+
+void finish(Transition &transition) {
     if (!transition.playing)
         return;
     transition.playing = false;
@@ -34,7 +43,7 @@ void finish(LockTransition &transition) {
         done();
 }
 
-void check_ready(LockTransition &transition) {
+void check_ready(Transition &transition) {
     if (!transition.on_ready)
         return;
     for (auto &surface : transition.surfaces)
@@ -45,7 +54,7 @@ void check_ready(LockTransition &transition) {
     astralia::DeferredCall::call_later([ready = std::move(ready)] { ready(true); });
 }
 
-void hold(LockTransition &transition, TransitionSurface &surface) {
+void hold(Transition &transition, TransitionSurface &surface) {
     WaylandState &app = *transition.app;
     if (!gl_make_current(app.egl_display, surface.egl_surface, app.egl_context))
         return;
@@ -74,7 +83,7 @@ void surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_
     auto *surface = static_cast<TransitionSurface *>(data);
     zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
 
-    LockTransition *transition = surface->owner;
+    Transition *transition = surface->owner;
     int32_t scale = surface->output_scale.scale;
     surface->width = static_cast<int32_t>(width);
     surface->height = static_cast<int32_t>(height);
@@ -100,12 +109,12 @@ void surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_
         wl_egl_window_resize(surface->egl_window, surface->width * scale, surface->height * scale,
                              0, 0);
     }
-    surface->plan = std::make_unique<astralia::SlashPlan>(
+    surface->plan = std::make_unique<SlashPlan>(
         transition->seed, static_cast<float>(surface->width), static_cast<float>(surface->height));
     surface->snapshotted = false;
     surface->held = false;
     surface->configured = true;
-    if (transition->mode == astralia::LockTransitionMode::unlock && !transition->playing)
+    if (transition->mode == TransitionMode::unlock && !transition->playing)
         hold(*transition, *surface);
     else
         request_frame(surface->frame_clock);
@@ -119,7 +128,7 @@ constexpr zwlr_layer_surface_v1_listener kSurfaceListener = {
     .closed = surface_closed,
 };
 
-void transition_paint(LockTransition &transition, TransitionSurface &surface) {
+void transition_paint(Transition &transition, TransitionSurface &surface) {
     if (!transition.playing || !surface.configured || surface.egl_surface == EGL_NO_SURFACE ||
         !surface.plan)
         return;
@@ -130,11 +139,11 @@ void transition_paint(LockTransition &transition, TransitionSurface &surface) {
         transition.running = true;
         transition.started = clock::now();
         klog("lock: transition first frame (%s)",
-             transition.mode == astralia::LockTransitionMode::unlock ? "unlock" : "lock");
+             transition.mode == TransitionMode::unlock ? "unlock" : "lock");
     }
     float elapsed =
         std::chrono::duration<float, std::milli>(clock::now() - transition.started).count();
-    float progress = astralia::slash_run_progress(elapsed);
+    float progress = slash_run_progress(elapsed);
 
     if (!gl_make_current(app.egl_display, surface.egl_surface, app.egl_context))
         return;
@@ -145,8 +154,8 @@ void transition_paint(LockTransition &transition, TransitionSurface &surface) {
 
     astralia::Color core = astralia::with_alpha(astralia::palette::white, 1.0f);
     astralia::Color glow = astralia::with_alpha(astralia::palette::electro, 1.0f);
-    astralia::LockThunder thunder;
-    thunder.strike = [&](const astralia::SlashStrike &strike) {
+    Thunder thunder;
+    thunder.strike = [&](const SlashStrike &strike) {
         ThunderParams params;
         params.ax = strike.a.x;
         params.ay = strike.a.y;
@@ -162,7 +171,7 @@ void transition_paint(LockTransition &transition, TransitionSurface &surface) {
         params.glow = astralia::rgba(glow);
         thunder_burst_draw(transition.thunder, app.renderer, params);
     };
-    thunder.shock = [&](const astralia::SlashShock &shock) {
+    thunder.shock = [&](const SlashShock &shock) {
         ThunderShockParams params;
         params.cx = shock.center.x;
         params.cy = shock.center.y;
@@ -177,7 +186,7 @@ void transition_paint(LockTransition &transition, TransitionSurface &surface) {
 
     surface.canvas.begin(scale);
     if (!surface.snapshotted) {
-        if (transition.mode == astralia::LockTransitionMode::unlock) {
+        if (transition.mode == TransitionMode::unlock) {
             if (transition.draw_lock)
                 transition.draw_lock(surface.output_name, surface.canvas, surface.width,
                                      surface.height, surface.motion);
@@ -187,10 +196,10 @@ void transition_paint(LockTransition &transition, TransitionSurface &surface) {
         surface.canvas.flush();
         surface.canvas.snapshot();
         glClear(GL_COLOR_BUFFER_BIT);
-        surface.snapshotted = true;
+        surface.snapshotted = !wallpaper_pending(transition, surface, progress);
         surface.canvas.begin(scale);
     }
-    astralia::paint_lock_transition(
+    paint_transition(
         surface.canvas, *surface.plan, progress,
         [&transition, &surface] {
             if (transition.draw_lock)
@@ -206,7 +215,7 @@ void transition_paint(LockTransition &transition, TransitionSurface &surface) {
     if (!eglSwapBuffers(app.egl_display, surface.egl_surface))
         klog("lock: transition eglSwapBuffers failed on '%s'", surface.output_name.c_str());
 
-    if (elapsed < kLockSlashMs) {
+    if (elapsed < lock_config::kSlashMs) {
         request_frame(surface.frame_clock);
     } else if (!transition.finishing && &surface == transition.surfaces.front().get()) {
         transition.finishing = true;
@@ -227,8 +236,7 @@ void destroy_surface(WaylandState &app, TransitionSurface &surface) {
 
 } // namespace
 
-bool transition_open(LockTransition &transition, WaylandState &app,
-                     astralia::LockTransitionMode mode) {
+bool transition_open(Transition &transition, WaylandState &app, TransitionMode mode) {
     if (transition.active || !app.layer_shell)
         return false;
     transition.app = &app;
@@ -282,7 +290,7 @@ bool transition_open(LockTransition &transition, WaylandState &app,
     return true;
 }
 
-void transition_release_keyboard(LockTransition &transition) {
+void transition_release_keyboard(Transition &transition) {
     if (!transition.active || !transition.app)
         return;
     for (auto &surface : transition.surfaces) {
@@ -295,7 +303,7 @@ void transition_release_keyboard(LockTransition &transition) {
     wl_display_flush(transition.app->display);
 }
 
-void transition_rehold(LockTransition &transition, astralia::LockTransitionMode mode) {
+void transition_rehold(Transition &transition, TransitionMode mode) {
     transition.mode = mode;
     transition.ready_deadline =
         std::chrono::steady_clock::now() + std::chrono::milliseconds(kTransitionReadyMs);
@@ -310,7 +318,7 @@ void transition_rehold(LockTransition &transition, astralia::LockTransitionMode 
     app_detail::rest_egl_current(*transition.app);
 }
 
-bool transition_play(LockTransition &transition, std::function<void()> on_finished) {
+bool transition_play(Transition &transition, std::function<void()> on_finished) {
     if (!transition.active || transition.playing || !transition.app)
         return false;
     using clock = std::chrono::steady_clock;
@@ -319,18 +327,19 @@ bool transition_play(LockTransition &transition, std::function<void()> on_finish
     transition.running = false;
     transition.finishing = false;
     transition.playing = true;
-    transition.deadline = clock::now() + std::chrono::milliseconds(static_cast<int>(kLockSlashMs)) +
+    transition.deadline = clock::now() +
+                          std::chrono::milliseconds(static_cast<int>(lock_config::kSlashMs)) +
                           std::chrono::milliseconds(kTransitionDeadlineMarginMs);
 
     for (auto &surface : transition.surfaces) {
         zwlr_layer_surface_v1_set_keyboard_interactivity(
             surface->layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE);
-        if (transition.mode == astralia::LockTransitionMode::lock)
+        if (transition.mode == TransitionMode::lock)
             surface->snapshotted = false;
         if (surface->configured) {
-            surface->plan = std::make_unique<astralia::SlashPlan>(
-                transition.seed, static_cast<float>(surface->width),
-                static_cast<float>(surface->height));
+            surface->plan =
+                std::make_unique<SlashPlan>(transition.seed, static_cast<float>(surface->width),
+                                            static_cast<float>(surface->height));
             frame_clock_drop_callback(surface->frame_clock);
             request_frame(surface->frame_clock);
         } else {
@@ -342,7 +351,7 @@ bool transition_play(LockTransition &transition, std::function<void()> on_finish
     return true;
 }
 
-void transition_check_deadline(LockTransition &transition) {
+void transition_check_deadline(Transition &transition) {
     if (transition.on_ready && std::chrono::steady_clock::now() > transition.ready_deadline) {
         klog("lock: transition overlays not ready, giving up");
         std::function<void(bool)> ready = std::move(transition.on_ready);
@@ -356,7 +365,7 @@ void transition_check_deadline(LockTransition &transition) {
     }
 }
 
-void transition_stop(LockTransition &transition) {
+void transition_stop(Transition &transition) {
     if (transition.app) {
         for (auto &surface : transition.surfaces)
             destroy_surface(*transition.app, *surface);
@@ -371,7 +380,7 @@ void transition_stop(LockTransition &transition) {
     transition.on_ready = nullptr;
 }
 
-void transition_output_removed(LockTransition &transition, wl_output *output) {
+void transition_output_removed(Transition &transition, wl_output *output) {
     if (!transition.active || !transition.app)
         return;
     auto it = std::find_if(
@@ -394,3 +403,5 @@ void transition_output_removed(LockTransition &transition, wl_output *output) {
     if (transition.playing && (transition.surfaces.empty() || was_front))
         astralia::DeferredCall::call_later([&transition] { finish(transition); });
 }
+
+} // namespace astralia::lock

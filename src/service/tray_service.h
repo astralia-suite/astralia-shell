@@ -71,7 +71,7 @@ class TrayService {
     void remove_owner(const std::string &name);
     sdbus::IProxy *menu_proxy(const std::string &key);
 
-    SystemBus bus_;
+    Bus bus_;
     std::unique_ptr<sdbus::IObject> object_;
     std::unique_ptr<sdbus::IProxy> daemon_;
     std::vector<TrayItem> items_;

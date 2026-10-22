@@ -87,22 +87,22 @@ void test_config_watch() {
 void test_monitor_overrides() {
     Config cfg;
 
-    assert(osd_effective_enabled(cfg, "DP-1") == cfg.default_osd_enabled);
-    assert(notifications_effective_enabled(cfg, "DP-1") == cfg.default_notifications_enabled);
-    assert(autohide_effective_enabled(cfg, "DP-1") == cfg.autohide);
+    assert(osd_enabled_for(cfg, "DP-1") == cfg.default_osd);
+    assert(notifications_enabled_for(cfg, "DP-1") == cfg.default_notifications);
+    assert(autohide_enabled_for(cfg, "DP-1") == cfg.autohide);
 
     cfg.monitor_overrides["DP-1"] =
         MonitorOverride{.enabled = false, .osd = false, .notifications = false, .autohide = true};
-    assert(osd_effective_enabled(cfg, "DP-1") == cfg.default_osd_enabled);
+    assert(osd_enabled_for(cfg, "DP-1") == cfg.default_osd);
 
     cfg.monitor_overrides["DP-1"].enabled = true;
-    assert(osd_effective_enabled(cfg, "DP-1") == false);
-    assert(notifications_effective_enabled(cfg, "DP-1") == false);
-    assert(autohide_effective_enabled(cfg, "DP-1") == true);
+    assert(osd_enabled_for(cfg, "DP-1") == false);
+    assert(notifications_enabled_for(cfg, "DP-1") == false);
+    assert(autohide_enabled_for(cfg, "DP-1") == true);
 
-    assert(osd_effective_enabled(cfg, "HDMI-1") == cfg.default_osd_enabled);
+    assert(osd_enabled_for(cfg, "HDMI-1") == cfg.default_osd);
 
-    assert(lock_effective_enabled(cfg, "HDMI-1") == cfg.default_lock_panel_enabled);
+    assert(lock_enabled_for(cfg, "HDMI-1") == cfg.default_lock);
     cfg.monitor_overrides["DP-1"].lock = false;
-    assert(lock_effective_enabled(cfg, "DP-1") == false);
+    assert(lock_enabled_for(cfg, "DP-1") == false);
 }

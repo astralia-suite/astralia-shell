@@ -4,7 +4,7 @@
 #include "modules/bar/panel/battery_panel.h"
 #include "modules/bar/panel/widgets.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -91,7 +91,7 @@ void BatteryPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
         }
         if (row.kind == BatteryRowKind::empty_plugged_in ||
             row.kind == BatteryRowKind::empty_no_battery) {
-            panel_widgets::centered_text(
+            widgets::centered_text(
                 canvas,
                 row.kind == BatteryRowKind::empty_plugged_in ? "Plugged in" : "No Battery Detected",
                 text_style, box, palette::text_dim);
@@ -118,21 +118,21 @@ void BatteryPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
             battery_time_text(charging ? device.time_to_full_s : device.time_to_empty_s);
         ui::Box text_row{box.x, box.y, box.w, cfg::battery_text_row};
         ui::TextSize name_size = canvas.measure(name, text_style);
-        panel_widgets::text_in_row(canvas, name, text_style, box.x, text_row, palette::text);
+        widgets::text_in_row(canvas, name, text_style, box.x, text_row, palette::text);
         std::string status = std::string(state) + (time.empty() ? "" : " \xE2\x80\x94 " + time);
-        panel_widgets::text_in_row(canvas, status, text_style, box.x + name_size.w + cfg::tight_gap,
-                                   text_row, charging ? palette::accent : palette::text_dim);
+        widgets::text_in_row(canvas, status, text_style, box.x + name_size.w + cfg::tight_gap,
+                             text_row, charging ? palette::accent : palette::text_dim);
 
         std::string percent = std::to_string(device.percent) + "%";
         ui::TextSize pct_size = canvas.measure(percent, text_style);
         float bar_y = box.y + cfg::battery_text_row + cfg::battery_bar_top_gap;
         float bar_w = box.w - pct_size.w - cfg::content_gap;
-        panel_widgets::flat_bar(canvas, {box.x, bar_y, bar_w, cfg::battery_bar_height},
-                                static_cast<float>(std::min(device.percent, 100)) / 100.0f,
-                                cfg::battery_bar_height, palette::text_alpha08, bar_color);
+        widgets::flat_bar(canvas, {box.x, bar_y, bar_w, cfg::battery_bar_height},
+                          static_cast<float>(std::min(device.percent, 100)) / 100.0f,
+                          cfg::battery_bar_height, palette::text_alpha08, bar_color);
         canvas.text(percent, text_style, box.x + bar_w + cfg::content_gap,
                     bar_y + (cfg::battery_bar_height - pct_size.h) / 2.0f, bar_color);
     }
 }
 
-} // namespace astralia
+} // namespace astralia::bar

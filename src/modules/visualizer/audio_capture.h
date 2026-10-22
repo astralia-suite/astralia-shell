@@ -7,11 +7,11 @@
 #include <spa/utils/hook.h>
 #include <vector>
 
-namespace astralia {
+namespace astralia::visualizer {
 
-class VisualizerAudioCapture {
+class AudioCapture {
   public:
-    ~VisualizerAudioCapture();
+    ~AudioCapture();
 
     bool start();
     void stop();
@@ -42,4 +42,4 @@ class VisualizerAudioCapture {
     bool have_data_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::visualizer

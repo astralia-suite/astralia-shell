@@ -9,7 +9,7 @@
 #include "modules/overview/view.h"
 #include "modules/overview/x11/overview.h"
 
-namespace astralia {
+namespace astralia::overview {
 
 namespace cfg = overview_config;
 
@@ -150,8 +150,8 @@ void Overview::paint() {
     model_.sync(static_cast<float>(window_.geometry().width),
                 static_cast<float>(window_.geometry().height));
     canvas_.bind(cr);
-    paint_overview(canvas_, model_, {});
+    overview::paint(canvas_, model_, {});
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::overview

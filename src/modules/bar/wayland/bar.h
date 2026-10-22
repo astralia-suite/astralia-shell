@@ -24,6 +24,8 @@
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
+namespace astralia::bar {
+
 struct AutoHideState {
     bool hidden = false;
     bool collapsed = false;
@@ -32,7 +34,7 @@ struct AutoHideState {
     bool enabled = false;
 };
 
-struct BarPerMonitorState {
+struct PerMonitorState {
     wl_surface *surface = nullptr;
     zwlr_layer_surface_v1 *layer_surface = nullptr;
     wl_egl_window *egl_window = nullptr;
@@ -45,15 +47,15 @@ struct BarPerMonitorState {
     astralia::AnimationManager animations;
     AutoHideState autohide;
 
-    std::unique_ptr<astralia::BarModel> model;
+    std::unique_ptr<Model> model;
     std::unique_ptr<PanelSurface> panels;
     std::string clock_label;
     int32_t applied_hug_radius_px = 0;
 };
 
-class BarPerMonitorModule final : public PerMonitorModule {
+class PerMonitor final : public PerMonitorModule {
   public:
-    BarPerMonitorState state;
+    PerMonitorState state;
 
     bool create_surface(WaylandState &app, MonitorOutput &mon, wl_output *output) override;
     bool configured() const override;
@@ -73,18 +75,18 @@ class BarPerMonitorModule final : public PerMonitorModule {
     void handle_key_event(WaylandState &app, MonitorOutput &mon, const KeyEvent &event) override;
     void handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) override;
     void handle_pointer_release() override;
-    bool wants_pointing_hand_cursor() const override;
+    bool wants_hand_cursor() const override;
 
   private:
     MonitorOutput *mon_ = nullptr;
     double pointer_x_ = -1, pointer_y_ = -1;
 };
 
-BarPerMonitorState &bar_state(MonitorOutput &mon);
-const BarPerMonitorState &bar_state(const MonitorOutput &mon);
+PerMonitorState &bar_state(MonitorOutput &mon);
+const PerMonitorState &bar_state(const MonitorOutput &mon);
 
-inline const astralia::BarStyleSpec &bar_style_of(const MonitorOutput &mon) {
-    return astralia::bar_style_spec(mon.app->cfg.bar_style, true);
+inline const StyleSpec &style_of(const MonitorOutput &mon) {
+    return style_spec(mon.app->cfg.bar_style, true);
 }
 
 inline int32_t bar_hug_radius_px(const MonitorOutput &mon) {
@@ -93,23 +95,25 @@ inline int32_t bar_hug_radius_px(const MonitorOutput &mon) {
     return mon.app->desktop->state().hug_radius_px;
 }
 
-namespace bar_detail {
+namespace detail {
 
-void close_other_overlays(MonitorOutput &mon, astralia::BarItem keep);
+void close_other_overlays(MonitorOutput &mon, Item keep);
 
-void toggle_panel(MonitorOutput &mon, astralia::BarItem item);
+void toggle_panel(MonitorOutput &mon, Item item);
 
-int32_t bar_current_height(const MonitorOutput &mon);
+int32_t current_height(const MonitorOutput &mon);
 
-void bar_autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed,
-                                 const astralia::BarStyleSpec &style);
+void autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed,
+                             const StyleSpec &style);
 
-void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const astralia::BarStyleSpec &style);
+void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const StyleSpec &style);
 
-} // namespace bar_detail
+} // namespace detail
 
-void bar_paint(MonitorOutput &mon);
-void bar_request_frame(MonitorOutput &mon);
-bool bar_init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config,
-                  EGLContext context);
+void render(MonitorOutput &mon);
+void request_frame(MonitorOutput &mon);
+bool init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config,
+              EGLContext context);
 void dispatch_bar_click(MonitorOutput &mon, double click_x, double click_y);
+
+} // namespace astralia::bar

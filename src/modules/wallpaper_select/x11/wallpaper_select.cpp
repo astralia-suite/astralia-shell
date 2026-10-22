@@ -14,7 +14,7 @@
 #include "modules/wallpaper_select/view.h"
 #include "modules/wallpaper_select/x11/wallpaper_select.h"
 
-namespace astralia {
+namespace astralia::wallpaper_select {
 
 namespace {
 
@@ -30,12 +30,11 @@ WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, 
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
                   XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS),
       keyboard_(x.conn()),
-      model_(WallpaperSelectHooks{
-                 [&services]() -> const Config & { return services.settings.config(); },
-                 [&services](const std::function<void(Config &)> &edit) {
-                     services.settings.update(edit);
-                 },
-                 {}},
+      model_(Hooks{[&services]() -> const Config & { return services.settings.config(); },
+                   [&services](const std::function<void(Config &)> &edit) {
+                       services.settings.update(edit);
+                   },
+                   {}},
              x11_capabilities().animated_wallpaper) {
     repaint_timer_ = loop.add_timer(
         [this] {
@@ -168,8 +167,8 @@ void WallpaperSelect::paint() {
     repaint_pending_ = false;
     window_.clear();
     canvas_.bind(window_.cr());
-    paint_wallpaper_select(canvas_, model_, static_cast<float>(window_.geometry().width),
-                           static_cast<float>(window_.geometry().height));
+    wallpaper_select::paint(canvas_, model_, static_cast<float>(window_.geometry().width),
+                            static_cast<float>(window_.geometry().height));
     if (model_.waiting()) {
         schedule_paint();
         return;
@@ -181,4 +180,4 @@ void WallpaperSelect::paint() {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::wallpaper_select

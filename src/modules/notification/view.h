@@ -4,9 +4,8 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::notification {
 
-void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view,
-                         const NotificationLayout &layout);
+void paint(ui::Canvas &canvas, const ViewState &view, const Layout &layout);
 
-} // namespace astralia
+} // namespace astralia::notification

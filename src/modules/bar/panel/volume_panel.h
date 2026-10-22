@@ -7,7 +7,7 @@
 
 #include "service/audio_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 struct VolumeRow {
     enum class Kind { label, slider, section, divider, app, device } kind;
@@ -49,4 +49,4 @@ class VolumePanel final : public PanelContent {
     uint32_t hovered_ = 0;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -47,7 +47,7 @@ void network_dispatch(WaylandState &app, bool changed) {
 void notification_refresh(WaylandState &app) {
     app.notification.sync(*app.notifications);
     for (auto &mon : app.outputs)
-        if (auto *nv = mon->module<NotificationViewPerMonitorModule>())
+        if (auto *nv = mon->module<astralia::notification::PerMonitor>())
             nv->request_frame();
 }
 
@@ -78,8 +78,8 @@ class BrightnessOsdService final : public Service {
 
     bool init(WaylandState &app) override {
         app.brightness_service->changed.connect([&app] {
-            osd_show_on_monitors(app, astralia::OsdKind::brightness,
-                                 app.brightness_service->percent(), false);
+            astralia::osd::show_on_monitors(app, astralia::osd::OsdKind::brightness,
+                                            app.brightness_service->percent(), false);
         });
         return true;
     }
@@ -93,12 +93,12 @@ class PipewireOsdService final : public Service {
         app.audio->changed.connect([&app](astralia::AudioKind kind) {
             if (kind == astralia::AudioKind::sink) {
                 astralia::AudioLevel level = app.audio->sink();
-                osd_show_on_monitors(app, astralia::OsdKind::volume,
-                                     level.present ? level.percent : 0, level.muted);
+                astralia::osd::show_on_monitors(app, astralia::osd::OsdKind::volume,
+                                                level.present ? level.percent : 0, level.muted);
             } else if (kind == astralia::AudioKind::source) {
                 astralia::AudioLevel level = app.audio->source();
-                osd_show_on_monitors(app, astralia::OsdKind::mic, level.present ? level.percent : 0,
-                                     level.muted);
+                astralia::osd::show_on_monitors(app, astralia::osd::OsdKind::mic,
+                                                level.present ? level.percent : 0, level.muted);
             } else {
                 return;
             }
@@ -224,7 +224,7 @@ class PolkitBusService final : public Service {
 
     bool init(WaylandState &app) override {
         app.polkit = std::make_unique<astralia::PolkitService>(*app.reactor);
-        app.polkit->changed.connect([&app] { polkit_notify_state_changed(app); });
+        app.polkit->changed.connect([&app] { astralia::polkit::notify_state_changed(app); });
         app.polkit->ready.connect([](bool ok, const std::string &error) {
             if (ok)
                 klog("polkit: agent registered");

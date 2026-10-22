@@ -9,7 +9,7 @@
 #include "render/marquee.h"
 #include "render/tokens.h"
 
-namespace astralia::panel_widgets {
+namespace astralia::bar::widgets {
 
 void slider(ui::Canvas &canvas, const ui::Box &box, float value, bool dimmed, bool focused = false,
             float track = panel_config::slider_track);
@@ -51,4 +51,4 @@ void confirm_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view lab
                     std::string_view prompt, std::string_view confirm_label, PanelPaint &paint,
                     int cancel_id, int confirm_id);
 
-} // namespace astralia::panel_widgets
+} // namespace astralia::bar::widgets

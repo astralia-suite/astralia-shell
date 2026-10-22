@@ -26,37 +26,40 @@
 class Renderer;
 struct WaylandState;
 
-using SettingsDecodeStatusFn =
+namespace astralia::settings {
+
+using DecodeStatusFn =
     std::function<MediaDecodeStatus(WaylandState &app, const std::string &monitor, int column)>;
 
-struct SettingsState {
+struct State {
     OverlayPanelBase base;
     bool enabled = false;
     wl_output *bound_output = nullptr;
-    SettingsDecodeStatusFn decode_status_source;
+    DecodeStatusFn decode_status_source;
     Renderer *renderer = nullptr;
     GlCanvas canvas;
-    std::unique_ptr<astralia::SettingsModel> model;
-    astralia::SettingsFrame frame;
+    std::unique_ptr<Model> model;
+    Frame frame;
     std::function<void(bool)> sync_text_input_focus;
 };
 
-bool settings_create_surface(SettingsState &state, wl_compositor *compositor,
-                             zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+                    wl_output *output = nullptr);
 
-bool settings_init_egl(SettingsState &state, WaylandState &app);
+bool init_egl(State &state, WaylandState &app);
 
-void settings_request_frame(SettingsState &state);
+void request_frame(State &state);
 
-void settings_toggle(SettingsState &state, WaylandState &app);
+void toggle(State &state, WaylandState &app);
 
-std::vector<astralia::ShellBinding> settings_shell_bindings(SettingsState &settings,
-                                                            WaylandState &state);
+std::vector<astralia::ShellBinding> shell_bindings(State &settings, WaylandState &state);
 
-void settings_paint(SettingsState &state);
+void render(State &state);
 
-TextInputState settings_text_input_state(const SettingsState &state);
+TextInputState text_input_state(const State &state);
 
-void settings_text_input_apply_edit(SettingsState &state, const TextInputEdit &edit);
+void text_input_apply_edit(State &state, const TextInputEdit &edit);
 
-std::unique_ptr<Module> make_settings_module(SettingsDecodeStatusFn decode_status_source);
+std::unique_ptr<Module> make_module(DecodeStatusFn decode_status_source);
+
+} // namespace astralia::settings

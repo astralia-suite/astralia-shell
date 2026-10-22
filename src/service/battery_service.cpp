@@ -56,7 +56,7 @@ BatteryDevice battery_parse_device(const std::string &path, const DbusProperties
     return device;
 }
 
-BatteryService::BatteryService(SystemBus &bus) : bus_(bus) {
+BatteryService::BatteryService(Bus &bus) : bus_(bus) {
     manager_ = bus_.proxy(upower_service, manager_path);
     display_ = bus_.proxy(upower_service, display_path);
     if (!manager_ || !display_) {

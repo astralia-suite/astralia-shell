@@ -11,13 +11,13 @@
 
 #include "service/icon_service.h"
 
-namespace astralia {
+namespace astralia::overview {
 
 namespace {
 
 namespace cfg = overview_config;
 
-constexpr OverviewGrid grid{cfg::columns, cfg::rows};
+constexpr Grid grid{cfg::columns, cfg::rows};
 constexpr ScrollMetrics scroll_style{};
 constexpr uint64_t owner_indicator_x = 3;
 constexpr uint64_t owner_indicator_y = 4;
@@ -66,9 +66,9 @@ uint64_t tile_owner(const std::string &address, int component) {
 
 } // namespace
 
-OverviewModel::OverviewModel(Compositor &compositor) : compositor_(compositor) {}
+Model::Model(Compositor &compositor) : compositor_(compositor) {}
 
-int OverviewModel::active_workspace(const std::string &monitor_name) const {
+int Model::active_workspace(const std::string &monitor_name) const {
     const CompositorState &state = compositor_.state();
     auto it = state.by_monitor.find(monitor_name);
     if (it == state.by_monitor.end() || it->second.active_id < 1) {
@@ -77,24 +77,24 @@ int OverviewModel::active_workspace(const std::string &monitor_name) const {
     return it != state.by_monitor.end() && it->second.active_id >= 1 ? it->second.active_id : 1;
 }
 
-const CompositorMonitor *OverviewModel::bound_monitor() const {
+const CompositorMonitor *Model::bound_monitor() const {
     return compositor_monitor(compositor_.state(), output_name_);
 }
 
-const std::string &OverviewModel::icon_path(const std::string &window_class) {
+const std::string &Model::icon_path(const std::string &window_class) {
     auto it = icon_paths_.find(window_class);
     if (it == icon_paths_.end()) {
-        it = icon_paths_.emplace(window_class, resolve_window_icon_path(window_class)).first;
+        it = icon_paths_.emplace(window_class, window_icon_path(window_class)).first;
     }
     return it->second;
 }
 
-void OverviewModel::open(std::string output_name, float width, float height) {
+void Model::open(std::string output_name, float width, float height) {
     output_name_ = std::move(output_name);
     width_ = width;
     height_ = height;
     selected_ = active_workspace(output_name_);
-    group_ = overview_page_of(grid, selected_);
+    group_ = page_of(grid, selected_);
     global_mode_ = false;
     dragging_ = false;
     open_ = true;
@@ -103,7 +103,7 @@ void OverviewModel::open(std::string output_name, float width, float height) {
     sequence_.open();
 }
 
-void OverviewModel::close() {
+void Model::close() {
     if (!open_ || sequence_.closing()) {
         return;
     }
@@ -120,8 +120,8 @@ void OverviewModel::close() {
     });
 }
 
-const OverviewCell *OverviewModel::find_cell(int workspace) const {
-    for (const OverviewCell &cell : layout_.cells) {
+const Cell *Model::find_cell(int workspace) const {
+    for (const Cell &cell : layout_.cells) {
         if (cell.workspace == workspace) {
             return &cell;
         }
@@ -129,8 +129,8 @@ const OverviewCell *OverviewModel::find_cell(int workspace) const {
     return nullptr;
 }
 
-const OverviewCell *OverviewModel::cell_at(double x, double y) const {
-    for (const OverviewCell &cell : layout_.cells) {
+const Cell *Model::cell_at(double x, double y) const {
+    for (const Cell &cell : layout_.cells) {
         if (inside(cell.rect, x, y)) {
             return &cell;
         }
@@ -138,7 +138,7 @@ const OverviewCell *OverviewModel::cell_at(double x, double y) const {
     return nullptr;
 }
 
-void OverviewModel::compute_layout(float width, float height) {
+void Model::compute_layout(float width, float height) {
     layout_ = {};
     const CompositorState &state = compositor_.state();
     std::vector<Block> blocks;
@@ -181,8 +181,7 @@ void OverviewModel::compute_layout(float width, float height) {
             float y =
                 static_cast<float>((ms[i].y - min_y) * cfg::rows * scale) + steps_y[i] * gap_y;
             blocks.push_back(make_block(area.width, area.height,
-                                        overview_page_of(grid, active_workspace(ms[i].name)), scale,
-                                        x, y));
+                                        page_of(grid, active_workspace(ms[i].name)), scale, x, y));
         }
     } else {
         double work_w = width;
@@ -225,7 +224,7 @@ void OverviewModel::compute_layout(float width, float height) {
         for (int row = 0; row < cfg::rows; ++row) {
             for (int col = 0; col < cfg::columns; ++col) {
                 layout_.cells.push_back(
-                    {overview_workspace_at(grid, b.group, row, col),
+                    {workspace_at(grid, b.group, row, col),
                      {origin_x + b.x + pad + static_cast<float>(col) * (b.cell_w + spacing),
                       origin_y + b.y + pad + static_cast<float>(row) * (b.cell_h + spacing),
                       b.cell_w, b.cell_h}});
@@ -234,7 +233,7 @@ void OverviewModel::compute_layout(float width, float height) {
     }
 }
 
-void OverviewModel::rebuild_tiles() {
+void Model::rebuild_tiles() {
     tiles_.clear();
     const CompositorState &state = compositor_.state();
     std::vector<const CompositorClient *> visible;
@@ -279,7 +278,7 @@ void OverviewModel::rebuild_tiles() {
                               std::max(0.0, cell.w - w));
         double y = std::clamp(std::max((client->at[1] - area.y) * scale, 0.0), 0.0,
                               std::max(0.0, cell.h - h));
-        OverviewTile tile;
+        Tile tile;
         tile.address = client->address;
         tile.window_class = client->window_class;
         tile.workspace = client->workspace_id;
@@ -307,22 +306,22 @@ void OverviewModel::rebuild_tiles() {
         }
     }
     for (auto it = tile_anim_.begin(); it != tile_anim_.end();) {
-        bool live = std::ranges::any_of(
-            tiles_, [&](const OverviewTile &t) { return t.address == it->first; });
+        bool live =
+            std::ranges::any_of(tiles_, [&](const Tile &t) { return t.address == it->first; });
         it = live ? std::next(it) : tile_anim_.erase(it);
     }
     if (dragging_) {
-        std::ranges::stable_partition(
-            tiles_, [this](const OverviewTile &t) { return t.address != drag_address_; });
+        std::ranges::stable_partition(tiles_,
+                                      [this](const Tile &t) { return t.address != drag_address_; });
     }
 }
 
-void OverviewModel::update_indicator() {
+void Model::update_indicator() {
     indicator_visible_ = false;
     int active =
         active_workspace(global_mode_ ? compositor_.state().focused_monitor : output_name_);
-    int page = overview_page_of(grid, active);
-    const OverviewCell *cell = find_cell(active);
+    int page = page_of(grid, active);
+    const Cell *cell = find_cell(active);
     if (cell == nullptr) {
         indicator_tracking_ = false;
         return;
@@ -349,7 +348,7 @@ void OverviewModel::update_indicator() {
     indicator_visible_ = true;
 }
 
-void OverviewModel::sync(float width, float height) {
+void Model::sync(float width, float height) {
     if (!open_) {
         return;
     }
@@ -360,7 +359,7 @@ void OverviewModel::sync(float width, float height) {
     update_indicator();
 }
 
-ui::Box OverviewModel::tile_rect(const OverviewTile &tile) const {
+ui::Box Model::tile_rect(const Tile &tile) const {
     ui::Box rect = tile.rect;
     if (auto it = tile_anim_.find(tile.address); it != tile_anim_.end()) {
         rect = it->second.current;
@@ -372,9 +371,9 @@ ui::Box OverviewModel::tile_rect(const OverviewTile &tile) const {
     return rect;
 }
 
-void OverviewModel::select(int workspace, bool shift, bool alt) {
+void Model::select(int workspace, bool shift, bool alt) {
     selected_ = workspace;
-    group_ = overview_page_of(grid, workspace);
+    group_ = page_of(grid, workspace);
     if (shift) {
         compositor_.swap_workspace(workspace, global_mode_);
     } else if (alt) {
@@ -384,12 +383,12 @@ void OverviewModel::select(int workspace, bool shift, bool alt) {
     }
 }
 
-bool OverviewModel::key(const input::KeyEvent &event) {
+bool Model::key(const input::KeyEvent &event) {
     if (!open_ || sequence_.closing()) {
         return false;
     }
     if (global_mode_) {
-        group_ = overview_page_of(grid, selected_);
+        group_ = page_of(grid, selected_);
     }
     uint32_t sym = event.base_sym != 0
                        ? event.base_sym
@@ -405,7 +404,7 @@ bool OverviewModel::key(const input::KeyEvent &event) {
         int d_row = event.kind == input::KeyKind::Up     ? -1
                     : event.kind == input::KeyKind::Down ? 1
                                                          : 0;
-        select(overview_step(grid, group_, selected_, d_col, d_row), event.shift, event.alt);
+        select(step(grid, group_, selected_, d_col, d_row), event.shift, event.alt);
         return true;
     }
     case input::KeyKind::Tab:
@@ -418,7 +417,7 @@ bool OverviewModel::key(const input::KeyEvent &event) {
         global_mode_ = !global_mode_;
         dragging_ = false;
         indicator_tracking_ = false;
-        group_ = overview_page_of(grid, selected_);
+        group_ = page_of(grid, selected_);
         return true;
     case input::KeyKind::Escape:
         if (on_close_requested) {
@@ -451,7 +450,7 @@ bool OverviewModel::key(const input::KeyEvent &event) {
     }
 }
 
-void OverviewModel::press(double x, double y, const input::Modifiers &mods) {
+void Model::press(double x, double y, const input::Modifiers &mods) {
     if (!fully_open()) {
         return;
     }
@@ -477,7 +476,7 @@ void OverviewModel::press(double x, double y, const input::Modifiers &mods) {
         }
         return;
     }
-    if (const OverviewCell *cell = cell_at(x, y)) {
+    if (const Cell *cell = cell_at(x, y)) {
         select(cell->workspace, mods.shift, mods.alt);
         return;
     }
@@ -490,22 +489,22 @@ void OverviewModel::press(double x, double y, const input::Modifiers &mods) {
     }
 }
 
-void OverviewModel::move(double x, double y) {
+void Model::move(double x, double y) {
     if (!dragging_) {
         return;
     }
     drag_pointer_x_ = x;
     drag_pointer_y_ = y;
-    const OverviewCell *cell = cell_at(x, y);
+    const Cell *cell = cell_at(x, y);
     drag_target_ = cell != nullptr ? cell->workspace : -1;
 }
 
-void OverviewModel::release() {
+void Model::release() {
     if (!dragging_) {
         return;
     }
     dragging_ = false;
-    const OverviewCell *cell = cell_at(drag_pointer_x_, drag_pointer_y_);
+    const Cell *cell = cell_at(drag_pointer_x_, drag_pointer_y_);
     if (cell == nullptr) {
         return;
     }
@@ -516,11 +515,11 @@ void OverviewModel::release() {
     }
 }
 
-bool OverviewModel::clickable(double x, double y) const {
+bool Model::clickable(double x, double y) const {
     if (!fully_open()) {
         return false;
     }
-    for (const OverviewTile &tile : tiles_) {
+    for (const Tile &tile : tiles_) {
         if (inside(tile_rect(tile), x, y)) {
             return true;
         }
@@ -528,4 +527,4 @@ bool OverviewModel::clickable(double x, double y) const {
     return cell_at(x, y) != nullptr;
 }
 
-} // namespace astralia
+} // namespace astralia::overview

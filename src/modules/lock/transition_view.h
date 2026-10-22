@@ -6,17 +6,17 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::lock {
 
-struct LockThunder {
+struct Thunder {
     std::function<void(const SlashStrike &)> strike;
     std::function<void(const SlashShock &)> shock;
 };
 
-enum class LockTransitionMode { lock, unlock };
+enum class TransitionMode { lock, unlock };
 
-void paint_lock_transition(ui::Canvas &canvas, const SlashPlan &plan, float progress,
-                           const std::function<void()> &paint_base, const LockThunder &thunder = {},
-                           LockTransitionMode mode = LockTransitionMode::lock);
+void paint_transition(ui::Canvas &canvas, const SlashPlan &plan, float progress,
+                      const std::function<void()> &paint_base, const Thunder &thunder = {},
+                      TransitionMode mode = TransitionMode::lock);
 
-} // namespace astralia
+} // namespace astralia::lock

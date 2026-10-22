@@ -10,7 +10,7 @@
 #include "core/event_loop.h"
 #include "core/x_connection.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 class Bar;
 
@@ -36,4 +36,4 @@ class BarSet {
     std::vector<Entry> bars_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

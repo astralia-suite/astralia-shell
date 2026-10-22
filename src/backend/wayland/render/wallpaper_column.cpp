@@ -184,7 +184,7 @@ bool wallpaper_column_draw_transition(Renderer &renderer, WallpaperColumn &col, 
         return false;
     }
     transition_render(renderer, col, x, y, column_w, height,
-                      astralia::applyEasing(astralia::Easing::EaseInOutCubic, raw));
+                      astralia::apply_easing(astralia::Easing::EaseInOutCubic, raw));
     return true;
 }
 
@@ -337,7 +337,7 @@ void wallpaper_column_set_animated(WallpaperColumn &col, const WallpaperColumnGl
             });
         },
         video_texture_import_supported()
-            ? MediaDecodeDrmFrameCallback([&col, &gl, gen, life](MediaDrmFrame frame) {
+            ? MediaDrmCallback([&col, &gl, gen, life](MediaDrmFrame frame) {
                   astralia::DeferredCall::call_later([&col, &gl, frame, gen, life] {
                       auto keep = life.lock();
                       if (!keep) {
@@ -385,7 +385,7 @@ void wallpaper_column_set_animated(WallpaperColumn &col, const WallpaperColumnGl
                       }
                   });
               })
-            : MediaDecodeDrmFrameCallback());
+            : MediaDrmCallback());
 }
 
 MediaDecodeStatus wallpaper_column_decode_status(const WallpaperColumn &col) {

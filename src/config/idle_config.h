@@ -2,13 +2,13 @@
 
 #include <cstdint>
 
-namespace astralia {
+namespace astralia::idle_config {
 
 // activity pulse
-constexpr uint32_t kIdleRecentActivityPulseSeconds = 2;
+constexpr uint32_t kRecentActivityPulseSeconds = 2;
 
 // screensaver logo
-constexpr float kIdleLogoSpeed = 90.0f;
-constexpr float kIdleLogoSize = 200.0f;
+constexpr float kLogoSpeed = 90.0f;
+constexpr float kLogoSize = 200.0f;
 
-} // namespace astralia
+} // namespace astralia::idle_config

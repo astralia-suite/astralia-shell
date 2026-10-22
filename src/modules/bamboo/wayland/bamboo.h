@@ -12,30 +12,34 @@
 
 #include "config/bamboo_config.h"
 
-#include "modules/bamboo/bamboo_grow.h"
+#include "modules/bamboo/grow.h"
 
 #include "service/wayland/input_service.h"
 
 struct WaylandState;
 
-struct BambooState {
+namespace astralia::bamboo {
+
+struct State {
     ToplevelWindowBase base;
     Renderer *renderer = nullptr;
-    astralia::BambooGrow grow;
+    Grow grow;
     Texture texture;
     int built_width = 0;
     int built_height = 0;
     std::chrono::steady_clock::time_point last_tick;
 };
 
-void bamboo_request_frame(BambooState &state);
+void request_frame(State &state);
 
-void bamboo_toggle(BambooState &state, WaylandState &app);
+void toggle(State &state, WaylandState &app);
 
-void bamboo_handle_key_event(BambooState &state, WaylandState &app, const KeyEvent &event);
+void handle_key_event(State &state, WaylandState &app, const KeyEvent &event);
 
-std::vector<astralia::ShellBinding> bamboo_shell_bindings(BambooState &bamboo, WaylandState &state);
+std::vector<astralia::ShellBinding> shell_bindings(State &bamboo, WaylandState &state);
 
-void bamboo_paint(BambooState &state);
+void render(State &state);
 
-std::unique_ptr<Module> make_bamboo_module();
+std::unique_ptr<Module> make_module();
+
+} // namespace astralia::bamboo

@@ -16,17 +16,17 @@
 
 namespace {
 
-using astralia::Panel;
-using astralia::PanelContent;
-using astralia::PanelPaint;
-using astralia::PanelRegion;
+using astralia::bar::Panel;
+using astralia::bar::PanelContent;
+using astralia::bar::PanelPaint;
+using astralia::bar::PanelRegion;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
     ~Instant() { astralia::animation_set_instant(false); }
 };
 
-class FakeContent final : public PanelContent {
+class FakeContent final : public astralia::bar::PanelContent {
   public:
     float height = 100.0f;
     float dialog = 0.0f;
@@ -43,10 +43,10 @@ class FakeContent final : public PanelContent {
     int body_hover = -2;
     int hover_a = -1;
 
-    astralia::PanelAnchor side = astralia::PanelAnchor::right;
+    astralia::bar::PanelAnchor side = astralia::bar::PanelAnchor::right;
 
     std::string_view title() const override { return "Fake"; }
-    astralia::PanelAnchor anchor() const override { return side; }
+    astralia::bar::PanelAnchor anchor() const override { return side; }
     bool has_header() const override { return header; }
     astralia::ui::Box popup_anchor() const override { return {10, 20, 40, 40}; }
     float popup_width() const override { return popup > 0.0f ? 220.0f : 0.0f; }
@@ -63,27 +63,27 @@ class FakeContent final : public PanelContent {
         return changed;
     }
     void paint_popup(astralia::ui::Canvas &, const astralia::ui::Box &box,
-                     PanelPaint &paint) override {
+                     astralia::bar::PanelPaint &paint) override {
         paint.region({box.x + 4, box.y + 4, 100, 28}, 9, 1);
     }
     void opened() override { ++opened_count; }
     void closed() override { ++closed_count; }
     float content_height(astralia::ui::Canvas &) override { return height; }
     void paint(astralia::ui::Canvas &, const astralia::ui::Box &view, float scroll,
-               PanelPaint &paint) override {
+               astralia::bar::PanelPaint &paint) override {
         paint.region({view.x, view.y - scroll, 50, 20}, 7, 3, 4, false);
         paint.region({view.x, view.y - scroll + 30, 100, 20}, 8, 0, 0, true);
     }
-    bool activate(const PanelRegion &region, double, double) override {
+    bool activate(const astralia::bar::PanelRegion &region, double, double) override {
         ++activated;
         last_id = region.id;
         return true;
     }
-    bool drag(const PanelRegion &, double, double) override {
+    bool drag(const astralia::bar::PanelRegion &, double, double) override {
         ++dragged;
         return true;
     }
-    void drop(const PanelRegion &) override { ++dropped; }
+    void drop(const astralia::bar::PanelRegion &) override { ++dropped; }
     float dialog_height() override { return dialog; }
     bool dismiss_dialog() override {
         if (dialog <= 0.0f) {
@@ -101,14 +101,14 @@ struct Harness {
         return std::move(*made);
     }();
     FakeContent *content = nullptr;
-    std::unique_ptr<Panel> panel;
+    std::unique_ptr<astralia::bar::Panel> panel;
     test::RecordingCanvas canvas;
     int closed = 0;
 
     Harness() {
         auto owned = std::make_unique<FakeContent>();
         content = owned.get();
-        panel = std::make_unique<Panel>(std::move(owned), reactor);
+        panel = std::make_unique<astralia::bar::Panel>(std::move(owned), reactor);
         panel->on_closed = [this] { ++closed; };
     }
 };
@@ -121,7 +121,7 @@ void check_panel_framework() {
     h.panel->open();
     test::check(h.panel->is_open() && h.content->opened_count == 1, "open calls the content");
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
-    float rod = Panel::inset().y;
+    float rod = astralia::bar::Panel::inset().y;
     test::check(card.w == 400 && card.x == 580 && card.y == 50 + rod,
                 "the card sits at the right margin under the upper roller");
     float chrome = 20 + 32 + 4 + 1 + 8 + 20;
@@ -227,13 +227,13 @@ void check_panel_popup() {
 
 void check_panel_set_lookup() {
     Harness h;
-    astralia::PanelSet set(h.reactor);
-    test::check(set.find(astralia::PanelId::count) == nullptr &&
+    astralia::bar::PanelSet set(h.reactor);
+    test::check(set.find(astralia::bar::PanelId::count) == nullptr &&
                     set.find(set.active_id()) == nullptr,
                 "an empty set has no active panel to find");
-    set.add(astralia::PanelId::clock, std::make_unique<FakeContent>());
-    test::check(set.find(astralia::PanelId::clock) != nullptr &&
-                    set.find(astralia::PanelId::tray) == nullptr,
+    set.add(astralia::bar::PanelId::clock, std::make_unique<FakeContent>());
+    test::check(set.find(astralia::bar::PanelId::clock) != nullptr &&
+                    set.find(astralia::bar::PanelId::tray) == nullptr,
                 "find returns only the panels that were added");
 }
 
@@ -307,19 +307,21 @@ bool beyond(const test::RecordingCanvas &canvas, bool (*outside)(const astralia:
 }
 
 void check_panel_entry() {
-    using astralia::PanelAnchor;
+    using astralia::bar::PanelAnchor;
     struct Case {
-        PanelAnchor side;
+        astralia::bar::PanelAnchor side;
         bool (*outside)(const astralia::ui::Box &);
         const char *name;
     };
     constexpr float width = 1000.0f;
     const Case cases[] = {
-        {PanelAnchor::left, [](const astralia::ui::Box &b) { return b.x + b.w <= 0.0f; },
+        {astralia::bar::PanelAnchor::left,
+         [](const astralia::ui::Box &b) { return b.x + b.w <= 0.0f; },
          "a left panel's scroll starts off the left edge"},
-        {PanelAnchor::right, [](const astralia::ui::Box &b) { return b.x >= width; },
+        {astralia::bar::PanelAnchor::right, [](const astralia::ui::Box &b) { return b.x >= width; },
          "a right panel's scroll starts off the right edge"},
-        {PanelAnchor::center, [](const astralia::ui::Box &b) { return b.y + b.h <= 0.0f; },
+        {astralia::bar::PanelAnchor::center,
+         [](const astralia::ui::Box &b) { return b.y + b.h <= 0.0f; },
          "a centre panel's scroll starts above the top edge"},
     };
     for (const Case &c : cases) {
@@ -337,7 +339,7 @@ void check_panel_resting_scroll() {
     h.panel->open();
     astralia::ui::Box card = h.panel->paint(h.canvas, 1000, 50);
     astralia::ui::Box extent = h.panel->extent();
-    Panel::Inset inset = Panel::inset();
+    astralia::bar::Panel::Inset inset = astralia::bar::Panel::inset();
     test::check(extent.x == card.x - inset.x && extent.y == 50 &&
                     extent.w == card.w + 2.0f * inset.x && extent.h == card.h + 2.0f * inset.y,
                 "the extent wraps the card and both rollers");
@@ -345,39 +347,41 @@ void check_panel_resting_scroll() {
 }
 
 void check_calendar() {
-    using astralia::CalendarDay;
-    std::array<CalendarDay, 42> oct = astralia::clock_panel_cells(2026, 9);
+    using astralia::bar::CalendarDay;
+    std::array<astralia::bar::CalendarDay, 42> oct = astralia::bar::clock_panel_cells(2026, 9);
     test::check(oct[0].year == 2026 && oct[0].month == 8 && oct[0].day == 28 && !oct[0].in_month,
                 "October 2026 grid starts on Monday 28 September");
     test::check(oct[3].month == 9 && oct[3].day == 1 && oct[3].in_month,
                 "1 October 2026 is a Thursday");
     test::check(oct[41].month == 10 && oct[41].day == 8, "grid ends on 8 November");
-    std::array<CalendarDay, 42> jun = astralia::clock_panel_cells(2026, 5);
+    std::array<astralia::bar::CalendarDay, 42> jun = astralia::bar::clock_panel_cells(2026, 5);
     test::check(jun[0].day == 1 && jun[0].in_month,
                 "a month starting on Monday has no leading days");
-    test::check(astralia::clock_panel_same_day(oct[3], 2026, 9, 1), "same day matches");
-    test::check(!astralia::clock_panel_same_day(oct[0], 2026, 9, 28), "same day needs the month");
-    astralia::CalendarMonth back = astralia::clock_panel_month_shifted(2026, 0, -1);
+    test::check(astralia::bar::clock_panel_same_day(oct[3], 2026, 9, 1), "same day matches");
+    test::check(!astralia::bar::clock_panel_same_day(oct[0], 2026, 9, 28),
+                "same day needs the month");
+    astralia::bar::CalendarMonth back = astralia::bar::clock_panel_month_shifted(2026, 0, -1);
     test::check(back.year == 2025 && back.month == 11, "January minus one is last December");
-    astralia::CalendarMonth ahead = astralia::clock_panel_month_shifted(2026, 11, 13);
+    astralia::bar::CalendarMonth ahead = astralia::bar::clock_panel_month_shifted(2026, 11, 13);
     test::check(ahead.year == 2028 && ahead.month == 0, "December plus 13 is January two years on");
-    test::check(astralia::clock_panel_iso_week(2026, 0, 1) == 1, "1 January 2026 is week 1");
-    test::check(astralia::clock_panel_iso_week(2027, 0, 1) == 53,
+    test::check(astralia::bar::clock_panel_iso_week(2026, 0, 1) == 1, "1 January 2026 is week 1");
+    test::check(astralia::bar::clock_panel_iso_week(2027, 0, 1) == 53,
                 "1 January 2027 is week 53 of 2026");
-    test::check(astralia::clock_panel_iso_week(2024, 11, 30) == 1,
+    test::check(astralia::bar::clock_panel_iso_week(2024, 11, 30) == 1,
                 "30 December 2024 is week 1 of 2025");
-    test::check(astralia::clock_panel_iso_week(2026, 9, 4) == 40, "4 October 2026 is week 40");
+    test::check(astralia::bar::clock_panel_iso_week(2026, 9, 4) == 40, "4 October 2026 is week 40");
 }
 
 void check_battery_text() {
-    test::check(astralia::battery_time_text(0).empty(), "unknown time is blank");
-    test::check(astralia::battery_time_text(45 * 60) == "45m", "minutes only");
-    test::check(astralia::battery_time_text(2 * 3600 + 5 * 60) == "2h 5m", "hours and minutes");
+    test::check(astralia::bar::battery_time_text(0).empty(), "unknown time is blank");
+    test::check(astralia::bar::battery_time_text(45 * 60) == "45m", "minutes only");
+    test::check(astralia::bar::battery_time_text(2 * 3600 + 5 * 60) == "2h 5m",
+                "hours and minutes");
 }
 
 void check_tray_menu() {
     using astralia::TrayMenuEntry;
-    using astralia::TrayMenuRow;
+    using astralia::bar::TrayMenuRow;
     TrayMenuEntry open;
     open.id = 1;
     open.label = "Open";
@@ -396,30 +400,31 @@ void check_tray_menu() {
     more.children = {child};
     std::vector<TrayMenuEntry> root{open, gap, hidden, more};
 
-    test::check(astralia::tray_menu_level(&root, {}) == &root, "the empty path is the root");
-    const std::vector<TrayMenuEntry> *deep = astralia::tray_menu_level(&root, {4});
+    test::check(astralia::bar::tray_menu_level(&root, {}) == &root, "the empty path is the root");
+    const std::vector<TrayMenuEntry> *deep = astralia::bar::tray_menu_level(&root, {4});
     test::check(deep != nullptr && deep->size() == 1 && (*deep)[0].id == 5,
                 "a path walks into a submenu");
-    test::check(astralia::tray_menu_level(&root, {99}) == nullptr &&
-                    astralia::tray_menu_level(nullptr, {}) == nullptr,
+    test::check(astralia::bar::tray_menu_level(&root, {99}) == nullptr &&
+                    astralia::bar::tray_menu_level(nullptr, {}) == nullptr,
                 "a stale path has no level");
 
-    std::vector<TrayMenuRow> rows = astralia::tray_menu_rows(&root, false);
-    test::check(rows.size() == 3 && rows[0].kind == TrayMenuRow::Kind::entry &&
-                    rows[1].kind == TrayMenuRow::Kind::separator && rows[1].height < rows[0].height,
+    std::vector<astralia::bar::TrayMenuRow> rows = astralia::bar::tray_menu_rows(&root, false);
+    test::check(rows.size() == 3 && rows[0].kind == astralia::bar::TrayMenuRow::Kind::entry &&
+                    rows[1].kind == astralia::bar::TrayMenuRow::Kind::separator &&
+                    rows[1].height < rows[0].height,
                 "hidden entries are skipped and separators are thin");
-    rows = astralia::tray_menu_rows(deep, true);
-    test::check(rows.size() == 2 && rows[0].kind == TrayMenuRow::Kind::back,
+    rows = astralia::bar::tray_menu_rows(deep, true);
+    test::check(rows.size() == 2 && rows[0].kind == astralia::bar::TrayMenuRow::Kind::back,
                 "a submenu starts with a back row");
-    rows = astralia::tray_menu_rows(nullptr, false);
-    test::check(rows.size() == 1 && rows[0].kind == TrayMenuRow::Kind::loading,
+    rows = astralia::bar::tray_menu_rows(nullptr, false);
+    test::check(rows.size() == 1 && rows[0].kind == astralia::bar::TrayMenuRow::Kind::loading,
                 "a missing menu is loading");
-    test::check(astralia::tray_columns(400) == 8, "the tray grid fits eight columns");
+    test::check(astralia::bar::tray_columns(400) == 8, "the tray grid fits eight columns");
 }
 
 void check_network_rows() {
     using astralia::NetworkInfo;
-    using astralia::NetworkRow;
+    using astralia::bar::NetworkRow;
     astralia::NetworkMap map;
     auto add = [&](const char *ssid, int signal, bool connected, bool existing, bool in_range) {
         NetworkInfo info;
@@ -437,32 +442,33 @@ void check_network_rows() {
     add("Far", 20, false, true, false);
     add("Office", 40, false, true, true);
 
-    std::vector<NetworkRow> rows = astralia::network_rows({map, false, false, true, true});
+    std::vector<astralia::bar::NetworkRow> rows =
+        astralia::bar::network_rows({map, false, false, true, true});
     std::vector<std::string> order;
-    for (const NetworkRow &row : rows) {
-        if (row.kind == NetworkRow::Kind::network) {
+    for (const astralia::bar::NetworkRow &row : rows) {
+        if (row.kind == astralia::bar::NetworkRow::Kind::network) {
             order.push_back(row.info->ssid);
         }
     }
     test::check(order == std::vector<std::string>({"Home", "Office", "Hotel", "Cafe"}),
                 "connected, then known in range, then available by signal; out of "
                 "range saved ones are hidden");
-    test::check(rows.front().kind == NetworkRow::Kind::section_connected &&
-                    rows.back().kind == NetworkRow::Kind::spacer,
+    test::check(rows.front().kind == astralia::bar::NetworkRow::Kind::section_connected &&
+                    rows.back().kind == astralia::bar::NetworkRow::Kind::spacer,
                 "sections open the list and a spacer closes it");
 
     astralia::NetworkMap empty;
-    rows = astralia::network_rows({empty, true, true, true, true});
-    test::check(rows[0].kind == NetworkRow::Kind::error &&
-                    rows[1].kind == NetworkRow::Kind::ethernet &&
-                    rows[2].kind == NetworkRow::Kind::scanning,
+    rows = astralia::bar::network_rows({empty, true, true, true, true});
+    test::check(rows[0].kind == astralia::bar::NetworkRow::Kind::error &&
+                    rows[1].kind == astralia::bar::NetworkRow::Kind::ethernet &&
+                    rows[2].kind == astralia::bar::NetworkRow::Kind::scanning,
                 "banners come first, then the scanning state");
-    rows = astralia::network_rows({empty, false, false, false, false});
-    test::check(rows[0].kind == NetworkRow::Kind::no_adapter, "no adapter");
-    rows = astralia::network_rows({empty, false, false, true, false});
-    test::check(rows[0].kind == NetworkRow::Kind::disabled, "wifi disabled");
-    test::check(std::string(astralia::network_signal_glyph(90)) !=
-                    astralia::network_signal_glyph(10),
+    rows = astralia::bar::network_rows({empty, false, false, false, false});
+    test::check(rows[0].kind == astralia::bar::NetworkRow::Kind::no_adapter, "no adapter");
+    rows = astralia::bar::network_rows({empty, false, false, true, false});
+    test::check(rows[0].kind == astralia::bar::NetworkRow::Kind::disabled, "wifi disabled");
+    test::check(std::string(astralia::bar::network_signal_glyph(90)) !=
+                    astralia::bar::network_signal_glyph(10),
                 "signal glyphs differ by band");
 }
 

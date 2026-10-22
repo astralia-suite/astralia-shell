@@ -13,7 +13,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::dashboard {
 
 class Dashboard {
   public:
@@ -34,4 +34,4 @@ class Dashboard {
     bool open_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::dashboard

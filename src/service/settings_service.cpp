@@ -191,51 +191,50 @@ const MonitorOverride *active_override(const Config &cfg, const std::string &mon
 
 } // namespace
 
-bool osd_effective_enabled(const Config &cfg, const std::string &monitor_name) {
+bool osd_enabled_for(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->osd : cfg.default_osd_enabled;
+    return override != nullptr ? override->osd : cfg.default_osd;
 }
 
-bool notifications_effective_enabled(const Config &cfg, const std::string &monitor_name) {
+bool notifications_enabled_for(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->notifications : cfg.default_notifications_enabled;
+    return override != nullptr ? override->notifications : cfg.default_notifications;
 }
 
-bool autohide_effective_enabled(const Config &cfg, const std::string &monitor_name) {
+bool autohide_enabled_for(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
     return override != nullptr ? override->autohide : cfg.autohide;
 }
 
-bool ambient_effective_enabled(const Config &cfg, const std::string &monitor_name) {
-    if (!cfg.idle_management_enabled) {
+bool ambient_enabled_for(const Config &cfg, const std::string &monitor_name) {
+    if (!cfg.idle_enabled) {
         return false;
     }
     const MonitorOverride *override = active_override(cfg, monitor_name);
     return override != nullptr ? override->ambient_enabled : cfg.ambient_enabled;
 }
 
-uint32_t ambient_effective_timeout_seconds(const Config &cfg, const std::string &monitor_name) {
+uint32_t ambient_timeout_for(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->ambient_timeout_seconds : cfg.ambient_timeout_seconds;
+    return override != nullptr ? override->ambient_timeout : cfg.ambient_timeout;
 }
 
-bool screensaver_effective_enabled(const Config &cfg, const std::string &monitor_name) {
-    if (!cfg.idle_management_enabled) {
+bool screensaver_enabled_for(const Config &cfg, const std::string &monitor_name) {
+    if (!cfg.idle_enabled) {
         return false;
     }
     const MonitorOverride *override = active_override(cfg, monitor_name);
     return override != nullptr ? override->screensaver_enabled : cfg.screensaver_enabled;
 }
 
-uint32_t screensaver_effective_timeout_seconds(const Config &cfg, const std::string &monitor_name) {
+uint32_t screensaver_timeout_for(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->screensaver_timeout_seconds
-                               : cfg.screensaver_timeout_seconds;
+    return override != nullptr ? override->screensaver_timeout : cfg.screensaver_timeout;
 }
 
-bool lock_effective_enabled(const Config &cfg, const std::string &monitor_name) {
+bool lock_enabled_for(const Config &cfg, const std::string &monitor_name) {
     const MonitorOverride *override = active_override(cfg, monitor_name);
-    return override != nullptr ? override->lock : cfg.default_lock_panel_enabled;
+    return override != nullptr ? override->lock : cfg.default_lock;
 }
 
 Config parse_config(std::string_view source) {
@@ -277,13 +276,12 @@ Config parse_config(std::string_view source) {
     if (displays != nullptr && displays->type != Json::Type::object) {
         displays = nullptr;
     }
-    cfg.default_osd_enabled = flag(displays, "defaultOsd", "defaultSpark", cfg.default_osd_enabled);
-    cfg.default_notifications_enabled =
-        flag(displays, "defaultNotifications", "defaultHeralds", cfg.default_notifications_enabled);
-    cfg.default_wallpaper_enabled =
-        flag(displays, "defaultWallpaper", "defaultExpanse", cfg.default_wallpaper_enabled);
-    cfg.default_lock_panel_enabled =
-        flag(displays, "defaultLock", "defaultPenance", cfg.default_lock_panel_enabled);
+    cfg.default_osd = flag(displays, "defaultOsd", "defaultSpark", cfg.default_osd);
+    cfg.default_notifications =
+        flag(displays, "defaultNotifications", "defaultHeralds", cfg.default_notifications);
+    cfg.default_wallpaper =
+        flag(displays, "defaultWallpaper", "defaultExpanse", cfg.default_wallpaper);
+    cfg.default_lock = flag(displays, "defaultLock", "defaultPenance", cfg.default_lock);
     if (displays != nullptr) {
         for (const Json::Member &member : displays->object) {
             if (is_reserved_displays_key(member.key) || member.value.type != Json::Type::object) {
@@ -296,11 +294,10 @@ Config parse_config(std::string_view source) {
             mo.notifications = flag(value, "notifications", "heralds", mo.notifications);
             mo.autohide = flag(value, "autohide", mo.autohide);
             mo.ambient_enabled = flag(value, "ambientEnabled", mo.ambient_enabled);
-            mo.ambient_timeout_seconds =
-                seconds(value, "ambientTimeoutSeconds", mo.ambient_timeout_seconds);
+            mo.ambient_timeout = seconds(value, "ambientTimeoutSeconds", mo.ambient_timeout);
             mo.screensaver_enabled = flag(value, "screensaverEnabled", mo.screensaver_enabled);
-            mo.screensaver_timeout_seconds =
-                seconds(value, "screensaverTimeoutSeconds", mo.screensaver_timeout_seconds);
+            mo.screensaver_timeout =
+                seconds(value, "screensaverTimeoutSeconds", mo.screensaver_timeout);
             mo.lock = flag(value, "lock", "penance", mo.lock);
             cfg.monitor_overrides[member.key] = mo;
         }
@@ -318,13 +315,11 @@ Config parse_config(std::string_view source) {
     if (idle == nullptr) {
         idle = section(root, "idle", "blink");
     }
-    cfg.idle_management_enabled = flag(idle, "enabled", cfg.idle_management_enabled);
+    cfg.idle_enabled = flag(idle, "enabled", cfg.idle_enabled);
     cfg.ambient_enabled = flag(idle, "ambientEnabled", cfg.ambient_enabled);
-    cfg.ambient_timeout_seconds =
-        seconds(idle, "ambientTimeoutSeconds", cfg.ambient_timeout_seconds);
+    cfg.ambient_timeout = seconds(idle, "ambientTimeoutSeconds", cfg.ambient_timeout);
     cfg.screensaver_enabled = flag(idle, "screensaverEnabled", cfg.screensaver_enabled);
-    cfg.screensaver_timeout_seconds =
-        seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout_seconds);
+    cfg.screensaver_timeout = seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout);
     cfg.idle_logo_path = path_expand_home(text(idle, "logoPath", cfg.idle_logo_path));
     cfg.logout_logo_path = path_expand_home(text(general, "logoutLogoPath", cfg.logout_logo_path));
 
@@ -334,20 +329,20 @@ Config parse_config(std::string_view source) {
         visualizer = section(root, "visualizer", "resonance");
     }
     cfg.visualizer.fps = std::clamp(integer(visualizer, "fps", cfg.visualizer.fps),
-                                    kVisualizerFpsMin, kVisualizerFpsMax);
+                                    visualizer_config::kFpsMin, visualizer_config::kFpsMax);
     cfg.visualizer.particle_thin =
         std::clamp(real(visualizer, "particleThin", cfg.visualizer.particle_thin),
-                   kVisualizerParticleThinMin, kVisualizerParticleThinMax);
-    cfg.visualizer.particle_size = kVisualizerParticleSize;
+                   visualizer_config::kParticleThinMin, visualizer_config::kParticleThinMax);
+    cfg.visualizer.particle_size = visualizer_config::kParticleSize;
     cfg.visualizer.fractal_complexity =
         std::clamp(integer(visualizer, "fractalComplexity", cfg.visualizer.fractal_complexity),
-                   kVisualizerComplexityMin, kVisualizerComplexityMax);
+                   visualizer_config::kComplexityMin, visualizer_config::kComplexityMax);
     cfg.visualizer.glow_directions =
         std::clamp(real(visualizer, "glowDirections", cfg.visualizer.glow_directions),
-                   kVisualizerGlowDirectionsMin, kVisualizerGlowDirectionsMax);
+                   visualizer_config::kGlowDirectionsMin, visualizer_config::kGlowDirectionsMax);
     cfg.visualizer.glow_quality =
         std::clamp(real(visualizer, "glowQuality", cfg.visualizer.glow_quality),
-                   kVisualizerGlowQualityMin, kVisualizerGlowQualityMax);
+                   visualizer_config::kGlowQualityMin, visualizer_config::kGlowQualityMax);
     cfg.visualizer.visualizer_shape = text(visualizer, "visualizerShape", "bar") == "sphere"
                                           ? VisualizerShape::Sphere
                                           : VisualizerShape::Bar;
@@ -383,18 +378,18 @@ std::string serialize_config(const Config &cfg) {
     wallpaper.set("captureColumn", Json::from_number(cfg.capture_column));
 
     Json idle = Json::make_object();
-    idle.set("enabled", Json::from_bool(cfg.idle_management_enabled));
+    idle.set("enabled", Json::from_bool(cfg.idle_enabled));
     idle.set("ambientEnabled", Json::from_bool(cfg.ambient_enabled));
-    idle.set("ambientTimeoutSeconds", Json::from_number(cfg.ambient_timeout_seconds));
+    idle.set("ambientTimeoutSeconds", Json::from_number(cfg.ambient_timeout));
     idle.set("screensaverEnabled", Json::from_bool(cfg.screensaver_enabled));
-    idle.set("screensaverTimeoutSeconds", Json::from_number(cfg.screensaver_timeout_seconds));
+    idle.set("screensaverTimeoutSeconds", Json::from_number(cfg.screensaver_timeout));
     idle.set("logoPath", Json::from_string(path_collapse_home(cfg.idle_logo_path)));
 
     Json displays = Json::make_object();
-    displays.set("defaultOsd", Json::from_bool(cfg.default_osd_enabled));
-    displays.set("defaultNotifications", Json::from_bool(cfg.default_notifications_enabled));
-    displays.set("defaultWallpaper", Json::from_bool(cfg.default_wallpaper_enabled));
-    displays.set("defaultLock", Json::from_bool(cfg.default_lock_panel_enabled));
+    displays.set("defaultOsd", Json::from_bool(cfg.default_osd));
+    displays.set("defaultNotifications", Json::from_bool(cfg.default_notifications));
+    displays.set("defaultWallpaper", Json::from_bool(cfg.default_wallpaper));
+    displays.set("defaultLock", Json::from_bool(cfg.default_lock));
     displays.set("idle", std::move(idle));
     for (const auto &[name, ov] : cfg.monitor_overrides) {
         Json mo = Json::make_object();
@@ -403,9 +398,9 @@ std::string serialize_config(const Config &cfg) {
         mo.set("notifications", Json::from_bool(ov.notifications));
         mo.set("autohide", Json::from_bool(ov.autohide));
         mo.set("ambientEnabled", Json::from_bool(ov.ambient_enabled));
-        mo.set("ambientTimeoutSeconds", Json::from_number(ov.ambient_timeout_seconds));
+        mo.set("ambientTimeoutSeconds", Json::from_number(ov.ambient_timeout));
         mo.set("screensaverEnabled", Json::from_bool(ov.screensaver_enabled));
-        mo.set("screensaverTimeoutSeconds", Json::from_number(ov.screensaver_timeout_seconds));
+        mo.set("screensaverTimeoutSeconds", Json::from_number(ov.screensaver_timeout));
         mo.set("lock", Json::from_bool(ov.lock));
         displays.set(name, std::move(mo));
     }

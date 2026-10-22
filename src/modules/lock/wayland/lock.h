@@ -16,8 +16,8 @@
 #include "config/lock_config.h"
 
 #include "modules/lock/model.h"
-#include "modules/lock/wayland/lock_wallpaper.h"
 #include "modules/lock/wayland/transition.h"
+#include "modules/lock/wayland/wallpaper.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/input_service.h"
@@ -26,10 +26,13 @@
 #include "ext-session-lock-v1-client-protocol.h"
 
 struct WaylandState;
-struct LockState;
 
-struct LockOutputSurface {
-    LockState *owner = nullptr;
+namespace astralia::lock {
+
+struct State;
+
+struct OutputSurface {
+    State *owner = nullptr;
     wl_output *output = nullptr;
     std::string output_name;
     wl_surface *surface = nullptr;
@@ -43,15 +46,15 @@ struct LockOutputSurface {
     OutputScale output_scale;
     FrameClock frame_clock;
     GlCanvas canvas;
-    astralia::LockMotion motion;
-    astralia::LockHits hits;
+    Motion motion;
+    Hits hits;
 
-    LockOutputSurface() = default;
-    LockOutputSurface(const LockOutputSurface &) = delete;
-    LockOutputSurface &operator=(const LockOutputSurface &) = delete;
+    OutputSurface() = default;
+    OutputSurface(const OutputSurface &) = delete;
+    OutputSurface &operator=(const OutputSurface &) = delete;
 };
 
-struct LockState {
+struct State {
     WaylandState *app = nullptr;
     ext_session_lock_v1 *lock = nullptr;
     bool active = false;
@@ -60,11 +63,11 @@ struct LockState {
     bool acknowledge_startup = false;
     std::chrono::steady_clock::time_point locked_at{};
 
-    std::vector<std::unique_ptr<LockOutputSurface>> surfaces;
+    std::vector<std::unique_ptr<OutputSurface>> surfaces;
 
-    astralia::LockModel model;
-    LockTransition transition;
-    LockWallpaper wallpaper;
+    Model model;
+    Transition transition;
+    Wallpaper wallpaper;
     std::string user;
 
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>
@@ -72,22 +75,24 @@ struct LockState {
     std::function<bool(const std::string &output_name)> panel_gated_for;
 };
 
-bool lock_request(LockState &st, WaylandState &app);
-void lock_begin(LockState &st, WaylandState &app, bool animate = true);
-void lock_teardown(LockState &st);
-void lock_begin_unlock(LockState &st);
-void lock_handle_key(LockState &st, const KeyEvent &ev);
-void lock_handle_click(LockState &st, wl_surface *surf, double x, double y);
-void lock_timer_tick(LockState &st);
-void lock_hotplug_add(LockState &st, wl_output *output, const char *name);
-void lock_hotplug_remove(LockState &st, wl_output *output);
-wl_surface *lock_focused_surface(const LockState &st);
-bool lock_owns_surface(const LockState &st, wl_surface *s);
+bool request(State &st, WaylandState &app);
+void lock_begin(State &st, WaylandState &app, bool animate = true);
+void teardown(State &st);
+void begin_unlock(State &st);
+void handle_key(State &st, const KeyEvent &ev);
+void handle_click(State &st, wl_surface *surf, double x, double y);
+void timer_tick(State &st);
+void hotplug_add(State &st, wl_output *output, const char *name);
+void hotplug_remove(State &st, wl_output *output);
+wl_surface *focused_surface(const State &st);
+bool owns_surface(const State &st, wl_surface *s);
 
-using LockWallpaperDrawFn = std::function<void(WaylandState &app, const std::string &output_name,
-                                               GlCanvas &canvas, int32_t w, int32_t h)>;
+using WallpaperDrawFn = std::function<void(WaylandState &app, const std::string &output_name,
+                                           GlCanvas &canvas, int32_t w, int32_t h)>;
 
-std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper);
-void lock_at_startup(WaylandState &app);
-void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name);
-void lock_notify_output_removed(WaylandState &app, wl_output *output);
+std::unique_ptr<Module> make_module(WallpaperDrawFn draw_wallpaper);
+void at_startup(WaylandState &app);
+void notify_output_added(WaylandState &app, wl_output *output, const char *name);
+void notify_output_removed(WaylandState &app, wl_output *output);
+
+} // namespace astralia::lock

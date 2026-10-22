@@ -41,12 +41,12 @@ struct MediaPlayer {
 
 MediaPlayback media_parse_playback(const std::string &status);
 std::string media_format_position(int64_t position_us);
-bool media_is_local_art_url(const std::string &url);
+bool media_is_local_art(const std::string &url);
 int media_select_player(const std::vector<MediaPlayer> &players);
 
 class MediaService {
   public:
-    explicit MediaService(SystemBus &bus);
+    explicit MediaService(Bus &bus);
 
     const MediaStatus &status() const { return status_; }
     void play_pause();
@@ -65,7 +65,7 @@ class MediaService {
     void call(const char *method);
     sdbus::IProxy *player(const std::string &name);
 
-    SystemBus &bus_;
+    Bus &bus_;
     std::unique_ptr<sdbus::IProxy> daemon_;
     std::map<std::string, std::unique_ptr<sdbus::IProxy>> players_;
     std::vector<MediaPlayer> candidates_;

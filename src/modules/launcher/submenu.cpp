@@ -1,7 +1,7 @@
 #include "modules/launcher/submenu.h"
-#include "modules/launcher/files_provider.h"
+#include "modules/launcher/files.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 namespace {
 
@@ -101,4 +101,4 @@ bool submenu_go_back(SubmenuState &s, const DirLister &list_dir) {
     return false;
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

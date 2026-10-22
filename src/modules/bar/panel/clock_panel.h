@@ -4,7 +4,7 @@
 
 #include "modules/bar/panel/panel.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 struct CalendarDay {
     int year;
@@ -42,4 +42,4 @@ class ClockPanel final : public PanelContent {
     int offset_ = 0;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

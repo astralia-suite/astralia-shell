@@ -4,20 +4,20 @@
 #include "core/log.h"
 #include "core/path_home.h"
 
-#include "modules/launcher/apps_provider.h"
+#include "modules/launcher/apps.h"
 #include "modules/launcher/desktop_entry.h"
-#include "modules/launcher/files_provider.h"
-#include "modules/launcher/launch_action.h"
+#include "modules/launcher/files.h"
+#include "modules/launcher/launch.h"
 #include "modules/launcher/model.h"
 #include "modules/launcher/search.h"
 #include "modules/launcher/submenu.h"
-#include "modules/launcher/visit_store.h"
+#include "modules/launcher/visits.h"
 
 #include "service/icon_service.h"
 
 #include "render/icons.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 namespace {
 
@@ -52,7 +52,7 @@ const char *submenu_glyph(const SubmenuEntry &entry) {
 
 } // namespace
 
-float launcher_content_height(int visible_rows) {
+float content_height(int visible_rows) {
     float height = cfg::menu_pad * 2.0f + cfg::search_height;
     if (visible_rows > 0) {
         height += cfg::list_gap + static_cast<float>(visible_rows) * cfg::row_height +
@@ -61,8 +61,7 @@ float launcher_content_height(int visible_rows) {
     return height;
 }
 
-LauncherModel::LauncherModel(Reactor &reactor)
-    : reactor_(reactor), dirs_proc_(reactor), files_proc_(reactor) {
+Model::Model(Reactor &reactor) : reactor_(reactor), dirs_proc_(reactor), files_proc_(reactor) {
     std::weak_ptr<bool> alive = alive_;
     timer_ = reactor_.add_timer(
         [this, alive] {
@@ -76,18 +75,18 @@ LauncherModel::LauncherModel(Reactor &reactor)
         });
 }
 
-LauncherModel::~LauncherModel() {
+Model::~Model() {
     *alive_ = false;
     stop_search();
 }
 
-void LauncherModel::changed() {
+void Model::changed() {
     if (on_changed) {
         on_changed();
     }
 }
 
-void LauncherModel::open(bool global) {
+void Model::open(bool global) {
     const char *home = std::getenv("HOME");
     search_root_ = global || home == nullptr ? "/" : home;
     apps_ = scan_desktop_entries();
@@ -97,7 +96,7 @@ void LauncherModel::open(bool global) {
     log::info("launcher: open, searching from {}", search_root_);
 }
 
-void LauncherModel::close() {
+void Model::close() {
     stop_search();
     debounce_pending_ = false;
     open_ = false;
@@ -116,26 +115,26 @@ void LauncherModel::close() {
     selected_ = -1;
     hovered_ = -1;
     height_target_ = highlight_target_ = scroll_target_ = -1.0f;
-    animations_.cancelForOwner(owner_height);
-    animations_.cancelForOwner(owner_highlight);
-    animations_.cancelForOwner(owner_scroll);
+    animations_.cancel_owner(owner_height);
+    animations_.cancel_owner(owner_highlight);
+    animations_.cancel_owner(owner_scroll);
 }
 
-int LauncherModel::item_count() const {
+int Model::item_count() const {
     return static_cast<int>(submenu_.screen == SubmenuScreen::search ? results_.size()
                                                                      : submenu_.items.size());
 }
 
-int LauncherModel::first_visible() const {
+int Model::first_visible() const {
     return selected_ >= cfg::max_visible ? selected_ - cfg::max_visible + 1 : 0;
 }
 
-void LauncherModel::reset_selection() {
+void Model::reset_selection() {
     selected_ = item_count() == 0 ? -1 : 0;
     hovered_ = -1;
 }
 
-void LauncherModel::query_changed() {
+void Model::query_changed() {
     ModeQuery mq = detect_mode_and_query(field_.text);
     mode_ = mq.mode;
     effective_query_ = mq.query;
@@ -149,7 +148,7 @@ void LauncherModel::query_changed() {
     arm_debounce();
 }
 
-void LauncherModel::text_edited() {
+void Model::text_edited() {
     if (submenu_.screen != SubmenuScreen::search) {
         submenu_close(submenu_);
     }
@@ -157,7 +156,7 @@ void LauncherModel::text_edited() {
     query_changed();
 }
 
-void LauncherModel::paste(const std::string &text) {
+void Model::paste(const std::string &text) {
     std::string line;
     for (char c : text) {
         if (c == '\n' || c == '\r' || c == '\t') {
@@ -176,7 +175,7 @@ void LauncherModel::paste(const std::string &text) {
     changed();
 }
 
-void LauncherModel::key_text(const input::KeyEvent &event) {
+void Model::key_text(const input::KeyEvent &event) {
     if (event.alt) {
         return;
     }
@@ -220,11 +219,11 @@ void LauncherModel::key_text(const input::KeyEvent &event) {
     }
 }
 
-size_t LauncherModel::byte_at_column(float column) const {
+size_t Model::byte_at_column(float column) const {
     return text_field_byte_offset(field_.text, static_cast<size_t>(std::max(column, 0.0f) + 0.5f));
 }
 
-size_t LauncherModel::field_window(size_t width) {
+size_t Model::field_window(size_t width) {
     size_t total = text_field_utf8_len(field_.text);
     if (total <= width) {
         return field_first_ = 0;
@@ -238,7 +237,7 @@ size_t LauncherModel::field_window(size_t width) {
     return field_first_ = std::min(field_first_, total - width);
 }
 
-void LauncherModel::pointer_down(float column, Clock::time_point now) {
+void Model::pointer_down(float column, Clock::time_point now) {
     if (!open_) {
         return;
     }
@@ -263,7 +262,7 @@ void LauncherModel::pointer_down(float column, Clock::time_point now) {
     changed();
 }
 
-void LauncherModel::pointer_drag(float column) {
+void Model::pointer_drag(float column) {
     if (!open_ || !dragging_) {
         return;
     }
@@ -272,15 +271,15 @@ void LauncherModel::pointer_drag(float column) {
     changed();
 }
 
-void LauncherModel::pointer_up() { dragging_ = false; }
+void Model::pointer_up() { dragging_ = false; }
 
-void LauncherModel::arm_debounce() {
+void Model::arm_debounce() {
     debounce_pending_ = true;
     debounce_due_ = Clock::now() + std::chrono::milliseconds(cfg::debounce_ms);
     reactor_.reschedule(timer_);
 }
 
-std::chrono::milliseconds LauncherModel::until_debounce() const {
+std::chrono::milliseconds Model::until_debounce() const {
     if (!debounce_pending_) {
         return std::chrono::hours(1);
     }
@@ -288,7 +287,7 @@ std::chrono::milliseconds LauncherModel::until_debounce() const {
                     std::chrono::milliseconds(0));
 }
 
-void LauncherModel::debounce_fired() {
+void Model::debounce_fired() {
     if (!debounce_pending_) {
         return;
     }
@@ -308,7 +307,7 @@ void LauncherModel::debounce_fired() {
     changed();
 }
 
-void LauncherModel::start_search() {
+void Model::start_search() {
     stop_search();
     search_query_ = effective_query_;
     std::string pattern = to_glob_pattern(search_query_);
@@ -332,7 +331,7 @@ void LauncherModel::start_search() {
     }
 }
 
-void LauncherModel::stop_search() {
+void Model::stop_search() {
     dirs_proc_.cancel();
     files_proc_.cancel();
     dirs_output_.clear();
@@ -341,7 +340,7 @@ void LauncherModel::stop_search() {
     searching_ = false;
 }
 
-void LauncherModel::finish_search() {
+void Model::finish_search() {
     searching_ = false;
     std::vector<ScoredApp> apps = search_apps(apps_, search_query_);
     std::vector<FileEntry> files;
@@ -360,7 +359,7 @@ void LauncherModel::finish_search() {
     changed();
 }
 
-void LauncherModel::launch_selected() {
+void Model::launch_selected() {
     if (submenu_.screen != SubmenuScreen::search) {
         if (selected_ < 0 || selected_ >= static_cast<int>(submenu_.items.size())) {
             return;
@@ -405,7 +404,7 @@ void LauncherModel::launch_selected() {
     }
 }
 
-void LauncherModel::key(const input::KeyEvent &event) {
+void Model::key(const input::KeyEvent &event) {
     hovered_ = -1;
     switch (event.kind) {
     case input::KeyKind::Text:
@@ -471,14 +470,14 @@ void LauncherModel::key(const input::KeyEvent &event) {
     changed();
 }
 
-void LauncherModel::commit_text(const std::string &text) {
+void Model::commit_text(const std::string &text) {
     text_cursor_insert(field_.text, cursor_, text);
     field_.preedit.clear();
     query_changed();
     changed();
 }
 
-void LauncherModel::delete_before(uint32_t count) {
+void Model::delete_before(uint32_t count) {
     text_cursor_clamp(field_.text, cursor_);
     cursor_.anchor = cursor_.pos;
     for (uint32_t i = 0; i < count; ++i) {
@@ -488,20 +487,20 @@ void LauncherModel::delete_before(uint32_t count) {
     changed();
 }
 
-void LauncherModel::set_preedit(std::string text) {
+void Model::set_preedit(std::string text) {
     field_.preedit = std::move(text);
     field_.cursor_idle_visible = true;
     changed();
 }
 
-void LauncherModel::click_row(int index) {
+void Model::click_row(int index) {
     selected_ = index;
     hovered_ = -1;
     launch_selected();
     changed();
 }
 
-bool LauncherModel::hover(int row) {
+bool Model::hover(int row) {
     int next = open_ ? row : -1;
     if (next == hovered_) {
         return false;
@@ -510,18 +509,18 @@ bool LauncherModel::hover(int row) {
     return true;
 }
 
-void LauncherModel::toggle_caret() { text_field_idle_toggle(field_); }
+void Model::toggle_caret() { text_field_idle_toggle(field_); }
 
-const std::string &LauncherModel::icon_path_for(const DesktopEntry &entry) {
+const std::string &Model::icon_path_for(const DesktopEntry &entry) {
     auto it = icon_paths_.find(entry.id);
     if (it == icon_paths_.end()) {
-        it = icon_paths_.emplace(entry.id, resolve_app_icon_path(entry.icon)).first;
+        it = icon_paths_.emplace(entry.id, app_icon_path(entry.icon)).first;
     }
     return it->second;
 }
 
-std::vector<LauncherRow> LauncherModel::rows() {
-    std::vector<LauncherRow> out;
+std::vector<Row> Model::rows() {
+    std::vector<Row> out;
     if (submenu_.screen == SubmenuScreen::search) {
         for (const DrunResult &result : results_) {
             switch (result.kind) {
@@ -547,9 +546,9 @@ std::vector<LauncherRow> LauncherModel::rows() {
     return out;
 }
 
-void LauncherModel::sync_layout() {
+void Model::sync_layout() {
     int visible = std::min(item_count(), cfg::max_visible);
-    float content = launcher_content_height(visible);
+    float content = content_height(visible);
     if (height_target_ < 0.0f) {
         height_ = height_target_ = content;
     } else if (content != height_target_) {
@@ -582,4 +581,4 @@ void LauncherModel::sync_layout() {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

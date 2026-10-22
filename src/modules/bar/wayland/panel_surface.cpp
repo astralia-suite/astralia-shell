@@ -18,21 +18,20 @@
 #include "modules/bar/wayland/bar.h"
 #include "modules/bar/wayland/panel_surface.h"
 
-using astralia::PanelId;
+namespace astralia::bar {
 
 PanelSurface::PanelSurface(WaylandState &app, MonitorOutput &mon)
     : app_(app), mon_(mon), set_(*app.reactor) {
-    set_.add(PanelId::tray, std::make_unique<astralia::TrayPanel>(*app.tray));
-    set_.add(PanelId::resource, std::make_unique<astralia::ResourcePanel>(
-                                    app.cpu_temp, app.gpu_temp, app.system_stats));
-    set_.add(PanelId::network, std::make_unique<astralia::NetworkPanel>(*app.network));
-    set_.add(PanelId::bluetooth, std::make_unique<astralia::BluetoothPanel>(*app.bluetooth));
-    set_.add(PanelId::volume, std::make_unique<astralia::VolumePanel>(*app.audio));
-    set_.add(PanelId::battery, std::make_unique<astralia::BatteryPanel>(*app.battery));
-    set_.add(PanelId::media, std::make_unique<astralia::MediaPanel>(*app.media));
-    set_.add(PanelId::brightness,
-             std::make_unique<astralia::BrightnessPanel>(*app.brightness_service));
-    set_.add(PanelId::clock, std::make_unique<astralia::ClockPanel>());
+    set_.add(PanelId::tray, std::make_unique<TrayPanel>(*app.tray));
+    set_.add(PanelId::resource,
+             std::make_unique<ResourcePanel>(app.cpu_temp, app.gpu_temp, app.system_stats));
+    set_.add(PanelId::network, std::make_unique<NetworkPanel>(*app.network));
+    set_.add(PanelId::bluetooth, std::make_unique<BluetoothPanel>(*app.bluetooth));
+    set_.add(PanelId::volume, std::make_unique<VolumePanel>(*app.audio));
+    set_.add(PanelId::battery, std::make_unique<BatteryPanel>(*app.battery));
+    set_.add(PanelId::media, std::make_unique<MediaPanel>(*app.media));
+    set_.add(PanelId::brightness, std::make_unique<BrightnessPanel>(*app.brightness_service));
+    set_.add(PanelId::clock, std::make_unique<ClockPanel>());
     set_.on_changed = [this] { request_frame(); };
     set_.on_state = [this](PanelId id, bool open) { state_changed(id, open); };
 }
@@ -44,7 +43,7 @@ PanelSurface::~PanelSurface() {
 }
 
 float PanelSurface::card_top() const {
-    return astralia::bar_layout::height + static_cast<float>(bar_style_of(mon_).top_margin) +
+    return astralia::bar_layout::height + static_cast<float>(style_of(mon_).top_margin) +
            astralia::bar_layout::panel_gap;
 }
 
@@ -122,14 +121,14 @@ void PanelSurface::destroy_popup() {
 }
 
 void PanelSurface::popup_dismissed() {
-    if (astralia::Panel *panel = set_.active()) {
+    if (Panel *panel = set_.active()) {
         panel->dismiss_popup();
     }
     request_frame();
 }
 
 void PanelSurface::sync_popup() {
-    astralia::Panel *panel = set_.active();
+    Panel *panel = set_.active();
     if (!base_.layer_surface || panel == nullptr || !panel->popup_wanted() || popup_.done) {
         destroy_popup();
         return;
@@ -170,7 +169,7 @@ void PanelSurface::sync_popup() {
 }
 
 void PanelSurface::paint_popup() {
-    astralia::Panel *panel = set_.active();
+    Panel *panel = set_.active();
     if (popup_.egl_surface == EGL_NO_SURFACE || popup_.done || panel == nullptr ||
         !panel->popup_wanted()) {
         return;
@@ -191,7 +190,7 @@ void PanelSurface::paint_popup() {
 }
 
 bool PanelSurface::wants_hand(wl_surface *surface, double x, double y) const {
-    const astralia::Panel *panel = set_.find(set_.active_id());
+    const Panel *panel = set_.find(set_.active_id());
     if (surface != nullptr && surface == popup_.surface) {
         return panel != nullptr && panel->popup_clickable(x, y);
     }
@@ -199,7 +198,7 @@ bool PanelSurface::wants_hand(wl_surface *surface, double x, double y) const {
 }
 
 void PanelSurface::sync_text_input() {
-    astralia::Panel *panel = set_.active();
+    Panel *panel = set_.active();
     bool want = panel != nullptr && panel->content().wants_text();
     if (want == text_focused_) {
         return;
@@ -240,7 +239,7 @@ void PanelSurface::press(wl_surface *surface, int button, double x, double y, ui
                                      : button == 0x111 ? astralia::input::Button::Right
                                                        : astralia::input::Button::Other;
     press_serial_ = serial;
-    astralia::Panel *panel = set_.active();
+    Panel *panel = set_.active();
     if (popup_.surface != nullptr && surface == popup_.surface) {
         if (panel != nullptr) {
             panel->press_popup(x, y, mapped);
@@ -261,13 +260,13 @@ void PanelSurface::wheel(wl_surface *surface, double x, double y, double dy) {
     if (surface == popup_.surface) {
         return;
     }
-    if (astralia::Panel *panel = set_.active()) {
+    if (Panel *panel = set_.active()) {
         panel->wheel(x, y, dy);
     }
 }
 
 void PanelSurface::send_key(const astralia::input::KeyEvent &event) {
-    if (astralia::Panel *panel = set_.active()) {
+    if (Panel *panel = set_.active()) {
         panel->key(event);
         sync_text_input();
         request_frame();
@@ -277,7 +276,7 @@ void PanelSurface::send_key(const astralia::input::KeyEvent &event) {
 void PanelSurface::key(const KeyEvent &event) { send_key(to_neutral(event)); }
 
 void PanelSurface::move(wl_surface *surface, double x, double y) {
-    astralia::Panel *panel = set_.active();
+    Panel *panel = set_.active();
     if (panel == nullptr) {
         return;
     }
@@ -294,7 +293,7 @@ void PanelSurface::move(wl_surface *surface, double x, double y) {
 }
 
 void PanelSurface::release() {
-    if (astralia::Panel *panel = set_.active()) {
+    if (Panel *panel = set_.active()) {
         panel->release();
     }
 }
@@ -302,7 +301,7 @@ void PanelSurface::release() {
 TextInputState PanelSurface::text_input_state() const {
     TextInputState state;
     state.purpose = TextInputPurpose::Password;
-    const astralia::Panel *panel = set_.find(set_.active_id());
+    const Panel *panel = set_.find(set_.active_id());
     if (panel != nullptr) {
         astralia::ui::Box c = panel->content().cursor();
         state.cursor_rect_x = static_cast<int32_t>(panel->dialog().x + c.x);
@@ -343,3 +342,5 @@ void PanelSurface::text_input_reset_preedit() {
 }
 
 void PanelSurface::text_input_deactivated(TextInputService &) { text_input_reset_preedit(); }
+
+} // namespace astralia::bar

@@ -7,7 +7,7 @@
 #include "modules/bar/panel/tray_panel.h"
 #include "modules/bar/panel/widgets.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -136,9 +136,9 @@ void TrayPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, Pan
                                size.h * scale},
                               palette::white);
         } else {
-            panel_widgets::centered_text(canvas, icon::apps,
-                                         ui::TextStyle{ui::FontFamily::icon, cfg::icon_px}, target,
-                                         palette::text);
+            widgets::centered_text(canvas, icon::apps,
+                                   ui::TextStyle{ui::FontFamily::icon, cfg::icon_px}, target,
+                                   palette::text);
         }
         paint.region(cell, item, static_cast<int>(i));
     }
@@ -167,15 +167,15 @@ void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &
                         palette::text_alpha06);
             break;
         case TrayMenuRow::Kind::loading:
-            panel_widgets::text_in_row(canvas, "Loading\xE2\x80\xA6", text_style,
-                                       r.x + cfg::tray_menu_row_pad, r, palette::text_dim);
+            widgets::text_in_row(canvas, "Loading\xE2\x80\xA6", text_style,
+                                 r.x + cfg::tray_menu_row_pad, r, palette::text_dim);
             break;
         case TrayMenuRow::Kind::back: {
             if (hover_id_ == back) {
                 canvas.rounded(r, metrics::radius_widget, palette::text_alpha08);
             }
-            panel_widgets::centered_text(canvas, icon::chevron_left, icon_style,
-                                         {r.x, r.y, cfg::tray_menu_row, r.h}, palette::text);
+            widgets::centered_text(canvas, icon::chevron_left, icon_style,
+                                   {r.x, r.y, cfg::tray_menu_row, r.h}, palette::text);
             paint.region(r, back);
             break;
         }
@@ -197,8 +197,7 @@ void TrayPanel::paint_popup(ui::Canvas &canvas, const ui::Box &box, PanelPaint &
             ui::TextStyle label = text_style;
             label.max_width =
                 std::max(0, static_cast<int>(r.x + r.w - text_x - cfg::tray_menu_label_offset));
-            panel_widgets::text_in_row(canvas, tray_strip_mnemonic(e.label), label, text_x, r,
-                                       color);
+            widgets::text_in_row(canvas, tray_strip_mnemonic(e.label), label, text_x, r, color);
             if (!e.children.empty()) {
                 ui::TextSize glyph = canvas.measure(icon::chevron_right, icon_style);
                 canvas.text(icon::chevron_right, icon_style,
@@ -296,4 +295,4 @@ bool TrayPanel::key(const input::KeyEvent &event) {
     return true;
 }
 
-} // namespace astralia
+} // namespace astralia::bar

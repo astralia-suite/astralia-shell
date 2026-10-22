@@ -11,7 +11,7 @@
 #include "render/marquee.h"
 #include "render/text_field.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 struct NetworkRow {
     enum class Kind {
@@ -75,4 +75,4 @@ class NetworkPanel final : public PanelContent {
     std::unordered_map<std::string, MarqueeTextState> marquees_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -7,7 +7,7 @@
 
 #include "modules/bar/panel/panel.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 enum class PanelId : int {
     tray,
@@ -53,4 +53,4 @@ class PanelSet {
     Reactor &reactor_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

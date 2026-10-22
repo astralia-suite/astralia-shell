@@ -12,11 +12,11 @@
 
 namespace {
 
-using astralia::PolkitKey;
-using astralia::PolkitModel;
-using astralia::PolkitPrompt;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
+using astralia::polkit::Key;
+using astralia::polkit::Model;
+using astralia::polkit::Prompt;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
@@ -30,13 +30,13 @@ KeyEvent key(KeyKind kind, std::string text = "") {
     return event;
 }
 
-PolkitPrompt prompt(bool needs_input, std::string info = "", bool is_error = false) {
+astralia::polkit::Prompt prompt(bool needs_input, std::string info = "", bool is_error = false) {
     return {"Install software", needs_input, std::move(info), is_error};
 }
 
 void check_polkit_model() {
     Instant instant;
-    PolkitModel model;
+    astralia::polkit::Model model;
     int closed = 0;
     model.on_closed = [&] { ++closed; };
 
@@ -46,22 +46,22 @@ void check_polkit_model() {
     test::check(!model.sync(true), "a second open is not a change");
 
     model.set_prompt(prompt(true));
-    test::check(model.key(key(KeyKind::Enter)) == PolkitKey::none,
+    test::check(model.key(key(KeyKind::Enter)) == astralia::polkit::Key::none,
                 "enter with no password does nothing");
-    test::check(model.key(key(KeyKind::Text, "h")) == PolkitKey::changed &&
-                    model.key(key(KeyKind::Text, "é")) == PolkitKey::changed,
+    test::check(model.key(key(KeyKind::Text, "h")) == astralia::polkit::Key::changed &&
+                    model.key(key(KeyKind::Text, "é")) == astralia::polkit::Key::changed,
                 "typing changes the field");
     test::check(model.password() == "hé" && model.dot_anim().chars.size() == 2,
                 "two characters and two dots");
-    test::check(model.key(key(KeyKind::Backspace)) == PolkitKey::changed &&
+    test::check(model.key(key(KeyKind::Backspace)) == astralia::polkit::Key::changed &&
                     model.password() == "h" && model.dot_anim().chars.size() == 1,
                 "backspace removes a whole character");
-    test::check(model.key(key(KeyKind::Up)) == PolkitKey::none, "arrows are ignored");
-    test::check(model.key(key(KeyKind::Enter)) == PolkitKey::submit, "enter submits");
+    test::check(model.key(key(KeyKind::Up)) == astralia::polkit::Key::none, "arrows are ignored");
+    test::check(model.key(key(KeyKind::Enter)) == astralia::polkit::Key::submit, "enter submits");
     test::check(model.take_password() == "h" && model.password().empty() &&
                     model.dot_anim().chars.empty(),
                 "taking the password empties the field");
-    test::check(model.key(key(KeyKind::Escape)) == PolkitKey::cancel, "escape cancels");
+    test::check(model.key(key(KeyKind::Escape)) == astralia::polkit::Key::cancel, "escape cancels");
 
     model.set_prompt(prompt(true, "Sorry, try again.", true));
     test::check(model.error() == astralia::polkit_config::error_text && !model.show_info(),
@@ -88,7 +88,7 @@ void check_polkit_model() {
 }
 
 void check_polkit_animation() {
-    PolkitModel model;
+    astralia::polkit::Model model;
     model.sync(true);
     test::check(model.open() && model.animating() && model.card_scale() == 0.0f,
                 "opening animates from zero");
@@ -108,22 +108,22 @@ void check_polkit_animation() {
 void check_polkit_view() {
     using Kind = test::Op::Kind;
     namespace cfg = astralia::polkit_config;
-    PolkitModel idle;
+    astralia::polkit::Model idle;
     test::RecordingCanvas none;
-    astralia::paint_polkit(none, idle, 1920, 1080);
+    astralia::polkit::paint(none, idle, 1920, 1080);
     test::check(none.ops.empty(), "a closed model draws nothing");
 
     Instant instant;
-    PolkitModel model;
+    astralia::polkit::Model model;
     model.sync(true);
     model.set_prompt(prompt(true));
     test::RecordingCanvas canvas;
-    astralia::paint_polkit(canvas, model, 1920, 1080);
+    astralia::polkit::paint(canvas, model, 1920, 1080);
     test::check(canvas.ops.front().kind == Kind::begin_group &&
                     canvas.ops.back().kind == Kind::end_group,
                 "everything sits in one card group");
     const test::Op &group = canvas.ops.front();
-    double card_h = astralia::polkit_card_height(false);
+    double card_h = astralia::polkit::card_height(false);
     test::check(group.box.w == cfg::card_width && group.box.h == card_h && group.value == 1.0f,
                 "card size and scale");
     test::check(group.box.x == (1920 - cfg::card_width) / 2 &&
@@ -142,7 +142,7 @@ void check_polkit_view() {
         model.key(key(KeyKind::Text, std::string(1, c)));
     }
     test::RecordingCanvas typed;
-    astralia::paint_polkit(typed, model, 1920, 1080);
+    astralia::polkit::paint(typed, model, 1920, 1080);
     test::check(typed.count(Kind::rounded) == 5 + 3, "one dot per character");
     test::check(typed.ops[typed.ops.size() - 2].box.w == cfg::dot_size,
                 "dots have the configured size");
@@ -151,12 +151,12 @@ void check_polkit_view() {
         model.key(key(KeyKind::Text, "z"));
     }
     test::RecordingCanvas many;
-    astralia::paint_polkit(many, model, 1920, 1080);
+    astralia::polkit::paint(many, model, 1920, 1080);
     test::check(many.count(Kind::rounded) == 5 + 25, "dots are limited to what fits");
 
     model.set_prompt(prompt(false, "Touch the sensor"));
     test::RecordingCanvas waiting;
-    astralia::paint_polkit(waiting, model, 1920, 1080);
+    astralia::polkit::paint(waiting, model, 1920, 1080);
     bool authenticating = false;
     bool info = false;
     for (const test::Op &op : waiting.ops) {
@@ -165,7 +165,7 @@ void check_polkit_view() {
         info = info || (op.kind == Kind::text && op.text == "Touch the sensor");
     }
     test::check(authenticating && info &&
-                    waiting.ops.front().box.h == astralia::polkit_card_height(true),
+                    waiting.ops.front().box.h == astralia::polkit::card_height(true),
                 "waiting state shows the status and the info line");
 }
 

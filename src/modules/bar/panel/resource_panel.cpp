@@ -6,7 +6,7 @@
 
 #include "render/sticker.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -90,8 +90,8 @@ void device_card(ui::Canvas &canvas, const ui::Box &box, const Device &d) {
                    cfg::gauge_diameter};
     canvas.gauge(bottom, cfg::gauge_stroke, std::clamp(d.celsius / cfg::temp_gauge_max, 0.0f, 1.0f),
                  temp_color(d.celsius, d.base));
-    panel_widgets::centered_text(canvas, resource_format_celsius(d.celsius), center, bottom,
-                                 palette::text);
+    widgets::centered_text(canvas, resource_format_celsius(d.celsius), center, bottom,
+                           palette::text);
 }
 
 } // namespace
@@ -176,11 +176,11 @@ void ResourcePanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll,
         canvas.text(line.detail, text_style, inner.x + inner.w - detail.w, line_y,
                     palette::text_dim);
         float bar_y = line_y + std::max(label.h, detail.h) + cfg::memory_label_gap;
-        panel_widgets::flat_bar(canvas, {inner.x, bar_y, inner.w, cfg::memory_bar},
-                                std::max(0.0f, line.value), cfg::memory_min_fill, palette::paper,
-                                *line.color);
+        widgets::flat_bar(canvas, {inner.x, bar_y, inner.w, cfg::memory_bar},
+                          std::max(0.0f, line.value), cfg::memory_min_fill, palette::paper,
+                          *line.color);
         line_y = bar_y + cfg::memory_bar + cfg::memory_line_gap;
     }
 }
 
-} // namespace astralia
+} // namespace astralia::bar

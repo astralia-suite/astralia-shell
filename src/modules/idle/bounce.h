@@ -1,6 +1,6 @@
 #pragma once
 
-namespace astralia {
+namespace astralia::idle {
 
 struct Bounce {
     float x = 40.0f;
@@ -11,4 +11,4 @@ struct Bounce {
 
 void bounce_step(Bounce &bounce, float dt, float width, float height, float size);
 
-} // namespace astralia
+} // namespace astralia::idle

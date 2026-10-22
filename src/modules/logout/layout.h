@@ -2,14 +2,14 @@
 
 #include <optional>
 
-namespace astralia {
+namespace astralia::logout {
 
 struct Point {
     double x;
     double y;
 };
 
-Point logout_button_center(int index, Point center);
-std::optional<int> logout_button_at(Point pointer, Point center);
+Point button_center(int index, Point center);
+std::optional<int> button_at(Point pointer, Point center);
 
-} // namespace astralia
+} // namespace astralia::logout

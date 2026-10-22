@@ -12,7 +12,7 @@ namespace astralia {
 
 enum class SessionKind { none, wayland, x11 };
 
-struct SessionEnvironment {
+struct SessionEnv {
     std::string override_name;
     std::string hyprland_signature;
     std::string i3_socket;
@@ -21,12 +21,12 @@ struct SessionEnvironment {
     std::string display;
 };
 
-SessionEnvironment session_environment();
+SessionEnv session_env();
 bool start_locked(std::string_view value);
 std::string start_locked_ack_path(unsigned uid);
 bool start_locked_pending();
-void start_locked_acknowledge();
-SessionKind detect_session(const SessionEnvironment &environment);
+void start_locked_ack();
+SessionKind detect_session(const SessionEnv &environment);
 std::string_view session_name(SessionKind kind);
 std::string backend_library_name(SessionKind kind);
 std::vector<std::string> backend_search_dirs(std::string_view override_dir,

@@ -20,7 +20,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 class Bar {
   public:
@@ -41,7 +41,7 @@ class Bar {
     uint16_t collapsed_height() const;
     void set_collapsed(bool collapsed);
     void update_autohide();
-    void close_other_overlays(BarItem keep);
+    void close_other_overlays(Item keep);
     void scroll(const xcb_button_press_event_t &event);
     void apply_output(const OutputGeometry &output);
     void set_hints(const OutputGeometry &output);
@@ -68,14 +68,14 @@ class Bar {
     bool collapsed_ = false;
     std::string output_name_;
     BarStyle style_ = BarStyle::continuous;
-    const BarStyleSpec *spec_ = nullptr;
+    const StyleSpec *spec_ = nullptr;
     XWindow window_;
     CairoCanvas canvas_;
-    BarModel model_;
+    Model model_;
     std::unique_ptr<PanelHost> panels_;
     std::string clock_label_;
     float clock_width_ = 0.0f;
     int linger_timer_ = -1;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

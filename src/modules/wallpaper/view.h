@@ -4,8 +4,8 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::wallpaper {
 
-void paint_desktop_menu(ui::Canvas &canvas, const DesktopMenuModel &model, float x, float y);
+void paint(ui::Canvas &canvas, const DesktopMenuModel &model, float x, float y);
 
-} // namespace astralia
+} // namespace astralia::wallpaper

@@ -18,9 +18,9 @@
 namespace {
 
 namespace cfg = astralia::overview_config;
-using astralia::OverviewModel;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
+using astralia::overview::Model;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
@@ -63,10 +63,10 @@ void check_layout() {
     Instant instant;
     test::FakeCompositor compositor;
     setup_single(compositor);
-    OverviewModel model(compositor);
+    astralia::overview::Model model(compositor);
     model.open("A", 1366, 768);
     model.sync(1366, 768);
-    const astralia::OverviewLayout &layout = model.layout();
+    const astralia::overview::Layout &layout = model.layout();
     test::check(layout.cells.size() == 10 && layout.cells[0].workspace == 1 &&
                     layout.cells[9].workspace == 10,
                 "ten cells in ids");
@@ -98,7 +98,7 @@ void check_layout() {
     two.state_.by_monitor["A"].active_id = 1;
     two.state_.by_monitor["B"].active_id = 11;
     two.state_.focused_monitor = "A";
-    OverviewModel global(two);
+    astralia::overview::Model global(two);
     global.open("A", 1920, 1080);
     global.key(key(KeyKind::Tab));
     test::check(global.global_mode(), "tab switches to the global view");
@@ -118,18 +118,18 @@ void check_tiles() {
                                  client("0x2", 2, -500, 9000, 100, 100),
                                  client("0x3", 99, 0, 0, 10, 10)};
     compositor.state_.clients[0].floating = true;
-    OverviewModel model(compositor);
+    astralia::overview::Model model(compositor);
     model.open("A", 1366, 768);
     model.sync(1366, 768);
     test::check(model.tiles().size() == 2, "windows on other pages get no tile");
-    const astralia::OverviewCell *cell = nullptr;
+    const astralia::overview::Cell *cell = nullptr;
     for (const auto &c : model.layout().cells) {
         if (c.workspace == 2) {
             cell = &c;
         }
     }
     test::check(cell != nullptr, "cell for workspace two");
-    for (const astralia::OverviewTile &tile : model.tiles()) {
+    for (const astralia::overview::Tile &tile : model.tiles()) {
         astralia::ui::Box r = model.tile_rect(tile);
         const astralia::ui::Box &c =
             tile.workspace == 1 ? model.layout().cells[0].rect : cell->rect;
@@ -145,7 +145,7 @@ void check_input() {
     test::FakeCompositor compositor;
     setup_single(compositor);
     compositor.state_.clients = {client("0x1", 1, 100, 100, 400, 300)};
-    OverviewModel model(compositor);
+    astralia::overview::Model model(compositor);
     int close_requests = 0;
     model.on_close_requested = [&] { ++close_requests; };
     test::check(!model.key(key(KeyKind::Right)), "a closed overview ignores keys");
@@ -185,7 +185,7 @@ void check_input() {
     test::check(model.key(key(KeyKind::Escape)) && close_requests == 1, "escape asks to close");
 
     model.sync(1366, 768);
-    const astralia::OverviewCell &fourth = model.layout().cells[3];
+    const astralia::overview::Cell &fourth = model.layout().cells[3];
     model.press(fourth.rect.x + 2, fourth.rect.y + 2);
     test::check(compositor.calls.back() == "focus 4", "clicking a cell focuses it");
     model.press(fourth.rect.x + 2, fourth.rect.y + 2, {.shift = true});
@@ -199,7 +199,7 @@ void check_input() {
     model.press(tile.x + 2, tile.y + 2);
     test::check(model.dragging() && model.clickable(tile.x + 2, tile.y + 2),
                 "pressing a tile starts a drag");
-    const astralia::OverviewCell &target = model.layout().cells[6];
+    const astralia::overview::Cell &target = model.layout().cells[6];
     model.move(target.rect.x + 3, target.rect.y + 3);
     test::check(model.drag_target() == 7, "the cell under the pointer is the drop target");
     model.sync(1366, 768);
@@ -222,7 +222,7 @@ void check_overview_stages() {
     test::FakeCompositor compositor;
     setup_single(compositor);
     compositor.state_.clients = {client("0x1", 1, 100, 100, 400, 300)};
-    OverviewModel model(compositor);
+    astralia::overview::Model model(compositor);
     int closed = 0;
     model.on_closed = [&] { ++closed; };
     model.open("A", 1366, 768);
@@ -270,7 +270,7 @@ void check_overview_stages() {
 
     {
         Instant instant;
-        OverviewModel snap(compositor);
+        astralia::overview::Model snap(compositor);
         int snapped = 0;
         snap.on_closed = [&] { ++snapped; };
         snap.open("A", 1366, 768);
@@ -287,7 +287,7 @@ void check_view() {
     test::FakeCompositor compositor;
     setup_single(compositor);
     compositor.state_.clients = {client("0x1", 1, 0, 0, 683, 374)};
-    OverviewModel model(compositor);
+    astralia::overview::Model model(compositor);
     model.open("A", 1366, 768);
     model.sync(1366, 768);
     astralia::ScrollMetrics metrics;
@@ -297,7 +297,7 @@ void check_view() {
     size_t scroll_ops = frame.count(Kind::rounded);
 
     test::RecordingCanvas canvas;
-    astralia::paint_overview(canvas, model, {});
+    astralia::overview::paint(canvas, model, {});
     test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 1 + 2,
                 "the scroll, cells, one tile and the indicator with its shadow");
     test::check(canvas.count(Kind::text) == 10 && canvas.count(Kind::image) <= 1,
@@ -305,12 +305,12 @@ void check_view() {
 
     test::RecordingCanvas live;
     int art_calls = 0;
-    astralia::paint_overview(live, model,
-                             [&](astralia::ui::Canvas &, const astralia::OverviewTile &,
-                                 const astralia::ui::Box &, float) {
-                                 ++art_calls;
-                                 return true;
-                             });
+    astralia::overview::paint(live, model,
+                              [&](astralia::ui::Canvas &, const astralia::overview::Tile &,
+                                  const astralia::ui::Box &, float) {
+                                  ++art_calls;
+                                  return true;
+                              });
     test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 2,
                 "live art replaces the placeholder tile");
 }
@@ -323,11 +323,11 @@ void check_staged_view() {
     test::FakeCompositor compositor;
     setup_single(compositor);
     compositor.state_.clients = {client("0x1", 1, 0, 0, 683, 374)};
-    OverviewModel model(compositor);
+    astralia::overview::Model model(compositor);
     model.open("A", 1366, 768);
     model.sync(1366, 768);
     test::RecordingCanvas rising;
-    astralia::paint_overview(rising, model, {});
+    astralia::overview::paint(rising, model, {});
     test::check(rising.count(Kind::rounded) > 0 && rising.count(Kind::text) == 0,
                 "the closed scroll rises with no grid");
 
@@ -337,21 +337,21 @@ void check_staged_view() {
     model.sync(1366, 768);
     test::check(model.scroll() > 0.0f && model.scroll() < 1.0f, "the scroll is half unrolled");
     test::RecordingCanvas unrolling;
-    astralia::paint_overview(unrolling, model, {});
+    astralia::overview::paint(unrolling, model, {});
     test::check(unrolling.count(Kind::text) == 0 && unrolling.count(Kind::begin_group) == 0,
                 "the scroll unrolls empty");
 
     model.tick(steady_clock::now() + seconds(2));
     model.sync(1366, 768);
     test::RecordingCanvas waiting;
-    astralia::paint_overview(waiting, model, {});
+    astralia::overview::paint(waiting, model, {});
     test::check(model.scroll() == 1.0f && waiting.count(Kind::text) == 0,
                 "the grid waits for the open scroll");
 
     model.tick(steady_clock::now() + seconds(3));
     model.sync(1366, 768);
     test::RecordingCanvas open;
-    astralia::paint_overview(open, model, {});
+    astralia::overview::paint(open, model, {});
     test::check(open.count(Kind::text) == 10 && open.count(Kind::begin_group) == 0,
                 "the grid appears once the scroll is open");
 
@@ -360,7 +360,7 @@ void check_staged_view() {
                milliseconds(static_cast<int>(astralia::ScrollTimings{}.grid_out_ms / 2)));
     model.sync(1366, 768);
     test::RecordingCanvas fading;
-    astralia::paint_overview(fading, model, {});
+    astralia::overview::paint(fading, model, {});
     test::check(model.grid_alpha() > 0.0f && model.grid_alpha() < 1.0f && model.scroll() == 1.0f &&
                     fading.count(Kind::text) == 10,
                 "the grid fades while the scroll stays open");
@@ -368,7 +368,7 @@ void check_staged_view() {
     model.tick(steady_clock::now() + seconds(4));
     model.sync(1366, 768);
     test::RecordingCanvas gone;
-    astralia::paint_overview(gone, model, {});
+    astralia::overview::paint(gone, model, {});
     test::check(gone.count(Kind::text) == 0 && model.scroll() == 1.0f,
                 "the grid is gone before the scroll rolls up");
 }

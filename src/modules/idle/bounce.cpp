@@ -1,6 +1,6 @@
 #include "modules/idle/bounce.h"
 
-namespace astralia {
+namespace astralia::idle {
 
 void bounce_step(Bounce &bounce, float dt, float width, float height, float size) {
     bounce.x += bounce.vx * dt;
@@ -23,4 +23,4 @@ void bounce_step(Bounce &bounce, float dt, float width, float height, float size
     }
 }
 
-} // namespace astralia
+} // namespace astralia::idle

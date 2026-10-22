@@ -5,9 +5,9 @@
 #include "render/recording_canvas.h"
 
 void check_desktop_menu() {
-    using astralia::DesktopMenuAction;
-    using astralia::DesktopMenuModel;
-    DesktopMenuModel menu;
+    using astralia::wallpaper::DesktopMenuAction;
+    using astralia::wallpaper::DesktopMenuModel;
+    astralia::wallpaper::DesktopMenuModel menu;
     test::check(!menu.is_open() && menu.entry_at(5, 5) == -1, "the menu starts closed");
 
     menu.open(100.0f, 80.0f, 800.0f, 600.0f, 1);
@@ -18,9 +18,10 @@ void check_desktop_menu() {
     test::check(menu.box().x + menu.box().w <= 800.0f && menu.box().y + menu.box().h <= 600.0f,
                 "the menu stays inside the output");
 
-    const auto &entries = DesktopMenuModel::entries();
-    test::check(entries.size() == 2 && entries[0].action == DesktopMenuAction::settings &&
-                    entries[1].action == DesktopMenuAction::wallpaper,
+    const auto &entries = astralia::wallpaper::DesktopMenuModel::entries();
+    test::check(entries.size() == 2 &&
+                    entries[0].action == astralia::wallpaper::DesktopMenuAction::settings &&
+                    entries[1].action == astralia::wallpaper::DesktopMenuAction::wallpaper,
                 "the menu offers settings and wallpaper");
     astralia::ui::Box first = menu.row(0);
     astralia::ui::Box second = menu.row(1);
@@ -36,7 +37,7 @@ void check_desktop_menu() {
     test::check(menu.hovered() == -1, "hover clears");
 
     test::RecordingCanvas canvas;
-    astralia::paint_desktop_menu(canvas, menu, menu.box().x, menu.box().y);
+    astralia::wallpaper::paint(canvas, menu, menu.box().x, menu.box().y);
     int labels = 0;
     for (const test::Op &op : canvas.ops) {
         labels +=
@@ -50,6 +51,6 @@ void check_desktop_menu() {
                 "toggling a closed menu opens it");
     menu.close();
     test::RecordingCanvas empty;
-    astralia::paint_desktop_menu(empty, menu, 0.0f, 0.0f);
+    astralia::wallpaper::paint(empty, menu, 0.0f, 0.0f);
     test::check(empty.ops.empty(), "a closed menu draws nothing");
 }

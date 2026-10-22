@@ -43,7 +43,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Draw each module once over `ui::Canvas` and add a hook for backend-only art. Per-backend copies drift apart within a release.
 - Rain simulates on the CPU into an ARGB buffer. Each host only uploads or blits that buffer, so both draw identical frames.
 - Bamboo follows the same buffer contract but owns its frame type and random source, because a module may not include another module's files.
-- Hooks carry backend-only art: `LogoutLogoPainter`, `OverviewTileArt`, `SettingsArt`, `LockAvatarArt`. Shared views then never include a render header.
+- Hooks carry backend-only art: `LogoutLogoPainter`, `overview::TileArt`, `settings::Art`, `LockAvatarArt`. Shared views then never include a render header.
 - Share a module's logic only where both backends' formulas and constants match. `notification`, `settings` and bar styles differ in design, so they stay per backend.
 - Keep constants only one host draws with in `<module>_style_config.h`. Constants a shared view draws with go in the module's shared config.
 - Move call sites to the shared names instead of keeping alias headers. Aliases hide which service a file uses.
@@ -51,9 +51,9 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - The palette is runtime state, written only by `theme_apply` on the reactor thread. A render thread would need a snapshot.
 - `ThemeService` extracts the wallpaper seed on a worker and checks a generation. A stale decode must not override a newer wallpaper.
 - The palette has no literals and stays empty until `theme_apply`. The first `ThemeService::sync` decodes synchronously, before any module paints.
-- A bar style spec row is refreshed from the live palette in `bar_style_spec`. X11 bars call it again on theme change.
+- A bar style spec row is refreshed from the live palette in `bar::style_spec`. X11 bars call it again on theme change.
 - Draw cards, islands and chips through `sticker()`; its box includes the shadow. Layout and window size stay unchanged.
-- A `sticker()` shadow is drawn in `outline` unless `shadow_color` is passed. The bar passes `palette::shadow` through `BarStyleSpec::shadow_color`, so a bar pill has three tones: pastel `accent_container` fill, `ink` border and the darkest `shadow`. The shadow offset is `metrics::shadow_offset` on both axes and the corners are `metrics::radius_card`, like every card. The sticker box includes its shadow, so the surface height is unchanged. `okinami` has no shadow.
+- A `sticker()` shadow is drawn in `outline` unless `shadow_color` is passed. The bar passes `palette::shadow` through `bar::StyleSpec::shadow_color`, so a bar pill has three tones: pastel `accent_container` fill, `ink` border and the darkest `shadow`. The shadow offset is `metrics::shadow_offset` on both axes and the corners are `metrics::radius_card`, like every card. The sticker box includes its shadow, so the surface height is unchanged. `okinami` has no shadow.
 - Fills under a `sticker()` are opaque. A translucent face shows the hard shadow through it; composite alpha fills over `paper` first.
 - Rank wallpaper seeds by `sqrt(area) * chroma`. A linear area score let the pale majority hide the small vivid hair and petals.
 - The thumbnail cache is keyed by path alone. Request the current wallpaper at the large size first and neighbours small; a path keeps its first size.
@@ -69,8 +69,8 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Guard a service-signal slot with the content's alive flag. `Signal` has no disconnect, so a destroyed panel would be called.
 - One overlay surface per monitor hosts whichever bar panel is open. Nine surfaces cost memory and input regions for panels shown one at a time.
 - A panel's tray menu is a real popup: `xdg_popup` on Wayland, an override-redirect window on X11. Both need the parent's grab and position.
-- The bar's `top_margin` and `side_margin` come from `BarStyleSpec`, never from a global constant. Each style attaches differently.
-- A bar style needs its row in every `BarStyleSpec` table. A too-short table silently zero-fills.
+- The bar's `top_margin` and `side_margin` come from `bar::StyleSpec`, never from a global constant. Each style attaches differently.
+- A bar style needs its row in every `bar::StyleSpec` table. A too-short table silently zero-fills.
 - Panel fills follow `hl`, except the `i3` rows for network, Bluetooth, tray cells and the hovered tray entry. The `text_alpha06` and `text_alpha08` fills are deliberate.
 - Removing a UI feature's draw code leaves its click kinds, state and handlers reading as live. Delete them in the same change.
 - A refactor changing a shared function's contract must migrate every call site. Stragglers silently skip the new behaviour.
@@ -88,7 +88,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - Never destroy an sdbus proxy inside its own async reply callback. Prune per-device proxies from the signal-match handler instead.
 - Hold one sdbus proxy per fixed object, but keep changing NetworkManager paths one-off. Caching per-reconnect paths grows without bound.
 - A local proxy destroyed right after firing an async call corrupts the connection it borrowed. Cache one proxy per object path.
-- `SystemBus` polls both the bus fd and its `eventFd`. Sync calls queue signals internally, and only `eventFd` wakes the loop.
+- `Bus` polls both the bus fd and its `eventFd`. Sync calls queue signals internally, and only `eventFd` wakes the loop.
 - Network scans run only while the panel is watching. An always-on seven-second `nmcli` rescan cost a process spawn each time.
 - Never rescan on every NetworkManager state change. Forced rescans delay association and emit more churn; debounce through `schedule_rescan`.
 - A timer- or signal-driven service must emit only on a real state diff. A once-a-second tick repainted every surface unconditionally.
@@ -197,7 +197,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] A scissor clip helper needs a stack once clips nest. An unconditional disable on destruction wiped the outer clip.
 - [wayland] Floor and ceil each scissor edge independently. Flooring the origin then rounding the size can drop the last row.
 - [wayland] A container animating its own size clips children to the current size. Opacity alone lets oversized content draw mid-tween.
-- [wayland] Gate that reveal clip on the height tween, not `animations.hasActive()`. A looping marquee kept it true forever.
+- [wayland] Gate that reveal clip on the height tween, not `animations.has_active()`. A looping marquee kept it true forever.
 - [wayland] A cached geometry value derives from the variable used for drawing. The animation target stored a wrong position.
 - [wayland] A filled widget at the same origin as an earlier label paints over it. Offset the fill or draw the label last.
 - [wayland] Overlapping translucent shapes of one colour double-darken. `Okinami` draws its rail and islands with opaque `palette::paper`.
@@ -303,7 +303,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] One detached decode thread per picker tile bloats RSS. About 35 concurrent decodes kept eight 64 MB arenas.
 - [wayland] `count_rgba_frames` counting one extension does not prove a directory is absent. A stale `.png` directory blocked the rename.
 - [wayland] A sync-from-config function uploading only non-empty paths must clear the texture on an empty path. Reset it and bump the generation.
-- [wayland] Clearing a texture in memory does not repaint. Both branches call `wallpaper_request_frame`, or the old wallpaper stays.
+- [wayland] Clearing a texture in memory does not repaint. Both branches call `wallpaper::request_frame`, or the old wallpaper stays.
 - [wayland] Wallpaper decode closures capture a `std::weak_ptr<int>` lifetime token. Per-monitor state can be freed on hotplug before the closure runs.
 - [wayland] The backend pins `M_ARENA_MAX` to 2 and `M_MMAP_THRESHOLD` and `M_TRIM_THRESHOLD` to 256 KB. Dynamic thresholds otherwise leave a worker arena holding 47 MB.
 
@@ -324,7 +324,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] The visualizer canvas stays square. Otherwise `sphereCoords()` yields an ellipsoid, as blob geometry is pixel-absolute.
 - [wayland] `ncs`'s `time` uniform is a frame counter paced to `fps`. Its decay constants are per-frame, so an unpaced port over-reacts.
 - [wayland] The shell has no runtime shader preprocessor. Flatten ported multi-file shaders at authoring time into `assets/shaders/`.
-- [wayland] A larger `arc_gauge` scales its stroke by the reference stroke-to-diameter ratio. `kLockResGaugeStrokeRatio` stops a hairline.
+- [wayland] A larger `arc_gauge` scales its stroke by the reference stroke-to-diameter ratio. `lock_config::kResGaugeStrokeRatio` stops a hairline.
 - [wayland] Matrix and visualizer tile as regular windows. A `float = true` rule is a rejected direction, not an omission.
 
 ## Wayland: surfaces and protocol
@@ -347,11 +347,11 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] Every `EGLSurface` teardown calls `gl_release_if_current` first. It unbinds only that surface, keeping the context bound surfacelessly.
 - [wayland] A bottom-anchored layer surface changes size and buffer in one commit. A separate commit dropped hover.
 - [wayland] Keep layer overlays mapped across same-output toggles. Recreating a same-namespace surface left it uncomposited or unrouted on Hyprland.
-- [wayland] A hand-rolled toggle can miss a shared lifecycle fix. `launcher_toggle` hit the uncomposited-surface bug independently.
+- [wayland] A hand-rolled toggle can miss a shared lifecycle fix. `launcher::toggle` hit the uncomposited-surface bug independently.
 - [wayland] A destroy-on-close toplevel can reuse an earlier window's address. State keyed by address must clear when the window goes.
 - [wayland] A mostly click-through layer surface takes clicks through a `wl_region` union of sub-rects. Notifications rebuild theirs each paint.
 - [wayland] A `PerMonitorModule` pointer move fires on every monitor with the same coordinates. Guard hover on `pointer.focused_surface` being its own.
-- [wayland] The pointing-hand cursor needs `wants_pointing_hand_cursor()` on both `Module` and `PerMonitorModule`. Otherwise bars keep the arrow.
+- [wayland] The pointing-hand cursor needs `wants_hand_cursor()` on both `Module` and `PerMonitorModule`. Otherwise bars keep the arrow.
 - [wayland] Every panel with exclusive keyboard interactivity needs its own key-dispatch arm. Nothing enforces the two stay in sync.
 - [wayland] A modifier-aware shortcut matches `KeyEvent::base_sym`, not `text`. `Shift`+`1` is `!` in `text`.
 - [wayland] A hover highlight clears on lost surface focus, not only on motion. Stolen focus leaves a stale hovered index.
@@ -360,7 +360,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] The desktop menu is drawn on the wallpaper surface itself, after the transitions. Only the wallpaper surface receives a right-click on bare desktop.
 - [wayland] A panel's staged dismissal is coded identically on every path. `Escape` and an outside click once disagreed.
 - [wayland] A generic "click missed" guard excluding a sibling surface pushes the decision onto it. That handler must know every overlay above.
-- [wayland] An overlay opened from a bar widget needs its own `*_here` term in `bar_paint`'s `want_shown`. Opening it steals focus and autohide collapses the bar.
+- [wayland] An overlay opened from a bar widget needs its own `*_here` term in `bar::render`'s `want_shown`. Opening it steals focus and autohide collapses the bar.
 - [wayland] A single-instance overlay bound to one output is open only there. Gate on `bound_output() == mon.output.wl`.
 - [wayland] A per-monitor `apply_config` reads its `new_cfg`, never `app.cfg`. The latter is assigned after the fan-out.
 - [wayland] A per-monitor `create_surface()` must not gate on config state. It runs once, so a startup check broke toggle-on.
@@ -372,10 +372,10 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 - [wayland] A popup's `done` event dismisses it. Destroy the popup and notify the panel, since the compositor has already dropped the grab.
 - [wayland] `ext-session-lock` withholds `locked` until every output presents a non-null buffer. Paint all lock surfaces before flushing.
 - [wayland] Grab a transition snapshot with `glCopyTexImage2D` after `flush` and before the swap. The texture then outlives the frame.
-- [wayland] The transition strikes use the logout `thunder_burst` and `thunder_shock` shaders through the `LockThunder` hook. The shared view falls back to plain strokes when no hook is set.
+- [wayland] The transition strikes use the logout `thunder_burst` and `thunder_shock` shaders through the `lock::Thunder` hook. The shared view falls back to plain strokes when no hook is set.
 - [wayland] Transition overlays that outlive the lock must set keyboard interactivity to none and commit. Otherwise they keep exclusive focus.
 - [wayland] Never release the session lock inside a transition `configure` handler. Defer it with `DeferredCall`.
-- [wayland] Poll a deadline from the module timer to finish a stuck transition, so `lock_request` still runs.
+- [wayland] Poll a deadline from the module timer to finish a stuck transition, so `lock::request` still runs.
 - [wayland] `unlock_and_destroy` needs a `wl_display_roundtrip` before teardown. Otherwise the server may kill the client with a protocol error.
 - [wayland] Ack a lock-surface `configure` before any commit and on every resend. Defer the `wl_egl_window` resize past the handler.
 - [wayland] The startup overlay `init_egl` loop must not gate on `surface()`. The lock owns none until locked.

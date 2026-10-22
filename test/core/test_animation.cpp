@@ -15,12 +15,14 @@ void check_easing() {
     for (Easing e :
          {Easing::Linear, Easing::EaseOutQuad, Easing::EaseInOutCubic, Easing::EaseOutCubic,
           Easing::EaseInCubic, Easing::EaseOutBack, Easing::EaseInBack}) {
-        test::check(std::fabs(astralia::applyEasing(e, 0.0f)) < 1e-5f, "easing starts at zero");
-        test::check(std::fabs(astralia::applyEasing(e, 1.0f) - 1.0f) < 1e-5f, "easing ends at one");
+        test::check(std::fabs(astralia::apply_easing(e, 0.0f)) < 1e-5f, "easing starts at zero");
+        test::check(std::fabs(astralia::apply_easing(e, 1.0f) - 1.0f) < 1e-5f,
+                    "easing ends at one");
     }
-    test::check(astralia::applyEasing(Easing::EaseOutQuad, 0.5f) > 0.5f, "ease out quad leads");
-    test::check(astralia::applyEasing(Easing::EaseInCubic, 0.5f) < 0.5f, "ease in cubic lags");
-    test::check(astralia::applyEasing(Easing::EaseInBack, 0.5f) < 0.0f, "ease in back undershoots");
+    test::check(astralia::apply_easing(Easing::EaseOutQuad, 0.5f) > 0.5f, "ease out quad leads");
+    test::check(astralia::apply_easing(Easing::EaseInCubic, 0.5f) < 0.5f, "ease in cubic lags");
+    test::check(astralia::apply_easing(Easing::EaseInBack, 0.5f) < 0.0f,
+                "ease in back undershoots");
 }
 
 void check_interpolation() {
@@ -34,10 +36,10 @@ void check_interpolation() {
     test::check(value == 0.0f, "first tick sits at the start");
     mgr.tick(now + 50ms);
     test::check(std::fabs(value - 5.0f) < 1e-3f, "midpoint");
-    test::check(completions == 0 && mgr.hasActive(), "still running at midpoint");
+    test::check(completions == 0 && mgr.has_active(), "still running at midpoint");
     mgr.tick(now + 150ms);
     test::check(std::fabs(value - 10.0f) < 1e-3f, "end value");
-    test::check(completions == 1 && !mgr.hasActive(), "completes once and clears");
+    test::check(completions == 1 && !mgr.has_active(), "completes once and clears");
 }
 
 void check_zero_duration() {
@@ -46,7 +48,7 @@ void check_zero_duration() {
     int completions = 0;
     mgr.animate(
         0.0f, 5.0f, 0.0f, Easing::Linear, [&](float v) { value = v; }, [&] { completions++; });
-    test::check(value == 5.0f && completions == 1 && !mgr.hasActive(), "zero duration snaps");
+    test::check(value == 5.0f && completions == 1 && !mgr.has_active(), "zero duration snaps");
 }
 
 void check_owner() {
@@ -64,9 +66,9 @@ void check_owner() {
     mgr.animate(
         0.0f, 10.0f, 100.0f, Easing::Linear, [&](float v) { cancelled = v; },
         [&] { completed = true; }, 2);
-    mgr.cancelForOwner(2);
+    mgr.cancel_owner(2);
     mgr.tick(now + 400ms);
-    test::check(!mgr.hasActive() && cancelled == -1.0f && !completed,
+    test::check(!mgr.has_active() && cancelled == -1.0f && !completed,
                 "cancel drops the animation silently");
 }
 
@@ -80,7 +82,7 @@ void check_instant() {
         0.0f, 7.0f, 500.0f, Easing::EaseOutCubic, [&](float v) { value = v; },
         [&] { completions++; });
     astralia::animation_set_instant(false);
-    test::check(value == 7.0f && completions == 1 && !mgr.hasActive(),
+    test::check(value == 7.0f && completions == 1 && !mgr.has_active(),
                 "instant mode snaps and keeps no entry");
     test::check(!astralia::animation_instant(), "flag clears");
 }

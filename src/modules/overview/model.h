@@ -16,29 +16,29 @@
 #include "render/geometry.h"
 #include "render/scroll_sequence.h"
 
-namespace astralia {
+namespace astralia::overview {
 
-struct OverviewCell {
+struct Cell {
     int workspace = -1;
     ui::Box rect;
 };
 
-struct OverviewLayout {
+struct Layout {
     std::vector<ui::Box> panels;
     float scale = 0.0f;
-    std::vector<OverviewCell> cells;
+    std::vector<Cell> cells;
 };
 
-struct OverviewTile {
+struct Tile {
     std::string address;
     std::string window_class;
     int workspace = -1;
     ui::Box rect;
 };
 
-class OverviewModel {
+class Model {
   public:
-    explicit OverviewModel(Compositor &compositor);
+    explicit Model(Compositor &compositor);
 
     void open(std::string output_name, float width, float height);
     void close();
@@ -53,7 +53,7 @@ class OverviewModel {
 
     bool is_open() const { return open_; }
     bool dragging() const { return dragging_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     bool global_mode() const { return global_mode_; }
     int selected() const { return selected_; }
     int drag_target() const { return drag_target_; }
@@ -61,9 +61,9 @@ class OverviewModel {
     float scroll() const { return sequence_.scroll(); }
     float grid_alpha() const { return sequence_.grid(); }
     bool fully_open() const { return open_ && !sequence_.closing() && sequence_.settled(); }
-    const OverviewLayout &layout() const { return layout_; }
-    const std::vector<OverviewTile> &tiles() const { return tiles_; }
-    ui::Box tile_rect(const OverviewTile &tile) const;
+    const Layout &layout() const { return layout_; }
+    const std::vector<Tile> &tiles() const { return tiles_; }
+    ui::Box tile_rect(const Tile &tile) const;
     const ui::Box *indicator() const { return indicator_visible_ ? &indicator_ : nullptr; }
     const std::string &icon_path(const std::string &window_class);
     const std::string &output_name() const { return output_name_; }
@@ -77,8 +77,8 @@ class OverviewModel {
     void compute_layout(float width, float height);
     void rebuild_tiles();
     void update_indicator();
-    const OverviewCell *find_cell(int workspace) const;
-    const OverviewCell *cell_at(double x, double y) const;
+    const Cell *find_cell(int workspace) const;
+    const Cell *cell_at(double x, double y) const;
     int active_workspace(const std::string &monitor_name) const;
     const CompositorMonitor *bound_monitor() const;
 
@@ -92,8 +92,8 @@ class OverviewModel {
     float height_ = 0.0f;
     int group_ = 0;
     int selected_ = -1;
-    OverviewLayout layout_;
-    std::vector<OverviewTile> tiles_;
+    Layout layout_;
+    std::vector<Tile> tiles_;
     struct TileAnim {
         ui::Box current;
         ui::Box target;
@@ -116,4 +116,4 @@ class OverviewModel {
     std::unordered_map<std::string, std::string> icon_paths_;
 };
 
-} // namespace astralia
+} // namespace astralia::overview

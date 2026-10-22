@@ -33,8 +33,8 @@ void type_anim_pop(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner
     if (anim.chars.empty())
         return;
     size_t idx = anim.chars.size() - 1;
-    am.cancelForOwner(type_anim_owner(owner_base, idx, 0));
-    am.cancelForOwner(type_anim_owner(owner_base, idx, 1));
+    am.cancel_owner(type_anim_owner(owner_base, idx, 0));
+    am.cancel_owner(type_anim_owner(owner_base, idx, 1));
     anim.chars.pop_back();
 }
 
@@ -291,7 +291,7 @@ float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint6
     }
     if (anchor_x != slide.target) {
         slide.target = anchor_x;
-        am.cancelForOwner(owner);
+        am.cancel_owner(owner);
         am.animate(
             slide.x, anchor_x, kTextFieldRowSlideMs, Easing::EaseOutCubic,
             [&slide](float v) { slide.x = v; }, {}, owner);
@@ -300,7 +300,7 @@ float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint6
 }
 
 void text_field_row_slide_reset(TextFieldRowSlide &slide, AnimationManager &am, uint64_t owner) {
-    am.cancelForOwner(owner);
+    am.cancel_owner(owner);
     slide.primed = false;
     slide.x = 0.0f;
     slide.target = 0.0f;

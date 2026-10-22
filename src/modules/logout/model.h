@@ -11,17 +11,17 @@
 #include "core/animation.h"
 #include "core/input.h"
 
-namespace astralia {
+namespace astralia::logout {
 
-class LogoutModel;
+class Model;
 
-class LogoutModel {
+class Model {
   public:
     static constexpr int count = logout_config::button_count;
     using Commands = std::array<std::string, count>;
     using Floats = std::array<float, count>;
 
-    explicit LogoutModel(Commands commands);
+    explicit Model(Commands commands);
 
     void open();
     void toggle();
@@ -36,7 +36,7 @@ class LogoutModel {
     bool open_state() const { return open_; }
     bool exiting() const { return exiting_; }
     bool input_ready() const { return input_ready_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     int selected() const { return selected_; }
     int hovered() const { return hovered_; }
     float logo_scale() const { return logo_scale_; }
@@ -95,4 +95,4 @@ class LogoutModel {
 
 std::array<std::string, logout_config::button_count> logout_commands(bool with_lock);
 
-} // namespace astralia
+} // namespace astralia::logout

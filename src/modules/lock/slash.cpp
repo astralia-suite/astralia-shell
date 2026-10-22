@@ -7,7 +7,7 @@
 
 #include "modules/lock/slash.h"
 
-namespace astralia {
+namespace astralia::lock {
 
 namespace {
 
@@ -138,7 +138,7 @@ float slash_polygon_area(const SlashPolygon &polygon) {
 }
 
 float slash_run_progress(float elapsed_ms) {
-    return clamp01(std::max(elapsed_ms, 0.0f) / kLockSlashMs);
+    return clamp01(std::max(elapsed_ms, 0.0f) / lock_config::kSlashMs);
 }
 
 SlashPlan::SlashPlan(uint32_t seed, float width, float height)
@@ -149,60 +149,64 @@ SlashPlan::SlashPlan(uint32_t seed, float width, float height)
 
     ui::Point final_direction{1.0f, 0.0f};
     if (diagonal > 0.0f) {
-        final_direction = {std::cos(kLockFinalTilt), -std::sin(kLockFinalTilt)};
+        final_direction = {std::cos(lock_config::kFinalTilt), -std::sin(lock_config::kFinalTilt)};
     }
-    final_ = make_cut(middle, final_direction, width_, height_, kLockSlashFinalReach * diagonal,
-                      kLockSlashFinalStart, kLockSlashFinalStart + kLockSlashFinalDrawSpan);
+    final_ = make_cut(middle, final_direction, width_, height_,
+                      lock_config::kSlashFinalReach * diagonal, lock_config::kSlashFinalStart,
+                      lock_config::kSlashFinalStart + lock_config::kSlashFinalDrawSpan);
 
-    for (int k = 0; k < kLockStarCount; ++k) {
-        const LockStarCorner &from = kLockStarCorners[k];
-        const LockStarCorner &to = kLockStarCorners[(k + 1) % kLockStarCount];
+    for (int k = 0; k < lock_config::kStarCount; ++k) {
+        const lock_config::StarCorner &from = lock_config::kStarCorners[k];
+        const lock_config::StarCorner &to =
+            lock_config::kStarCorners[(k + 1) % lock_config::kStarCount];
         ui::Point a{from.x * width_, from.y * height_};
         ui::Point b{to.x * width_, to.y * height_};
         float length = std::hypot(b.x - a.x, b.y - a.y);
         ui::Point direction = length > 0.0f ? ui::Point{(b.x - a.x) / length, (b.y - a.y) / length}
                                             : ui::Point{1.0f, 0.0f};
-        float start =
-            kLockSlashFirstStart + static_cast<float>(k) * kLockStarAdvanceMs / kLockSlashMs;
+        float start = lock_config::kSlashFirstStart +
+                      static_cast<float>(k) * lock_config::kStarAdvanceMs / lock_config::kSlashMs;
         cuts_.push_back(make_cut(lerp(a, b, 0.5f), direction, width_, height_, 0.0f, start,
-                                 start + kLockSlashDrawSpan));
+                                 start + lock_config::kSlashDrawSpan));
     }
 
-    for (const LockFlurrySlash &slash : kLockFlurrySlashes) {
+    for (const lock_config::FlurrySlash &slash : lock_config::kFlurrySlashes) {
         float angle = slash.degrees * std::numbers::pi_v<float> / 180.0f;
         ui::Point heading{std::cos(angle), std::sin(angle)};
-        float x = (0.5f - heading.y * slash.offset * kLockReferenceHeight / kLockReferenceWidth);
+        float x = (0.5f - heading.y * slash.offset * lock_config::kReferenceHeight /
+                              lock_config::kReferenceWidth);
         float y = 0.5f + heading.x * slash.offset;
         ui::Point direction = heading;
         if (diagonal > 0.0f) {
-            float scaled_x = heading.x / kLockReferenceWidth * width_;
-            float scaled_y = heading.y / kLockReferenceHeight * height_;
+            float scaled_x = heading.x / lock_config::kReferenceWidth * width_;
+            float scaled_y = heading.y / lock_config::kReferenceHeight * height_;
             float length = std::hypot(scaled_x, scaled_y);
             direction = {scaled_x / length, scaled_y / length};
         }
-        float start = kLockSlashFirstStart + slash.start_ms / kLockSlashMs;
+        float start = lock_config::kSlashFirstStart + slash.start_ms / lock_config::kSlashMs;
         cuts_.push_back(make_cut({x * width_, y * height_}, direction, width_, height_, 0.0f, start,
-                                 start + kLockSlashDrawSpan));
+                                 start + lock_config::kSlashDrawSpan));
     }
 
-    for (int i = 0; i < kLockSlashRayCount; ++i) {
+    for (int i = 0; i < lock_config::kSlashRayCount; ++i) {
         float angle = (static_cast<float>(i) + rng.range(-0.3f, 0.3f)) * 2.0f *
-                      std::numbers::pi_v<float> / static_cast<float>(kLockSlashRayCount);
-        rays_.push_back({middle,
-                         {middle.x + diagonal * std::cos(angle - kLockSlashRayHalfAngle),
-                          middle.y + diagonal * std::sin(angle - kLockSlashRayHalfAngle)},
-                         {middle.x + diagonal * std::cos(angle + kLockSlashRayHalfAngle),
-                          middle.y + diagonal * std::sin(angle + kLockSlashRayHalfAngle)}});
+                      std::numbers::pi_v<float> / static_cast<float>(lock_config::kSlashRayCount);
+        rays_.push_back(
+            {middle,
+             {middle.x + diagonal * std::cos(angle - lock_config::kSlashRayHalfAngle),
+              middle.y + diagonal * std::sin(angle - lock_config::kSlashRayHalfAngle)},
+             {middle.x + diagonal * std::cos(angle + lock_config::kSlashRayHalfAngle),
+              middle.y + diagonal * std::sin(angle + lock_config::kSlashRayHalfAngle)}});
     }
 
-    for (int i = 0; i < kLockSliverCount; ++i) {
+    for (int i = 0; i < lock_config::kSliverCount; ++i) {
         SlashSliver sliver;
         sliver.along = rng.unit();
-        sliver.perp = (rng.unit() - 0.5f) * 2.0f * kLockSliverSpreadFrac * height_;
-        sliver.length = rng.range(kLockSliverLengthMin, kLockSliverLengthMax);
-        sliver.thick = rng.range(kLockSliverThickMin, kLockSliverThickMax);
-        sliver.drift_perp = (rng.unit() - 0.5f) * 2.0f * kLockSliverDriftFrac * height_;
-        sliver.drift_along = (rng.unit() - 0.5f) * 2.0f * kLockSliverAlongFrac * diagonal;
+        sliver.perp = (rng.unit() - 0.5f) * 2.0f * lock_config::kSliverSpreadFrac * height_;
+        sliver.length = rng.range(lock_config::kSliverLengthMin, lock_config::kSliverLengthMax);
+        sliver.thick = rng.range(lock_config::kSliverThickMin, lock_config::kSliverThickMax);
+        sliver.drift_perp = (rng.unit() - 0.5f) * 2.0f * lock_config::kSliverDriftFrac * height_;
+        sliver.drift_along = (rng.unit() - 0.5f) * 2.0f * lock_config::kSliverAlongFrac * diagonal;
         slivers_.push_back(sliver);
     }
 
@@ -217,7 +221,8 @@ SlashPlan::SlashPlan(uint32_t seed, float width, float height)
         for (const SlashPolygon &piece : shards_) {
             for (float sign : {1.0f, -1.0f}) {
                 SlashPolygon half = clip_half(piece, line->center, line->direction, sign);
-                if (half.size() >= 3 && slash_polygon_area(half) > kLockSlashMinPieceArea) {
+                if (half.size() >= 3 &&
+                    slash_polygon_area(half) > lock_config::kSlashMinPieceArea) {
                     next.push_back(std::move(half));
                 }
             }
@@ -229,7 +234,7 @@ SlashPlan::SlashPlan(uint32_t seed, float width, float height)
     for (size_t i = 0; i < shards_.size(); ++i) {
         ui::Point at = centroid(shards_[i]);
         float distance = std::hypot(at.x - middle.x, at.y - middle.y);
-        keyed.emplace_back(distance * (1.0f + kLockSlashShardRankNoise * rng.unit()), i);
+        keyed.emplace_back(distance * (1.0f + lock_config::kSlashShardRankNoise * rng.unit()), i);
     }
     std::ranges::sort(keyed);
     fall_rank_.resize(shards_.size());
@@ -238,12 +243,13 @@ SlashPlan::SlashPlan(uint32_t seed, float width, float height)
         fall_rank_[keyed[position].second] = position;
     }
     for (float &spin : shard_spin_) {
-        spin = (rng.unit() < 0.5f ? -1.0f : 1.0f) * rng.range(0.5f, 1.0f) * kLockSlashShardSpin;
+        spin = (rng.unit() < 0.5f ? -1.0f : 1.0f) * rng.range(0.5f, 1.0f) *
+               lock_config::kSlashShardSpin;
     }
 }
 
 void SlashPlan::add_cutmarks(SlashFrame &frame, float progress) const {
-    float time_s = progress * kLockSlashMs * 0.001f;
+    float time_s = progress * lock_config::kSlashMs * 0.001f;
     for (size_t k = 0; k < cuts_.size(); ++k) {
         const SlashCut &cut = cuts_[k];
         if (progress < cut.start) {
@@ -253,17 +259,18 @@ void SlashPlan::add_cutmarks(SlashFrame &frame, float progress) const {
         float s = ease_out_cubic(t);
         float reveal = std::min(2.0f * s, 1.0f);
         if (progress < final_.land) {
-            frame.marks.push_back(
-                {cut.a, lerp(cut.a, cut.b, reveal), kLockCutmarkWidth, kLockCutmarkAlpha});
+            frame.marks.push_back({cut.a, lerp(cut.a, cut.b, reveal), lock_config::kCutmarkWidth,
+                                   lock_config::kCutmarkAlpha});
         }
         if (t < 1.0f && s > 0.002f) {
             float pulse = 4.0f * s * (1.0f - s);
             frame.beams.push_back({cut.a, lerp(cut.a, cut.b, reveal),
-                                   kLockBeamPeakFrac * height_ * pulse,
-                                   std::min(pulse * kLockStrikePeak, 1.0f)});
-            frame.strikes.push_back(strike_of(
-                cut, kLockSlashStrikeOvershoot, reveal, 4.0f * s * (1.0f - s) * kLockStrikePeak,
-                static_cast<float>(k) * 1.7f + 1.0f, 1.0f, kLockStrikeAmp, time_s));
+                                   lock_config::kBeamPeakFrac * height_ * pulse,
+                                   std::min(pulse * lock_config::kStrikePeak, 1.0f)});
+            frame.strikes.push_back(strike_of(cut, lock_config::kSlashStrikeOvershoot, reveal,
+                                              4.0f * s * (1.0f - s) * lock_config::kStrikePeak,
+                                              static_cast<float>(k) * 1.7f + 1.0f, 1.0f,
+                                              lock_config::kStrikeAmp, time_s));
         }
     }
 }
@@ -272,11 +279,11 @@ void SlashPlan::add_final(SlashFrame &frame, float progress) const {
     if (progress < final_.start) {
         return;
     }
-    float time_s = progress * kLockSlashMs * 0.001f;
-    float peak = kLockFinalBeamFrac * height_;
-    float thin = kLockFinalThinFrac * height_;
+    float time_s = progress * lock_config::kSlashMs * 0.001f;
+    float peak = lock_config::kFinalBeamFrac * height_;
+    float thin = lock_config::kFinalThinFrac * height_;
     float sweep = 1.0f;
-    float intensity = kLockFinalIntensity;
+    float intensity = lock_config::kFinalIntensity;
     float beam_width = 0.0f;
     float beam_alpha = 0.0f;
     bool strike = true;
@@ -286,31 +293,31 @@ void SlashPlan::add_final(SlashFrame &frame, float progress) const {
         beam_alpha = 1.0f;
     } else {
         float since = progress - final_.land;
-        float u = since / kLockSlashFinalBeamSpan;
+        float u = since / lock_config::kSlashFinalBeamSpan;
         if (u < 1.0f) {
             beam_width = peak + (thin - peak) * ease_out_cubic(u);
             beam_alpha = 1.0f - clamp01((u - 0.4f) / 0.6f);
         }
-        float fade = since / kLockSlashFinalFade;
+        float fade = since / lock_config::kSlashFinalFade;
         strike = fade < 1.0f;
         float crackle = 0.55f + 0.45f * std::sin(time_s * 71.0f) * std::sin(time_s * 127.0f);
-        intensity = (1.0f - fade) * (1.0f - fade) * kLockFinalIntensity * crackle;
+        intensity = (1.0f - fade) * (1.0f - fade) * lock_config::kFinalIntensity * crackle;
     }
     if (beam_alpha > 0.0f) {
         frame.beams.push_back({final_.a, lerp(final_.a, final_.b, sweep), beam_width, beam_alpha});
     }
     if (strike) {
-        frame.strikes.push_back(strike_of(final_, 0.0f, sweep, intensity, kLockFinalSeed,
-                                          kLockFinalThick, kLockStrikeAmp * kLockFinalAmpMult,
-                                          time_s));
+        frame.strikes.push_back(strike_of(
+            final_, 0.0f, sweep, intensity, lock_config::kFinalSeed, lock_config::kFinalThick,
+            lock_config::kStrikeAmp * lock_config::kFinalAmpMult, time_s));
     }
 }
 
 void SlashPlan::add_slivers(SlashFrame &frame, float progress) const {
-    if (progress < final_.land || progress >= final_.land + kLockSlashSliverSpan) {
+    if (progress < final_.land || progress >= final_.land + lock_config::kSlashSliverSpan) {
         return;
     }
-    float u = (progress - final_.land) / kLockSlashSliverSpan;
+    float u = (progress - final_.land) / lock_config::kSlashSliverSpan;
     ui::Point along{final_.b.x - final_.a.x, final_.b.y - final_.a.y};
     float length = std::hypot(along.x, along.y);
     if (length < 1e-3f) {
@@ -343,24 +350,24 @@ SlashFrame SlashPlan::sample(float progress) const {
     SlashFrame frame;
 
     if (p < final_.land) {
-        if (width_ * height_ > kLockSlashMinPieceArea) {
+        if (width_ * height_ > lock_config::kSlashMinPieceArea) {
             frame.desktop.push_back(
                 {{0.0f, 0.0f}, {width_, 0.0f}, {width_, height_}, {0.0f, height_}});
             frame.sources.push_back(frame.desktop.back());
         }
     } else {
         frame.shattered = true;
-        float fall_begin = final_.land + kLockSlashShatterHold;
+        float fall_begin = final_.land + lock_config::kSlashShatterHold;
         ui::Point middle{width_ * 0.5f, height_ * 0.5f};
-        float reach = kLockSlashShardDrift * std::hypot(width_, height_);
+        float reach = lock_config::kSlashShardDrift * std::hypot(width_, height_);
         for (size_t i = 0; i < shards_.size(); ++i) {
             float share = shards_.size() > 1 ? static_cast<float>(fall_rank_[i]) /
                                                    static_cast<float>(shards_.size() - 1)
                                              : 0.0f;
-            float begin = fall_begin + share * kLockSlashShatterSpread;
-            float local = clamp01((p - begin) / kLockSlashFallSpan);
+            float begin = fall_begin + share * lock_config::kSlashShatterSpread;
+            float local = clamp01((p - begin) / lock_config::kSlashFallSpan);
             float eased = local * local;
-            float scale = (1.0f - kLockSlashGapFrac) * (1.0f - eased);
+            float scale = (1.0f - lock_config::kSlashGapFrac) * (1.0f - eased);
             if (scale <= 0.001f) {
                 continue;
             }
@@ -380,33 +387,33 @@ SlashFrame SlashPlan::sample(float progress) const {
     add_final(frame, p);
     add_slivers(frame, p);
 
-    frame.dim = kLockDimPeak * ease_out_cubic(clamp01(p / kLockSlashDimRamp));
+    frame.dim = lock_config::kDimPeak * ease_out_cubic(clamp01(p / lock_config::kSlashDimRamp));
     if (p >= final_.land) {
-        float lift = clamp01((p - final_.land) / kLockSlashDimLift);
+        float lift = clamp01((p - final_.land) / lock_config::kSlashDimLift);
         frame.dim *= 1.0f - ease_out_cubic(lift);
     }
 
-    if (p >= final_.land && p < final_.land + kLockSlashFlashSpan) {
+    if (p >= final_.land && p < final_.land + lock_config::kSlashFlashSpan) {
         float since = p - final_.land;
-        if (since < kLockSlashFlashHold) {
+        if (since < lock_config::kSlashFlashHold) {
             frame.flash = 1.0f;
         } else {
-            float fade =
-                1.0f - (since - kLockSlashFlashHold) / (kLockSlashFlashSpan - kLockSlashFlashHold);
+            float fade = 1.0f - (since - lock_config::kSlashFlashHold) /
+                                    (lock_config::kSlashFlashSpan - lock_config::kSlashFlashHold);
             frame.flash = fade * fade;
         }
     }
-    if (p >= final_.land && p < final_.land + kLockSlashImpactSpan) {
+    if (p >= final_.land && p < final_.land + lock_config::kSlashImpactSpan) {
         frame.rays = rays_;
     }
-    if (p >= final_.land && p < final_.land + kLockSlashShockSpan) {
+    if (p >= final_.land && p < final_.land + lock_config::kSlashShockSpan) {
         frame.shock = SlashShock{{width_ * 0.5f, height_ * 0.5f},
-                                 kLockShockRadiusFrac * height_,
-                                 (p - final_.land) / kLockSlashShockSpan,
-                                 kLockShockIntensity,
-                                 p * kLockSlashMs * 0.001f};
+                                 lock_config::kShockRadiusFrac * height_,
+                                 (p - final_.land) / lock_config::kSlashShockSpan,
+                                 lock_config::kShockIntensity,
+                                 p * lock_config::kSlashMs * 0.001f};
     }
     return frame;
 }
 
-} // namespace astralia
+} // namespace astralia::lock

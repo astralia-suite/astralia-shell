@@ -1,9 +1,9 @@
 #pragma once
 
-namespace astralia {
+namespace astralia::visualizer {
 
-int visualizer_bar_count(float width);
-int visualizer_bar_texel(int index, int count, int size);
+int bar_count(float width);
+int bar_texel(int index, int count, int size);
 float visualizer_bar_height(float magnitude, float area_height);
 
-} // namespace astralia
+} // namespace astralia::visualizer

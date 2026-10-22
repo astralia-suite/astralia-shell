@@ -60,16 +60,14 @@ void check_config_parse() {
 
     Config cfg = parse_config(sample_config());
     check(cfg.autohide && cfg.bar_style == BarStyle::continuous, "bar section");
-    check(!cfg.default_osd_enabled && !cfg.default_wallpaper_enabled &&
-              cfg.default_lock_panel_enabled,
-          "display defaults");
+    check(!cfg.default_osd && !cfg.default_wallpaper && cfg.default_lock, "display defaults");
     check(cfg.monitor_overrides.contains("eDP-1") && cfg.monitor_overrides["eDP-1"].enabled &&
               cfg.monitor_overrides["eDP-1"].osd && !cfg.monitor_overrides["eDP-1"].lock,
           "monitor override fields");
-    check(cfg.monitor_overrides["eDP-1"].ambient_timeout_seconds == 90 &&
-              cfg.monitor_overrides["eDP-1"].screensaver_timeout_seconds == 300,
+    check(cfg.monitor_overrides["eDP-1"].ambient_timeout == 90 &&
+              cfg.monitor_overrides["eDP-1"].screensaver_timeout == 300,
           "override seconds keep defaults when absent");
-    check(!cfg.idle_management_enabled, "idle disabled");
+    check(!cfg.idle_enabled, "idle disabled");
     check(!cfg.launcher_lightning && Config().launcher_lightning, "launcher lightning");
     check(cfg.rain.mode == RainMode::Stiletto && cfg.rain.async_speed, "rain");
     check(cfg.visualizer.visualizer_shape == VisualizerShape::Sphere && cfg.visualizer.fps == 30,
@@ -116,26 +114,26 @@ void check_config_parse() {
           "a wrongly typed lightning value keeps the default");
     check(parse_config(R"({"qixing": {"autohideEnabled": true}})").autohide,
           "legacy section names still load");
-    check(parse_config(R"({"displays": {"defaultSpark": false}})").default_osd_enabled == false,
+    check(parse_config(R"({"displays": {"defaultSpark": false}})").default_osd == false,
           "legacy display keys still load");
     Config grouped = parse_config(R"({
         "general": {"animationsDisabled": true, "launcherLightning": false},
         "displays": {"idle": {"enabled": false, "ambientTimeoutSeconds": 20}},
         "ambient": {"rain": {"mode": "stiletto"}, "visualizer": {"fps": 30}}})");
     check(grouped.animations_disabled && !grouped.launcher_lightning, "the general section loads");
-    check(!grouped.idle_management_enabled && grouped.ambient_timeout_seconds == 20,
+    check(!grouped.idle_enabled && grouped.ambient_timeout == 20,
           "idle loads from the displays section");
     check(grouped.rain.mode == RainMode::Stiletto && grouped.visualizer.fps == 30,
           "rain and visualizer load from the ambient section");
     check(parse_config(R"({"animation": {"disabled": true}, "idle": {"enabled": false},
                            "rain": {"mode": "stiletto"}})")
                   .animations_disabled &&
-              !parse_config(R"({"idle": {"enabled": false}})").idle_management_enabled &&
+              !parse_config(R"({"idle": {"enabled": false}})").idle_enabled &&
               parse_config(R"({"rain": {"mode": "stiletto"}})").rain.mode == RainMode::Stiletto,
           "the previous top-level sections still load");
     check(parse_config(serialize_config(grouped)) == grouped, "the grouped layout round-trips");
     check(parse_config(R"({"visualizer": {"fps": 9999, "glowQuality": 100}})").visualizer.fps ==
-              kVisualizerFpsMax,
+              visualizer_config::kFpsMax,
           "visualizer values are clamped");
     check(parse_config(R"({"bar": {"autohideEnabled": "yes"}})").autohide == false,
           "a wrongly typed value keeps the default");
@@ -145,30 +143,28 @@ void check_monitor_overrides() {
     using namespace astralia;
     using test::check;
     Config cfg;
-    check(osd_effective_enabled(cfg, "DP-1") == cfg.default_osd_enabled, "default osd");
-    check(notifications_effective_enabled(cfg, "DP-1") == cfg.default_notifications_enabled,
+    check(osd_enabled_for(cfg, "DP-1") == cfg.default_osd, "default osd");
+    check(notifications_enabled_for(cfg, "DP-1") == cfg.default_notifications,
           "default notifications");
-    check(autohide_effective_enabled(cfg, "DP-1") == cfg.autohide, "default autohide");
+    check(autohide_enabled_for(cfg, "DP-1") == cfg.autohide, "default autohide");
     cfg.monitor_overrides["DP-1"] =
         MonitorOverride{.enabled = false, .osd = false, .notifications = false, .autohide = true};
-    check(osd_effective_enabled(cfg, "DP-1") == cfg.default_osd_enabled,
-          "a disabled override is ignored");
+    check(osd_enabled_for(cfg, "DP-1") == cfg.default_osd, "a disabled override is ignored");
     cfg.monitor_overrides["DP-1"].enabled = true;
-    check(!osd_effective_enabled(cfg, "DP-1") && !notifications_effective_enabled(cfg, "DP-1") &&
-              autohide_effective_enabled(cfg, "DP-1"),
+    check(!osd_enabled_for(cfg, "DP-1") && !notifications_enabled_for(cfg, "DP-1") &&
+              autohide_enabled_for(cfg, "DP-1"),
           "an enabled override wins");
-    check(osd_effective_enabled(cfg, "HDMI-1") == cfg.default_osd_enabled,
-          "other outputs keep the default");
-    check(lock_effective_enabled(cfg, "HDMI-1") == cfg.default_lock_panel_enabled, "default lock");
+    check(osd_enabled_for(cfg, "HDMI-1") == cfg.default_osd, "other outputs keep the default");
+    check(lock_enabled_for(cfg, "HDMI-1") == cfg.default_lock, "default lock");
     cfg.monitor_overrides["DP-1"].lock = false;
-    check(!lock_effective_enabled(cfg, "DP-1"), "lock override");
-    cfg.idle_management_enabled = false;
-    check(!ambient_effective_enabled(cfg, "HDMI-1") && !screensaver_effective_enabled(cfg, "DP-1"),
+    check(!lock_enabled_for(cfg, "DP-1"), "lock override");
+    cfg.idle_enabled = false;
+    check(!ambient_enabled_for(cfg, "HDMI-1") && !screensaver_enabled_for(cfg, "DP-1"),
           "idle management off disables ambient and screensaver everywhere");
-    cfg.idle_management_enabled = true;
-    cfg.monitor_overrides["DP-1"].ambient_timeout_seconds = 42;
-    check(ambient_effective_timeout_seconds(cfg, "DP-1") == 42 &&
-              ambient_effective_timeout_seconds(cfg, "HDMI-1") == cfg.ambient_timeout_seconds,
+    cfg.idle_enabled = true;
+    cfg.monitor_overrides["DP-1"].ambient_timeout = 42;
+    check(ambient_timeout_for(cfg, "DP-1") == 42 &&
+              ambient_timeout_for(cfg, "HDMI-1") == cfg.ambient_timeout,
           "ambient timeout override");
 }
 

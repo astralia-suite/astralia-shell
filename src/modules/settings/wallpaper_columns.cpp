@@ -13,35 +13,35 @@
 
 #include "modules/settings/wallpaper_columns.h"
 
-namespace astralia {
+namespace astralia::settings {
 
 namespace {
 
 namespace cfg = settings_config;
 
-using settings_view::DropEntry;
-using settings_view::Pane;
-using settings_view::small_style;
-using settings_view::text_style;
-using settings_view::transparent;
+using settings::DropEntry;
+using settings::Pane;
+using settings::small_style;
+using settings::text_style;
+using settings::transparent;
 
-SettingsField dir_field_for(WallpaperSlot slot) {
+Field dir_field_for(WallpaperSlot slot) {
     switch (slot) {
     case WallpaperSlot::animated:
-        return SettingsField::wallpaper_animated_dir;
+        return Field::wallpaper_animated_dir;
     case WallpaperSlot::lock:
-        return SettingsField::lock_wallpaper_dir;
+        return Field::lock_wallpaper_dir;
     case WallpaperSlot::still:
         break;
     }
-    return SettingsField::wallpaper_dir;
+    return Field::wallpaper_dir;
 }
 
 } // namespace
 
-std::vector<WallpaperChip> wallpaper_chips(const SettingsModel &model, WallpaperSlot slot) {
+std::vector<WallpaperChip> wallpaper_chips(const Model &model, WallpaperSlot slot) {
     std::vector<WallpaperChip> chips;
-    const SettingsCaps &caps = model.caps();
+    const Caps &caps = model.caps();
     const Config &config = model.config();
     const std::vector<std::string> &monitors = model.monitors();
     for (size_t m = 0; m < monitors.size(); ++m) {
@@ -57,8 +57,8 @@ std::vector<WallpaperChip> wallpaper_chips(const SettingsModel &model, Wallpaper
 
 float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, float w,
                               float bottom) {
-    SettingsModel &model = pane.model;
-    const SettingsCaps &caps = model.caps();
+    Model &model = pane.model;
+    const Caps &caps = model.caps();
     const Config &config = model.config();
     bool animated = slot == WallpaperSlot::animated;
     WallpaperPicker &picker = model.picker(slot);
@@ -79,11 +79,11 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
         }
         std::string current = active < region_entries.size() ? region_entries[active].label : "";
         pane.dropdown({x, y, w, cfg::tile_height}, 4, "Display", current, std::move(region_entries),
-                      active, SettingsAct::wallpaper_region);
+                      active, Act::wallpaper_region);
     }
     y += cfg::tile_height + cfg::row_gap;
 
-    SettingsField dir_field = dir_field_for(slot);
+    Field dir_field = dir_field_for(slot);
     bool focused = model.focused() == dir_field;
     ui::Box bar{x, y, w, cfg::dir_bar_height};
     pane.rounded(bar, metrics::radius_widget, focused ? palette::pop_b : palette::field_bg,
@@ -117,13 +117,13 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
         pane.text(shown, clipped, input_x, y + (cfg::dir_bar_height - size.h) / 2.0f,
                   palette::text);
     }
-    pane.region({input_x, y, input_w, cfg::dir_bar_height}, SettingsAct::field_focus,
+    pane.region({input_x, y, input_w, cfg::dir_bar_height}, Act::field_focus,
                 static_cast<int>(dir_field), 0);
     ui::Box button{button_x, y + (cfg::dir_bar_height - cfg::dir_bar_button_height) / 2.0f,
                    cfg::dir_bar_button_width, cfg::dir_bar_button_height};
     pane.selectable(button, false, palette::pop_b);
     pane.centered(picker.scanning ? "\xE2\x80\xA6" : "Rescan", text_style, button, palette::text);
-    pane.region(button, SettingsAct::wallpaper_rescan, 0, slot_flag);
+    pane.region(button, Act::wallpaper_rescan, 0, slot_flag);
     y += cfg::dir_bar_height + cfg::row_gap;
 
     std::string own = wallpaper_column_override(config, picker.region, picker.column, slot);
@@ -133,7 +133,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
         ui::Box minus{x, control_y, cfg::stepper_button, cfg::field_height};
         pane.selectable(minus, false);
         pane.centered("-", text_style, minus, palette::text);
-        pane.region(minus, SettingsAct::wallpaper_count, -1, slot_flag);
+        pane.region(minus, Act::wallpaper_count, -1, slot_flag);
         std::string count_text = std::to_string(count);
         float count_w = pane.canvas.measure(count_text, text_style).w + 12.0f;
         pane.centered(count_text, text_style,
@@ -143,7 +143,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
                      cfg::field_height};
         pane.selectable(plus, false);
         pane.centered("+", text_style, plus, palette::text);
-        pane.region(plus, SettingsAct::wallpaper_count, 1, slot_flag);
+        pane.region(plus, Act::wallpaper_count, 1, slot_flag);
 
         std::string mode = wallpaper_fill_mode(config, picker.region, picker.column, slot);
         const char *labels[2] = {"Crop", "Fit"};
@@ -159,7 +159,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
             ui::Box box{fx, control_y, widths[i], cfg::field_height};
             pane.selectable(box, active);
             pane.centered(labels[i], text_style, box, palette::text);
-            pane.region(box, SettingsAct::wallpaper_fill, i, slot_flag);
+            pane.region(box, Act::wallpaper_fill, i, slot_flag);
             fx += widths[i] + 6.0f;
         }
     }
@@ -170,7 +170,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
         ui::Box box{rx, control_y, rw, cfg::field_height};
         pane.chip(box, palette::critical_container);
         pane.centered(label, text_style, box, palette::text);
-        pane.region(box, SettingsAct::wallpaper_remove, 0, slot_flag);
+        pane.region(box, Act::wallpaper_remove, 0, slot_flag);
     }
     y += cfg::row_height;
 
@@ -247,7 +247,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
             float top = std::max(hit.y, grid_y);
             float bottom_edge = std::min(hit.y + hit.h, grid_y + visible_h);
             if (bottom_edge > top) {
-                pane.region({hit.x, top, hit.w, bottom_edge - top}, SettingsAct::wallpaper_pick,
+                pane.region({hit.x, top, hit.w, bottom_edge - top}, Act::wallpaper_pick,
                             static_cast<int>(index), slot_flag);
             }
         }
@@ -256,4 +256,4 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
     return y + picker.grid_height;
 }
 
-} // namespace astralia
+} // namespace astralia::settings

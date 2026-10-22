@@ -6,7 +6,7 @@
 
 #include "modules/bamboo/x11/bamboo.h"
 
-namespace astralia {
+namespace astralia::bamboo {
 
 namespace {
 
@@ -20,11 +20,12 @@ Bamboo::Bamboo(XConnection &x, EventLoop &loop, Shell &shell, Services &services
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false, "astralia-shell-bamboo"),
       keyboard_(x.conn()) {
-    window_.make_managed(kBambooDefaultWindowWidth, kBambooDefaultWindowHeight);
+    window_.make_managed(bamboo_config::kDefaultWindowWidth, bamboo_config::kDefaultWindowHeight);
     timer_ = loop.add_timer(
         [this] {
-            return open_ ? std::chrono::milliseconds(static_cast<int>(kBambooTickIntervalMs))
-                         : idle_interval;
+            return open_
+                       ? std::chrono::milliseconds(static_cast<int>(bamboo_config::kTickIntervalMs))
+                       : idle_interval;
         },
         [this] { step(); });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
@@ -42,9 +43,11 @@ void Bamboo::toggle() {
 
 void Bamboo::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
-    int16_t x = static_cast<int16_t>(target.x + (target.width - kBambooDefaultWindowWidth) / 2);
-    int16_t y = static_cast<int16_t>(target.y + (target.height - kBambooDefaultWindowHeight) / 2);
-    window_.place({x, y, kBambooDefaultWindowWidth, kBambooDefaultWindowHeight});
+    int16_t x =
+        static_cast<int16_t>(target.x + (target.width - bamboo_config::kDefaultWindowWidth) / 2);
+    int16_t y =
+        static_cast<int16_t>(target.y + (target.height - bamboo_config::kDefaultWindowHeight) / 2);
+    window_.place({x, y, bamboo_config::kDefaultWindowWidth, bamboo_config::kDefaultWindowHeight});
     keyboard_.reload();
     open_ = true;
     rebuild();
@@ -115,7 +118,7 @@ void Bamboo::paint() {
     canvas_.rect({0.0f, 0.0f, static_cast<float>(window_.geometry().width),
                   static_cast<float>(window_.geometry().height)},
                  palette::window_backdrop);
-    BambooFrame current = grow_.frame();
+    Frame current = grow_.frame();
     if (current.ready()) {
         cairo_surface_t *surface = cairo_image_surface_create_for_data(
             const_cast<uint8_t *>(current.pixels), CAIRO_FORMAT_ARGB32, current.width,
@@ -127,4 +130,4 @@ void Bamboo::paint() {
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::bamboo

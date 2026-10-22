@@ -1,11 +1,11 @@
 #pragma once
 
-namespace astralia {
+namespace astralia::dashboard_config {
 
 // window
-constexpr int kDashboardDefaultWidth = 960;
-constexpr int kDashboardDefaultHeight = 640;
-constexpr const char *kDashboardTitle = "Dashboard";
-constexpr const char *kDashboardAppId = "astralia-shell-dashboard";
+constexpr int kDefaultWidth = 960;
+constexpr int kDefaultHeight = 640;
+constexpr const char *kTitle = "Dashboard";
+constexpr const char *kAppId = "astralia-shell-dashboard";
 
-} // namespace astralia
+} // namespace astralia::dashboard_config

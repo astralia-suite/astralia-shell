@@ -3,7 +3,7 @@
 #include "modules/logout/layout.h"
 #include "modules/logout/model.h"
 
-namespace astralia {
+namespace astralia::logout {
 
 namespace {
 
@@ -35,14 +35,14 @@ std::array<std::string, logout_config::button_count> logout_commands(bool with_l
     return commands;
 }
 
-LogoutModel::LogoutModel(Commands commands) : commands_(std::move(commands)) {}
+Model::Model(Commands commands) : commands_(std::move(commands)) {}
 
-void LogoutModel::schedule_after(float delay_ms, uint64_t owner, std::function<void()> fn) {
+void Model::schedule_after(float delay_ms, uint64_t owner, std::function<void()> fn) {
     animations_.animate(
         0.0f, 1.0f, delay_ms, astralia::Easing::Linear, [](float) {}, std::move(fn), owner);
 }
 
-void LogoutModel::set_highlight(int index, bool on) {
+void Model::set_highlight(int index, bool on) {
     if (index < 0 || index >= count) {
         return;
     }
@@ -56,39 +56,39 @@ void LogoutModel::set_highlight(int index, bool on) {
         [this, i](float v) { highlight_border_[i] = v; }, {}, owner_border(index));
 }
 
-void LogoutModel::update_highlight(int index) {
+void Model::update_highlight(int index) {
     set_highlight(index, index == selected_ || index == hovered_);
 }
 
-void LogoutModel::select(int index) {
+void Model::select(int index) {
     int old = selected_;
     selected_ = index;
     update_highlight(old);
     update_highlight(selected_);
 }
 
-void LogoutModel::cancel_sequence() {
-    animations_.cancelForOwner(owner_logo);
-    animations_.cancelForOwner(owner_close_chain);
-    animations_.cancelForOwner(owner_exit);
-    animations_.cancelForOwner(owner_burst);
-    animations_.cancelForOwner(owner_hold);
-    animations_.cancelForOwner(owner_charge);
+void Model::cancel_sequence() {
+    animations_.cancel_owner(owner_logo);
+    animations_.cancel_owner(owner_close_chain);
+    animations_.cancel_owner(owner_exit);
+    animations_.cancel_owner(owner_burst);
+    animations_.cancel_owner(owner_hold);
+    animations_.cancel_owner(owner_charge);
     for (int i = 0; i < count; ++i) {
-        animations_.cancelForOwner(owner_slash(i));
-        animations_.cancelForOwner(owner_push(i));
-        animations_.cancelForOwner(owner_gate(i));
+        animations_.cancel_owner(owner_slash(i));
+        animations_.cancel_owner(owner_push(i));
+        animations_.cancel_owner(owner_gate(i));
     }
 }
 
-void LogoutModel::finish_close() {
+void Model::finish_close() {
     open_ = false;
     if (on_closed) {
         on_closed();
     }
 }
 
-void LogoutModel::start_burst() {
+void Model::start_burst() {
     burst_ = 0.0f;
     animations_.animate(
         0.0f, 1.0f, cfg::burst_ms, astralia::Easing::EaseOutCubic, [this](float v) { burst_ = v; },
@@ -105,7 +105,7 @@ void LogoutModel::start_burst() {
     }
 }
 
-void LogoutModel::start_exit_burst() {
+void Model::start_exit_burst() {
     burst_ = 0.0f;
     exit_fade_ = 1.0f;
     animations_.animate(
@@ -123,7 +123,7 @@ void LogoutModel::start_exit_burst() {
     }
 }
 
-void LogoutModel::start_slashes() {
+void Model::start_slashes() {
     if (!exiting_) {
         animations_.animate(
             0.0f, 1.0f, cfg::charge_ms, astralia::Easing::Linear, [this](float v) { charge_ = v; },
@@ -148,7 +148,7 @@ void LogoutModel::start_slashes() {
     });
 }
 
-void LogoutModel::start_open() {
+void Model::start_open() {
     cancel_sequence();
     exiting_ = false;
     input_ready_ = false;
@@ -166,7 +166,7 @@ void LogoutModel::start_open() {
         owner_logo);
 }
 
-void LogoutModel::start_close() {
+void Model::start_close() {
     cancel_sequence();
     input_ready_ = false;
     exiting_ = true;
@@ -182,7 +182,7 @@ void LogoutModel::start_close() {
     start_slashes();
 }
 
-void LogoutModel::fast_hide() {
+void Model::fast_hide() {
     cancel_sequence();
     for (int i = 0; i < count; ++i) {
         auto idx = static_cast<size_t>(i);
@@ -190,8 +190,8 @@ void LogoutModel::fast_hide() {
         travel_[idx] = 0.0f;
         highlight_scale_[idx] = 0.0f;
         highlight_border_[idx] = 0.0f;
-        animations_.cancelForOwner(owner_scale(i));
-        animations_.cancelForOwner(owner_border(i));
+        animations_.cancel_owner(owner_scale(i));
+        animations_.cancel_owner(owner_border(i));
     }
     hovered_ = -1;
     logo_scale_ = 0.0f;
@@ -203,13 +203,13 @@ void LogoutModel::fast_hide() {
     finish_close();
 }
 
-void LogoutModel::open() {
+void Model::open() {
     selected_ = 0;
     open_ = true;
     start_open();
 }
 
-void LogoutModel::toggle() {
+void Model::toggle() {
     if (open_) {
         start_close();
     } else {
@@ -217,7 +217,7 @@ void LogoutModel::toggle() {
     }
 }
 
-void LogoutModel::execute(int index) {
+void Model::execute(int index) {
     if (index < 0 || index >= count) {
         return;
     }
@@ -229,7 +229,7 @@ void LogoutModel::execute(int index) {
     fast_hide();
 }
 
-bool LogoutModel::key(const input::KeyEvent &event) {
+bool Model::key(const input::KeyEvent &event) {
     if (!input_ready_) {
         return false;
     }
@@ -257,8 +257,8 @@ bool LogoutModel::key(const input::KeyEvent &event) {
     }
 }
 
-void LogoutModel::click(double x, double y, double width, double height) {
-    if (auto button = logout_button_at({x, y}, {width / 2.0, height / 2.0})) {
+void Model::click(double x, double y, double width, double height) {
+    if (auto button = button_at({x, y}, {width / 2.0, height / 2.0})) {
         if (input_ready_) {
             execute(*button);
         }
@@ -267,11 +267,11 @@ void LogoutModel::click(double x, double y, double width, double height) {
     toggle();
 }
 
-bool LogoutModel::hover(double x, double y, double width, double height) {
+bool Model::hover(double x, double y, double width, double height) {
     if (!input_ready_) {
         return false;
     }
-    int found = logout_button_at({x, y}, {width / 2.0, height / 2.0}).value_or(-1);
+    int found = button_at({x, y}, {width / 2.0, height / 2.0}).value_or(-1);
     if (found == hovered_) {
         return false;
     }
@@ -282,7 +282,7 @@ bool LogoutModel::hover(double x, double y, double width, double height) {
     return true;
 }
 
-bool LogoutModel::clear_hover() {
+bool Model::clear_hover() {
     if (hovered_ == -1) {
         return false;
     }
@@ -292,6 +292,6 @@ bool LogoutModel::clear_hover() {
     return true;
 }
 
-void LogoutModel::tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
+void Model::tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
 
-} // namespace astralia
+} // namespace astralia::logout

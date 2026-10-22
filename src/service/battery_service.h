@@ -49,7 +49,7 @@ BatteryDevice battery_parse_device(const std::string &path, const DbusProperties
 
 class BatteryService {
   public:
-    explicit BatteryService(SystemBus &bus);
+    explicit BatteryService(Bus &bus);
 
     const BatteryStatus &status() const { return status_; }
     const std::vector<BatteryDevice> &devices() const { return devices_; }
@@ -71,7 +71,7 @@ class BatteryService {
     void remove_device(const std::string &path);
     void publish_devices();
 
-    SystemBus &bus_;
+    Bus &bus_;
     BatteryStatus status_;
     bool on_battery_ = false;
     std::vector<BatteryDevice> devices_;

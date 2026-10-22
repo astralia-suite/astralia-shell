@@ -29,7 +29,9 @@
 
 struct MonitorOutput;
 
-struct IdleOverlayState {
+namespace astralia::idle {
+
+struct OverlayState {
     wl_surface *surface = nullptr;
     zwlr_layer_surface_v1 *layer_surface = nullptr;
     wl_egl_window *egl_window = nullptr;
@@ -51,26 +53,28 @@ struct IdleOverlayState {
     bool screensaver_active = false;
     std::string logo_path;
 
-    astralia::Bounce bounce{40.0f, 40.0f, astralia::kIdleLogoSpeed,
-                            astralia::kIdleLogoSpeed * 0.75f};
+    Bounce bounce{40.0f, 40.0f, astralia::idle_config::kLogoSpeed,
+                  astralia::idle_config::kLogoSpeed * 0.75f};
     std::chrono::steady_clock::time_point last_tick = std::chrono::steady_clock::now();
 
     std::function<void(GlCanvas &canvas, float w, float h)> draw_ambient;
 };
 
-bool idle_overlay_create_surface(IdleOverlayState &state, wl_compositor *compositor,
-                                 zwlr_layer_shell_v1 *layer_shell, wl_output *output);
+bool overlay_create_surface(OverlayState &state, wl_compositor *compositor,
+                            zwlr_layer_shell_v1 *layer_shell, wl_output *output);
 
-bool idle_overlay_init_egl(IdleOverlayState &state, Renderer &renderer, EGLDisplay display,
-                           EGLConfig config, EGLContext context);
+bool overlay_init_egl(OverlayState &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+                      EGLContext context);
 
-void idle_overlay_request_frame(IdleOverlayState &state);
+void overlay_request_frame(OverlayState &state);
 
-void idle_overlay_set_active(IdleOverlayState &state, bool ambient_active, bool screensaver_active);
+void overlay_set_active(OverlayState &state, bool ambient_active, bool screensaver_active);
 
-struct IdleWallpaperHooks {
+struct WallpaperHooks {
     std::function<void(MonitorOutput &mon, GlCanvas &canvas, int32_t w, int32_t h)> draw;
     std::function<void(MonitorOutput &mon, bool paused)> set_paused;
 };
 
-std::unique_ptr<PerMonitorModule> make_idle_per_monitor_module(IdleWallpaperHooks hooks);
+std::unique_ptr<PerMonitorModule> make_per_monitor_module(WallpaperHooks hooks);
+
+} // namespace astralia::idle

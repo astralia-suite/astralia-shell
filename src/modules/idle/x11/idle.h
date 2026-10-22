@@ -12,12 +12,12 @@
 #include "core/x_connection.h"
 
 #include "modules/idle/bounce.h"
-#include "modules/idle/idle_clock.h"
+#include "modules/idle/clock.h"
 
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::idle {
 
 class Idle {
   public:
@@ -29,13 +29,13 @@ class Idle {
 
         XWindow window;
         CairoCanvas canvas;
-        IdleVerdict shown;
+        Verdict shown;
         Bounce bounce;
     };
 
     void poll();
     void step();
-    void apply(const Output &output, Overlay &overlay, IdleVerdict verdict);
+    void apply(const Output &output, Overlay &overlay, Verdict verdict);
     void hide_missing();
     void paint(const Output &output, Overlay &overlay);
     std::chrono::milliseconds until_step() const;
@@ -45,7 +45,7 @@ class Idle {
     XConnection &x_;
     EventLoop &loop_;
     Services &services_;
-    IdleClock clock_;
+    Clock clock_;
     Config applied_;
     std::map<std::string, std::unique_ptr<Overlay>> overlays_;
     std::chrono::steady_clock::time_point last_poll_{};
@@ -54,4 +54,4 @@ class Idle {
     bool available_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::idle

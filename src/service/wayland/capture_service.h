@@ -25,7 +25,7 @@ struct ToplevelExportCapture {
     uint32_t pending_height = 0;
     uint32_t pending_stride = 0;
     uint32_t pending_format = 0;
-    bool have_pending_shm_format = false;
+    bool pending_shm_format = false;
     bool y_invert = false;
     bool in_flight = false;
     Texture tex;

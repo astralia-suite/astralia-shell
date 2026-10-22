@@ -1,15 +1,15 @@
 #include <cstdint>
 #include <vector>
 
-#include "modules/rain/matrix_rain.h"
-#include "modules/rain/rain_random.h"
-#include "modules/rain/stiletto_rain.h"
+#include "modules/rain/matrix.h"
+#include "modules/rain/random.h"
+#include "modules/rain/stiletto.h"
 
 #include "check.h"
 
 namespace {
 
-std::vector<uint8_t> copy(const astralia::RainFrame &frame) {
+std::vector<uint8_t> copy(const astralia::rain::Frame &frame) {
     return std::vector<uint8_t>(frame.pixels,
                                 frame.pixels + static_cast<size_t>(frame.stride) * frame.height);
 }
@@ -27,13 +27,13 @@ template <typename Rain> void check_rain(const char *name) {
     Rain rain;
     test::check(!rain.frame().ready(), "a rain with no rebuild has no frame");
     rain.rebuild(480, 600, false);
-    astralia::RainFrame frame = rain.frame();
+    astralia::rain::Frame frame = rain.frame();
     test::check(frame.ready() && frame.width == 480 && frame.height == 600 &&
                     frame.stride >= 480 * 4,
                 name);
     test::check(!has_ink(copy(frame)), "a fresh buffer is transparent");
 
-    astralia::rain_seed(7);
+    astralia::rain::rain_seed(7);
     rain.rebuild(480, 600, true);
     for (int i = 0; i < 40; ++i) {
         rain.tick();
@@ -41,7 +41,7 @@ template <typename Rain> void check_rain(const char *name) {
     std::vector<uint8_t> first = copy(rain.frame());
     test::check(has_ink(first), "ticking draws");
 
-    astralia::rain_seed(7);
+    astralia::rain::rain_seed(7);
     rain.rebuild(480, 600, true);
     for (int i = 0; i < 40; ++i) {
         rain.tick();
@@ -59,6 +59,6 @@ template <typename Rain> void check_rain(const char *name) {
 } // namespace
 
 void check_rain_buffer() {
-    check_rain<astralia::MatrixRain>("the matrix buffer has the requested size");
-    check_rain<astralia::StilettoRain>("the stiletto buffer has the requested size");
+    check_rain<astralia::rain::MatrixRain>("the matrix buffer has the requested size");
+    check_rain<astralia::rain::StilettoRain>("the stiletto buffer has the requested size");
 }

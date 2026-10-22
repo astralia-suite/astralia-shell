@@ -8,7 +8,7 @@
 #include "modules/bar/x11/bar.h"
 #include "modules/bar/x11/bar_set.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -76,4 +76,4 @@ void BarSet::sync() {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -29,7 +29,7 @@ std::string executable_dir() {
 
 } // namespace
 
-SessionEnvironment session_environment() {
+SessionEnv session_env() {
     return {environment_value("ASTRALIA_BACKEND"), environment_value("HYPRLAND_INSTANCE_SIGNATURE"),
             environment_value("I3SOCK"),           environment_value("XDG_SESSION_TYPE"),
             environment_value("WAYLAND_DISPLAY"),  environment_value("DISPLAY")};
@@ -44,9 +44,9 @@ bool start_locked_pending() {
            access(start_locked_ack_path(getuid()).c_str(), F_OK) != 0;
 }
 
-void start_locked_acknowledge() { std::ofstream(start_locked_ack_path(getuid())); }
+void start_locked_ack() { std::ofstream(start_locked_ack_path(getuid())); }
 
-SessionKind detect_session(const SessionEnvironment &environment) {
+SessionKind detect_session(const SessionEnv &environment) {
     if (environment.override_name == "wayland") {
         return SessionKind::wayland;
     }

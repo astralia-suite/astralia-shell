@@ -16,9 +16,9 @@
 
 #include "render/geometry.h"
 
-namespace astralia {
+namespace astralia::wallpaper_select {
 
-struct WallpaperSelectHooks {
+struct Hooks {
     std::function<const Config &()> config;
     std::function<void(const std::function<void(Config &)> &)> update;
     std::function<bool()> settled;
@@ -29,12 +29,12 @@ struct WallpaperCard {
     int index = 0;
 };
 
-class WallpaperSelectModel {
+class Model {
   public:
-    WallpaperSelectModel(WallpaperSelectHooks hooks, bool animated_wallpaper);
-    ~WallpaperSelectModel();
-    WallpaperSelectModel(const WallpaperSelectModel &) = delete;
-    WallpaperSelectModel &operator=(const WallpaperSelectModel &) = delete;
+    Model(Hooks hooks, bool animated_wallpaper);
+    ~Model();
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
 
     bool available() const;
     void open(const std::string &monitor, int column);
@@ -61,7 +61,7 @@ class WallpaperSelectModel {
     bool is_open() const { return open_; }
     bool closing() const { return closing_; }
     bool waiting() const { return waiting_; }
-    bool animating() const { return animations_.hasActive() || waiting_ || holding_ || fading_; }
+    bool animating() const { return animations_.has_active() || waiting_ || holding_ || fading_; }
     bool scanning() const { return scanning_; }
     float zoom() const { return zoom_; }
     float position() const { return position_; }
@@ -90,7 +90,7 @@ class WallpaperSelectModel {
     void request_close();
     const WallpaperCard *card_at(double x, double y) const;
 
-    WallpaperSelectHooks hooks_;
+    Hooks hooks_;
     bool animated_wallpaper_;
     bool animated_ = false;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
@@ -121,4 +121,4 @@ class WallpaperSelectModel {
     bool fading_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::wallpaper_select

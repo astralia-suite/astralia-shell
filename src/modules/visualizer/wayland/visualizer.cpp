@@ -10,15 +10,17 @@
 
 #include "modules/visualizer/fft.h"
 #include "modules/visualizer/wayland/audio_stages.h"
-#include "modules/visualizer/wayland/bar_visualizer.h"
-#include "modules/visualizer/wayland/sphere_visualizer.h"
+#include "modules/visualizer/wayland/bars.h"
+#include "modules/visualizer/wayland/sphere.h"
 #include "modules/visualizer/wayland/visualizer.h"
 
 #include "render/tokens.h"
 
+namespace astralia::visualizer {
+
 namespace {
 
-void clear_backbuffer(VisualizerState &state, int width, int height) {
+void clear_backbuffer(State &state, int width, int height) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, width, height);
     glClearColor(astralia::palette::window_backdrop.r, astralia::palette::window_backdrop.g,
@@ -28,7 +30,7 @@ void clear_backbuffer(VisualizerState &state, int width, int height) {
         klog("visualizer: eglSwapBuffers failed 0x%x", eglGetError());
 }
 
-void render_thread_main(VisualizerState *state) {
+void render_thread_main(State *state) {
     if (!gl_make_current(state->base.egl_display, state->base.egl_surface, state->render_context)) {
         klog("visualizer: render thread eglMakeCurrent failed, eglGetError=0x%x", eglGetError());
         return;
@@ -37,7 +39,7 @@ void render_thread_main(VisualizerState *state) {
     klog("visualizer: render thread current %dx%d scale %d", state->base.width, state->base.height,
          state->base.output_scale.scale);
 
-    auto stages = std::make_unique<VisualizerAudioStages>();
+    auto stages = std::make_unique<AudioStages>();
     auto sphere = std::make_unique<SphereVisualizer>();
     auto bar = std::make_unique<BarVisualizer>();
     bool stages_ok = stages->init();
@@ -61,7 +63,7 @@ void render_thread_main(VisualizerState *state) {
 
     auto next = std::chrono::steady_clock::now();
 
-    VisualizerRenderThreadState &ts = *state->thread_state;
+    RenderThreadState &ts = *state->thread_state;
     for (;;) {
         VisualizerParams params;
         {
@@ -72,8 +74,8 @@ void render_thread_main(VisualizerState *state) {
         }
         auto now = std::chrono::steady_clock::now();
         bool want_sphere = params.visualizer_shape == VisualizerShape::Sphere;
-        int fps = std::clamp(want_sphere ? params.fps : kVisualizerBarFps, kVisualizerFpsMin,
-                             kVisualizerFpsMax);
+        int fps = std::clamp(want_sphere ? params.fps : visualizer_config::kBarFps,
+                             visualizer_config::kFpsMin, visualizer_config::kFpsMax);
         next += std::chrono::nanoseconds(1'000'000'000 / fps);
         if (next < now)
             next = now;
@@ -97,17 +99,17 @@ void render_thread_main(VisualizerState *state) {
 
         bool modified = false;
         state->capture.take(audio_l, audio_r, modified);
-        if (modified && static_cast<int>(audio_l.size()) >= kVisualizerFragmentSize &&
-            static_cast<int>(audio_r.size()) >= kVisualizerFragmentSize) {
+        if (modified && static_cast<int>(audio_l.size()) >= visualizer_config::kFragmentSize &&
+            static_cast<int>(audio_r.size()) >= visualizer_config::kFragmentSize) {
             fft_l = audio_l;
             fft_r = audio_r;
-            astralia::visualizer_fft(fft_l.data(), kVisualizerFragmentSize, kVisualizerFftScale,
-                                     kVisualizerFftCutOff);
-            astralia::visualizer_fft(fft_r.data(), kVisualizerFragmentSize, kVisualizerFftScale,
-                                     kVisualizerFftCutOff);
+            fft(fft_l.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
+                visualizer_config::kFftCutOff);
+            fft(fft_r.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
+                visualizer_config::kFftCutOff);
             if (audio_size == 0)
                 klog("visualizer: first audio at frame %d", tick);
-            audio_size = kVisualizerFragmentSize;
+            audio_size = visualizer_config::kFragmentSize;
         }
 
         tick++;
@@ -171,22 +173,22 @@ void render_thread_main(VisualizerState *state) {
     gl_make_current(state->base.egl_display, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 
-void visualizer_render_thread_start(VisualizerState &state, const VisualizerParams &params,
-                                    const std::vector<EGLint> &context_attribs) {
+void render_thread_start(State &state, const VisualizerParams &params,
+                         const std::vector<EGLint> &context_attribs) {
     state.render_context = eglCreateContext(state.base.egl_display, state.egl_config,
                                             state.base.egl_context, context_attribs.data());
     if (state.render_context == EGL_NO_CONTEXT) {
         klog("visualizer: eglCreateContext failed 0x%x", eglGetError());
         return;
     }
-    state.thread_state = std::make_unique<VisualizerRenderThreadState>();
+    state.thread_state = std::make_unique<RenderThreadState>();
     state.thread_state->params = params;
     state.render_thread = std::thread(render_thread_main, &state);
 }
 
 } // namespace
 
-void visualizer_apply_params(VisualizerState &state, const VisualizerParams &params) {
+void apply_params(State &state, const VisualizerParams &params) {
     if (!state.thread_state)
         return;
     {
@@ -196,7 +198,7 @@ void visualizer_apply_params(VisualizerState &state, const VisualizerParams &par
     state.thread_state->cv.notify_one();
 }
 
-void visualizer_shutdown(VisualizerState &state) {
+void visualizer_shutdown(State &state) {
     state.capture.stop();
 
     if (state.thread_state) {
@@ -215,11 +217,11 @@ void visualizer_shutdown(VisualizerState &state) {
     state.thread_state.reset();
 }
 
-void visualizer_toggle(VisualizerState &state, WaylandState &app) {
+void toggle(State &state, WaylandState &app) {
     if (state.base.egl_surface == EGL_NO_SURFACE) {
-        if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, "Visualizer",
-                                            "astralia-shell-visualizer", kVisualizerDefaultWindow,
-                                            kVisualizerDefaultWindow))
+        if (!toplevel_window_create_surface(
+                state.base, app.compositor, app.wm_base, "Visualizer", "astralia-shell-visualizer",
+                visualizer_config::kDefaultWindow, visualizer_config::kDefaultWindow))
             return;
         while (!state.base.configured)
             wl_display_dispatch(app.display);
@@ -229,13 +231,13 @@ void visualizer_toggle(VisualizerState &state, WaylandState &app) {
             return;
         }
         state.base.frame_clock.surface = nullptr;
-        state.base.on_close_request = [&state, &app] { visualizer_toggle(state, app); };
+        state.base.on_close_request = [&state, &app] { toggle(state, app); };
         app_detail::rest_egl_current(app);
 
         state.egl_config = app.egl_config;
         state.base.open = true;
         state.capture.start();
-        visualizer_render_thread_start(state, app.cfg.visualizer, app.egl_context_attribs);
+        render_thread_start(state, app.cfg.visualizer, app.egl_context_attribs);
         return;
     }
 
@@ -245,24 +247,22 @@ void visualizer_toggle(VisualizerState &state, WaylandState &app) {
     app_detail::rest_egl_current(app);
 }
 
-void visualizer_handle_key_event(VisualizerState &state, WaylandState &app, const KeyEvent &event) {
+void handle_key_event(State &state, WaylandState &app, const KeyEvent &event) {
     if (event.kind == KeyKind::Escape)
-        visualizer_toggle(state, app);
+        toggle(state, app);
 }
 
-std::vector<astralia::ShellBinding> visualizer_shell_bindings(VisualizerState &visualizer,
-                                                              WaylandState &state) {
+std::vector<astralia::ShellBinding> shell_bindings(State &visualizer, WaylandState &state) {
     return {
-        {astralia::ShellVerb::visualizer,
-         [&visualizer, &state] { visualizer_toggle(visualizer, state); }},
+        {astralia::ShellVerb::visualizer, [&visualizer, &state] { toggle(visualizer, state); }},
     };
 }
 
 namespace {
 
-class VisualizerModule final : public Module {
+class Adapter final : public Module {
   public:
-    ~VisualizerModule() override { visualizer_shutdown(state_); }
+    ~Adapter() override { visualizer_shutdown(state_); }
 
     const char *name() const override { return "visualizer"; }
     bool is_open() const override { return state_.base.open; }
@@ -274,21 +274,23 @@ class VisualizerModule final : public Module {
     void request_frame() override {}
 
     void handle_key_event(WaylandState &app, const KeyEvent &event) override {
-        visualizer_handle_key_event(state_, app, event);
+        visualizer::handle_key_event(state_, app, event);
     }
 
     void apply_config(WaylandState &, const Config &cfg) override {
-        visualizer_apply_params(state_, cfg.visualizer);
+        apply_params(state_, cfg.visualizer);
     }
 
     std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override {
-        return visualizer_shell_bindings(state_, app);
+        return visualizer::shell_bindings(state_, app);
     }
 
   private:
-    VisualizerState state_;
+    State state_;
 };
 
 } // namespace
 
-std::unique_ptr<Module> make_visualizer_module() { return std::make_unique<VisualizerModule>(); }
+std::unique_ptr<Module> make_module() { return std::make_unique<Adapter>(); }
+
+} // namespace astralia::visualizer

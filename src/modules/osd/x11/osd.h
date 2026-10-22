@@ -15,7 +15,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::osd {
 
 class Osd {
   public:
@@ -38,9 +38,9 @@ class Osd {
     XConnection &x_;
     EventLoop &loop_;
     Services &services_;
-    OsdModel model_;
+    Model model_;
     std::map<std::string, std::unique_ptr<Surface>> surfaces_;
     int timer_;
 };
 
-} // namespace astralia
+} // namespace astralia::osd

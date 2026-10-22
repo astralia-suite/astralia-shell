@@ -7,7 +7,7 @@
 
 #include "service/tray_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 struct TrayMenuRow {
     enum class Kind { back, loading, separator, entry } kind;
@@ -52,4 +52,4 @@ class TrayPanel final : public PanelContent {
     int hover_a_ = -1;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -27,7 +27,7 @@ void check_open() {
     ScrollSequence sequence(animations, 10);
     sequence.open();
     test::check(sequence.slide() == 1.0f && sequence.scroll() == 0.0f && sequence.grid() == 0.0f &&
-                    animations.hasActive(),
+                    animations.has_active(),
                 "opening starts fully out and closed");
     tick(animations, 1);
     test::check(sequence.slide() == 0.0f && sequence.scroll() == 0.0f && !sequence.settled(),
@@ -36,7 +36,7 @@ void check_open() {
     test::check(sequence.scroll() == 1.0f && sequence.grid() == 0.0f && sequence.settled(),
                 "then it unrolls");
     tick(animations, 3);
-    test::check(sequence.grid() == 1.0f && !animations.hasActive(), "then the grid appears");
+    test::check(sequence.grid() == 1.0f && !animations.has_active(), "then the grid appears");
 }
 
 void check_close() {
@@ -56,7 +56,7 @@ void check_close() {
                 "then the scroll rolls up");
     tick(animations, 6);
     test::check(sequence.slide() == 1.0f && done == 1 && !sequence.closing() &&
-                    !animations.hasActive(),
+                    !animations.has_active(),
                 "then it slides out and reports once");
 
     sequence.open();
@@ -113,7 +113,7 @@ void check_instant() {
     AnimationManager animations;
     ScrollSequence sequence(animations, 10);
     sequence.open();
-    test::check(sequence.settled() && sequence.grid() == 1.0f && !animations.hasActive(),
+    test::check(sequence.settled() && sequence.grid() == 1.0f && !animations.has_active(),
                 "instant mode opens straight to the end");
     int done = 0;
     sequence.close([&] { ++done; });

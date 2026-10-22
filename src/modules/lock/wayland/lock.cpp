@@ -16,7 +16,7 @@
 #include "core/deferred_call.h"
 
 #include "modules/lock/layout.h"
-#include "modules/lock/pam_authenticator.h"
+#include "modules/lock/pam.h"
 #include "modules/lock/view.h"
 #include "modules/lock/wayland/lock.h"
 
@@ -28,34 +28,36 @@
 #define ASTRALIA_SHELL_PAM_DIR ""
 #endif
 
+namespace astralia::lock {
+
 namespace {
 
-void lock_paint(LockState &st, LockOutputSurface &los);
-void finish_unlock(LockState &st);
+void render(State &st, OutputSurface &los);
+void finish_unlock(State &st);
 
-void load_wallpaper(LockState &st, WaylandState &app) {
+void load_wallpaper(State &st, WaylandState &app) {
     if (app.cfg.lock_wallpaper_custom && !st.wallpaper.loaded())
         st.wallpaper.load(app);
 }
 
-void release_wallpaper_if_idle(LockState &st) {
+void release_wallpaper_if_idle(State &st) {
     if (!st.active && !st.transition.active)
         st.wallpaper.release();
 }
 
-void stop_transition(LockState &st) {
+void stop_transition(State &st) {
     transition_stop(st.transition);
     release_wallpaper_if_idle(st);
 }
 
-LockOutputSurface *surface_for(LockState &st, wl_surface *s) {
+OutputSurface *surface_for(State &st, wl_surface *s) {
     for (auto &up : st.surfaces)
         if (up->surface == s)
             return up.get();
     return nullptr;
 }
 
-void request_all(LockState &st) {
+void request_all(State &st) {
     for (auto &up : st.surfaces)
         if (up->frame_clock.surface)
             request_frame(up->frame_clock);
@@ -70,7 +72,7 @@ std::string clock_text(const char *format) {
     return std::string(buffer, n);
 }
 
-astralia::LockInfo lock_info(const LockState &st) {
+Info info(const State &st) {
     WaylandState &app = *st.app;
     std::string date = clock_text("%a %Y-%m-%d");
     for (char &c : date)
@@ -91,7 +93,7 @@ astralia::LockInfo lock_info(const LockState &st) {
             &app.notifications->list()};
 }
 
-void lock_paint(LockState &st, LockOutputSurface &los) {
+void render(State &st, OutputSurface &los) {
     if (!los.configured || los.egl_surface == EGL_NO_SURFACE || !st.app)
         return;
     using clk = std::chrono::steady_clock;
@@ -122,9 +124,8 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
     los.hits = {};
     if (!los.panel_gated) {
         float oh = static_cast<float>(los.height);
-        astralia::lock_motion_fit(los.motion, lock_card_width(oh), lock_card_height(oh));
-        astralia::paint_lock(los.canvas, st.model, los.motion, lock_info(st),
-                             static_cast<float>(los.width), oh);
+        motion_fit(los.motion, card_width(oh), card_height(oh));
+        lock::paint(los.canvas, st.model, los.motion, info(st), static_cast<float>(los.width), oh);
         los.hits = st.model.hits();
     }
     los.canvas.flush();
@@ -145,16 +146,16 @@ void lock_paint(LockState &st, LockOutputSurface &los) {
              f, los.output_name.c_str(), ms(t_begin, t_make), ms(t_make, t_wallpaper),
              ms(t_wallpaper, t_panel), ms(t_panel, t_draw), ms(t_draw, t_swap));
 
-    if (los.motion.animations.hasActive())
+    if (los.motion.animations.has_active())
         request_frame(los.frame_clock);
 }
 
 void surface_configure(void *data, ext_session_lock_surface_v1 *s, uint32_t serial, uint32_t w,
                        uint32_t h) {
-    auto *los = static_cast<LockOutputSurface *>(data);
+    auto *los = static_cast<OutputSurface *>(data);
     ext_session_lock_surface_v1_ack_configure(s, serial);
 
-    LockState *st = los->owner;
+    State *st = los->owner;
     int32_t scale = los->output_scale.scale;
     bool first = los->egl_surface == EGL_NO_SURFACE;
     los->width = static_cast<int32_t>(w);
@@ -171,7 +172,7 @@ void surface_configure(void *data, ext_session_lock_surface_v1 *s, uint32_t seri
             return;
         }
         los->frame_clock.surface = los->surface;
-        los->frame_clock.draw = [st, los] { lock_paint(*st, *los); };
+        los->frame_clock.draw = [st, los] { render(*st, *los); };
     } else if (los->egl_window) {
         wl_egl_window_resize(los->egl_window, los->width * scale, los->height * scale, 0, 0);
     }
@@ -185,12 +186,12 @@ constexpr ext_session_lock_surface_v1_listener kSurfaceListener = {
 };
 
 void handle_locked(void *data, ext_session_lock_v1 *) {
-    auto *st = static_cast<LockState *>(data);
+    auto *st = static_cast<State *>(data);
     if (!st->active)
         return;
     if (st->acknowledge_startup) {
         st->acknowledge_startup = false;
-        astralia::start_locked_acknowledge();
+        astralia::start_locked_ack();
     }
     st->locked = true;
     st->locked_at = std::chrono::steady_clock::now();
@@ -205,7 +206,7 @@ void handle_locked(void *data, ext_session_lock_v1 *) {
 }
 
 void handle_finished(void *data, ext_session_lock_v1 *) {
-    auto *st = static_cast<LockState *>(data);
+    auto *st = static_cast<State *>(data);
     if (!st->lock)
         return;
     klog("lock: compositor sent finished");
@@ -215,32 +216,32 @@ void handle_finished(void *data, ext_session_lock_v1 *) {
         ext_session_lock_v1_destroy(st->lock);
     st->lock = nullptr;
     st->locked = false;
-    lock_teardown(*st);
+    teardown(*st);
     stop_transition(*st);
 }
 
-constexpr ext_session_lock_v1_listener kLockListener = {
+constexpr ext_session_lock_v1_listener kListener = {
     .locked = handle_locked,
     .finished = handle_finished,
 };
 
-void deliver_auth(LockState &st, uint64_t gen, pam_auth::Result res) {
+void deliver_auth(State &st, uint64_t gen, pam::Result res) {
     klog("lock: auth result success=%d locked=%d", res.success, st.locked);
     if (!st.locked)
         return;
     bool current = gen == st.model.generation();
     if (st.model.finish_auth(gen, res.success)) {
-        lock_begin_unlock(st);
+        begin_unlock(st);
         return;
     }
     if (!current)
         return;
     for (auto &up : st.surfaces)
-        astralia::lock_motion_clear_dots(up->motion);
+        motion_clear_dots(up->motion);
     request_all(st);
 }
 
-void try_authenticate(LockState &st) {
+void try_authenticate(State &st) {
     if (st.model.authenticating() || st.model.password().empty()) {
         klog("lock: submit ignored (authenticating=%d empty=%d)", st.model.authenticating(),
              st.model.password().empty());
@@ -250,16 +251,15 @@ void try_authenticate(LockState &st) {
     std::string pw = st.model.begin_auth();
     uint64_t gen = st.model.generation();
     std::thread([&st, gen, pw = std::move(pw)]() mutable {
-        pam_auth::Result res =
-            pam_auth::authenticate(user_info::username(), pw, ASTRALIA_SHELL_PAM_DIR);
-        pam_auth::secure_clear(pw);
+        pam::Result res = pam::authenticate(user_info::username(), pw, ASTRALIA_SHELL_PAM_DIR);
+        pam::secure_clear(pw);
         astralia::DeferredCall::call_later([&st, gen, res] { deliver_auth(st, gen, res); });
     }).detach();
     request_all(st);
 }
 
-void create_output_surface(LockState &st, wl_output *output, const std::string &name) {
-    auto los = std::make_unique<LockOutputSurface>();
+void create_output_surface(State &st, wl_output *output, const std::string &name) {
+    auto los = std::make_unique<OutputSurface>();
     los->owner = &st;
     los->output = output;
     los->output_name = name;
@@ -282,7 +282,7 @@ void create_output_surface(LockState &st, wl_output *output, const std::string &
     st.surfaces.push_back(std::move(los));
 }
 
-void destroy_output_surface(LockState &st, LockOutputSurface &los) {
+void destroy_output_surface(State &st, OutputSurface &los) {
     if (los.frame_clock.callback) {
         wl_callback_destroy(los.frame_clock.callback);
         los.frame_clock.callback = nullptr;
@@ -306,15 +306,15 @@ void destroy_output_surface(LockState &st, LockOutputSurface &los) {
     }
 }
 
-void release_session(LockState &st) {
+void release_session(State &st) {
     ext_session_lock_v1_unlock_and_destroy(st.lock);
     st.lock = nullptr;
     wl_display_roundtrip(st.app->display);
-    lock_teardown(st);
+    teardown(st);
     klog("lock: session unlocked");
 }
 
-void finish_unlock(LockState &st) {
+void finish_unlock(State &st) {
     if (!st.lock)
         return;
     release_session(st);
@@ -323,7 +323,7 @@ void finish_unlock(LockState &st) {
 
 } // namespace
 
-bool lock_request(LockState &st, WaylandState &app) {
+bool request(State &st, WaylandState &app) {
     if (st.active)
         return true;
     if (!app.session_lock_manager) {
@@ -336,7 +336,7 @@ bool lock_request(LockState &st, WaylandState &app) {
         klog("lock: failed to create session lock");
         return false;
     }
-    ext_session_lock_v1_add_listener(st.lock, &kLockListener, &st);
+    ext_session_lock_v1_add_listener(st.lock, &kListener, &st);
 
     st.active = true;
     st.locked = false;
@@ -354,7 +354,7 @@ bool lock_request(LockState &st, WaylandState &app) {
     return true;
 }
 
-void lock_begin(LockState &st, WaylandState &app, bool animate) {
+void lock_begin(State &st, WaylandState &app, bool animate) {
     if (st.active || st.transition.active)
         return;
     st.app = &app;
@@ -362,17 +362,17 @@ void lock_begin(LockState &st, WaylandState &app, bool animate) {
     bool animated = animate && !app.cfg.animations_disabled && app.session_lock_manager &&
                     !app.outputs.empty() && transition_open(st.transition, app);
     if (!animated) {
-        if (!lock_request(st, app))
+        if (!request(st, app))
             release_wallpaper_if_idle(st);
         return;
     }
     transition_play(st.transition, [&st, &app] {
-        if (!lock_request(st, app))
+        if (!request(st, app))
             stop_transition(st);
     });
 }
 
-void lock_teardown(LockState &st) {
+void teardown(State &st) {
     for (auto &up : st.surfaces)
         destroy_output_surface(st, *up);
     st.surfaces.clear();
@@ -391,14 +391,13 @@ void lock_teardown(LockState &st) {
     release_wallpaper_if_idle(st);
 }
 
-void lock_begin_unlock(LockState &st) {
+void begin_unlock(State &st) {
     if (st.unlocking || !st.locked)
         return;
     st.unlocking = true;
     bool reuse = st.transition.active && !st.transition.playing && !st.transition.surfaces.empty();
-    bool animated =
-        st.app && !st.app->cfg.animations_disabled && !st.surfaces.empty() &&
-        (reuse || transition_open(st.transition, *st.app, astralia::LockTransitionMode::unlock));
+    bool animated = st.app && !st.app->cfg.animations_disabled && !st.surfaces.empty() &&
+                    (reuse || transition_open(st.transition, *st.app, TransitionMode::unlock));
     klog("lock: unlock begin (reuse=%d animated=%d)", reuse, animated);
     if (!animated) {
         astralia::DeferredCall::call_later([&st] { finish_unlock(st); });
@@ -417,33 +416,33 @@ void lock_begin_unlock(LockState &st) {
             stop_transition(st);
     };
     if (reuse)
-        transition_rehold(st.transition, astralia::LockTransitionMode::unlock);
+        transition_rehold(st.transition, TransitionMode::unlock);
     app_detail::rest_egl_current(*st.app);
 }
 
-void lock_handle_key(LockState &st, const KeyEvent &ev) {
+void handle_key(State &st, const KeyEvent &ev) {
     if (!st.locked || st.unlocking)
         return;
     switch (st.model.key(to_neutral(ev))) {
-    case astralia::LockKey::submit:
+    case Key::submit:
         try_authenticate(st);
         return;
-    case astralia::LockKey::changed:
+    case Key::changed:
         for (auto &up : st.surfaces)
-            astralia::lock_motion_type(up->motion, st.model.password());
+            motion_type(up->motion, st.model.password());
         request_all(st);
         return;
-    case astralia::LockKey::none:
+    case Key::none:
         return;
     }
 }
 
-void lock_handle_click(LockState &st, wl_surface *surf, double x, double y) {
-    LockOutputSurface *los = surface_for(st, surf);
+void handle_click(State &st, wl_surface *surf, double x, double y) {
+    OutputSurface *los = surface_for(st, surf);
     if (!los)
         return;
-    if (lock_dev_unlock_hit(x, y, static_cast<double>(los->height))) {
-        lock_begin_unlock(st);
+    if (dev_unlock_hit(x, y, static_cast<double>(los->height))) {
+        begin_unlock(st);
         return;
     }
     if (st.unlocking || !st.app)
@@ -468,14 +467,14 @@ void lock_handle_click(LockState &st, wl_surface *surf, double x, double y) {
     }
 }
 
-void lock_timer_tick(LockState &st) {
+void timer_tick(State &st) {
     if (!st.active)
         return;
-    st.model.tick(astralia::LockModel::Clock::now());
+    st.model.tick(Model::Clock::now());
     request_all(st);
 }
 
-void lock_hotplug_add(LockState &st, wl_output *output, const char *name) {
+void hotplug_add(State &st, wl_output *output, const char *name) {
     if (!st.active)
         return;
     for (auto &up : st.surfaces)
@@ -485,19 +484,19 @@ void lock_hotplug_add(LockState &st, wl_output *output, const char *name) {
     wl_display_flush(st.app->display);
 }
 
-void lock_hotplug_remove(LockState &st, wl_output *output) {
+void hotplug_remove(State &st, wl_output *output) {
     if (!st.active)
         return;
     auto it = std::find_if(
         st.surfaces.begin(), st.surfaces.end(),
-        [output](const std::unique_ptr<LockOutputSurface> &u) { return u->output == output; });
+        [output](const std::unique_ptr<OutputSurface> &u) { return u->output == output; });
     if (it == st.surfaces.end())
         return;
     destroy_output_surface(st, **it);
     st.surfaces.erase(it);
 }
 
-wl_surface *lock_focused_surface(const LockState &st) {
+wl_surface *focused_surface(const State &st) {
     if (st.surfaces.empty())
         return nullptr;
     if (st.app && st.app->keyboard.focused_surface) {
@@ -508,7 +507,7 @@ wl_surface *lock_focused_surface(const LockState &st) {
     return st.surfaces.front()->surface;
 }
 
-bool lock_owns_surface(const LockState &st, wl_surface *s) {
+bool owns_surface(const State &st, wl_surface *s) {
     if (!s)
         return false;
     for (auto &up : st.surfaces)
@@ -519,12 +518,11 @@ bool lock_owns_surface(const LockState &st, wl_surface *s) {
 
 namespace {
 
-class LockModule final : public Module {
+class Adapter final : public Module {
   public:
-    explicit LockModule(LockWallpaperDrawFn draw_wallpaper)
-        : draw_wallpaper_(std::move(draw_wallpaper)) {}
+    explicit Adapter(WallpaperDrawFn draw_wallpaper) : draw_wallpaper_(std::move(draw_wallpaper)) {}
 
-    LockState &state() { return state_; }
+    State &state() { return state_; }
 
     const char *name() const override { return "lock"; }
     bool is_open() const override { return state_.active; }
@@ -542,32 +540,34 @@ class LockModule final : public Module {
                 draw_wallpaper_(app, output_name, canvas, w, h);
         };
         state_.transition.draw_wallpaper = state_.draw_wallpaper;
+        state_.transition.wallpaper_ready = [this](const std::string &output_name) {
+            return state_.wallpaper.ready(output_name);
+        };
         state_.transition.draw_lock = [this](const std::string &output_name, GlCanvas &canvas,
-                                             int32_t w, int32_t h, astralia::LockMotion &motion) {
+                                             int32_t w, int32_t h, Motion &motion) {
             state_.draw_wallpaper(output_name, canvas, w, h);
             if (state_.panel_gated_for && !state_.panel_gated_for(output_name))
                 return;
             if (state_.user.empty())
                 state_.user = user_info::username();
-            astralia::LockMotion *shown = &motion;
+            Motion *shown = &motion;
             if (state_.unlocking)
                 for (auto &up : state_.surfaces)
                     if (up->output_name == output_name)
                         shown = &up->motion;
             float oh = static_cast<float>(h);
-            astralia::lock_motion_fit(*shown, lock_card_width(oh), lock_card_height(oh));
-            astralia::paint_lock(canvas, state_.model, *shown, lock_info(state_),
-                                 static_cast<float>(w), oh);
+            motion_fit(*shown, card_width(oh), card_height(oh));
+            lock::paint(canvas, state_.model, *shown, info(state_), static_cast<float>(w), oh);
         };
         state_.panel_gated_for = [&app](const std::string &output_name) {
-            return lock_effective_enabled(app.cfg, output_name);
+            return lock_enabled_for(app.cfg, output_name);
         };
         return true;
     }
 
     bool configured() const override { return true; }
-    wl_surface *surface() const override { return lock_focused_surface(state_); }
-    bool owns_surface(wl_surface *s) const override { return lock_owns_surface(state_, s); }
+    wl_surface *surface() const override { return lock::focused_surface(state_); }
+    bool owns_surface(wl_surface *s) const override { return lock::owns_surface(state_, s); }
     void request_frame() override {}
 
     bool timer_tick(WaylandState &app) override {
@@ -580,15 +580,15 @@ class LockModule final : public Module {
         if (poll_tick_ % 5 == 0 ||
             (app.gpu_temp.nvidia_smi_proc && app.gpu_temp.nvidia_smi_proc->running()))
             astralia::gpu_temp_poll(app.gpu_temp);
-        lock_timer_tick(state_);
+        lock::timer_tick(state_);
         return true;
     }
 
     void handle_key_event(WaylandState &, const KeyEvent &event) override {
-        lock_handle_key(state_, event);
+        handle_key(state_, event);
     }
     void handle_click(WaylandState &app, double x, double y) override {
-        lock_handle_click(state_, app.pointer.focused_surface, x, y);
+        lock::handle_click(state_, app.pointer.focused_surface, x, y);
     }
 
     std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override {
@@ -601,25 +601,25 @@ class LockModule final : public Module {
     }
 
   private:
-    LockWallpaperDrawFn draw_wallpaper_;
-    LockState state_;
+    WallpaperDrawFn draw_wallpaper_;
+    State state_;
     int poll_tick_ = 0;
 };
 
-LockModule *find_lock_module(WaylandState &app) {
+Adapter *find_lock_module(WaylandState &app) {
     for (auto &m : app.overlays)
-        if (auto *lm = dynamic_cast<LockModule *>(m.get()))
+        if (auto *lm = dynamic_cast<Adapter *>(m.get()))
             return lm;
     return nullptr;
 }
 
 } // namespace
 
-std::unique_ptr<Module> make_lock_module(LockWallpaperDrawFn draw_wallpaper) {
-    return std::make_unique<LockModule>(std::move(draw_wallpaper));
+std::unique_ptr<Module> make_module(WallpaperDrawFn draw_wallpaper) {
+    return std::make_unique<Adapter>(std::move(draw_wallpaper));
 }
 
-void lock_at_startup(WaylandState &app) {
+void at_startup(WaylandState &app) {
     auto *lm = find_lock_module(app);
     if (!lm) {
         klog("lock: start locked requested but the lock module is not loaded");
@@ -632,14 +632,16 @@ void lock_at_startup(WaylandState &app) {
     lock_begin(lm->state(), app, false);
 }
 
-void lock_notify_output_added(WaylandState &app, wl_output *output, const char *name) {
+void notify_output_added(WaylandState &app, wl_output *output, const char *name) {
     if (auto *lm = find_lock_module(app))
-        lock_hotplug_add(lm->state(), output, name);
+        hotplug_add(lm->state(), output, name);
 }
 
-void lock_notify_output_removed(WaylandState &app, wl_output *output) {
+void notify_output_removed(WaylandState &app, wl_output *output) {
     if (auto *lm = find_lock_module(app)) {
         transition_output_removed(lm->state().transition, output);
-        lock_hotplug_remove(lm->state(), output);
+        hotplug_remove(lm->state(), output);
     }
 }
+
+} // namespace astralia::lock

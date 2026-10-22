@@ -18,10 +18,10 @@
 
 #include "service/wallpaper_service.h"
 
-namespace astralia {
+namespace astralia::settings {
 
-SettingsCaps settings_caps(const Capabilities &capabilities) {
-    SettingsCaps caps;
+Caps settings_caps(const Capabilities &capabilities) {
+    Caps caps;
     caps.animation = capabilities.animations;
     caps.idle = capabilities.idle;
     caps.launcher = capabilities.animations;
@@ -61,113 +61,114 @@ std::string trim_float(float value) {
 }
 
 MonitorOverride &enable_defaults(MonitorOverride &override, const Config &config) {
-    override.osd = config.default_osd_enabled;
-    override.notifications = config.default_notifications_enabled;
+    override.osd = config.default_osd;
+    override.notifications = config.default_notifications;
     override.autohide = config.autohide;
     override.ambient_enabled = config.ambient_enabled;
-    override.ambient_timeout_seconds = config.ambient_timeout_seconds;
+    override.ambient_timeout = config.ambient_timeout;
     override.screensaver_enabled = config.screensaver_enabled;
-    override.screensaver_timeout_seconds = config.screensaver_timeout_seconds;
+    override.screensaver_timeout = config.screensaver_timeout;
     return override;
 }
 
 } // namespace
 
-const std::vector<SettingsTabInfo> &settings_all_tabs() {
-    static const std::vector<SettingsTabInfo> tabs{
-        {SettingsTab::ambient, "Ambient", icon::wave_sine},
-        {SettingsTab::bar, "Bar", icon::layout_navbar},
-        {SettingsTab::displays, "Displays", icon::device_desktop},
-        {SettingsTab::general, "General", icon::adjustments},
-        {SettingsTab::lock, "Lock Screen", icon::lock},
-        {SettingsTab::wallpaper, "Wallpaper", icon::wallpaper},
+const std::vector<TabInfo> &all_tabs() {
+    static const std::vector<TabInfo> tabs{
+        {Tab::ambient, "Ambient", icon::wave_sine},
+        {Tab::bar, "Bar", icon::layout_navbar},
+        {Tab::displays, "Displays", icon::device_desktop},
+        {Tab::general, "General", icon::adjustments},
+        {Tab::lock, "Lock Screen", icon::lock},
+        {Tab::wallpaper, "Wallpaper", icon::wallpaper},
     };
     return tabs;
 }
 
-std::string settings_field_text(const Config &config, SettingsField field,
-                                const std::string &monitor) {
+std::string field_text(const Config &config, Field field, const std::string &monitor) {
     switch (field) {
-    case SettingsField::wallpaper_dir:
+    case Field::wallpaper_dir:
         return path_collapse_home(config.wallpaper_dir);
-    case SettingsField::wallpaper_animated_dir:
+    case Field::wallpaper_animated_dir:
         return path_collapse_home(config.wallpaper_animated_dir);
-    case SettingsField::lock_wallpaper_dir:
+    case Field::lock_wallpaper_dir:
         return path_collapse_home(config.lock_wallpaper_dir);
-    case SettingsField::ambient_timeout:
-        return std::to_string(ambient_effective_timeout_seconds(config, monitor));
-    case SettingsField::screensaver_timeout:
-        return std::to_string(screensaver_effective_timeout_seconds(config, monitor));
-    case SettingsField::visualizer_fps:
+    case Field::ambient_timeout:
+        return std::to_string(ambient_timeout_for(config, monitor));
+    case Field::screensaver_timeout:
+        return std::to_string(screensaver_timeout_for(config, monitor));
+    case Field::visualizer_fps:
         return std::to_string(config.visualizer.fps);
-    case SettingsField::visualizer_thin:
+    case Field::visualizer_thin:
         return trim_float(config.visualizer.particle_thin);
-    case SettingsField::visualizer_size:
+    case Field::visualizer_size:
         return std::to_string(config.visualizer.particle_size);
-    case SettingsField::visualizer_complexity:
+    case Field::visualizer_complexity:
         return std::to_string(config.visualizer.fractal_complexity);
-    case SettingsField::visualizer_glow_directions:
+    case Field::visualizer_glow_directions:
         return trim_float(config.visualizer.glow_directions);
-    case SettingsField::visualizer_glow_quality:
+    case Field::visualizer_glow_quality:
         return trim_float(config.visualizer.glow_quality);
-    case SettingsField::none:
+    case Field::none:
         break;
     }
     return "";
 }
 
-void settings_apply_field(Config &config, SettingsField field, const std::string &text,
-                          const std::string &monitor) {
+void apply_field(Config &config, Field field, const std::string &text, const std::string &monitor) {
     try {
         switch (field) {
-        case SettingsField::wallpaper_dir:
+        case Field::wallpaper_dir:
             config.wallpaper_dir = path_expand_home(text);
             break;
-        case SettingsField::wallpaper_animated_dir:
+        case Field::wallpaper_animated_dir:
             config.wallpaper_animated_dir = path_expand_home(text);
             break;
-        case SettingsField::lock_wallpaper_dir:
+        case Field::lock_wallpaper_dir:
             config.lock_wallpaper_dir = path_expand_home(text);
             break;
-        case SettingsField::ambient_timeout: {
+        case Field::ambient_timeout: {
             auto value = static_cast<uint32_t>(
                 std::clamp(std::stoi(text), cfg::idle_timeout_min, cfg::idle_timeout_max));
-            (monitor.empty() ? config.ambient_timeout_seconds
-                             : config.monitor_overrides[monitor].ambient_timeout_seconds) = value;
+            (monitor.empty() ? config.ambient_timeout
+                             : config.monitor_overrides[monitor].ambient_timeout) = value;
             break;
         }
-        case SettingsField::screensaver_timeout: {
+        case Field::screensaver_timeout: {
             auto value = static_cast<uint32_t>(
                 std::clamp(std::stoi(text), cfg::idle_timeout_min, cfg::idle_timeout_max));
-            (monitor.empty() ? config.screensaver_timeout_seconds
-                             : config.monitor_overrides[monitor].screensaver_timeout_seconds) =
-                value;
+            (monitor.empty() ? config.screensaver_timeout
+                             : config.monitor_overrides[monitor].screensaver_timeout) = value;
             break;
         }
-        case SettingsField::visualizer_fps:
+        case Field::visualizer_fps:
             config.visualizer.fps =
-                std::clamp(std::stoi(text), kVisualizerFpsMin, kVisualizerFpsMax);
+                std::clamp(std::stoi(text), visualizer_config::kFpsMin, visualizer_config::kFpsMax);
             break;
-        case SettingsField::visualizer_thin:
+        case Field::visualizer_thin:
             config.visualizer.particle_thin =
-                std::clamp(std::stof(text), kVisualizerParticleThinMin, kVisualizerParticleThinMax);
+                std::clamp(std::stof(text), visualizer_config::kParticleThinMin,
+                           visualizer_config::kParticleThinMax);
             break;
-        case SettingsField::visualizer_size:
-            config.visualizer.particle_size = kVisualizerParticleSize;
+        case Field::visualizer_size:
+            config.visualizer.particle_size = visualizer_config::kParticleSize;
             break;
-        case SettingsField::visualizer_complexity:
+        case Field::visualizer_complexity:
             config.visualizer.fractal_complexity =
-                std::clamp(std::stoi(text), kVisualizerComplexityMin, kVisualizerComplexityMax);
+                std::clamp(std::stoi(text), visualizer_config::kComplexityMin,
+                           visualizer_config::kComplexityMax);
             break;
-        case SettingsField::visualizer_glow_directions:
-            config.visualizer.glow_directions = std::clamp(
-                std::stof(text), kVisualizerGlowDirectionsMin, kVisualizerGlowDirectionsMax);
+        case Field::visualizer_glow_directions:
+            config.visualizer.glow_directions =
+                std::clamp(std::stof(text), visualizer_config::kGlowDirectionsMin,
+                           visualizer_config::kGlowDirectionsMax);
             break;
-        case SettingsField::visualizer_glow_quality:
+        case Field::visualizer_glow_quality:
             config.visualizer.glow_quality =
-                std::clamp(std::stof(text), kVisualizerGlowQualityMin, kVisualizerGlowQualityMax);
+                std::clamp(std::stof(text), visualizer_config::kGlowQualityMin,
+                           visualizer_config::kGlowQualityMax);
             break;
-        case SettingsField::none:
+        case Field::none:
             break;
         }
     } catch (const std::exception &) {
@@ -177,18 +178,17 @@ void settings_apply_field(Config &config, SettingsField field, const std::string
     }
 }
 
-SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
-    : caps_(std::move(caps)), hooks_(std::move(hooks)) {
-    for (const SettingsTabInfo &info : settings_all_tabs()) {
+Model::Model(Caps caps, Hooks hooks) : caps_(std::move(caps)), hooks_(std::move(hooks)) {
+    for (const TabInfo &info : all_tabs()) {
         bool present = true;
         switch (info.tab) {
-        case SettingsTab::ambient:
+        case Tab::ambient:
             present = caps_.rain || caps_.visualizer;
             break;
-        case SettingsTab::general:
+        case Tab::general:
             present = caps_.animation || caps_.launcher;
             break;
-        case SettingsTab::lock:
+        case Tab::lock:
             present = caps_.lock_wallpaper;
             break;
         default:
@@ -198,29 +198,29 @@ SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
             tabs_.push_back(info);
         }
     }
-    active_ = pending_ = SettingsTab::wallpaper;
+    active_ = pending_ = Tab::wallpaper;
 }
 
-SettingsModel::~SettingsModel() { *alive_ = false; }
+Model::~Model() { *alive_ = false; }
 
-void SettingsModel::changed() {
+void Model::changed() {
     if (on_changed) {
         on_changed();
     }
 }
 
-void SettingsModel::open() {
+void Model::open() {
     open_ = true;
     dropdown_open_ = -1;
-    active_ = pending_ = SettingsTab::wallpaper;
+    active_ = pending_ = Tab::wallpaper;
     menu_ = pending_menu_ = true;
-    animations_.cancelForOwner(owner_tab_fade);
+    animations_.cancel_owner(owner_tab_fade);
     tab_alpha_ = 1.0f;
     sequence_.open();
     sync();
 }
 
-void SettingsModel::close() {
+void Model::close() {
     if (!open_ || sequence_.closing()) {
         return;
     }
@@ -241,7 +241,7 @@ void SettingsModel::close() {
     });
 }
 
-BarStyle SettingsModel::effective_bar_style() const {
+BarStyle Model::effective_bar_style() const {
     BarStyle style = config().bar_style;
     if (std::ranges::find(caps_.bar_styles, style) != caps_.bar_styles.end()) {
         return style;
@@ -251,7 +251,7 @@ BarStyle SettingsModel::effective_bar_style() const {
                : caps_.bar_styles.front();
 }
 
-void SettingsModel::sync() {
+void Model::sync() {
     monitors_.clear();
     if (hooks_.monitors) {
         for (std::string &name : hooks_.monitors()) {
@@ -284,11 +284,11 @@ void SettingsModel::sync() {
     }
     if (open_ && !sequence_.closing() && !menu_) {
         std::optional<WallpaperSlot> slot;
-        if (active_ == SettingsTab::wallpaper) {
+        if (active_ == Tab::wallpaper) {
             slot = caps_.animated_wallpaper && current.wallpaper_animated_enabled
                        ? WallpaperSlot::animated
                        : WallpaperSlot::still;
-        } else if (active_ == SettingsTab::lock && current.lock_wallpaper_custom) {
+        } else if (active_ == Tab::lock && current.lock_wallpaper_custom) {
             slot = WallpaperSlot::lock;
         }
         if (slot) {
@@ -301,11 +301,11 @@ void SettingsModel::sync() {
     }
 }
 
-void SettingsModel::rescan(WallpaperSlot slot) {
+void Model::rescan(WallpaperSlot slot) {
     scan(picker(slot), wallpaper_slot_dir(config(), slot), slot == WallpaperSlot::animated);
 }
 
-void SettingsModel::scan(WallpaperPicker &picker, const std::string &dir, bool animated) {
+void Model::scan(WallpaperPicker &picker, const std::string &dir, bool animated) {
     picker.dir = dir;
     picker.scanning = true;
     picker.scroll = 0.0f;
@@ -325,11 +325,11 @@ void SettingsModel::scan(WallpaperPicker &picker, const std::string &dir, bool a
     }).detach();
 }
 
-void SettingsModel::select_tab(SettingsTab tab) { go(false, tab); }
+void Model::select_tab(Tab tab) { go(false, tab); }
 
-void SettingsModel::show_menu() { go(true, active_); }
+void Model::show_menu() { go(true, active_); }
 
-void SettingsModel::go(bool menu, SettingsTab tab) {
+void Model::go(bool menu, Tab tab) {
     if (menu ? pending_menu_ : (!pending_menu_ && tab == pending_)) {
         return;
     }
@@ -351,13 +351,13 @@ void SettingsModel::go(bool menu, SettingsTab tab) {
     sync();
 }
 
-void SettingsModel::focus_field(SettingsField field) {
+void Model::focus_field(Field field) {
     if (field == focused_) {
         return;
     }
     commit_field();
     focused_ = field;
-    field_.text = settings_field_text(config(), field, displays_monitor_);
+    field_.text = field_text(config(), field, displays_monitor_);
     field_.preedit.clear();
     field_.cursor_idle_visible = true;
     text_field_type_anim_settle(field_anim_, animations_, owner_field_anim, field_.text);
@@ -366,33 +366,33 @@ void SettingsModel::focus_field(SettingsField field) {
     }
 }
 
-void SettingsModel::commit_field() {
-    if (focused_ == SettingsField::none) {
+void Model::commit_field() {
+    if (focused_ == Field::none) {
         return;
     }
-    SettingsField field = focused_;
+    Field field = focused_;
     std::string text = field_.text;
     std::string monitor = displays_monitor_;
-    focused_ = SettingsField::none;
+    focused_ = Field::none;
     field_.preedit.clear();
     text_field_type_anim_clear(field_anim_, animations_, owner_field_anim);
     if (on_text_focus) {
         on_text_focus(false);
     }
-    edit([&](Config &config) { settings_apply_field(config, field, text, monitor); });
+    edit([&](Config &config) { apply_field(config, field, text, monitor); });
 }
 
-void SettingsModel::edit(const std::function<void(Config &)> &apply) {
+void Model::edit(const std::function<void(Config &)> &apply) {
     hooks_.update(apply);
     sync();
     changed();
 }
 
-bool SettingsModel::key(const input::KeyEvent &event) {
+bool Model::key(const input::KeyEvent &event) {
     if (!open_ || sequence_.closing()) {
         return false;
     }
-    if (focused_ == SettingsField::none) {
+    if (focused_ == Field::none) {
         if (event.kind == input::KeyKind::Escape) {
             if (!pending_menu_) {
                 show_menu();
@@ -406,7 +406,7 @@ bool SettingsModel::key(const input::KeyEvent &event) {
         }
         if (!pending_menu_ &&
             (event.kind == input::KeyKind::Up || event.kind == input::KeyKind::Down)) {
-            auto it = std::ranges::find(tabs_, pending_, &SettingsTabInfo::tab);
+            auto it = std::ranges::find(tabs_, pending_, &TabInfo::tab);
             if (it == tabs_.end()) {
                 return false;
             }
@@ -429,7 +429,7 @@ bool SettingsModel::key(const input::KeyEvent &event) {
         commit_field();
         return true;
     case TextFieldResult::Cancelled:
-        focused_ = SettingsField::none;
+        focused_ = Field::none;
         field_.preedit.clear();
         text_field_type_anim_clear(field_anim_, animations_, owner_field_anim);
         if (on_text_focus) {
@@ -443,14 +443,14 @@ bool SettingsModel::key(const input::KeyEvent &event) {
     return false;
 }
 
-void SettingsModel::commit_text(const std::string &text) {
+void Model::commit_text(const std::string &text) {
     field_.text += text;
     field_.preedit.clear();
     text_field_type_anim_sync(field_anim_, animations_, owner_field_anim, field_.text);
     changed();
 }
 
-void SettingsModel::delete_before(uint32_t count) {
+void Model::delete_before(uint32_t count) {
     for (uint32_t i = 0; i < count; ++i) {
         text_field_backspace(field_.text);
     }
@@ -458,34 +458,34 @@ void SettingsModel::delete_before(uint32_t count) {
     changed();
 }
 
-void SettingsModel::set_preedit(std::string text) {
+void Model::set_preedit(std::string text) {
     field_.preedit = std::move(text);
     field_.cursor_idle_visible = true;
     changed();
 }
 
-void SettingsModel::toggle_caret() {
-    if (focused_ != SettingsField::none) {
+void Model::toggle_caret() {
+    if (focused_ != Field::none) {
         text_field_idle_toggle(field_);
         changed();
     }
 }
 
-bool SettingsModel::clickable(double x, double y) const {
-    return std::ranges::any_of(regions_, [&](const SettingsRegion &r) {
+bool Model::clickable(double x, double y) const {
+    return std::ranges::any_of(regions_, [&](const Region &r) {
         return r.box.w > 0 && x >= r.box.x && x < r.box.x + r.box.w && y >= r.box.y &&
                y < r.box.y + r.box.h;
     });
 }
 
-void SettingsModel::click(double x, double y) {
+void Model::click(double x, double y) {
     if (!open_ || sequence_.closing() || !sequence_.settled()) {
         return;
     }
-    for (const SettingsRegion &region : regions_) {
+    for (const Region &region : regions_) {
         const ui::Box &b = region.box;
         if (b.w > 0 && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
-            if (region.act != SettingsAct::dropdown_toggle) {
+            if (region.act != Act::dropdown_toggle) {
                 dropdown_open_ = -1;
             }
             dispatch(region);
@@ -499,15 +499,15 @@ void SettingsModel::click(double x, double y) {
     }
 }
 
-void SettingsModel::scroll(float pixels) {
+void Model::scroll(float pixels) {
     if (!open_ || sequence_.closing() || !sequence_.settled()) {
         return;
     }
-    if (menu_ || (active_ != SettingsTab::wallpaper && active_ != SettingsTab::lock)) {
+    if (menu_ || (active_ != Tab::wallpaper && active_ != Tab::lock)) {
         return;
     }
     WallpaperSlot slot = WallpaperSlot::lock;
-    if (active_ == SettingsTab::wallpaper) {
+    if (active_ == Tab::wallpaper) {
         slot = caps_.animated_wallpaper && config().wallpaper_animated_enabled
                    ? WallpaperSlot::animated
                    : WallpaperSlot::still;
@@ -526,7 +526,7 @@ void SettingsModel::scroll(float pixels) {
     changed();
 }
 
-void SettingsModel::dispatch(const SettingsRegion &region) {
+void Model::dispatch(const Region &region) {
     const Config &current = config();
     auto monitor = [&](int index) {
         return index < 0 || static_cast<std::size_t>(index) >= monitors_.size()
@@ -534,26 +534,26 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
                    : monitors_[static_cast<std::size_t>(index)];
     };
     switch (region.act) {
-    case SettingsAct::close:
+    case Act::close:
         if (on_close_requested) {
             on_close_requested();
         }
         return;
-    case SettingsAct::tab:
+    case Act::tab:
         commit_field();
-        select_tab(static_cast<SettingsTab>(region.a));
+        select_tab(static_cast<Tab>(region.a));
         changed();
         return;
-    case SettingsAct::menu:
+    case Act::menu:
         commit_field();
         show_menu();
         changed();
         return;
-    case SettingsAct::field_focus:
-        focus_field(static_cast<SettingsField>(region.a));
+    case Act::field_focus:
+        focus_field(static_cast<Field>(region.a));
         changed();
         return;
-    case SettingsAct::displays_monitor:
+    case Act::displays_monitor:
         displays_monitor_ = monitor(region.a);
         changed();
         return;
@@ -563,7 +563,7 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
     commit_field();
     const std::string &target = displays_monitor_;
     switch (region.act) {
-    case SettingsAct::toggle_override:
+    case Act::toggle_override:
         edit([&](Config &config) {
             MonitorOverride &override = config.monitor_overrides[target];
             if (!override.enabled) {
@@ -572,12 +572,12 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
             override.enabled = !override.enabled;
         });
         return;
-    case SettingsAct::toggle_osd:
-    case SettingsAct::toggle_notifications:
-    case SettingsAct::toggle_autohide:
-    case SettingsAct::idle_ambient:
-    case SettingsAct::idle_screensaver: {
-        SettingsAct act = region.act;
+    case Act::toggle_osd:
+    case Act::toggle_notifications:
+    case Act::toggle_autohide:
+    case Act::idle_ambient:
+    case Act::idle_screensaver: {
+        Act act = region.act;
         edit([&](Config &config) {
             MonitorOverride *override =
                 target.empty() ? nullptr : &config.monitor_overrides[target];
@@ -586,16 +586,16 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
                 value = !value;
             };
             switch (act) {
-            case SettingsAct::toggle_osd:
-                flip(config.default_osd_enabled, &MonitorOverride::osd);
+            case Act::toggle_osd:
+                flip(config.default_osd, &MonitorOverride::osd);
                 break;
-            case SettingsAct::toggle_notifications:
-                flip(config.default_notifications_enabled, &MonitorOverride::notifications);
+            case Act::toggle_notifications:
+                flip(config.default_notifications, &MonitorOverride::notifications);
                 break;
-            case SettingsAct::toggle_autohide:
+            case Act::toggle_autohide:
                 flip(config.autohide, &MonitorOverride::autohide);
                 break;
-            case SettingsAct::idle_ambient:
+            case Act::idle_ambient:
                 flip(config.ambient_enabled, &MonitorOverride::ambient_enabled);
                 break;
             default:
@@ -605,63 +605,60 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
         });
         return;
     }
-    case SettingsAct::idle_enable:
-        edit([](Config &config) {
-            config.idle_management_enabled = !config.idle_management_enabled;
-        });
+    case Act::idle_enable:
+        edit([](Config &config) { config.idle_enabled = !config.idle_enabled; });
         return;
-    case SettingsAct::idle_ambient_reset:
+    case Act::idle_ambient_reset:
         edit([&](Config &config) {
-            config.monitor_overrides[displays_monitor_].ambient_timeout_seconds =
-                config.ambient_timeout_seconds;
+            config.monitor_overrides[displays_monitor_].ambient_timeout = config.ambient_timeout;
         });
         return;
-    case SettingsAct::idle_screensaver_reset:
+    case Act::idle_screensaver_reset:
         edit([&](Config &config) {
-            config.monitor_overrides[displays_monitor_].screensaver_timeout_seconds =
-                config.screensaver_timeout_seconds;
+            config.monitor_overrides[displays_monitor_].screensaver_timeout =
+                config.screensaver_timeout;
         });
         return;
-    case SettingsAct::bar_style:
+    case Act::bar_style:
         if (region.a >= 0 && static_cast<std::size_t>(region.a) < caps_.bar_styles.size()) {
             BarStyle style = caps_.bar_styles[static_cast<std::size_t>(region.a)];
             edit([style](Config &config) { config.bar_style = style; });
         }
         return;
-    case SettingsAct::rain_mode:
+    case Act::rain_mode:
         edit([&](Config &config) {
             config.rain.mode = region.a == 1 ? RainMode::Stiletto : RainMode::Matrix;
         });
         return;
-    case SettingsAct::rain_async:
+    case Act::rain_async:
         edit([](Config &config) { config.rain.async_speed = !config.rain.async_speed; });
         return;
-    case SettingsAct::visualizer_shape:
+    case Act::visualizer_shape:
         edit([&](Config &config) {
             config.visualizer.visualizer_shape =
                 region.a == 1 ? VisualizerShape::Sphere : VisualizerShape::Bar;
         });
         return;
-    case SettingsAct::visualizer_reset:
+    case Act::visualizer_reset:
         edit([&](Config &config) {
             VisualizerParams defaults;
-            switch (static_cast<SettingsField>(region.a)) {
-            case SettingsField::visualizer_fps:
+            switch (static_cast<Field>(region.a)) {
+            case Field::visualizer_fps:
                 config.visualizer.fps = defaults.fps;
                 break;
-            case SettingsField::visualizer_thin:
+            case Field::visualizer_thin:
                 config.visualizer.particle_thin = defaults.particle_thin;
                 break;
-            case SettingsField::visualizer_size:
+            case Field::visualizer_size:
                 config.visualizer.particle_size = defaults.particle_size;
                 break;
-            case SettingsField::visualizer_complexity:
+            case Field::visualizer_complexity:
                 config.visualizer.fractal_complexity = defaults.fractal_complexity;
                 break;
-            case SettingsField::visualizer_glow_directions:
+            case Field::visualizer_glow_directions:
                 config.visualizer.glow_directions = defaults.glow_directions;
                 break;
-            case SettingsField::visualizer_glow_quality:
+            case Field::visualizer_glow_quality:
                 config.visualizer.glow_quality = defaults.glow_quality;
                 break;
             default:
@@ -669,10 +666,10 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
             }
         });
         return;
-    case SettingsAct::animation_disable:
+    case Act::animation_disable:
         edit([](Config &config) { config.animations_disabled = !config.animations_disabled; });
         return;
-    case SettingsAct::launcher_lightning:
+    case Act::launcher_lightning:
         edit([](Config &config) { config.launcher_lightning = !config.launcher_lightning; });
         return;
     default:
@@ -681,24 +678,22 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
     }
 }
 
-void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
+void Model::dispatch_wallpaper(const Region &region) {
     WallpaperSlot slot = slot_from(region.b);
     WallpaperPicker &picker = this->picker(slot);
     switch (region.act) {
-    case SettingsAct::wallpaper_default:
-        edit([](Config &config) {
-            config.default_wallpaper_enabled = !config.default_wallpaper_enabled;
-        });
+    case Act::wallpaper_default:
+        edit([](Config &config) { config.default_wallpaper = !config.default_wallpaper; });
         return;
-    case SettingsAct::wallpaper_animated:
+    case Act::wallpaper_animated:
         edit([](Config &config) {
             config.wallpaper_animated_enabled = !config.wallpaper_animated_enabled;
         });
         return;
-    case SettingsAct::lock_wallpaper_mode:
+    case Act::lock_wallpaper_mode:
         edit([&](Config &config) { config.lock_wallpaper_custom = region.a == 1; });
         return;
-    case SettingsAct::wallpaper_region: {
+    case Act::wallpaper_region: {
         int monitor = region.a;
         WallpaperPicker &target = this->picker(slot_from(region.b >> 8));
         if (monitor >= 0 && static_cast<std::size_t>(monitor) < monitors_.size()) {
@@ -708,7 +703,7 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
         changed();
         return;
     }
-    case SettingsAct::wallpaper_pick:
+    case Act::wallpaper_pick:
         if (region.a >= 0 && static_cast<std::size_t>(region.a) < picker.files.size()) {
             std::string path = picker.files[static_cast<std::size_t>(region.a)];
             edit([&](Config &config) {
@@ -716,7 +711,7 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
             });
         }
         return;
-    case SettingsAct::wallpaper_remove:
+    case Act::wallpaper_remove:
         edit([&](Config &config) {
             if (caps_.wallpaper_columns || slot == WallpaperSlot::lock) {
                 wallpaper_set_column(config, picker.region, picker.column, "", slot);
@@ -725,32 +720,32 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
             }
         });
         return;
-    case SettingsAct::wallpaper_fill:
+    case Act::wallpaper_fill:
         edit([&](Config &config) {
             wallpaper_set_fill_mode(config, picker.region, picker.column,
                                     region.a == 1 ? "fit" : "crop", slot);
         });
         return;
-    case SettingsAct::wallpaper_count:
+    case Act::wallpaper_count:
         edit([&](Config &config) {
             int count = std::clamp(wallpaper_column_count(config, picker.region, slot) + region.a,
                                    1, cfg::max_columns);
             wallpaper_set_column_count(config, picker.region, count, slot);
         });
         return;
-    case SettingsAct::wallpaper_rescan:
+    case Act::wallpaper_rescan:
         rescan(slot);
         changed();
         return;
-    case SettingsAct::dropdown_toggle:
+    case Act::dropdown_toggle:
         dropdown_open_ = dropdown_open_ == region.a ? -1 : region.a;
         changed();
         return;
-    case SettingsAct::dropdown_dismiss:
+    case Act::dropdown_dismiss:
         dropdown_open_ = -1;
         changed();
         return;
-    case SettingsAct::capture_pick:
+    case Act::capture_pick:
         edit([&](Config &config) {
             bool valid = region.a >= 0 && static_cast<std::size_t>(region.a) < monitors_.size();
             config.capture_monitor = valid ? monitors_[static_cast<std::size_t>(region.a)] : "";
@@ -762,4 +757,4 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::settings

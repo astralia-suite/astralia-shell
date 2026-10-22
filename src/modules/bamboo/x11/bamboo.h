@@ -13,12 +13,12 @@
 
 #include "config/bamboo_config.h"
 
-#include "modules/bamboo/bamboo_grow.h"
+#include "modules/bamboo/grow.h"
 
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::bamboo {
 
 class Bamboo {
   public:
@@ -39,9 +39,9 @@ class Bamboo {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    BambooGrow grow_;
+    Grow grow_;
     int timer_ = 0;
     bool open_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::bamboo

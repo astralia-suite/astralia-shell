@@ -22,11 +22,13 @@
 
 struct WaylandState;
 
-struct LogoutState {
+namespace astralia::logout {
+
+struct State {
     OverlayPanelBase base;
     Renderer *renderer = nullptr;
     GlCanvas canvas;
-    astralia::LogoutModel model{astralia::logout_commands(true)};
+    Model model{logout_commands(true)};
     bool opened_by_widget = false;
     std::string logo_path;
     wl_output *bound_output = nullptr;
@@ -34,33 +36,36 @@ struct LogoutState {
     ThunderBurst thunder;
 };
 
-astralia::ui::Box logout_detail_button_rect(int index, float center_x, float center_y);
+namespace detail {
+astralia::ui::Box button_rect(int index, float center_x, float center_y);
+} // namespace detail
 
-bool logout_create_surface(LogoutState &state, wl_compositor *compositor,
-                           zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+                    wl_output *output = nullptr);
 
-bool logout_init_egl(LogoutState &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
-                     EGLContext context);
+bool init_egl(State &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+              EGLContext context);
 
-void logout_retarget(LogoutState &state, wl_compositor *compositor,
-                     zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
-                     EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
-                     wl_output *target_output, const char *target_name);
+void retarget(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+              wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config,
+              EGLContext egl_context, wl_output *target_output, const char *target_name);
 
-void logout_request_frame(LogoutState &state);
+void request_frame(State &state);
 
-void logout_toggle(LogoutState &state, bool by_widget = false);
+void toggle(State &state, bool by_widget = false);
 
-std::vector<astralia::ShellBinding> logout_shell_bindings(LogoutState &logout, WaylandState &state);
+std::vector<astralia::ShellBinding> shell_bindings(State &logout, WaylandState &state);
 
-void logout_handle_key_event(LogoutState &state, const KeyEvent &event);
+void handle_key_event(State &state, const KeyEvent &event);
 
-void logout_handle_click(LogoutState &state, double px, double py);
+void handle_click(State &state, double px, double py);
 
-void logout_handle_hover(LogoutState &state, double px, double py);
+void handle_hover(State &state, double px, double py);
 
-void logout_clear_hover(LogoutState &state);
+void clear_hover(State &state);
 
-void logout_paint(LogoutState &state);
+void render(State &state);
 
-std::unique_ptr<Module> make_logout_module();
+std::unique_ptr<Module> make_module();
+
+} // namespace astralia::logout

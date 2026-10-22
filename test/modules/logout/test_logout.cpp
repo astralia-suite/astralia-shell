@@ -15,9 +15,9 @@
 
 namespace {
 
-using astralia::LogoutModel;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
+using astralia::logout::Model;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
@@ -32,7 +32,7 @@ KeyEvent key(KeyKind kind, std::string text = "") {
 }
 
 struct Harness {
-    LogoutModel model{astralia::logout_commands(true)};
+    astralia::logout::Model model{astralia::logout::logout_commands(true)};
     std::vector<std::string> executed;
     int closed = 0;
 
@@ -43,8 +43,8 @@ struct Harness {
 };
 
 void check_commands() {
-    auto plain = astralia::logout_commands(false);
-    auto lock = astralia::logout_commands(true);
+    auto plain = astralia::logout::logout_commands(false);
+    auto lock = astralia::logout::logout_commands(true);
     test::check(plain[0] == "systemctl poweroff" && plain[1] == "systemctl reboot",
                 "default commands come from the config");
     test::check(plain[astralia::logout_config::lock_index].empty() &&
@@ -55,7 +55,7 @@ void check_commands() {
 void check_logout_model() {
     Instant instant;
     Harness h;
-    LogoutModel &m = h.model;
+    astralia::logout::Model &m = h.model;
     test::check(!m.open_state() && !m.key(key(KeyKind::Right)), "closed model ignores keys");
 
     m.open();
@@ -80,8 +80,8 @@ void check_logout_model() {
                 "other text is ignored");
 
     test::check(m.hover(0, 0, 1920, 1200) == false, "hover on empty space changes nothing");
-    astralia::Point center{960, 600};
-    astralia::Point first = astralia::logout_button_center(0, center);
+    astralia::logout::Point center{960, 600};
+    astralia::logout::Point first = astralia::logout::button_center(0, center);
     test::check(m.hover(first.x, first.y, 1920, 1200) && m.hovered() == 0, "hover finds a button");
     test::check(!m.hover(first.x + 1, first.y + 1, 1920, 1200), "same button is not a change");
     test::check(m.clear_hover() && m.hovered() == -1 && !m.clear_hover(),
@@ -115,7 +115,7 @@ void check_logout_model() {
     m.click(10, 10, 1920, 1200);
     test::check(!m.open_state() && h.closed == 5, "a click outside closes");
     m.open();
-    astralia::Point third = astralia::logout_button_center(1, center);
+    astralia::logout::Point third = astralia::logout::button_center(1, center);
     m.click(third.x, third.y, 1920, 1200);
     test::check(h.executed.size() == 3 && h.executed[2] == "systemctl reboot" && !m.open_state(),
                 "a click on a button runs it");
@@ -123,7 +123,7 @@ void check_logout_model() {
 
 void check_logout_choreography() {
     Harness h;
-    LogoutModel &m = h.model;
+    astralia::logout::Model &m = h.model;
     m.open();
     test::check(m.open_state() && !m.input_ready() && m.animating() && m.logo_scale() == 0.0f,
                 "animated open starts from nothing");
@@ -150,14 +150,14 @@ void check_logout_view() {
     using Kind = test::Op::Kind;
     Harness idle;
     test::RecordingCanvas none;
-    astralia::paint_logout(none, idle.model, 1920, 1200, "");
+    astralia::logout::paint(none, idle.model, 1920, 1200, "");
     test::check(none.ops.empty(), "a closed card draws nothing");
 
     Instant instant;
     Harness h;
     h.model.open();
     test::RecordingCanvas canvas;
-    astralia::paint_logout(canvas, h.model, 1920, 1200, "");
+    astralia::logout::paint(canvas, h.model, 1920, 1200, "");
     test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8,
                 "eight buttons with a glyph each");
     test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1,

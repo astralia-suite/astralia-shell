@@ -14,13 +14,15 @@
 
 #include "config/wallpaper_select_config.h"
 
+namespace astralia::wallpaper_select {
+
 namespace {
 
 namespace cfg = astralia::wallpaper_select_config;
 
 constexpr const char *kNamespace = "astralia-shell-wallpaper-select";
 
-class WallpaperSelectModule final : public Module {
+class Adapter final : public Module {
   public:
     const char *name() const override { return "wallpaper-select"; }
     bool is_open() const override { return base_.open; }
@@ -52,7 +54,7 @@ class WallpaperSelectModule final : public Module {
         canvas_.on_image_ready = [this] { request_frame(); };
 
         if (!model_) {
-            astralia::WallpaperSelectHooks hooks;
+            Hooks hooks;
             hooks.config = [&app]() -> const Config & { return app.cfg; };
             hooks.update = [&app](const std::function<void(Config &)> &edit) {
                 Config updated = app.cfg;
@@ -62,8 +64,7 @@ class WallpaperSelectModule final : public Module {
                 app.suppress_wallpaper_transition = false;
             };
             hooks.settled = [] { return false; };
-            model_ = std::make_unique<astralia::WallpaperSelectModel>(
-                std::move(hooks), app.capabilities.animated_wallpaper);
+            model_ = std::make_unique<Model>(std::move(hooks), app.capabilities.animated_wallpaper);
             model_->on_close_requested = [this] { toggle(); };
             model_->on_closed = [this] { overlay_panel_release(base_); };
             model_->on_changed = [this] { request_frame(); };
@@ -97,7 +98,7 @@ class WallpaperSelectModule final : public Module {
         hovering_card_ =
             model_ && base_.open && focused_surface == base_.surface && model_->clickable(x, y);
     }
-    bool wants_pointing_hand_cursor() const override { return hovering_card_; }
+    bool wants_hand_cursor() const override { return hovering_card_; }
     void handle_key_event(WaylandState &, const KeyEvent &event) override {
         if (model_ && model_->key(to_neutral(event)))
             request_frame();
@@ -170,19 +171,19 @@ class WallpaperSelectModule final : public Module {
 
         canvas_.begin(scale);
         if (model_ && base_.open)
-            astralia::paint_wallpaper_select(canvas_, *model_, static_cast<float>(base_.width),
-                                             static_cast<float>(base_.height));
+            wallpaper_select::paint(canvas_, *model_, static_cast<float>(base_.width),
+                                    static_cast<float>(base_.height));
         canvas_.flush();
         eglSwapBuffers(base_.egl_display, base_.egl_surface);
 
-        if (base_.animations.hasActive() || (model_ && model_->animating()))
+        if (base_.animations.has_active() || (model_ && model_->animating()))
             overlay_panel_request_frame(base_);
     }
 
     OverlayPanelBase base_;
     Renderer *renderer_ = nullptr;
     GlCanvas canvas_;
-    std::unique_ptr<astralia::WallpaperSelectModel> model_;
+    std::unique_ptr<Model> model_;
     wl_output *output_ = nullptr;
     wl_output *bound_output_ = nullptr;
     bool want_ = false;
@@ -192,6 +193,6 @@ class WallpaperSelectModule final : public Module {
 
 } // namespace
 
-std::unique_ptr<Module> make_wallpaper_select_module() {
-    return std::make_unique<WallpaperSelectModule>();
-}
+std::unique_ptr<Module> make_module() { return std::make_unique<Adapter>(); }
+
+} // namespace astralia::wallpaper_select

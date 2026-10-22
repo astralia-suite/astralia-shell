@@ -8,7 +8,7 @@
 
 #include "service/wallpaper_service.h"
 
-namespace astralia {
+namespace astralia::settings {
 
 struct WallpaperChip {
     int monitor;
@@ -16,9 +16,9 @@ struct WallpaperChip {
     std::string label;
 };
 
-std::vector<WallpaperChip> wallpaper_chips(const SettingsModel &model, WallpaperSlot slot);
+std::vector<WallpaperChip> wallpaper_chips(const Model &model, WallpaperSlot slot);
 
-float wallpaper_columns_panel(settings_view::Pane &pane, WallpaperSlot slot, float x, float y,
-                              float w, float bottom);
+float wallpaper_columns_panel(settings::Pane &pane, WallpaperSlot slot, float x, float y, float w,
+                              float bottom);
 
-} // namespace astralia
+} // namespace astralia::settings

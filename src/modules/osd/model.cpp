@@ -8,7 +8,7 @@
 
 #include "modules/osd/model.h"
 
-namespace astralia {
+namespace astralia::osd {
 
 namespace {
 
@@ -20,9 +20,9 @@ constexpr uint64_t owner_icon_mix = 3;
 
 } // namespace
 
-OsdModel::OsdModel(Clock::time_point created) : created_(created) {}
+Model::Model(Clock::time_point created) : created_(created) {}
 
-bool OsdModel::show(OsdKind kind, int percent, bool muted, Clock::time_point now) {
+bool Model::show(OsdKind kind, int percent, bool muted, Clock::time_point now) {
     if (now - created_ < cfg::ready_delay) {
         return false;
     }
@@ -44,7 +44,7 @@ bool OsdModel::show(OsdKind kind, int percent, bool muted, Clock::time_point now
     return true;
 }
 
-void OsdModel::hide() {
+void Model::hide() {
     if (hiding_) {
         return;
     }
@@ -59,14 +59,14 @@ void OsdModel::hide() {
         owner_opacity);
 }
 
-void OsdModel::tick(Clock::time_point now) {
+void Model::tick(Clock::time_point now) {
     animations_.tick(now);
     if (visible_ && now >= hide_at_) {
         hide();
     }
 }
 
-std::chrono::milliseconds OsdModel::until_hide(Clock::time_point now) const {
+std::chrono::milliseconds Model::until_hide(Clock::time_point now) const {
     if (!visible_) {
         return std::chrono::hours(1);
     }
@@ -74,7 +74,7 @@ std::chrono::milliseconds OsdModel::until_hide(Clock::time_point now) const {
                     std::chrono::milliseconds(0));
 }
 
-const char *OsdModel::glyph() const {
+const char *Model::glyph() const {
     switch (kind_) {
     case OsdKind::brightness:
         return icon::brightness_threshold(percent_);
@@ -86,8 +86,8 @@ const char *OsdModel::glyph() const {
     return icon::volume_high;
 }
 
-std::string OsdModel::label() const {
+std::string Model::label() const {
     return muted_ ? std::string("muted") : std::format("{}%", percent_);
 }
 
-} // namespace astralia
+} // namespace astralia::osd

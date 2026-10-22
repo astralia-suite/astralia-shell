@@ -63,10 +63,10 @@ int WaylandBackend::run() {
     }
 
     app.reactor = &*reactor;
-    app.session_bus = std::make_unique<astralia::SystemBus>(*reactor, astralia::BusKind::session);
+    app.session_bus = std::make_unique<astralia::Bus>(*reactor, astralia::BusKind::session);
     app.media = std::make_unique<astralia::MediaService>(*app.session_bus);
     app.audio = std::make_unique<astralia::AudioService>(*reactor);
-    app.system_bus = std::make_unique<astralia::SystemBus>(*reactor);
+    app.system_bus = std::make_unique<astralia::Bus>(*reactor);
     app.battery = std::make_unique<astralia::BatteryService>(*app.system_bus);
     app.network = std::make_unique<astralia::NetworkService>(*app.system_bus, *reactor);
     app.bluetooth = std::make_unique<astralia::BluetoothService>(*app.system_bus);
@@ -183,7 +183,7 @@ int WaylandBackend::run() {
     for (auto &mon : app.outputs)
         request_all_frames(*mon);
     if (astralia::start_locked_pending())
-        lock_at_startup(app);
+        astralia::lock::at_startup(app);
 
     struct SourceRange {
         PollSource *src;
@@ -234,8 +234,8 @@ int WaylandBackend::run() {
                     }
                     if (!ev.changed)
                         return;
-                    if (app.config_own_write_pending) {
-                        app.config_own_write_pending = false;
+                    if (app.own_write_pending) {
+                        app.own_write_pending = false;
                         return;
                     }
                     app_detail::apply_config_update(app, load_config());
@@ -295,12 +295,12 @@ int WaylandBackend::run() {
                             pm->handle_pointer_move(app, *mon, app.pointer.x, app.pointer.y);
 
                     Module *hovered = find_overlay_for_surface(app, app.pointer.focused_surface);
-                    bool hand = hovered && hovered->wants_pointing_hand_cursor();
+                    bool hand = hovered && hovered->wants_hand_cursor();
                     if (!hand && app.pointer.focused_surface)
                         for (auto &mon : app.outputs)
                             for (auto &pm : mon->modules)
                                 if (pm->owns_surface(app.pointer.focused_surface) &&
-                                    pm->wants_pointing_hand_cursor())
+                                    pm->wants_hand_cursor())
                                     hand = true;
                     pointer_set_cursor_shape(app.pointer,
                                              hand ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER

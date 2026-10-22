@@ -13,12 +13,12 @@ namespace astralia {
 
 enum class BusKind { system, session };
 
-class SystemBus {
+class Bus {
   public:
-    explicit SystemBus(Reactor &loop, BusKind kind = BusKind::system);
-    ~SystemBus();
-    SystemBus(const SystemBus &) = delete;
-    SystemBus &operator=(const SystemBus &) = delete;
+    explicit Bus(Reactor &loop, BusKind kind = BusKind::system);
+    ~Bus();
+    Bus(const Bus &) = delete;
+    Bus &operator=(const Bus &) = delete;
 
     sdbus::IConnection *conn() const { return conn_.get(); }
     sdbus::Slot add_match(const std::string &rule, std::function<void()> handler);

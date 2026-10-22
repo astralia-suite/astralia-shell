@@ -15,7 +15,7 @@ void check_visualizer_cpu_stages() {
     using namespace astralia;
     using test::check;
 
-    VisualizerCpuStages stages;
+    astralia::visualizer::CpuStages stages;
     check(!stages.ready() && !stages.run(0, {}, {}, 60), "nothing runs without samples");
     std::vector<float> small(8, 0.5f);
     check(!stages.run(16, small, small, 60), "a short input is refused");
@@ -56,21 +56,24 @@ void check_visualizer_cpu_stages() {
 void check_visualizer_bars() {
     using namespace astralia;
     using test::check;
-    check(visualizer_bar_count(0.0f) == 1 &&
-              visualizer_bar_count(1000.0f) ==
-                  static_cast<int>((1000.0f - kVisualizerBarSpacing) /
-                                   (kVisualizerBarWidth + kVisualizerBarSpacing)),
+    check(astralia::visualizer::bar_count(0.0f) == 1 &&
+              astralia::visualizer::bar_count(1000.0f) ==
+                  static_cast<int>((1000.0f - visualizer_config::kBarSpacing) /
+                                   (visualizer_config::kBarWidth + visualizer_config::kBarSpacing)),
           "the bar count follows the slot width and never drops below one");
     int last = -1;
     bool rising = true;
     for (int i = 0; i < 40; ++i) {
-        int texel = visualizer_bar_texel(i, 40, 4096);
+        int texel = astralia::visualizer::bar_texel(i, 40, 4096);
         rising = rising && texel >= last && texel >= 0 && texel < 4096;
         last = texel;
     }
     check(rising && last < 4096 / 2, "bars sample the lower half of the spectrum, rising");
-    check(visualizer_bar_texel(0, 0, 0) == 0, "an empty spectrum maps to the first texel");
-    check(visualizer_bar_height(0.0f, 800.0f) == kVisualizerBarMinHeight &&
-              visualizer_bar_height(2.0f, 800.0f) == kVisualizerBarHeightRatio * 800.0f,
+    check(astralia::visualizer::bar_texel(0, 0, 0) == 0,
+          "an empty spectrum maps to the first texel");
+    check(astralia::visualizer::visualizer_bar_height(0.0f, 800.0f) ==
+                  visualizer_config::kBarMinHeight &&
+              astralia::visualizer::visualizer_bar_height(2.0f, 800.0f) ==
+                  visualizer_config::kBarHeightRatio * 800.0f,
           "a bar has a minimum height and clamps at the ratio");
 }

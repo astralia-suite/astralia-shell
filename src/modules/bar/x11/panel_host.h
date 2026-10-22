@@ -15,7 +15,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 class PanelHost {
   public:
@@ -51,4 +51,4 @@ class PanelHost {
     bool grabbed_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

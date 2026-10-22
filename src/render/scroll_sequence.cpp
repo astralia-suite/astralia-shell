@@ -7,8 +7,8 @@ void ScrollSequence::open() {
     slide_ = 1.0f;
     scroll_ = 0.0f;
     grid_ = 0.0f;
-    animations_.cancelForOwner(owner_ + 1);
-    animations_.cancelForOwner(owner_ + 2);
+    animations_.cancel_owner(owner_ + 1);
+    animations_.cancel_owner(owner_ + 2);
     animations_.animate(
         slide_, 0.0f, timings_.slide_ms, Easing::EaseOutCubic, [this](float v) { slide_ = v; },
         [this] {

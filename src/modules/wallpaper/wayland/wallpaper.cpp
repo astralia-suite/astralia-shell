@@ -19,13 +19,15 @@
 
 #include "service/wallpaper_service.h"
 
+namespace astralia::wallpaper {
+
 namespace {
 
-void wallpaper_paint(WallpaperState &wp);
+void render(State &wp);
 
-void wallpaper_layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface,
-                                       uint32_t serial, uint32_t width, uint32_t height) {
-    auto *wp = static_cast<WallpaperState *>(data);
+void layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial,
+                             uint32_t width, uint32_t height) {
+    auto *wp = static_cast<State *>(data);
     zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
     bool changed =
         wp->width != static_cast<int32_t>(width) || wp->height != static_cast<int32_t>(height);
@@ -42,14 +44,14 @@ void wallpaper_layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_
         wp->on_resize();
 }
 
-void wallpaper_layer_surface_closed(void *, zwlr_layer_surface_v1 *) {}
+void layer_surface_closed(void *, zwlr_layer_surface_v1 *) {}
 
-constexpr zwlr_layer_surface_v1_listener wallpaper_layer_surface_listener = {
-    .configure = wallpaper_layer_surface_configure,
-    .closed = wallpaper_layer_surface_closed,
+constexpr zwlr_layer_surface_v1_listener layer_surface_listener = {
+    .configure = layer_surface_configure,
+    .closed = layer_surface_closed,
 };
 
-void wallpaper_draw_transitions(WallpaperState &wp) {
+void draw_transitions(State &wp) {
     if (wp.columns.empty())
         return;
     size_t ncol = std::max<size_t>(wp.columns.size(), 1);
@@ -64,10 +66,10 @@ void wallpaper_draw_transitions(WallpaperState &wp) {
             any = true;
     }
     if (any)
-        wallpaper_request_frame(wp);
+        wallpaper::request_frame(wp);
 }
 
-void wallpaper_paint(WallpaperState &wp) {
+void render(State &wp) {
     if (wp.egl_surface == EGL_NO_SURFACE)
         return;
     if (wp.app && wp.app->session_locked && wp.dbg_frame > 0) {
@@ -88,12 +90,12 @@ void wallpaper_paint(WallpaperState &wp) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     wp.canvas.begin(wp.output_scale.scale);
-    wallpaper_draw_columns(wp, wp.canvas, wp.width, wp.height);
+    draw_columns(wp, wp.canvas, wp.width, wp.height);
     wp.canvas.flush();
-    wallpaper_draw_transitions(wp);
+    draw_transitions(wp);
     if (wp.menu.is_open()) {
         wp.canvas.begin(wp.output_scale.scale);
-        astralia::paint_desktop_menu(wp.canvas, wp.menu, wp.menu.box().x, wp.menu.box().y);
+        paint(wp.canvas, wp.menu, wp.menu.box().x, wp.menu.box().y);
         wp.canvas.flush();
     }
     gl_check("wallpaper_paint");
@@ -111,8 +113,7 @@ void wallpaper_paint(WallpaperState &wp) {
 
 } // namespace
 
-void wallpaper_draw_columns(const WallpaperState &wp, GlCanvas &canvas, int32_t width,
-                            int32_t height) {
+void draw_columns(const State &wp, GlCanvas &canvas, int32_t width, int32_t height) {
     size_t columns = std::max<size_t>(wp.columns.size(), 1);
     float column_w = static_cast<float>(width) / static_cast<float>(columns);
     for (size_t i = 0; i < wp.columns.size(); ++i)
@@ -121,16 +122,16 @@ void wallpaper_draw_columns(const WallpaperState &wp, GlCanvas &canvas, int32_t 
                                   column_w, static_cast<float>(height));
 }
 
-bool wallpaper_create_surface(WallpaperState &wp, wl_compositor *compositor,
-                              zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
+bool create_surface(State &wp, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+                    wl_output *output) {
     LayerSurfaceConfig cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
-        .name_space = kWallpaperLayerNamespace,
+        .name_space = kLayerNamespace,
         .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
                   ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
     };
     wp.layer_surface = layer_surface_create(wp.surface, compositor, layer_shell, cfg,
-                                            &wallpaper_layer_surface_listener, &wp, output);
+                                            &layer_surface_listener, &wp, output);
     if (!wp.layer_surface)
         return false;
     wp.output_scale.on_change = [&wp](int32_t scale) {
@@ -146,8 +147,8 @@ bool wallpaper_create_surface(WallpaperState &wp, wl_compositor *compositor,
     return true;
 }
 
-bool wallpaper_init_egl(WallpaperState &wp, Renderer &renderer, EGLDisplay display,
-                        EGLConfig config, EGLContext context) {
+bool init_egl(State &wp, Renderer &renderer, EGLDisplay display, EGLConfig config,
+              EGLContext context) {
     wp.egl_display = display;
     wp.egl_context = context;
     wp.renderer = &renderer;
@@ -162,26 +163,26 @@ bool wallpaper_init_egl(WallpaperState &wp, Renderer &renderer, EGLDisplay displ
         return false;
     wp.gl.display = display;
     wp.gl.make_current = [&wp] { gl_make_current(wp.egl_display, wp.egl_surface, wp.egl_context); };
-    wp.gl.request_frame = [&wp] { wallpaper_request_frame(wp); };
+    wp.gl.request_frame = [&wp] { wallpaper::request_frame(wp); };
     wp.frame_clock.surface = wp.surface;
-    wp.frame_clock.draw = [&wp] { wallpaper_paint(wp); };
+    wp.frame_clock.draw = [&wp] { render(wp); };
     return true;
 }
 
-void wallpaper_request_frame(WallpaperState &wp) {
+void request_frame(State &wp) {
     if (wp.egl_surface == EGL_NO_SURFACE || (wp.app && wp.app->session_locked))
         return;
     request_frame(wp.frame_clock);
 }
 
-void wallpaper_wake(WallpaperState &wp) {
+void wake(State &wp) {
     if (wp.egl_surface == EGL_NO_SURFACE)
         return;
     frame_clock_drop_callback(wp.frame_clock);
     request_frame(wp.frame_clock);
 }
 
-void wallpaper_columns_stop_all(WallpaperState &wp) {
+void columns_stop_all(State &wp) {
     for (auto &col : wp.columns)
         if (col && col->decode.stop_flag)
             col->decode.stop_flag->store(true);
@@ -190,27 +191,27 @@ void wallpaper_columns_stop_all(WallpaperState &wp) {
             wallpaper_column_clear(*col, wp.gl);
 }
 
-void wallpaper_columns_pause_all(WallpaperState &wp) {
+void columns_pause_all(State &wp) {
     for (auto &col : wp.columns)
         if (col)
             media_decode_pause(col->decode);
 }
 
-void wallpaper_columns_resume_all(WallpaperState &wp) {
+void columns_resume_all(State &wp) {
     for (auto &col : wp.columns)
         if (col)
             media_decode_resume(col->decode);
 }
 
-MediaDecodeStatus wallpaper_column_status(const WallpaperState &wp, int column_index) {
+MediaDecodeStatus column_status(const State &wp, int column_index) {
     if (column_index < 0 || static_cast<size_t>(column_index) >= wp.columns.size() ||
         !wp.columns[static_cast<size_t>(column_index)])
         return MediaDecodeStatus::Idle;
     return wallpaper_column_decode_status(*wp.columns[static_cast<size_t>(column_index)]);
 }
 
-void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg,
-                                const std::string &monitor_name, bool animated) {
+void wallpaper_sync_from_config(State &wp, const Config &cfg, const std::string &monitor_name,
+                                bool animated) {
     int count = astralia::wallpaper_column_count(cfg, monitor_name, animated);
 
     if (!animated) {
@@ -219,7 +220,7 @@ void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg,
             if (col && col->decode.stop_flag)
                 any_animated = true;
         if (any_animated)
-            wallpaper_columns_stop_all(wp);
+            columns_stop_all(wp);
     }
 
     for (size_t i = static_cast<size_t>(count); i < wp.columns.size(); ++i)
@@ -266,64 +267,58 @@ void wallpaper_sync_from_config(WallpaperState &wp, const Config &cfg,
 
 namespace {
 
-void wallpaper_sync_active_mode(WallpaperState &wp, const Config &cfg,
-                                const std::string &monitor_name) {
+void sync_active_mode(State &wp, const Config &cfg, const std::string &monitor_name) {
     wallpaper_sync_from_config(wp, cfg, monitor_name, cfg.wallpaper_animated_enabled);
 }
 
 } // namespace
 
-bool WallpaperPerMonitorModule::create_surface(WaylandState &app, MonitorOutput &mon,
-                                               wl_output *output) {
-    if (!wallpaper_create_surface(state_, app.compositor, app.layer_shell, output))
+bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output *output) {
+    if (!wallpaper::create_surface(state_, app.compositor, app.layer_shell, output))
         klog("wallpaper: failed to create layer surface on '%s'", mon.output.name.c_str());
     return true;
 }
 
-bool WallpaperPerMonitorModule::configured() const {
-    return !state_.layer_surface || state_.configured;
-}
+bool PerMonitor::configured() const { return !state_.layer_surface || state_.configured; }
 
-bool WallpaperPerMonitorModule::init_egl(WaylandState &app, MonitorOutput &mon) {
+bool PerMonitor::init_egl(WaylandState &app, MonitorOutput &mon) {
     if (!state_.layer_surface)
         return true;
     state_.app = &app;
     state_.output_name = mon.output.name;
-    if (!wallpaper_init_egl(state_, app.renderer, app.egl_display, app.egl_config, app.egl_context))
+    if (!wallpaper::init_egl(state_, app.renderer, app.egl_display, app.egl_config,
+                             app.egl_context))
         return true;
-    wallpaper_sync_active_mode(state_, app.cfg, mon.output.name);
+    sync_active_mode(state_, app.cfg, mon.output.name);
     state_.on_resize = [&app, &mon, this] {
         if (!app.cfg.wallpaper_animated_enabled)
             return;
         wallpaper_sync_from_config(state_, app.cfg, mon.output.name, true);
     };
-    wallpaper_request_frame(state_);
+    wallpaper::request_frame(state_);
     app_detail::rest_egl_current(app);
     return true;
 }
 
-void WallpaperPerMonitorModule::destroy(WaylandState &app, MonitorOutput &) {
-    wallpaper_columns_stop_all(state_);
+void PerMonitor::destroy(WaylandState &app, MonitorOutput &) {
+    columns_stop_all(state_);
     destroy_layer_surface(app.egl_display, state_.surface, state_.layer_surface, state_.egl_window,
                           state_.egl_surface, &state_.frame_clock);
 }
 
-bool WallpaperPerMonitorModule::owns_surface(wl_surface *surface) const {
-    return surface == state_.surface;
-}
+bool PerMonitor::owns_surface(wl_surface *surface) const { return surface == state_.surface; }
 
-void WallpaperPerMonitorModule::pause_animation() { wallpaper_columns_pause_all(state_); }
+void PerMonitor::pause_animation() { columns_pause_all(state_); }
 
-void WallpaperPerMonitorModule::resume_animation() { wallpaper_columns_resume_all(state_); }
+void PerMonitor::resume_animation() { columns_resume_all(state_); }
 
-void WallpaperPerMonitorModule::request_frame() { wallpaper_wake(state_); }
+void PerMonitor::request_frame() { wake(state_); }
 
-void WallpaperPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &mon,
-                                             wl_surface *surface, int button, double x, double y,
-                                             uint32_t) {
+void PerMonitor::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface,
+                              int button, double x, double y, uint32_t) {
     if (surface != state_.surface || state_.width <= 0 || state_.height <= 0)
         return;
-    astralia::DesktopMenuModel &menu = state_.menu;
+    DesktopMenuModel &menu = state_.menu;
     if (button == BTN_RIGHT) {
         size_t columns = std::max<size_t>(state_.columns.size(), 1);
         int column = std::clamp(static_cast<int>(x / (static_cast<double>(state_.width) /
@@ -333,7 +328,7 @@ void WallpaperPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &m
                     static_cast<float>(state_.height), column);
         if (menu.is_open())
             menu.hover(static_cast<float>(x) - menu.box().x, static_cast<float>(y) - menu.box().y);
-        wallpaper_request_frame(state_);
+        wallpaper::request_frame(state_);
         return;
     }
     if (button != BTN_LEFT || !menu.is_open())
@@ -342,11 +337,11 @@ void WallpaperPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &m
         menu.entry_at(static_cast<float>(x) - menu.box().x, static_cast<float>(y) - menu.box().y);
     int column = menu.column();
     menu.close();
-    wallpaper_request_frame(state_);
+    wallpaper::request_frame(state_);
     if (entry < 0)
         return;
-    if (astralia::DesktopMenuModel::entries()[static_cast<size_t>(entry)].action ==
-        astralia::DesktopMenuAction::settings) {
+    if (DesktopMenuModel::entries()[static_cast<size_t>(entry)].action ==
+        DesktopMenuAction::settings) {
         if (app.run_verb)
             app.run_verb(astralia::ShellVerb::settings);
     } else if (app.open_wallpaper_select) {
@@ -354,8 +349,7 @@ void WallpaperPerMonitorModule::handle_click(WaylandState &app, MonitorOutput &m
     }
 }
 
-void WallpaperPerMonitorModule::handle_pointer_move(WaylandState &app, MonitorOutput &, double x,
-                                                    double y) {
+void PerMonitor::handle_pointer_move(WaylandState &app, MonitorOutput &, double x, double y) {
     if (!state_.menu.is_open())
         return;
     bool changed = false;
@@ -367,19 +361,20 @@ void WallpaperPerMonitorModule::handle_pointer_move(WaylandState &app, MonitorOu
         changed = true;
     }
     if (changed)
-        wallpaper_request_frame(state_);
+        wallpaper::request_frame(state_);
 }
 
-bool WallpaperPerMonitorModule::wants_pointing_hand_cursor() const {
+bool PerMonitor::wants_hand_cursor() const {
     return state_.menu.is_open() && state_.menu.hovered() >= 0;
 }
 
-MediaDecodeStatus WallpaperPerMonitorModule::decode_status(int column_index) const {
-    return wallpaper_column_status(state_, column_index);
+MediaDecodeStatus PerMonitor::decode_status(int column_index) const {
+    return column_status(state_, column_index);
 }
 
-void WallpaperPerMonitorModule::apply_config(WaylandState &, MonitorOutput &mon,
-                                             const Config &new_cfg) {
-    wallpaper_sync_active_mode(state_, new_cfg, mon.output.name);
-    wallpaper_request_frame(state_);
+void PerMonitor::apply_config(WaylandState &, MonitorOutput &mon, const Config &new_cfg) {
+    sync_active_mode(state_, new_cfg, mon.output.name);
+    wallpaper::request_frame(state_);
 }
+
+} // namespace astralia::wallpaper

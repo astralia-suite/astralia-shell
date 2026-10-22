@@ -15,7 +15,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::logout {
 
 class Logout {
   public:
@@ -32,8 +32,8 @@ class Logout {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    LogoutModel model_;
+    Model model_;
     std::string bound_output_;
 };
 
-} // namespace astralia
+} // namespace astralia::logout

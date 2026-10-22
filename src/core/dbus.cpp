@@ -5,7 +5,7 @@
 
 namespace astralia {
 
-SystemBus::SystemBus(Reactor &loop, BusKind kind) : loop_(loop) {
+Bus::Bus(Reactor &loop, BusKind kind) : loop_(loop) {
     try {
         conn_ = kind == BusKind::session ? sdbus::createSessionBusConnection()
                                          : sdbus::createSystemBusConnection();
@@ -21,14 +21,14 @@ SystemBus::SystemBus(Reactor &loop, BusKind kind) : loop_(loop) {
     loop_.on_fd(event_fd_, [this] { drain(); });
 }
 
-SystemBus::~SystemBus() {
+Bus::~Bus() {
     if (conn_) {
         loop_.remove_fd(fd_);
         loop_.remove_fd(event_fd_);
     }
 }
 
-sdbus::Slot SystemBus::add_match(const std::string &rule, std::function<void()> handler) {
+sdbus::Slot Bus::add_match(const std::string &rule, std::function<void()> handler) {
     if (!conn_) {
         return {};
     }
@@ -42,8 +42,7 @@ sdbus::Slot SystemBus::add_match(const std::string &rule, std::function<void()> 
     }
 }
 
-std::unique_ptr<sdbus::IProxy> SystemBus::proxy(const std::string &service,
-                                                const std::string &path) {
+std::unique_ptr<sdbus::IProxy> Bus::proxy(const std::string &service, const std::string &path) {
     if (!conn_) {
         return nullptr;
     }
@@ -55,7 +54,7 @@ std::unique_ptr<sdbus::IProxy> SystemBus::proxy(const std::string &service,
     }
 }
 
-void SystemBus::drain() {
+void Bus::drain() {
     try {
         while (conn_->processPendingEvent()) {
         }

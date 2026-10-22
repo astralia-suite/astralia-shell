@@ -211,8 +211,8 @@ unsigned char *decode_first_frame(const std::string &path, int &w, int &h, int t
 
 MediaDecodePlayback media_decode_stream(const std::string &path, const std::string &filter_desc,
                                         int fps, bool supports_row_length,
-                                        MediaDecodeFrameCallback on_frame,
-                                        MediaDecodeDrmFrameCallback on_drm_frame) {
+                                        MediaFrameCallback on_frame,
+                                        MediaDrmCallback on_drm_frame) {
     if (!plugin().stream)
         return {};
     return plugin().stream(path, filter_desc, fps, supports_row_length, std::move(on_frame),

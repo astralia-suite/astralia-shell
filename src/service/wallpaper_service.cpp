@@ -165,7 +165,7 @@ std::string wallpaper_column_path(const Config &cfg, const std::string &monitor_
     if (!override.empty()) {
         return override;
     }
-    return cfg.default_wallpaper_enabled ? cfg.wallpaper_path : "";
+    return cfg.default_wallpaper ? cfg.wallpaper_path : "";
 }
 
 std::string wallpaper_fill_mode(const Config &cfg, const std::string &monitor_name,

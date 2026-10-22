@@ -16,9 +16,9 @@ namespace {
 
 namespace cfg = astralia::notification_config;
 using astralia::Notification;
-using astralia::NotificationLayout;
-using astralia::NotificationModel;
-using astralia::NotificationViewState;
+using astralia::notification::Layout;
+using astralia::notification::Model;
+using astralia::notification::ViewState;
 using namespace std::chrono_literals;
 
 struct Instant {
@@ -39,19 +39,19 @@ Notification make(uint32_t id, std::string app, std::string summary = "", std::s
 }
 
 void check_card_height() {
-    test::check(astralia::notification_card_height(20.0f, 0.0f, 0.0f) == 60.0f,
+    test::check(astralia::notification::card_height(20.0f, 0.0f, 0.0f) == 60.0f,
                 "card height with the app name only");
-    test::check(astralia::notification_card_height(20.0f, 24.0f, 0.0f) == 94.0f,
+    test::check(astralia::notification::card_height(20.0f, 24.0f, 0.0f) == 94.0f,
                 "card height with a title");
-    test::check(astralia::notification_card_height(20.0f, 24.0f, 40.0f) == 144.0f,
+    test::check(astralia::notification::card_height(20.0f, 24.0f, 40.0f) == 144.0f,
                 "card height with all fields");
-    test::check(astralia::notification_card_height(6.0f, 0.0f, 0.0f) == 46.0f,
+    test::check(astralia::notification::card_height(6.0f, 0.0f, 0.0f) == 46.0f,
                 "the dot sets the minimum header");
 }
 
 void check_instant_sync() {
     Instant instant;
-    NotificationModel model;
+    astralia::notification::Model model;
     std::vector<Notification> list{make(1, "mail", "Hello", "World")};
     model.sync(list);
     test::check(model.entries().size() == 1 && model.entries()[0].opacity == 1.0f &&
@@ -80,7 +80,7 @@ void check_instant_sync() {
 }
 
 void check_animated_sync() {
-    NotificationModel animated;
+    astralia::notification::Model animated;
     animated.sync({make(7, "a", "s")});
     test::check(animated.entries()[0].timed && animated.entries()[0].opacity == 0.0f &&
                     animated.entries()[0].slide_offset == cfg::slide_offset && animated.animating(),
@@ -105,7 +105,7 @@ void check_model_sync() {
 
 void check_view_state() {
     Instant instant;
-    NotificationViewState view;
+    astralia::notification::ViewState view;
     test::check(view.local_opacity(5) == 1.0f && !view.fading(5), "unknown ids are fully visible");
     test::check(view.hide_locally(5) && view.fading(5) && view.local_opacity(5) == 0.0f,
                 "hiding fades the card out");
@@ -114,7 +114,7 @@ void check_view_state() {
                     view.set_hover(std::nullopt) && view.hovered() == 0,
                 "hover changes are reported once");
 
-    NotificationModel model;
+    astralia::notification::Model model;
     model.sync({make(9, "a")});
     view.forget_missing(model.entries());
     test::check(!view.fading(5), "forgotten ids stop fading");
@@ -122,75 +122,82 @@ void check_view_state() {
 
 void check_layout() {
     Instant instant;
-    NotificationModel model;
-    NotificationViewState view;
+    astralia::notification::Model model;
+    astralia::notification::ViewState view;
     test::RecordingCanvas canvas;
 
-    NotificationLayout empty = astralia::layout_notifications(canvas, model, view, 480);
+    astralia::notification::Layout empty =
+        astralia::notification::layout_notifications(canvas, model, view, 480);
     test::check(empty.cards.empty() && empty.height == 0.0f, "no entries, no layout");
 
     model.sync({make(1, "a"), make(2, "b", "title", "body")});
-    NotificationLayout layout = astralia::layout_notifications(canvas, model, view, 480);
+    astralia::notification::Layout layout =
+        astralia::notification::layout_notifications(canvas, model, view, 480);
     test::check(layout.cards.size() == 2 && layout.cards[0].entry->id == 2,
                 "newest card is laid out first");
-    float newest = astralia::notification_card_height(20, 20, 20);
-    float oldest = astralia::notification_card_height(20, 0, 0);
+    float newest = astralia::notification::card_height(20, 20, 20);
+    float oldest = astralia::notification::card_height(20, 0, 0);
     test::check(layout.cards[0].height == newest && layout.cards[1].height == oldest,
                 "heights follow the measured text");
     test::check(layout.height == newest + oldest + cfg::gap, "stack height adds the gap");
     test::check(layout.cards[0].y == layout.height - newest && layout.cards[1].y == 0.0f,
                 "the newest card sits at the bottom of the stack");
 
-    NotificationModel tall;
+    astralia::notification::Model tall;
     tall.sync({make(1, "a", "x", "y"), make(2, "b", "x", "y"), make(3, "c", "x", "y"),
                make(4, "d", "x", "y"), make(5, "e", "x", "y")});
-    NotificationLayout fit = astralia::layout_notifications(canvas, tall, view, 480);
+    astralia::notification::Layout fit =
+        astralia::notification::layout_notifications(canvas, tall, view, 480);
     test::check(fit.cards.size() < 5 && fit.height <= 480 && fit.cards[0].entry->id == 5,
                 "older cards beyond the limit are dropped");
-    NotificationLayout one = astralia::layout_notifications(canvas, tall, view, 10);
+    astralia::notification::Layout one =
+        astralia::notification::layout_notifications(canvas, tall, view, 10);
     test::check(one.cards.size() == 1 && one.cards[0].entry->id == 5,
                 "the newest card always shows");
 
     view.hide_locally(2);
-    NotificationLayout hidden = astralia::layout_notifications(canvas, model, view, 480);
+    astralia::notification::Layout hidden =
+        astralia::notification::layout_notifications(canvas, model, view, 480);
     test::check(hidden.cards.size() == 1 && hidden.cards[0].entry->id == 1,
                 "a locally closed card takes no space");
 }
 
 void check_close_hit() {
     Instant instant;
-    NotificationModel model;
-    NotificationViewState view;
+    astralia::notification::Model model;
+    astralia::notification::ViewState view;
     test::RecordingCanvas canvas;
     model.sync({make(1, "a"), make(2, "b")});
-    NotificationLayout layout = astralia::layout_notifications(canvas, model, view, 480);
+    astralia::notification::Layout layout =
+        astralia::notification::layout_notifications(canvas, model, view, 480);
     float x = cfg::card_width - 10;
-    test::check(astralia::notification_close_at(layout, view, x, layout.cards[0].y + 5) == 2u,
+    test::check(astralia::notification::close_at(layout, view, x, layout.cards[0].y + 5) == 2u,
                 "the newest card's close button hits");
-    test::check(astralia::notification_close_at(layout, view, x, layout.cards[1].y + 5) == 1u,
+    test::check(astralia::notification::close_at(layout, view, x, layout.cards[1].y + 5) == 1u,
                 "the older card's close button hits");
-    test::check(!astralia::notification_close_at(layout, view, 200, layout.cards[0].y + 5),
+    test::check(!astralia::notification::close_at(layout, view, 200, layout.cards[0].y + 5),
                 "the card body hits nothing");
     test::check(
-        !astralia::notification_close_at(layout, view, x, layout.cards[0].y + cfg::close_hit + 1),
+        !astralia::notification::close_at(layout, view, x, layout.cards[0].y + cfg::close_hit + 1),
         "below the button hits nothing");
-    test::check(astralia::notification_close_boxes(layout, view).size() == 2,
+    test::check(astralia::notification::close_boxes(layout, view).size() == 2,
                 "one box per live card");
     view.hide_locally(2);
-    test::check(!astralia::notification_close_at(layout, view, x, layout.cards[0].y + 5),
+    test::check(!astralia::notification::close_at(layout, view, x, layout.cards[0].y + 5),
                 "a fading card cannot be closed again");
 }
 
 void check_paint() {
     using Kind = test::Op::Kind;
     Instant instant;
-    NotificationModel model;
-    NotificationViewState view;
+    astralia::notification::Model model;
+    astralia::notification::ViewState view;
     test::RecordingCanvas canvas;
     model.sync({make(1, "mail", "Hello", "World", astralia::notification_urgency_critical)});
-    NotificationLayout layout = astralia::layout_notifications(canvas, model, view, 480);
+    astralia::notification::Layout layout =
+        astralia::notification::layout_notifications(canvas, model, view, 480);
     canvas.ops.clear();
-    astralia::paint_notifications(canvas, view, layout);
+    astralia::notification::paint(canvas, view, layout);
     constexpr float shadow = astralia::metrics::shadow_offset;
     test::check(canvas.count(Kind::rounded) == 5,
                 "shadow, card, app tag with its shadow and urgency dot");
@@ -207,14 +214,15 @@ void check_paint() {
 
 void check_paint_animated() {
     using Kind = test::Op::Kind;
-    NotificationViewState view;
+    astralia::notification::ViewState view;
     test::RecordingCanvas canvas;
-    NotificationModel animated;
+    astralia::notification::Model animated;
     animated.sync({make(1, "mail")});
     animated.tick(std::chrono::steady_clock::now() + std::chrono::milliseconds(300));
-    NotificationLayout l2 = astralia::layout_notifications(canvas, animated, view, 480);
+    astralia::notification::Layout l2 =
+        astralia::notification::layout_notifications(canvas, animated, view, 480);
     canvas.ops.clear();
-    astralia::paint_notifications(canvas, view, l2);
+    astralia::notification::paint(canvas, view, l2);
     test::check(canvas.count(Kind::begin_group) == 2 && canvas.count(Kind::end_group) == 2,
                 "animated cards draw a countdown track and fill");
 }

@@ -64,7 +64,7 @@ void done(void *data, wl_output *) {
     if (!mon->activated && mon->app->egl_context != EGL_NO_CONTEXT)
         monitor_output_activate(*mon->app, *mon);
     if (first_done)
-        lock_notify_output_added(*mon->app, mon->output.wl, mon->output.name.c_str());
+        astralia::lock::notify_output_added(*mon->app, mon->output.wl, mon->output.name.c_str());
 }
 
 const wl_output_listener &listener() {
@@ -145,7 +145,7 @@ void registry_global_remove(void *data, wl_registry *, uint32_t name) {
         return;
     klog("output: '%s' removed", (*it)->output.name.c_str());
     wl_output *removed_wl = (*it)->output.wl;
-    lock_notify_output_removed(*state, removed_wl);
+    astralia::lock::notify_output_removed(*state, removed_wl);
     for (auto &m : state->overlays)
         m->on_output_removed(*state, removed_wl);
     if (state->last_pointer_monitor == it->get())

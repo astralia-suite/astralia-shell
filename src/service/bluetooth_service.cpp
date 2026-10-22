@@ -291,7 +291,7 @@ std::vector<StatusMessage> bluetooth_changes(const BluetoothStatus &prev,
     return {{"Disconnected", "Disconnected from " + was}};
 }
 
-BluetoothService::BluetoothService(SystemBus &bus) : bus_(bus), root_(bus_.proxy(bluez, "/")) {
+BluetoothService::BluetoothService(Bus &bus) : bus_(bus), root_(bus_.proxy(bluez, "/")) {
     if (!root_) {
         return;
     }

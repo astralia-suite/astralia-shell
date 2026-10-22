@@ -2,7 +2,7 @@
 
 #include "modules/bar/panel/panel_set.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 void PanelSet::add(PanelId id, std::unique_ptr<PanelContent> content) {
     auto panel = std::make_unique<Panel>(std::move(content), reactor_);
@@ -115,4 +115,4 @@ bool PanelSet::contains(double x, double y) const {
     return std::ranges::any_of(panels_, [&](const auto &p) { return p && p->contains(x, y); });
 }
 
-} // namespace astralia
+} // namespace astralia::bar

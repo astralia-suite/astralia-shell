@@ -11,38 +11,38 @@
 
 #include "service/polkit_service.h"
 
-namespace astralia {
+namespace astralia::polkit {
 
-struct PolkitPrompt {
+struct Prompt {
     std::string message;
     bool needs_input = false;
     std::string info;
     bool info_is_error = false;
 };
 
-enum class PolkitKey { none, changed, submit, cancel };
+enum class Key { none, changed, submit, cancel };
 
-PolkitPrompt polkit_prompt(const PolkitService &service);
+Prompt polkit_prompt(const PolkitService &service);
 
-class PolkitModel {
+class Model {
   public:
-    PolkitModel() = default;
-    ~PolkitModel();
-    PolkitModel(const PolkitModel &) = delete;
-    PolkitModel &operator=(const PolkitModel &) = delete;
+    Model() = default;
+    ~Model();
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
 
     bool sync(bool pending);
     void reset();
-    void set_prompt(PolkitPrompt prompt);
-    PolkitKey key(const input::KeyEvent &event);
+    void set_prompt(Prompt prompt);
+    Key key(const input::KeyEvent &event);
     std::string take_password();
     void tick(std::chrono::steady_clock::time_point now);
 
     bool open() const { return open_; }
     bool closing() const { return closing_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     float card_scale() const { return card_scale_; }
-    const PolkitPrompt &prompt() const { return prompt_; }
+    const Prompt &prompt() const { return prompt_; }
     const std::string &password() const { return field_.text; }
     const std::string &error() const { return field_.error_message; }
     bool show_info() const { return !prompt_.info.empty() && !prompt_.info_is_error; }
@@ -61,11 +61,11 @@ class PolkitModel {
     bool closing_ = false;
     float card_scale_ = 0.0f;
     bool last_error_ = false;
-    PolkitPrompt prompt_;
+    Prompt prompt_;
     TextFieldState field_;
     TextFieldTypeAnim dot_anim_;
     MarqueeTextState marquee_;
     AnimationManager animations_;
 };
 
-} // namespace astralia
+} // namespace astralia::polkit

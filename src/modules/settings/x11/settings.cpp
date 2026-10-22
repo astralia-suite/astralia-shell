@@ -12,14 +12,14 @@
 
 #include "modules/settings/x11/settings.h"
 
-namespace astralia {
+namespace astralia::settings {
 
 namespace {
 
 namespace cfg = settings_config;
 
-SettingsCaps x11_caps() {
-    SettingsCaps caps = settings_caps(x11_capabilities());
+Caps x11_caps() {
+    Caps caps = settings_caps(x11_capabilities());
     caps.autohide = true;
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;
@@ -42,22 +42,22 @@ Settings::Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
                   XCB_EVENT_MASK_FOCUS_CHANGE),
       keyboard_(x.conn()),
       model_(x11_caps(),
-             SettingsHooks{[&services]() -> const Config & { return services.settings.config(); },
-                           [&services](const std::function<void(Config &)> &edit) {
-                               services.settings.update(edit);
-                           },
-                           [&services] {
-                               std::vector<std::string> names;
-                               for (const Output &output : services.outputs.outputs()) {
-                                   names.push_back(output.name);
-                               }
-                               return names;
-                           },
-                           [this, &services] {
-                               return bound_output_.empty() ? services.outputs.at_pointer().name
-                                                            : bound_output_;
-                           },
-                           {}}) {
+             Hooks{[&services]() -> const Config & { return services.settings.config(); },
+                   [&services](const std::function<void(Config &)> &edit) {
+                       services.settings.update(edit);
+                   },
+                   [&services] {
+                       std::vector<std::string> names;
+                       for (const Output &output : services.outputs.outputs()) {
+                           names.push_back(output.name);
+                       }
+                       return names;
+                   },
+                   [this, &services] {
+                       return bound_output_.empty() ? services.outputs.at_pointer().name
+                                                    : bound_output_;
+                   },
+                   {}}) {
     repaint_timer_ = loop.add_timer(
         [this] {
             return repaint_pending_ ? repaint_batch
@@ -216,12 +216,12 @@ void Settings::paint() {
     window_.clear();
     canvas_.bind(cr);
     model_.sync();
-    SettingsArt art;
+    Art art;
     art.user_name = services_.user.name();
     art.uptime = services_.user.uptime();
     art.face = services_.user.face_path();
-    paint_settings(canvas_, model_, art, static_cast<float>(window_.geometry().width),
-                   static_cast<float>(window_.geometry().height));
+    settings::paint(canvas_, model_, art, static_cast<float>(window_.geometry().width),
+                    static_cast<float>(window_.geometry().height));
     window_.present();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start);
@@ -230,4 +230,4 @@ void Settings::paint() {
     }
 }
 
-} // namespace astralia
+} // namespace astralia::settings

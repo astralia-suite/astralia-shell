@@ -26,9 +26,9 @@ struct MonitorOverride {
     bool notifications = true;
     bool autohide = false;
     bool ambient_enabled = true;
-    uint32_t ambient_timeout_seconds = 150;
+    uint32_t ambient_timeout = 150;
     bool screensaver_enabled = true;
-    uint32_t screensaver_timeout_seconds = 300;
+    uint32_t screensaver_timeout = 300;
     bool lock = true;
 
     bool operator==(const MonitorOverride &) const = default;
@@ -59,10 +59,10 @@ struct Config {
 
     bool autohide = false;
     BarStyle bar_style = BarStyle::islands;
-    bool default_osd_enabled = true;
-    bool default_notifications_enabled = true;
-    bool default_wallpaper_enabled = true;
-    bool default_lock_panel_enabled = true;
+    bool default_osd = true;
+    bool default_notifications = true;
+    bool default_wallpaper = true;
+    bool default_lock = true;
     std::map<std::string, MonitorOverride> monitor_overrides;
 
     bool launcher_lightning = true;
@@ -72,11 +72,11 @@ struct Config {
     std::string logout_logo_path;
     std::string idle_logo_path;
 
-    bool idle_management_enabled = true;
+    bool idle_enabled = true;
     bool ambient_enabled = true;
-    uint32_t ambient_timeout_seconds = 150;
+    uint32_t ambient_timeout = 150;
     bool screensaver_enabled = true;
-    uint32_t screensaver_timeout_seconds = 300;
+    uint32_t screensaver_timeout = 300;
 
     VisualizerParams visualizer;
     RainParams rain;
@@ -85,14 +85,14 @@ struct Config {
     bool operator==(const Config &) const = default;
 };
 
-bool osd_effective_enabled(const Config &cfg, const std::string &monitor_name);
-bool notifications_effective_enabled(const Config &cfg, const std::string &monitor_name);
-bool autohide_effective_enabled(const Config &cfg, const std::string &monitor_name);
-bool ambient_effective_enabled(const Config &cfg, const std::string &monitor_name);
-uint32_t ambient_effective_timeout_seconds(const Config &cfg, const std::string &monitor_name);
-bool screensaver_effective_enabled(const Config &cfg, const std::string &monitor_name);
-uint32_t screensaver_effective_timeout_seconds(const Config &cfg, const std::string &monitor_name);
-bool lock_effective_enabled(const Config &cfg, const std::string &monitor_name);
+bool osd_enabled_for(const Config &cfg, const std::string &monitor_name);
+bool notifications_enabled_for(const Config &cfg, const std::string &monitor_name);
+bool autohide_enabled_for(const Config &cfg, const std::string &monitor_name);
+bool ambient_enabled_for(const Config &cfg, const std::string &monitor_name);
+uint32_t ambient_timeout_for(const Config &cfg, const std::string &monitor_name);
+bool screensaver_enabled_for(const Config &cfg, const std::string &monitor_name);
+uint32_t screensaver_timeout_for(const Config &cfg, const std::string &monitor_name);
+bool lock_enabled_for(const Config &cfg, const std::string &monitor_name);
 
 Config parse_config(std::string_view text);
 std::string serialize_config(const Config &cfg);

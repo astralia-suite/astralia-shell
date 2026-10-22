@@ -20,7 +20,7 @@
 #include "render/image_decode.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::lock {
 
 class Lock {
   public:
@@ -35,8 +35,8 @@ class Lock {
         XWindow window;
         CairoCanvas canvas;
         Output output;
-        LockHits hits;
-        LockMotion motion;
+        Hits hits;
+        Motion motion;
         SurfacePtr wallpaper;
         std::string wallpaper_key;
     };
@@ -56,14 +56,14 @@ class Lock {
     void poll();
     void paint_all(bool with_wallpaper);
     void paint(Surface &surface, bool with_wallpaper);
-    LockInfo info() const;
+    Info info() const;
     std::chrono::milliseconds next_tick() const;
 
     XConnection &x_;
     EventLoop &loop_;
     Services &services_;
     Keyboard keyboard_;
-    LockModel model_;
+    Model model_;
     std::vector<std::unique_ptr<Surface>> surfaces_;
     std::string user_;
     int timer_ = -1;
@@ -71,4 +71,4 @@ class Lock {
     bool locked_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::lock

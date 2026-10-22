@@ -8,7 +8,7 @@
 #include "render/sticker.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::logout {
 
 namespace {
 
@@ -18,8 +18,8 @@ constexpr ui::TextStyle glyph_style{ui::FontFamily::glyph, cfg::glyph_px};
 
 } // namespace
 
-void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, float height,
-                  std::string_view logo_path) {
+void paint(ui::Canvas &canvas, const Model &model, float width, float height,
+           std::string_view logo_path) {
     if (!model.open_state()) {
         return;
     }
@@ -32,14 +32,14 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
         canvas.rect({0.0f, 0.0f, width, height}, with_alpha(palette::shadow, model.scrim()));
     }
 
-    for (int i = 0; i < LogoutModel::count; ++i) {
+    for (int i = 0; i < Model::count; ++i) {
         auto idx = static_cast<size_t>(i);
         float t = model.travel()[idx];
         float visible = model.exiting() ? model.exit_fade() : std::clamp(t, 0.0f, 1.0f);
         if (visible <= 0.002f) {
             continue;
         }
-        Point final_center = logout_button_center(i, center);
+        Point final_center = button_center(i, center);
         float fx = static_cast<float>(final_center.x);
         float fy = static_cast<float>(final_center.y);
         float bx = cx + (fx - cx) * t;
@@ -84,4 +84,4 @@ void paint_logout(ui::Canvas &canvas, const LogoutModel &model, float width, flo
     }
 }
 
-} // namespace astralia
+} // namespace astralia::logout

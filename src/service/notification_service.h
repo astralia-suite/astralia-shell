@@ -55,7 +55,7 @@ class NotificationService {
     void insert(Notification entry);
 
     Reactor &loop_;
-    SystemBus bus_;
+    Bus bus_;
     std::unique_ptr<sdbus::IObject> object_;
     std::vector<Notification> list_;
     uint32_t next_id_ = 1;

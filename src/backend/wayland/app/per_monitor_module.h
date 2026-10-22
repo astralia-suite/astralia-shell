@@ -32,5 +32,5 @@ class PerMonitorModule {
     virtual void handle_key_event(WaylandState &, MonitorOutput &, const KeyEvent &) {}
     virtual void handle_pointer_move(WaylandState &, MonitorOutput &, double, double) {}
     virtual void handle_pointer_release() {}
-    virtual bool wants_pointing_hand_cursor() const { return false; }
+    virtual bool wants_hand_cursor() const { return false; }
 };

@@ -4,8 +4,8 @@
 
 #include "render/canvas.h"
 
-namespace astralia {
+namespace astralia::bar {
 
-void paint_bar(ui::Canvas &canvas, const BarModel &model, const ui::Box *dirty = nullptr);
+void paint(ui::Canvas &canvas, const Model &model, const ui::Box *dirty = nullptr);
 
-} // namespace astralia
+} // namespace astralia::bar

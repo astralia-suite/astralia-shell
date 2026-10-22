@@ -5,15 +5,15 @@
 
 #include "core/animation.h"
 
-namespace astralia {
+namespace astralia::osd {
 
 enum class OsdKind { volume, mic, brightness };
 
-class OsdModel {
+class Model {
   public:
     using Clock = std::chrono::steady_clock;
 
-    explicit OsdModel(Clock::time_point created = Clock::now());
+    explicit Model(Clock::time_point created = Clock::now());
 
     bool show(OsdKind kind, int percent, bool muted, Clock::time_point now);
     void hide();
@@ -23,7 +23,7 @@ class OsdModel {
     int percent() const { return percent_; }
     bool muted() const { return muted_; }
     bool visible() const { return visible_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     float opacity() const { return opacity_; }
     float bar_fill() const { return bar_fill_; }
     float icon_mix() const { return icon_mix_; }
@@ -47,4 +47,4 @@ class OsdModel {
     AnimationManager animations_;
 };
 
-} // namespace astralia
+} // namespace astralia::osd

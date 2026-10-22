@@ -9,7 +9,7 @@
 
 #include "modules/notification/view.h"
 
-namespace astralia {
+namespace astralia::notification {
 
 namespace {
 
@@ -41,8 +41,7 @@ void progress_bar(ui::Canvas &canvas, float y, float progress, const Color &colo
 
 } // namespace
 
-void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view,
-                         const NotificationLayout &layout) {
+void paint(ui::Canvas &canvas, const ViewState &view, const Layout &layout) {
     ui::TextStyle app_style{ui::FontFamily::text, cfg::app_px, true,
                             static_cast<int>(cfg::wrap_width)};
     ui::TextStyle summary_style{ui::FontFamily::text, cfg::summary_px, true,
@@ -51,8 +50,8 @@ void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view,
                              static_cast<int>(cfg::wrap_width), true};
     ui::TextStyle close_style{ui::FontFamily::icon, cfg::close_icon_px};
 
-    for (const NotificationCard &card : layout.cards) {
-        const NotificationEntry &entry = *card.entry;
+    for (const Card &card : layout.cards) {
+        const Entry &entry = *card.entry;
         float opacity = entry.opacity * view.local_opacity(entry.id);
         float y = card.y + entry.slide_offset;
         const Color &accent = urgency_color(entry.urgency);
@@ -108,4 +107,4 @@ void paint_notifications(ui::Canvas &canvas, const NotificationViewState &view,
     }
 }
 
-} // namespace astralia
+} // namespace astralia::notification

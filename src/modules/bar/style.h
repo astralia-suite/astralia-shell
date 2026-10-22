@@ -7,9 +7,9 @@
 
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::bar {
 
-struct BarStyleSpec {
+struct StyleSpec {
     Color bg;
     Color border;
     float border_width;
@@ -29,8 +29,8 @@ struct BarStyleSpec {
     bool has_pill_bg() const { return !has_rail() && !continuous; }
 };
 
-BarStyle bar_style_resolve(BarStyle requested, bool islands_supported);
-const BarStyleSpec &bar_style_spec(BarStyle style, bool islands_supported);
+BarStyle style_resolve(BarStyle requested, bool islands_supported);
+const StyleSpec &style_spec(BarStyle style, bool islands_supported);
 
 struct IslandSpan {
     float left;
@@ -49,23 +49,23 @@ struct Fillet {
     bool right_of_island;
 };
 
-struct BarFrame {
+struct Frame {
     std::vector<IslandShape> islands;
     std::vector<Fillet> fillets;
 };
 
-IslandShape bar_island_shape(const BarStyleSpec &spec, float left, float right, bool flush_left,
-                             bool flush_right);
-BarFrame bar_frame(const BarStyleSpec &spec, std::optional<float> left_end,
-                   std::optional<IslandSpan> center, std::optional<float> right_start, float width);
+IslandShape island_shape(const StyleSpec &spec, float left, float right, bool flush_left,
+                         bool flush_right);
+Frame bar_frame(const StyleSpec &spec, std::optional<float> left_end,
+                std::optional<IslandSpan> center, std::optional<float> right_start, float width);
 
-struct BarGeometry {
+struct Geometry {
     int height;
     int margin_top;
     int exclusive_zone;
 };
 
-BarGeometry bar_autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin,
-                                  int hug_radius);
+Geometry autohide_geometry(bool autohide, bool collapsed, int bar_height, int top_margin,
+                           int hug_radius);
 
-} // namespace astralia
+} // namespace astralia::bar

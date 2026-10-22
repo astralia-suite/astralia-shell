@@ -6,7 +6,7 @@
 #include "modules/polkit/view.h"
 #include "modules/polkit/x11/polkit.h"
 
-namespace astralia {
+namespace astralia::polkit {
 
 Polkit::Polkit(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
@@ -54,19 +54,19 @@ void Polkit::handle(const xcb_generic_event_t &event) {
     case XCB_KEY_PRESS: {
         const auto &press = reinterpret_cast<const xcb_key_press_event_t &>(event);
         switch (model_.key(to_neutral(keyboard_.press(press.detail, press.state)))) {
-        case PolkitKey::changed:
+        case Key::changed:
             paint();
             break;
-        case PolkitKey::submit: {
+        case Key::submit: {
             std::string password = model_.take_password();
             service_.respond(password);
             explicit_bzero(password.data(), password.size());
             break;
         }
-        case PolkitKey::cancel:
+        case Key::cancel:
             service_.cancel();
             break;
-        case PolkitKey::none:
+        case Key::none:
             break;
         }
         break;
@@ -88,9 +88,9 @@ void Polkit::paint() {
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     canvas_.bind(cr);
-    paint_polkit(canvas_, model_, static_cast<float>(geometry.width),
-                 static_cast<float>(geometry.height));
+    polkit::paint(canvas_, model_, static_cast<float>(geometry.width),
+                  static_cast<float>(geometry.height));
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::polkit

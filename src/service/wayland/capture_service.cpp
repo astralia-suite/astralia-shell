@@ -94,7 +94,7 @@ void handle_buffer(void *data, hyprland_toplevel_export_frame_v1 *, uint32_t for
     cap->pending_height = height;
     cap->pending_stride = stride;
     cap->pending_format = format;
-    cap->have_pending_shm_format = true;
+    cap->pending_shm_format = true;
 }
 
 void handle_linux_dmabuf(void *, hyprland_toplevel_export_frame_v1 *, uint32_t, uint32_t,
@@ -110,13 +110,13 @@ void handle_damage(void *, hyprland_toplevel_export_frame_v1 *, uint32_t, uint32
 
 void handle_buffer_done(void *data, hyprland_toplevel_export_frame_v1 *frame) {
     auto *cap = static_cast<ToplevelExportCapture *>(data);
-    if (!cap->have_pending_shm_format) {
+    if (!cap->pending_shm_format) {
         hyprland_toplevel_export_frame_v1_destroy(frame);
         cap->frame = nullptr;
         cap->in_flight = false;
         return;
     }
-    cap->have_pending_shm_format = false;
+    cap->pending_shm_format = false;
 
     bool need_realloc = !cap->buffer || cap->buf_width != cap->pending_width ||
                         cap->buf_height != cap->pending_height ||

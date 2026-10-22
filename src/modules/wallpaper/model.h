@@ -5,7 +5,7 @@
 
 #include "render/geometry.h"
 
-namespace astralia {
+namespace astralia::wallpaper {
 
 enum class DesktopMenuAction : uint8_t { settings, wallpaper };
 
@@ -40,4 +40,4 @@ class DesktopMenuModel {
     bool open_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::wallpaper

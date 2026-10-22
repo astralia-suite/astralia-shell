@@ -60,7 +60,7 @@ class TextInputService {
     void handle_done(uint32_t serial);
 
   private:
-    bool active_surface_accepts_text_input() const;
+    bool accepts_text_input() const;
     void enable_active();
     void disable_active();
     void commit_active_state(bool from_input_method);
@@ -71,7 +71,7 @@ class TextInputService {
     wl_seat *seat_ = nullptr;
     zwp_text_input_v3 *text_input_ = nullptr;
     wl_surface *entered_surface_ = nullptr;
-    wl_surface *keyboard_focus_surface_ = nullptr;
+    wl_surface *focus_surface_ = nullptr;
     wl_surface *active_surface_ = nullptr;
     TextInputClient *active_client_ = nullptr;
     TextInputEdit pending_edit_;

@@ -68,11 +68,11 @@ struct WaylandState {
     bool session_locked = false;
     Renderer renderer;
     IdleState idle;
-    astralia::NotificationModel notification;
+    astralia::notification::Model notification;
     std::unique_ptr<astralia::NotificationService> notifications;
     std::vector<std::unique_ptr<Module>> overlays;
     std::vector<std::unique_ptr<Service>> services;
-    std::unique_ptr<astralia::SystemBus> system_bus;
+    std::unique_ptr<astralia::Bus> system_bus;
     std::unique_ptr<astralia::BatteryService> battery;
     std::unique_ptr<astralia::NetworkService> network;
     std::unique_ptr<astralia::BluetoothService> bluetooth;
@@ -85,12 +85,12 @@ struct WaylandState {
     astralia::CpuTempState cpu_temp;
     astralia::GpuTempState gpu_temp;
     astralia::SystemStatsState system_stats;
-    std::unique_ptr<astralia::SystemBus> session_bus;
+    std::unique_ptr<astralia::Bus> session_bus;
     std::unique_ptr<astralia::MediaService> media;
     std::unique_ptr<astralia::PolkitService> polkit;
     std::unique_ptr<astralia::ThemeService> theme;
     int config_watch_fd = -1;
-    bool config_own_write_pending = false;
+    bool own_write_pending = false;
     MonitorOutput *last_pointer_monitor = nullptr;
     std::unique_ptr<astralia::Compositor> desktop = std::make_unique<astralia::NullCompositor>();
     astralia::Reactor *reactor = nullptr;

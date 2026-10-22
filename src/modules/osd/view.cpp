@@ -7,7 +7,7 @@
 #include "render/sticker.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::osd {
 
 namespace {
 
@@ -18,7 +18,7 @@ constexpr float height = cfg::height;
 
 } // namespace
 
-void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
+void paint(ui::Canvas &canvas, const Model &model) {
     canvas.set_opacity(model.opacity());
     if (model.opacity() <= 0.0f) {
         return;
@@ -55,4 +55,4 @@ void paint_osd(ui::Canvas &canvas, const OsdModel &model) {
                 (height - label_size.h) / 2.0f, palette::text);
 }
 
-} // namespace astralia
+} // namespace astralia::osd

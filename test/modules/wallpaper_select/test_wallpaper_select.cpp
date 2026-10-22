@@ -23,9 +23,9 @@ namespace {
 
 namespace cfg = astralia::wallpaper_select_config;
 using astralia::Config;
-using astralia::WallpaperSelectModel;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
+using astralia::wallpaper_select::Model;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
@@ -34,7 +34,7 @@ struct Instant {
 
 struct Env {
     Config config;
-    WallpaperSelectModel model;
+    astralia::wallpaper_select::Model model;
     int updates = 0;
     int closed = 0;
     int revealed = 0;
@@ -232,7 +232,7 @@ void check_view(astralia::PollReactor &reactor) {
     Env env;
     opened(reactor, env, folder);
     test::RecordingCanvas canvas;
-    astralia::paint_wallpaper_select(canvas, env.model, 1920.0f, 1080.0f);
+    astralia::wallpaper_select::paint(canvas, env.model, 1920.0f, 1080.0f);
     test::check(canvas.count(Kind::begin_group) == 4,
                 "the current wallpaper and its neighbours are drawn inside the "
                 "column clip");
@@ -282,7 +282,7 @@ void check_reveal(astralia::PollReactor &reactor) {
     test::check(env.revealed == 1, "a closed selector does not reveal");
 
     env.config.wallpaper_columns.clear();
-    env.config.default_wallpaper_enabled = false;
+    env.config.default_wallpaper = false;
     env.model.open("DP-1", 0);
     test::check(!env.model.waiting() && env.revealed == 2,
                 "with no current wallpaper there is nothing to wait for");
@@ -338,7 +338,7 @@ void check_target_resolution(astralia::PollReactor &reactor) {
     opened(reactor, env, folder);
     env.model.step(1);
     test::RecordingCanvas canvas;
-    astralia::paint_wallpaper_select(canvas, env.model, 1920.0f, 1080.0f);
+    astralia::wallpaper_select::paint(canvas, env.model, 1920.0f, 1080.0f);
     int sharp = 0;
     for (const auto &[path, px] : canvas.thumbnails) {
         sharp += px == cfg::centre_px;
@@ -355,12 +355,12 @@ void check_target_resolution(astralia::PollReactor &reactor) {
     waiting.model.open("DP-1", 0);
     test::RecordingCanvas blank;
     blank.image_id = astralia::ui::no_image;
-    astralia::paint_wallpaper_select(blank, waiting.model, 1920.0f, 1080.0f);
+    astralia::wallpaper_select::paint(blank, waiting.model, 1920.0f, 1080.0f);
     test::check(blank.count(Kind::rect) == 0 && blank.count(Kind::begin_group) == 0 &&
                     waiting.model.waiting(),
                 "nothing is painted while the current image loads");
     test::RecordingCanvas loaded;
-    astralia::paint_wallpaper_select(loaded, waiting.model, 1920.0f, 1080.0f);
+    astralia::wallpaper_select::paint(loaded, waiting.model, 1920.0f, 1080.0f);
     test::check(!waiting.model.waiting() && loaded.count(Kind::begin_group) > 0,
                 "the selector paints as soon as the current image is ready");
 }

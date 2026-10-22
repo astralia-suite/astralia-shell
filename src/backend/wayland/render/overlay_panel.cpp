@@ -144,7 +144,7 @@ void overlay_panel_toggle(OverlayPanelBase &base, bool fade) {
 
     overlay_panel_request_frame(base);
     if (!fade) {
-        base.animations.cancelForOwner(kOverlayFadeOwner);
+        base.animations.cancel_owner(kOverlayFadeOwner);
         if (opening)
             base.opacity = 1.0f;
         return;

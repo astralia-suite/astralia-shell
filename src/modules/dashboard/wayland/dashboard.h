@@ -14,20 +14,23 @@
 
 struct WaylandState;
 
-struct DashboardState {
+namespace astralia::dashboard {
+
+struct State {
     ToplevelWindowBase base;
     Renderer *renderer = nullptr;
 };
 
-void dashboard_request_frame(DashboardState &state);
+void request_frame(State &state);
 
-void dashboard_toggle(DashboardState &state, WaylandState &app);
+void toggle(State &state, WaylandState &app);
 
-void dashboard_handle_key_event(DashboardState &state, WaylandState &app, const KeyEvent &event);
+void handle_key_event(State &state, WaylandState &app, const KeyEvent &event);
 
-std::vector<astralia::ShellBinding> dashboard_shell_bindings(DashboardState &dashboard,
-                                                             WaylandState &state);
+std::vector<astralia::ShellBinding> shell_bindings(State &dashboard, WaylandState &state);
 
-void dashboard_paint(DashboardState &state);
+void render(State &state);
 
-std::unique_ptr<Module> make_dashboard_module();
+std::unique_ptr<Module> make_module();
+
+} // namespace astralia::dashboard

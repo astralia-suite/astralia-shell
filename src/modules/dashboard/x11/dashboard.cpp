@@ -8,15 +8,15 @@
 
 #include "modules/dashboard/x11/dashboard.h"
 
-namespace astralia {
+namespace astralia::dashboard {
 
 Dashboard::Dashboard(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
-      window_(x, kDashboardTitle,
+      window_(x, dashboard_config::kTitle,
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false),
       keyboard_(x.conn()) {
-    window_.make_managed(kDashboardDefaultWidth, kDashboardDefaultHeight);
+    window_.make_managed(dashboard_config::kDefaultWidth, dashboard_config::kDefaultHeight);
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
     shell.track("dashboard", [this] { return open_; });
     shell.bind(ShellVerb::dashboard, [this] { toggle(); });
@@ -32,9 +32,11 @@ void Dashboard::toggle() {
 
 void Dashboard::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
-    int16_t x = static_cast<int16_t>(target.x + (target.width - kDashboardDefaultWidth) / 2);
-    int16_t y = static_cast<int16_t>(target.y + (target.height - kDashboardDefaultHeight) / 2);
-    window_.place({x, y, kDashboardDefaultWidth, kDashboardDefaultHeight});
+    int16_t x =
+        static_cast<int16_t>(target.x + (target.width - dashboard_config::kDefaultWidth) / 2);
+    int16_t y =
+        static_cast<int16_t>(target.y + (target.height - dashboard_config::kDefaultHeight) / 2);
+    window_.place({x, y, dashboard_config::kDefaultWidth, dashboard_config::kDefaultHeight});
     keyboard_.reload();
     open_ = true;
     paint();
@@ -94,4 +96,4 @@ void Dashboard::paint() {
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::dashboard

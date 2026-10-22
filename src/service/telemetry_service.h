@@ -11,9 +11,13 @@
 
 namespace astralia {
 
-bool cpu_temp_detail_is_cpu_hwmon_name(const std::string &name);
+namespace detail {
+bool cpu_is_hwmon_name(const std::string &name);
+} // namespace detail
 
-bool cpu_temp_detail_is_cpu_thermal_zone_type(const std::string &type);
+namespace detail {
+bool cpu_is_thermal_zone_type(const std::string &type);
+} // namespace detail
 
 struct CpuTempState {
     std::string sensor_path;
@@ -26,9 +30,13 @@ void cpu_temp_poll(CpuTempState &state);
 
 bool cpu_temp_available(const CpuTempState &state);
 
-bool gpu_temp_detail_is_gpu_hwmon_name(const std::string &name);
+namespace detail {
+bool gpu_is_hwmon_name(const std::string &name);
+} // namespace detail
 
-std::optional<float> gpu_temp_detail_parse_nvidia_smi_output(const std::string &text);
+namespace detail {
+std::optional<float> parse_nvidia_smi_output(const std::string &text);
+} // namespace detail
 
 struct GpuTempState {
     std::string sensor_path;
@@ -54,36 +62,52 @@ struct CpuJiffies {
     uint64_t total = 0;
 };
 
-std::optional<CpuJiffies> system_stats_detail_parse_proc_stat(const std::string &text);
+namespace detail {
+std::optional<CpuJiffies> parse_proc_stat(const std::string &text);
+} // namespace detail
 
-float system_stats_detail_cpu_usage(const CpuJiffies &prev, const CpuJiffies &cur);
+namespace detail {
+float cpu_usage(const CpuJiffies &prev, const CpuJiffies &cur);
+} // namespace detail
 
 struct MemInfo {
     uint64_t total_kb = 0;
     uint64_t available_kb = 0;
 };
 
-std::optional<MemInfo> system_stats_detail_parse_proc_meminfo(const std::string &text);
+namespace detail {
+std::optional<MemInfo> parse_proc_meminfo(const std::string &text);
+} // namespace detail
 
-float system_stats_detail_mem_usage(const MemInfo &info);
+namespace detail {
+float mem_usage(const MemInfo &info);
+} // namespace detail
 
-std::optional<float> system_stats_detail_parse_cpu_freq_avg_mhz(const std::string &cpuinfo_text);
+namespace detail {
+std::optional<float> parse_cpu_freq_avg_mhz(const std::string &cpuinfo_text);
+} // namespace detail
 
 struct DiskUsage {
     uint64_t used_bytes = 0;
     uint64_t total_bytes = 0;
 };
 
-std::optional<DiskUsage> system_stats_detail_disk_usage(const char *path);
+namespace detail {
+std::optional<DiskUsage> disk_usage(const char *path);
+} // namespace detail
 
 struct NetBytes {
     uint64_t rx_bytes = 0;
     uint64_t tx_bytes = 0;
 };
 
-std::optional<NetBytes> system_stats_detail_parse_proc_net_dev(const std::string &text);
+namespace detail {
+std::optional<NetBytes> parse_proc_net_dev(const std::string &text);
+} // namespace detail
 
-std::string system_stats_detail_format_speed(double bytes_per_sec);
+namespace detail {
+std::string format_speed(double bytes_per_sec);
+} // namespace detail
 
 struct SystemStatsState {
     CpuJiffies prev_jiffies;

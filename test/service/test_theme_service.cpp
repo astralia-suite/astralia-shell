@@ -66,11 +66,11 @@ void check_theme_service() {
     Extraction d{{{200.0f, 0.1f, 0.7f}, {300.0f, 0.1f, 0.7f}}, true};
     Extraction e{{{200.0f, 0.1f, 0.7f}, {300.0f, 0.1f, 0.7f}, {20.0f, 0.1f, 0.7f}}, true};
     Extraction f{{{200.0f, 0.1f, 0.7f}, {300.0f, 0.1f, 0.7f}, {60.0f, 0.1f, 0.7f}}, true};
-    check(!theme_extraction_differs(a, b), "a negligible hue shift is the same theme");
-    check(theme_extraction_differs(a, c), "a different hue is a new theme");
-    check(theme_extraction_differs(a, d), "a new secondary hue is a new theme");
-    check(theme_extraction_differs(d, e), "a third seed is a new theme");
-    check(theme_extraction_differs(e, f), "a changed third hue is a new theme");
+    check(!extraction_differs(a, b), "a negligible hue shift is the same theme");
+    check(extraction_differs(a, c), "a different hue is a new theme");
+    check(extraction_differs(a, d), "a new secondary hue is a new theme");
+    check(extraction_differs(d, e), "a third seed is a new theme");
+    check(extraction_differs(e, f), "a changed third hue is a new theme");
 
     ThemeService service;
     int emitted = 0;

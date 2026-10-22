@@ -16,7 +16,7 @@
 #include "render/canvas.h"
 #include "render/scroll_sequence.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 enum class PanelAnchor { left, center, right };
 
@@ -124,7 +124,9 @@ class Panel {
     bool contains(double x, double y) const;
 
     bool is_open() const { return open_; }
-    bool animating() const { return animations_.hasActive() || content_->animations().hasActive(); }
+    bool animating() const {
+        return animations_.has_active() || content_->animations().has_active();
+    }
     bool dragging() const { return dragging_; }
     bool closing() const { return sequence_.closing(); }
     const ui::Box &dialog() const { return dialog_; }
@@ -184,4 +186,4 @@ class Panel {
     PanelRegion drag_region_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

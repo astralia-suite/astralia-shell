@@ -166,8 +166,8 @@ std::vector<CompositorClient> hypr_parse_clients(std::string_view reply) {
     return clients;
 }
 
-bool hypr_client_order_differs(const std::vector<CompositorClient> &a,
-                               const std::vector<CompositorClient> &b) {
+bool hypr_order_differs(const std::vector<CompositorClient> &a,
+                        const std::vector<CompositorClient> &b) {
     if (a.size() != b.size()) {
         return true;
     }
@@ -371,7 +371,7 @@ bool HyprlandCompositor::refresh_clients() {
     }
     std::vector<CompositorClient> fresh = hypr_parse_clients(reply);
     clients_reply_ = std::move(reply);
-    if (!hypr_client_order_differs(fresh, state_.clients)) {
+    if (!hypr_order_differs(fresh, state_.clients)) {
         return false;
     }
     state_.clients = std::move(fresh);

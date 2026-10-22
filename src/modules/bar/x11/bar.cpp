@@ -20,7 +20,7 @@
 #include "render/app_fonts.h"
 #include "render/draw.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -28,44 +28,44 @@ namespace layout_cfg = bar_layout;
 
 constexpr int bar_workspace_slots = 10;
 
-std::optional<PanelId> panel_for(BarItem item) {
+std::optional<PanelId> panel_for(Item item) {
     switch (item) {
-    case BarItem::tray:
+    case Item::tray:
         return PanelId::tray;
-    case BarItem::network:
+    case Item::network:
         return PanelId::network;
-    case BarItem::bluetooth:
+    case Item::bluetooth:
         return PanelId::bluetooth;
-    case BarItem::volume:
+    case Item::volume:
         return PanelId::volume;
-    case BarItem::brightness:
+    case Item::brightness:
         return PanelId::brightness;
-    case BarItem::battery:
+    case Item::battery:
         return PanelId::battery;
-    case BarItem::media:
+    case Item::media:
         return PanelId::media;
-    case BarItem::clock:
+    case Item::clock:
         return PanelId::clock;
-    case BarItem::resource:
+    case Item::resource:
         return PanelId::resource;
-    case BarItem::logout:
-    case BarItem::count:
+    case Item::logout:
+    case Item::count:
         break;
     }
     return std::nullopt;
 }
 
-std::optional<BarItem> item_for(PanelId panel) {
-    for (size_t i = 0; i < bar_item_count; ++i) {
-        if (panel_for(static_cast<BarItem>(i)) == panel) {
-            return static_cast<BarItem>(i);
+std::optional<Item> item_for(PanelId panel) {
+    for (size_t i = 0; i < item_count; ++i) {
+        if (panel_for(static_cast<Item>(i)) == panel) {
+            return static_cast<Item>(i);
         }
     }
     return std::nullopt;
 }
 
-BarSources make_sources(Services &services, const std::string &output) {
-    BarSources sources;
+Sources make_sources(Services &services, const std::string &output) {
+    Sources sources;
     sources.audio = &services.audio;
     sources.battery = &services.battery;
     sources.bluetooth = &services.bluetooth;
@@ -89,7 +89,7 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
                   XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_ENTER_WINDOW |
                   XCB_EVENT_MASK_LEAVE_WINDOW,
               false),
-      model_(make_sources(services, output.name), BarModel::Clock::now()) {
+      model_(make_sources(services, output.name), Model::Clock::now()) {
     register_app_fonts();
     refresh_style();
     refresh_autohide();
@@ -111,7 +111,7 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
     services_.battery.changed.connect(redraw);
     services_.brightness.changed.connect(redraw);
     services_.theme.changed.connect([this] {
-        spec_ = &bar_style_spec(style_, true);
+        spec_ = &style_spec(style_, true);
         draw();
     });
     draw();
@@ -156,12 +156,12 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
 Bar::~Bar() = default;
 
 bool Bar::refresh_style() {
-    BarStyle next = bar_style_resolve(services_.settings.config().bar_style, true);
+    BarStyle next = style_resolve(services_.settings.config().bar_style, true);
     if (spec_ != nullptr && next == style_) {
         return false;
     }
     style_ = next;
-    spec_ = &bar_style_spec(next, true);
+    spec_ = &style_spec(next, true);
     model_.set_style(*spec_);
     full_height_ = static_cast<uint16_t>(spec_->top_margin + bar_layout::height);
     height_ = collapsed_ ? collapsed_height() : full_height_;
@@ -169,7 +169,7 @@ bool Bar::refresh_style() {
 }
 
 bool Bar::refresh_autohide() {
-    bool enabled = autohide_effective_enabled(services_.settings.config(), output_name_);
+    bool enabled = autohide_enabled_for(services_.settings.config(), output_name_);
     if (enabled == autohide_) {
         return false;
     }
@@ -181,7 +181,7 @@ bool Bar::refresh_autohide() {
 
 uint16_t Bar::collapsed_height() const {
     return static_cast<uint16_t>(
-        bar_autohide_geometry(true, true, bar_layout::height, spec_->top_margin, 0).height);
+        autohide_geometry(true, true, bar_layout::height, spec_->top_margin, 0).height);
 }
 
 void Bar::set_collapsed(bool collapsed) {
@@ -263,11 +263,11 @@ void Bar::refresh_clock() {
 }
 
 void Bar::prepare() {
-    auto now = BarModel::Clock::now();
+    auto now = Model::Clock::now();
     float width = static_cast<float>(width_) - 2.0f * static_cast<float>(spec_->side_margin);
     model_.refresh(now);
     model_.layout(canvas_, width);
-    clock_width_ = model_.item(BarItem::clock).box.w;
+    clock_width_ = model_.item(Item::clock).box.w;
 }
 
 void Bar::draw(const ui::Box *dirty) {
@@ -300,10 +300,10 @@ void Bar::draw(const ui::Box *dirty) {
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     canvas_.begin_group({left, top, width, bar_layout::height}, {});
-    BarFrame frame = model_.frame();
-    bar_frame_base(canvas_, *spec_, frame, width, bar_layout::height);
-    paint_bar(canvas_, model_, dirty);
-    bar_frame_overlay(canvas_, *spec_, frame, width, bar_layout::height, 0.0f, false, false);
+    Frame frame = model_.frame();
+    frame_base(canvas_, *spec_, frame, width, bar_layout::height);
+    paint(canvas_, model_, dirty);
+    frame_overlay(canvas_, *spec_, frame, width, bar_layout::height, 0.0f, false, false);
     canvas_.end_group();
     cairo_restore(cr);
     if (dirty != nullptr) {
@@ -311,7 +311,7 @@ void Bar::draw(const ui::Box *dirty) {
     } else {
         window_.present(0, 0, width_, height_);
     }
-    if (linger_timer_ >= 0 && model_.until_idle(BarModel::Clock::now()) < std::chrono::hours(1)) {
+    if (linger_timer_ >= 0 && model_.until_idle(Model::Clock::now()) < std::chrono::hours(1)) {
         loop_.reschedule(linger_timer_);
     }
 }
@@ -322,17 +322,17 @@ void Bar::redraw_clock() {
     if (before == clock_label_) {
         return;
     }
-    if (model_.item(BarItem::clock).expand == 0.0f) {
+    if (model_.item(Item::clock).expand == 0.0f) {
         return;
     }
     float previous = clock_width_;
     canvas_.bind(window_.cr());
     prepare();
-    if (model_.item(BarItem::clock).box.w != previous) {
+    if (model_.item(Item::clock).box.w != previous) {
         draw();
         return;
     }
-    const ui::Box &box = model_.item(BarItem::clock).box;
+    const ui::Box &box = model_.item(Item::clock).box;
     float pad = bar_layout::capsule_gap / 2.0f;
     ui::Box dirty{box.x - pad, 0.0f, box.w + 2.0f * pad, bar_layout::height};
     draw(&dirty);
@@ -340,14 +340,14 @@ void Bar::redraw_clock() {
 
 void Bar::toggle_panel(PanelId id) {
     set_collapsed(false);
-    if (std::optional<BarItem> item = item_for(id)) {
+    if (std::optional<Item> item = item_for(id)) {
         close_other_overlays(*item);
     }
     panels_->panels().toggle(id);
 }
 
-void Bar::close_other_overlays(BarItem keep) {
-    if (keep != BarItem::logout) {
+void Bar::close_other_overlays(Item keep) {
+    if (keep != Item::logout) {
         std::vector<std::string> open = shell_.open_modules();
         if (std::ranges::find(open, "logout") != open.end()) {
             shell_.run(ShellVerb::logout);
@@ -365,18 +365,18 @@ void Bar::scroll(const xcb_button_press_event_t &event) {
     if (!wheel || collapsed_) {
         return;
     }
-    BarAction hit =
+    Action hit =
         model_.press(event.event_x - spec_->side_margin, event.event_y - spec_->top_margin);
-    if (hit.kind != BarActionKind::toggle) {
+    if (hit.kind != ActionKind::toggle) {
         return;
     }
-    if (hit.item == BarItem::volume) {
+    if (hit.item == Item::volume) {
         AudioService &audio = services_.audio;
         if (audio.sink_id() != 0) {
             audio.set_volume(audio.sink_id(),
                              std::clamp(audio.sink().percent + (wheel->dy < 0 ? 5 : -5), 0, 150));
         }
-    } else if (hit.item == BarItem::brightness) {
+    } else if (hit.item == Item::brightness) {
         BrightnessService &brightness = services_.brightness;
         if (brightness.available()) {
             brightness.set(std::clamp(brightness.percent() + (wheel->dy < 0 ? 1 : -1), 0, 100));
@@ -395,29 +395,29 @@ void Bar::click(const xcb_button_press_event_t &event) {
     start_linger();
     double x = event.event_x - spec_->side_margin;
     double y = event.event_y - spec_->top_margin;
-    BarAction action = model_.press(x, y);
+    Action action = model_.press(x, y);
     switch (action.kind) {
-    case BarActionKind::toggle:
+    case ActionKind::toggle:
         close_other_overlays(action.item);
         if (std::optional<PanelId> panel = panel_for(action.item)) {
             panels_->panels().toggle(*panel);
-        } else if (action.item == BarItem::logout) {
+        } else if (action.item == Item::logout) {
             services_.overlay_hint = output_name_;
             shell_.run(ShellVerb::logout);
             services_.overlay_hint.clear();
         }
         break;
-    case BarActionKind::overview:
+    case ActionKind::overview:
         panels_->panels().close_all();
         services_.overlay_hint = output_name_;
         shell_.run(ShellVerb::overview);
         services_.overlay_hint.clear();
         break;
-    case BarActionKind::workspace:
+    case ActionKind::workspace:
         panels_->panels().close_all();
         services_.compositor->focus_workspace(action.workspace, true);
         break;
-    case BarActionKind::none:
+    case ActionKind::none:
         panels_->panels().close_all();
         break;
     }
@@ -430,13 +430,13 @@ void Bar::hover(std::optional<int> x, std::optional<int> y) {
         lx = *x - spec_->side_margin;
         ly = *y - spec_->top_margin;
     }
-    if (model_.hover(lx, ly, BarModel::Clock::now())) {
+    if (model_.hover(lx, ly, Model::Clock::now())) {
         draw();
     }
 }
 
 void Bar::sync_panels() {
-    std::optional<BarItem> open;
+    std::optional<Item> open;
     if (PanelId id = panels_->panels().active_id(); id != PanelId::count) {
         open = item_for(id);
     }
@@ -449,7 +449,7 @@ void Bar::sync_panels() {
             }
         }
     }
-    auto now = BarModel::Clock::now();
+    auto now = Model::Clock::now();
     model_.set_open(open, now);
     if (!open) {
         start_linger();
@@ -463,7 +463,7 @@ void Bar::sync_panels() {
 void Bar::start_linger() { loop_.reschedule(linger_timer_); }
 
 void Bar::sync_hover() {
-    auto now = BarModel::Clock::now();
+    auto now = Model::Clock::now();
     bool animated = model_.animating();
     bool changed = model_.tick(now) || animated;
     xcb_query_pointer_reply_t *reply =
@@ -487,7 +487,7 @@ void Bar::sync_hover() {
 }
 
 std::chrono::milliseconds Bar::until_linger_end() const {
-    return model_.until_idle(BarModel::Clock::now());
+    return model_.until_idle(Model::Clock::now());
 }
 
-} // namespace astralia
+} // namespace astralia::bar

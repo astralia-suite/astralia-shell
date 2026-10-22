@@ -17,7 +17,7 @@
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
 
-namespace astralia {
+namespace astralia::notification {
 
 class Notifications {
   public:
@@ -29,8 +29,8 @@ class Notifications {
 
         XWindow window;
         CairoCanvas canvas;
-        NotificationViewState state;
-        NotificationLayout layout;
+        ViewState state;
+        Layout layout;
         std::vector<std::pair<uint32_t, ui::Box>> close_boxes;
     };
 
@@ -43,9 +43,9 @@ class Notifications {
     XConnection &x_;
     EventLoop &loop_;
     Services &services_;
-    NotificationModel model_;
+    Model model_;
     NotificationService &service_;
     std::map<std::string, std::unique_ptr<View>> views_;
 };
 
-} // namespace astralia
+} // namespace astralia::notification

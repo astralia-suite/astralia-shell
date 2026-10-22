@@ -57,14 +57,14 @@ std::vector<StatusMessage> network_changes(const NetworkStatus &prev, const Netw
 NetworkMap network_parse_networks(const std::string &text, const std::set<std::string> &profiles);
 NetworkDeviceStatus network_parse_device_status(const std::string &text);
 bool network_parse_wifi_device(const std::string &text);
-std::string network_connectivity_name(uint32_t value);
+std::string connectivity_name(uint32_t value);
 std::set<std::string> network_parse_profiles(const std::string &text);
 int network_visible_count(const NetworkMap &networks);
-bool network_scan_would_collapse(const NetworkMap &current, const NetworkMap &parsed);
+bool network_scan_collapses(const NetworkMap &current, const NetworkMap &parsed);
 
 class NetworkService {
   public:
-    NetworkService(SystemBus &bus, Reactor &loop);
+    NetworkService(Bus &bus, Reactor &loop);
     const NetworkStatus &status() const { return status_; }
     const NetworkMap &networks() const { return networks_; }
     bool wifi_available() const { return device_.wifi; }
@@ -101,7 +101,7 @@ class NetworkService {
     void schedule_rescan(std::chrono::milliseconds delay);
     void cancel_scans();
 
-    SystemBus &bus_;
+    Bus &bus_;
     Reactor &loop_;
     NetworkStatus status_;
     NetworkDeviceStatus device_;
@@ -133,7 +133,7 @@ class NetworkService {
     AsyncProcess connectivity_proc_;
     std::optional<std::chrono::steady_clock::time_point> next_rescan_;
     int rescan_timer_ = -1;
-    std::optional<std::chrono::steady_clock::time_point> next_connectivity_check_;
+    std::optional<std::chrono::steady_clock::time_point> next_check_;
     int connectivity_timer_ = -1;
 };
 

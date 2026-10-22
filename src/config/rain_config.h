@@ -1,5 +1,34 @@
 #pragma once
 
+namespace astralia::rain_config {
+
+// window size
+constexpr int kDefaultWindowWidth = 480;
+constexpr int kDefaultWindowHeight = 600;
+
+// shared rain timing
+constexpr float kFallIntervalMs = 45.0f;
+constexpr float kResetChance = 0.025f;
+constexpr float kFadeAlpha = 0.05f;
+
+// async fall speed
+constexpr float kAsyncSpeedMin = 0.4f;
+constexpr float kAsyncSpeedMax = 1.0f;
+
+// matrix sim: font and cell geometry
+constexpr float kMatrixFontPx = 20.0f;
+constexpr float kMatrixCellWidth = 12.0f;
+constexpr float kMatrixCellHeight = 24.0f;
+constexpr float kMatrixBoldChance = 0.5f;
+
+// stiletto sim: comet row geometry
+constexpr float kStilettoColumnSpacingPx = 24.0f;
+constexpr float kStilettoHeadHeightPx = 24.0f;
+constexpr float kStilettoStepPx = 24.0f;
+constexpr float kStilettoTrailWidthPx = 3.0f;
+
+} // namespace astralia::rain_config
+
 namespace astralia {
 
 enum class RainMode { Matrix, Stiletto };
@@ -10,30 +39,5 @@ struct RainParams {
 
     bool operator==(const RainParams &) const = default;
 };
-
-// window size
-constexpr int kRainDefaultWindowWidth = 480;
-constexpr int kRainDefaultWindowHeight = 600;
-
-// shared rain timing
-constexpr float kRainFallIntervalMs = 45.0f;
-constexpr float kRainResetChance = 0.025f;
-constexpr float kRainFadeAlpha = 0.05f;
-
-// async fall speed
-constexpr float kRainAsyncSpeedMin = 0.4f;
-constexpr float kRainAsyncSpeedMax = 1.0f;
-
-// matrix sim: font and cell geometry
-constexpr float kMatrixRainFontPx = 20.0f;
-constexpr float kMatrixRainCellWidth = 12.0f;
-constexpr float kMatrixRainCellHeight = 24.0f;
-constexpr float kMatrixRainBoldChance = 0.5f;
-
-// stiletto sim: comet row geometry
-constexpr float kStilettoRainColumnSpacingPx = 24.0f;
-constexpr float kStilettoRainHeadHeightPx = 24.0f;
-constexpr float kStilettoRainStepPx = 24.0f;
-constexpr float kStilettoRainTrailWidthPx = 3.0f;
 
 } // namespace astralia

@@ -127,12 +127,12 @@ void check_hyprland() {
         check(hypr_parse_clients("garbage").empty() && hypr_parse_clients("{}").empty(),
               "invalid replies give no clients");
         std::vector<CompositorClient> moved = clients;
-        check(!hypr_client_order_differs(clients, moved), "identical lists do not differ");
+        check(!hypr_order_differs(clients, moved), "identical lists do not differ");
         moved[0].at[0] = 99;
-        check(hypr_client_order_differs(clients, moved), "a moved window differs");
+        check(hypr_order_differs(clients, moved), "a moved window differs");
         moved = clients;
         moved.pop_back();
-        check(hypr_client_order_differs(clients, moved), "a different count differs");
+        check(hypr_order_differs(clients, moved), "a different count differs");
     }
     {
         CompositorState state;

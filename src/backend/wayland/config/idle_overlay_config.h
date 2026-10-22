@@ -2,10 +2,14 @@
 
 #include <cstdint>
 
+namespace astralia::idle_overlay_config {
+
 // overlay fade
-constexpr float kIdleOverlayFadeMs = 400.0f;
-constexpr uint64_t kIdleAmbientFadeOwner = 1;
-constexpr uint64_t kIdleScreensaverFadeOwner = 2;
+constexpr float kFadeMs = 400.0f;
+constexpr uint64_t kAmbientFadeOwner = 1;
+constexpr uint64_t kScreensaverFadeOwner = 2;
 
 // layer-shell namespace
-constexpr const char *kIdleOverlayLayerNamespace = "astralia-shell-idle-overlay";
+constexpr const char *kLayerNamespace = "astralia-shell-idle-overlay";
+
+} // namespace astralia::idle_overlay_config

@@ -87,7 +87,7 @@ bool set_bluetooth_soft_blocked(bool blocked);
 
 class BluetoothService {
   public:
-    explicit BluetoothService(SystemBus &bus);
+    explicit BluetoothService(Bus &bus);
 
     const BluetoothStatus &status() const { return status_; }
     const std::vector<BluetoothDevice> &devices() const { return devices_; }
@@ -110,7 +110,7 @@ class BluetoothService {
     void call_device(const std::string &path, const char *method, bool busy);
     void call_adapter(const char *method);
 
-    SystemBus &bus_;
+    Bus &bus_;
     BluetoothStatus status_;
     std::vector<BluetoothDevice> devices_;
     std::set<std::string> busy_;

@@ -9,7 +9,7 @@
 
 #include "modules/launcher/entrance.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 namespace {
 
@@ -69,7 +69,7 @@ EntranceFrame entrance_sample(const EntranceState &state, const ui::Box &box) {
     constexpr std::array<float, 4> dir_y{-1.0f, -1.0f, 1.0f, 1.0f};
     float perimeter = 2.0f * (box.w + box.h);
     float head =
-        perimeter * applyEasing(Easing::EaseInOutCubic, seg(ms, trace_start_ms, trace_end_ms));
+        perimeter * apply_easing(Easing::EaseInOutCubic, seg(ms, trace_start_ms, trace_end_ms));
     float charge = 1.0f + charge_gain * seg(ms, trace_end_ms - charge_lead_ms, blast_ms);
     float outline = ms < blast_ms ? charge : 1.0f - seg(ms, blast_ms, blast_ms + outline_fade_ms);
 
@@ -121,4 +121,4 @@ EntranceFrame entrance_sample(const EntranceState &state, const ui::Box &box) {
     return frame;
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

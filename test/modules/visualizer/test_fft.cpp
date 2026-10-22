@@ -27,11 +27,12 @@ int peak_bin(const std::vector<float> &data, int complex_points) {
 
 void check_visualizer_fft() {
     using namespace astralia;
-    const int n = kVisualizerFragmentSize;
+    const int n = visualizer_config::kFragmentSize;
     const int complex_points = n / 2;
 
     std::vector<float> silence(static_cast<size_t>(n), 0.0f);
-    visualizer_fft(silence.data(), n, kVisualizerFftScale, kVisualizerFftCutOff);
+    astralia::visualizer::fft(silence.data(), n, visualizer_config::kFftScale,
+                              visualizer_config::kFftCutOff);
     for (float v : silence)
         test::check(v == 0.0f, "silence stays silent");
 
@@ -42,7 +43,8 @@ void check_visualizer_fft() {
             std::cos(2.0f * std::numbers::pi_v<float> * static_cast<float>(tone_bin) *
                      static_cast<float>(i) / static_cast<float>(complex_points));
 
-    visualizer_fft(tone.data(), n, kVisualizerFftScale, kVisualizerFftCutOff);
+    astralia::visualizer::fft(tone.data(), n, visualizer_config::kFftScale,
+                              visualizer_config::kFftCutOff);
 
     int p = peak_bin(tone, complex_points);
     test::check(std::abs(p - tone_bin) <= 2, "a tone peaks at its bin");

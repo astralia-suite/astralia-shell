@@ -23,7 +23,7 @@ struct ThemeSource {
 
 std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_name);
 ThemeSource theme_source(const Config &cfg, const std::string &monitor_name);
-bool theme_extraction_differs(const std::optional<Extraction> &a, const Extraction &b);
+bool extraction_differs(const std::optional<Extraction> &a, const Extraction &b);
 
 class ThemeService {
   public:

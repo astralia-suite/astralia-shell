@@ -56,7 +56,7 @@ void marquee_scroll_update(AnimationManager &anim, MarqueeTextState &state, cons
 
     if (overflow <= 0.5f || animation_instant()) {
         if (state.marqueeing) {
-            anim.cancelForOwner(owner);
+            anim.cancel_owner(owner);
             state.marqueeing = false;
             state.scroll_offset = 0.0f;
         }
@@ -69,7 +69,7 @@ void marquee_scroll_update(AnimationManager &anim, MarqueeTextState &state, cons
     if (!inputs_changed)
         return;
 
-    anim.cancelForOwner(owner);
+    anim.cancel_owner(owner);
     state.scroll_offset = 0.0f;
     state.last_text = text;
     state.last_box_w = box_w;

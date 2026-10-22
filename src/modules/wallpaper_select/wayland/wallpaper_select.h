@@ -4,4 +4,8 @@
 
 #include "wayland/app/module.h"
 
-std::unique_ptr<Module> make_wallpaper_select_module();
+namespace astralia::wallpaper_select {
+
+std::unique_ptr<Module> make_module();
+
+} // namespace astralia::wallpaper_select

@@ -4,7 +4,7 @@
 
 #include "modules/visualizer/cpu_stages.h"
 
-namespace astralia {
+namespace astralia::visualizer {
 
 namespace {
 
@@ -21,7 +21,8 @@ float sinusoidal(float x) {
 }
 
 float scale_audio(float index) {
-    return -std::log(-kVisualizerSampleRange * index + 1.0f) / kVisualizerSampleScale;
+    return -std::log(-visualizer_config::kSampleRange * index + 1.0f) /
+           visualizer_config::kSampleScale;
 }
 
 float fetch(const std::vector<float> &source, float s) {
@@ -32,10 +33,10 @@ float fetch(const std::vector<float> &source, float s) {
 
 } // namespace
 
-float VisualizerCpuStages::smooth_at(const std::vector<float> &source, float u) const {
+float CpuStages::smooth_at(const std::vector<float> &source, float u) const {
     float size = static_cast<float>(source.size());
-    float smin = scale_audio(clamp01(u - kVisualizerSmoothFactor)) * size;
-    float smax = scale_audio(clamp01(u + kVisualizerSmoothFactor)) * size;
+    float smin = scale_audio(clamp01(u - visualizer_config::kSmoothFactor)) * size;
+    float smax = scale_audio(clamp01(u + visualizer_config::kSmoothFactor)) * size;
     float half = (smax - smin) / 2.0f;
     float middle = smin + half;
     float weight_of_distance = 0.0f;
@@ -56,18 +57,19 @@ float VisualizerCpuStages::smooth_at(const std::vector<float> &source, float u) 
     }
     float average = weight > 0.0f ? total / weight : 0.0f;
     float result = 0.0f;
-    if (kVisualizerSampleMode == 0) {
+    if (visualizer_config::kSampleMode == 0) {
         result = average;
-    } else if (kVisualizerSampleMode == 1) {
+    } else if (visualizer_config::kSampleMode == 1) {
         result = peak;
     } else {
-        result =
-            peak * (1.0f - kVisualizerSampleHybridWeight) + average * kVisualizerSampleHybridWeight;
+        result = peak * (1.0f - visualizer_config::kSampleHybridWeight) +
+                 average * visualizer_config::kSampleHybridWeight;
     }
-    return result / (2.0f * (static_cast<float>(kVisualizerAdjacentSampleNums) - 1.0f) + 1.0f);
+    return result /
+           (2.0f * (static_cast<float>(visualizer_config::kAdjacentSampleNums) - 1.0f) + 1.0f);
 }
 
-void VisualizerCpuStages::run_channel(Channel &channel, const std::vector<float> &raw, int fps) {
+void CpuStages::run_channel(Channel &channel, const std::vector<float> &raw, int fps) {
     size_t size = static_cast<size_t>(size_);
     if (channel.held.size() != size) {
         channel.held.assign(size, 0.0f);
@@ -77,7 +79,7 @@ void VisualizerCpuStages::run_channel(Channel &channel, const std::vector<float>
         channel.average.assign(size, 0.0f);
         channel.ring_index = 0;
     }
-    float drop = kVisualizerGravityStep / static_cast<float>(fps);
+    float drop = visualizer_config::kGravityStep / static_cast<float>(fps);
     for (size_t i = 0; i < size; ++i) {
         float held = std::max(channel.held[i], clamp01(raw[i]));
         channel.held[i] = clamp01(held - drop);
@@ -91,16 +93,17 @@ void VisualizerCpuStages::run_channel(Channel &channel, const std::vector<float>
                 frame += ring_size;
             }
             sum += hamming(static_cast<float>(t),
-                           static_cast<float>(kVisualizerGravityAverageFrames - 1)) *
+                           static_cast<float>(visualizer_config::kGravityAverageFrames - 1)) *
                    channel.ring[static_cast<size_t>(frame)][i];
         }
-        channel.average[i] = clamp01(sum / static_cast<float>(kVisualizerGravityAverageFrames));
+        channel.average[i] =
+            clamp01(sum / static_cast<float>(visualizer_config::kGravityAverageFrames));
     }
     channel.ring_index = (channel.ring_index + 1) % ring_size;
 }
 
-bool VisualizerCpuStages::run(int size, const std::vector<float> &left,
-                              const std::vector<float> &right, int fps) {
+bool CpuStages::run(int size, const std::vector<float> &left, const std::vector<float> &right,
+                    int fps) {
     if (size <= 0 || fps <= 0 || static_cast<int>(left.size()) < size ||
         static_cast<int>(right.size()) < size) {
         return false;
@@ -111,7 +114,7 @@ bool VisualizerCpuStages::run(int size, const std::vector<float> &left,
     return true;
 }
 
-float VisualizerCpuStages::smooth_texel(int channel, int index) const {
+float CpuStages::smooth_texel(int channel, int index) const {
     const std::vector<float> &average =
         channels_[static_cast<size_t>(std::clamp(channel, 0, 1))].average;
     if (average.empty()) {
@@ -122,4 +125,4 @@ float VisualizerCpuStages::smooth_texel(int channel, int index) const {
     return clamp01(smooth_at(average, u));
 }
 
-} // namespace astralia
+} // namespace astralia::visualizer

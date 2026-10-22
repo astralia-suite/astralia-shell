@@ -22,7 +22,9 @@
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-struct NotificationView {
+namespace astralia::notification {
+
+struct View {
     wl_surface *surface = nullptr;
     zwlr_layer_surface_v1 *layer_surface = nullptr;
     wl_egl_window *egl_window = nullptr;
@@ -35,29 +37,27 @@ struct NotificationView {
     OutputScale output_scale;
     FrameClock frame_clock;
     GlCanvas canvas;
-    astralia::NotificationViewState state;
+    ViewState state;
     std::vector<std::pair<uint32_t, astralia::ui::Box>> close_hitboxes;
 };
 
-bool notification_view_create_surface(NotificationView &view, wl_compositor *compositor,
-                                      zwlr_layer_shell_v1 *layer_shell,
-                                      wl_output *output = nullptr);
+bool view_create_surface(View &view, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+                         wl_output *output = nullptr);
 
-bool notification_view_init_egl(NotificationView &view, astralia::NotificationModel &service,
-                                Renderer &renderer, EGLDisplay display, EGLConfig config,
-                                EGLContext context);
+bool view_init_egl(View &view, Model &service, Renderer &renderer, EGLDisplay display,
+                   EGLConfig config, EGLContext context);
 
-void notification_view_request_frame(NotificationView &view);
+void view_request_frame(View &view);
 
-bool notification_view_handle_close_click(NotificationView &view, double x, double y);
+bool view_handle_close_click(View &view, double x, double y);
 
-bool notification_view_set_close_hover(NotificationView &view, double x, double y);
+bool view_set_close_hover(View &view, double x, double y);
 
-bool notification_view_clear_close_hover(NotificationView &view);
+bool view_clear_close_hover(View &view);
 
-void notification_paint(NotificationView &view, astralia::NotificationModel &service);
+void render(View &view, Model &service);
 
-class NotificationViewPerMonitorModule final : public PerMonitorModule {
+class PerMonitor final : public PerMonitorModule {
   public:
     bool create_surface(WaylandState &app, MonitorOutput &mon, wl_output *output) override;
     bool configured() const override;
@@ -68,10 +68,12 @@ class NotificationViewPerMonitorModule final : public PerMonitorModule {
     void handle_click(WaylandState &app, MonitorOutput &mon, wl_surface *surface, int button,
                       double x, double y, uint32_t serial) override;
     void handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) override;
-    bool wants_pointing_hand_cursor() const override;
+    bool wants_hand_cursor() const override;
 
     void apply_config(WaylandState &app, MonitorOutput &mon, const Config &new_cfg) override;
 
   private:
-    NotificationView state_;
+    View state_;
 };
+
+} // namespace astralia::notification

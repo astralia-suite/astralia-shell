@@ -15,6 +15,8 @@
 #define GL_R16 0x822A
 #endif
 
+namespace astralia::visualizer {
+
 namespace {
 
 constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
@@ -30,7 +32,7 @@ void quantize(std::vector<uint16_t> &out, const float *data, int size) {
 
 } // namespace
 
-bool VisualizerAudioStages::init() {
+bool AudioStages::init() {
     if (ready_)
         return true;
 
@@ -75,19 +77,22 @@ bool VisualizerAudioStages::init() {
     }
 
     glUseProgram(smooth_prog_);
-    glUniform1i(glGetUniformLocation(smooth_prog_, "sample_mode"), kVisualizerSampleMode);
+    glUniform1i(glGetUniformLocation(smooth_prog_, "sample_mode"), visualizer_config::kSampleMode);
     glUniform1f(glGetUniformLocation(smooth_prog_, "sample_hybrid_weight"),
-                kVisualizerSampleHybridWeight);
-    glUniform1f(glGetUniformLocation(smooth_prog_, "sample_scale"), kVisualizerSampleScale);
-    glUniform1f(glGetUniformLocation(smooth_prog_, "sample_range"), kVisualizerSampleRange);
-    glUniform1f(glGetUniformLocation(smooth_prog_, "smooth_factor"), kVisualizerSmoothFactor);
+                visualizer_config::kSampleHybridWeight);
+    glUniform1f(glGetUniformLocation(smooth_prog_, "sample_scale"),
+                visualizer_config::kSampleScale);
+    glUniform1f(glGetUniformLocation(smooth_prog_, "sample_range"),
+                visualizer_config::kSampleRange);
+    glUniform1f(glGetUniformLocation(smooth_prog_, "smooth_factor"),
+                visualizer_config::kSmoothFactor);
     glUseProgram(0);
 
     ready_ = true;
     return true;
 }
 
-void VisualizerAudioStages::destroy() {
+void AudioStages::destroy() {
     GLuint progs[] = {pass_prog_, gravity_prog_, average_prog_, smooth_prog_};
     for (GLuint p : progs)
         if (p)
@@ -115,10 +120,10 @@ void VisualizerAudioStages::destroy() {
     if (vbo_)
         glDeleteBuffers(1, &vbo_);
 
-    *this = VisualizerAudioStages{};
+    *this = AudioStages{};
 }
 
-GLuint VisualizerAudioStages::ensure_tex(GLuint &tex, int size) {
+GLuint AudioStages::ensure_tex(GLuint &tex, int size) {
     if (tex)
         return tex;
     std::vector<uint16_t> zeros(static_cast<size_t>(size), 0);
@@ -133,7 +138,7 @@ GLuint VisualizerAudioStages::ensure_tex(GLuint &tex, int size) {
     return tex;
 }
 
-void VisualizerAudioStages::upload_raw(GLuint tex, const float *data, int size) {
+void AudioStages::upload_raw(GLuint tex, const float *data, int size) {
     static thread_local std::vector<uint16_t> buf;
     quantize(buf, data, size);
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -141,7 +146,7 @@ void VisualizerAudioStages::upload_raw(GLuint tex, const float *data, int size) 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void VisualizerAudioStages::bind_target(Target &t, int offset, int size) {
+void AudioStages::bind_target(Target &t, int offset, int size) {
     if (!t.fbo)
         glGenFramebuffers(1, &t.fbo);
     GLuint &tex = (offset == 1) ? t.tex_r : t.tex_l;
@@ -150,7 +155,7 @@ void VisualizerAudioStages::bind_target(Target &t, int offset, int size) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
 }
 
-void VisualizerAudioStages::draw_quad() {
+void AudioStages::draw_quad() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(0);
@@ -158,7 +163,7 @@ void VisualizerAudioStages::draw_quad() {
     glDisableVertexAttribArray(0);
 }
 
-void VisualizerAudioStages::run_channel(int offset, int size) {
+void AudioStages::run_channel(int offset, int size) {
     int &oidx = (offset == 1) ? out_idx_ : out_idx_l_;
     GLuint raw = (offset == 1) ? raw_r_ : raw_l_;
     GLuint pass_tex = (offset == 1) ? pass_.tex_r : pass_.tex_l;
@@ -183,7 +188,7 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     glBindTexture(GL_TEXTURE_2D, pass_tex);
     glUniform1i(glGetUniformLocation(gravity_prog_, "audioR"), offset);
     glUniform1f(glGetUniformLocation(gravity_prog_, "diff"),
-                kVisualizerGravityStep / static_cast<float>(fps_));
+                visualizer_config::kGravityStep / static_cast<float>(fps_));
     glUniform1f(glGetUniformLocation(gravity_prog_, "u_texWidth"), static_cast<float>(size));
     glViewport(0, 0, size, 1);
     draw_quad();
@@ -200,7 +205,8 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     bind_target(average_, offset, size);
     glViewport(0, 0, size, 1);
     glUseProgram(average_prog_);
-    glUniform1i(glGetUniformLocation(average_prog_, "avgFrames"), kVisualizerGravityAverageFrames);
+    glUniform1i(glGetUniformLocation(average_prog_, "avgFrames"),
+                visualizer_config::kGravityAverageFrames);
     glUniform1f(glGetUniformLocation(average_prog_, "u_texWidth"), static_cast<float>(size));
     for (int t = 0; t < kRing; ++t) {
         int unit = offset + 1 + t;
@@ -222,7 +228,7 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     glUseProgram(smooth_prog_);
     glUniform1i(glGetUniformLocation(smooth_prog_, "audioRSize"), size);
     glUniform1i(glGetUniformLocation(smooth_prog_, "adjacentSampleNums"),
-                kVisualizerAdjacentSampleNums);
+                visualizer_config::kAdjacentSampleNums);
     glActiveTexture(GL_TEXTURE0 + offset);
     glBindTexture(GL_TEXTURE_2D, (offset == 1) ? average_.tex_r : average_.tex_l);
     glUniform1i(glGetUniformLocation(smooth_prog_, "audioR"), offset);
@@ -233,8 +239,7 @@ void VisualizerAudioStages::run_channel(int offset, int size) {
     glUseProgram(0);
 }
 
-bool VisualizerAudioStages::run(int size, const std::vector<float> &l, const std::vector<float> &r,
-                                int fps) {
+bool AudioStages::run(int size, const std::vector<float> &l, const std::vector<float> &r, int fps) {
     if (!ready_ || size <= 0)
         return false;
     if (static_cast<int>(l.size()) < size || static_cast<int>(r.size()) < size)
@@ -269,3 +274,5 @@ bool VisualizerAudioStages::run(int size, const std::vector<float> &l, const std
     glDisable(GL_BLEND);
     return true;
 }
+
+} // namespace astralia::visualizer

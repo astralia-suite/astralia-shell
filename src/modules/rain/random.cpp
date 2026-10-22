@@ -1,0 +1,25 @@
+#include <random>
+
+#include "modules/rain/random.h"
+
+namespace astralia::rain {
+
+namespace {
+
+std::mt19937 &rng() {
+    static std::mt19937 gen{std::random_device{}()};
+    return gen;
+}
+
+} // namespace
+
+void rain_seed(uint32_t seed) { rng().seed(seed); }
+
+float random01() {
+    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    return dist(rng());
+}
+
+float random_range(float lo, float hi) { return lo + (hi - lo) * random01(); }
+
+} // namespace astralia::rain

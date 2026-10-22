@@ -14,8 +14,8 @@ namespace astralia {
 enum class HyprEventKind { none, active, structural };
 
 std::vector<CompositorClient> hypr_parse_clients(std::string_view reply);
-bool hypr_client_order_differs(const std::vector<CompositorClient> &a,
-                               const std::vector<CompositorClient> &b);
+bool hypr_order_differs(const std::vector<CompositorClient> &a,
+                        const std::vector<CompositorClient> &b);
 void hypr_parse_workspaces(std::string_view reply, CompositorState &state);
 void hypr_parse_monitors(std::string_view reply, CompositorState &state);
 int32_t hypr_parse_gaps_out(std::string_view reply);

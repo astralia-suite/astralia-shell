@@ -202,7 +202,7 @@ std::vector<std::string> icon_theme_order(const std::string &active) {
     return themes;
 }
 
-std::string resolve_app_icon_path(const std::string &icon_field) {
+std::string app_icon_path(const std::string &icon_field) {
     if (icon_field.empty()) {
         return "";
     }
@@ -231,19 +231,19 @@ std::string resolve_app_icon_path(const std::string &icon_field) {
     return "";
 }
 
-std::string resolve_window_icon_path(const std::string &window_class) {
+std::string window_icon_path(const std::string &window_class) {
     if (!window_class.empty()) {
         const auto &index = window_class_index();
         if (auto it = index.find(to_lower(window_class)); it != index.end()) {
-            if (std::string path = resolve_app_icon_path(it->second); !path.empty()) {
+            if (std::string path = app_icon_path(it->second); !path.empty()) {
                 return path;
             }
         }
-        if (std::string path = resolve_app_icon_path(window_class); !path.empty()) {
+        if (std::string path = app_icon_path(window_class); !path.empty()) {
             return path;
         }
     }
-    return resolve_app_icon_path("application-x-executable");
+    return app_icon_path("application-x-executable");
 }
 
 } // namespace astralia

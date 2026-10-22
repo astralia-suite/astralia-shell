@@ -5,7 +5,7 @@
 #include "render/sticker.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::wallpaper {
 
 namespace {
 
@@ -16,7 +16,7 @@ constexpr ui::TextStyle label_style{ui::FontFamily::text, cfg::menu_text_px, tru
 
 } // namespace
 
-void paint_desktop_menu(ui::Canvas &canvas, const DesktopMenuModel &model, float x, float y) {
+void paint(ui::Canvas &canvas, const DesktopMenuModel &model, float x, float y) {
     if (!model.is_open()) {
         return;
     }
@@ -41,4 +41,4 @@ void paint_desktop_menu(ui::Canvas &canvas, const DesktopMenuModel &model, float
     }
 }
 
-} // namespace astralia
+} // namespace astralia::wallpaper

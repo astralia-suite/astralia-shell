@@ -9,7 +9,7 @@
 #include "render/scroll.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::overview {
 
 namespace {
 
@@ -18,8 +18,7 @@ namespace cfg = overview_config;
 constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
 constexpr ui::TextStyle number_style{ui::FontFamily::text, cfg::number_px};
 
-void paint_cell(ui::Canvas &canvas, const OverviewModel &model, const OverviewCell &cell,
-                float scale) {
+void paint_cell(ui::Canvas &canvas, const Model &model, const Cell &cell, float scale) {
     bool hovered = model.dragging() && model.drag_target() == cell.workspace;
     canvas.rounded(cell.rect, metrics::radius_card * scale,
                    hovered ? palette::pop_a : palette::surface, cfg::workspace_border_width,
@@ -33,8 +32,8 @@ void paint_cell(ui::Canvas &canvas, const OverviewModel &model, const OverviewCe
     }
 }
 
-void paint_tile(ui::Canvas &canvas, OverviewModel &model, const OverviewTile &tile,
-                const OverviewTileArt &art, float scale) {
+void paint_tile(ui::Canvas &canvas, Model &model, const Tile &tile, const TileArt &art,
+                float scale) {
     ui::Box rect = model.tile_rect(tile);
     float radius = metrics::radius_widget * scale;
     bool live = art && art(canvas, tile, rect, radius);
@@ -58,11 +57,11 @@ void paint_tile(ui::Canvas &canvas, OverviewModel &model, const OverviewTile &ti
 
 } // namespace
 
-void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTileArt &art) {
+void paint(ui::Canvas &canvas, Model &model, const TileArt &art) {
     if (!model.is_open()) {
         return;
     }
-    const OverviewLayout &layout = model.layout();
+    const Layout &layout = model.layout();
     if (layout.cells.empty()) {
         return;
     }
@@ -76,10 +75,10 @@ void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTile
     }
     float scale = layout.scale;
     canvas.set_opacity(model.grid_alpha());
-    for (const OverviewCell &cell : layout.cells) {
+    for (const Cell &cell : layout.cells) {
         paint_cell(canvas, model, cell, scale);
     }
-    for (const OverviewTile &tile : model.tiles()) {
+    for (const Tile &tile : model.tiles()) {
         paint_tile(canvas, model, tile, art, scale);
     }
     if (const ui::Box *indicator = model.indicator()) {
@@ -93,4 +92,4 @@ void paint_overview(ui::Canvas &canvas, OverviewModel &model, const OverviewTile
     canvas.set_opacity(1.0f);
 }
 
-} // namespace astralia
+} // namespace astralia::overview

@@ -1,3 +1,7 @@
 #pragma once
 
-constexpr const char *kPolkitNamespace = "astralia-shell-polkit";
+namespace astralia::polkit {
+
+constexpr const char *kNamespace = "astralia-shell-polkit";
+
+} // namespace astralia::polkit

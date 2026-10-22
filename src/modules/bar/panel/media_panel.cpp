@@ -5,7 +5,7 @@
 #include "modules/bar/panel/media_panel.h"
 #include "modules/bar/panel/widgets.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -41,7 +41,7 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     ui::Box art{view.x, view.y, thumb, thumb};
     canvas.rounded(art, metrics::radius_widget, palette::surface, metrics::border_thin,
                    palette::ink);
-    ui::ImageId image = status.has_player && media_is_local_art_url(status.track.art_url)
+    ui::ImageId image = status.has_player && media_is_local_art(status.track.art_url)
                             ? canvas.image(status.track.art_url.substr(7), static_cast<int>(thumb))
                             : ui::no_image;
     if (image != ui::no_image) {
@@ -56,7 +56,7 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
             canvas.end_group();
         }
     } else {
-        panel_widgets::centered_text(canvas, icon::music_note, icon_style, art, palette::text_dim);
+        widgets::centered_text(canvas, icon::music_note, icon_style, art, palette::text_dim);
     }
 
     float text_x = view.x + thumb + cfg::media_title_left;
@@ -78,9 +78,9 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     if (status.has_player) {
         std::string label = media_format_position(status.track.position_us) + " / " +
                             media_format_position(status.track.length_us);
-        panel_widgets::centered_text(canvas, label, text_style,
-                                     {view.x, progress_y, view.w, cfg::media_progress_row},
-                                     palette::text_dim);
+        widgets::centered_text(canvas, label, text_style,
+                               {view.x, progress_y, view.w, cfg::media_progress_row},
+                               palette::text_dim);
     }
 
     float controls_y = progress_y + cfg::media_progress_row + cfg::media_controls_top;
@@ -116,4 +116,4 @@ bool MediaPanel::activate(const PanelRegion &region, double, double) {
     return true;
 }
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -13,7 +13,7 @@
 #include "render/sticker.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::wallpaper_select {
 
 namespace {
 
@@ -72,8 +72,7 @@ void centred_text(ui::Canvas &canvas, const std::string &text, float cx, float y
 
 } // namespace
 
-void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, float width,
-                            float height) {
+void paint(ui::Canvas &canvas, Model &model, float width, float height) {
     model.begin_frame();
     canvas.set_opacity(1.0f);
     float columns = static_cast<float>(model.column_count());
@@ -176,4 +175,4 @@ void paint_wallpaper_select(ui::Canvas &canvas, WallpaperSelectModel &model, flo
                 label_y + (cfg::label_height - size.h) / 2.0f, palette::text);
 }
 
-} // namespace astralia
+} // namespace astralia::wallpaper_select

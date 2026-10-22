@@ -18,23 +18,23 @@
 
 #include "render/text_field.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
-struct LauncherRow {
+struct Row {
     const char *glyph = nullptr;
     std::string label;
     std::string subtitle;
     std::string icon_path;
 };
 
-class LauncherModel {
+class Model {
   public:
     using Clock = std::chrono::steady_clock;
 
-    explicit LauncherModel(Reactor &reactor);
-    ~LauncherModel();
-    LauncherModel(const LauncherModel &) = delete;
-    LauncherModel &operator=(const LauncherModel &) = delete;
+    explicit Model(Reactor &reactor);
+    ~Model();
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
 
     void open(bool global);
     void close();
@@ -59,7 +59,7 @@ class LauncherModel {
 
     bool is_open() const { return open_; }
     bool searching() const { return searching_; }
-    bool animating() const { return animations_.hasActive(); }
+    bool animating() const { return animations_.has_active(); }
     LauncherMode mode() const { return mode_; }
     const TextFieldState &field() const { return field_; }
     TextFieldState &field() { return field_; }
@@ -73,7 +73,7 @@ class LauncherModel {
     float box_height() const { return height_; }
     float highlight_offset() const { return highlight_; }
     float scroll_offset() const { return scroll_; }
-    std::vector<LauncherRow> rows();
+    std::vector<Row> rows();
 
     std::function<void()> on_changed;
     std::function<void()> on_close_requested;
@@ -139,6 +139,6 @@ class LauncherModel {
     float scroll_target_ = -1.0f;
 };
 
-float launcher_content_height(int visible_rows);
+float content_height(int visible_rows);
 
-} // namespace astralia
+} // namespace astralia::launcher

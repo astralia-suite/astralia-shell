@@ -24,18 +24,18 @@ namespace {
 
 namespace cfg = astralia::settings_config;
 using astralia::Config;
-using astralia::SettingsAct;
-using astralia::SettingsCaps;
-using astralia::SettingsField;
-using astralia::SettingsModel;
-using astralia::SettingsTab;
 using astralia::wallpaper_column_count;
 using astralia::wallpaper_column_override;
 using astralia::wallpaper_fill_mode;
-using astralia::WallpaperPicker;
 using astralia::WallpaperSlot;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
+using astralia::settings::Act;
+using astralia::settings::Caps;
+using astralia::settings::Field;
+using astralia::settings::Model;
+using astralia::settings::Tab;
+using astralia::settings::WallpaperPicker;
 
 struct Instant {
     Instant() { astralia::animation_set_instant(true); }
@@ -45,10 +45,10 @@ struct Instant {
 struct Env {
     Config config;
     std::vector<std::string> monitors{"DP-1", "HDMI-1"};
-    SettingsModel model;
+    astralia::settings::Model model;
     int updates = 0;
 
-    explicit Env(SettingsCaps caps = {})
+    explicit Env(astralia::settings::Caps caps = {})
         : model(std::move(caps), {[this]() -> const Config & { return config; },
                                   [this](const std::function<void(Config &)> &edit) {
                                       edit(config);
@@ -58,7 +58,7 @@ struct Env {
                                   [] { return std::string("HDMI-1"); },
                                   {}}) {}
 
-    void click(SettingsAct act, int a = 0, int b = 0) {
+    void click(astralia::settings::Act act, int a = 0, int b = 0) {
         model.begin_frame();
         model.add_region({0, 0, 10, 10}, act, a, b);
         model.click(5, 5);
@@ -74,101 +74,113 @@ KeyEvent key(KeyKind kind, std::string text = "") {
 
 void check_fields() {
     Config config;
-    astralia::settings_apply_field(config, SettingsField::ambient_timeout, "5", "");
-    test::check(config.ambient_timeout_seconds == cfg::idle_timeout_min,
-                "timeouts clamp to the minimum");
-    astralia::settings_apply_field(config, SettingsField::ambient_timeout, "9999", "");
-    test::check(config.ambient_timeout_seconds == cfg::idle_timeout_max, "and to the maximum");
-    astralia::settings_apply_field(config, SettingsField::screensaver_timeout, "200", "DP-1");
+    astralia::settings::apply_field(config, astralia::settings::Field::ambient_timeout, "5", "");
+    test::check(config.ambient_timeout == cfg::idle_timeout_min, "timeouts clamp to the minimum");
+    astralia::settings::apply_field(config, astralia::settings::Field::ambient_timeout, "9999", "");
+    test::check(config.ambient_timeout == cfg::idle_timeout_max, "and to the maximum");
+    astralia::settings::apply_field(config, astralia::settings::Field::screensaver_timeout, "200",
+                                    "DP-1");
     config.monitor_overrides["DP-1"].enabled = true;
-    test::check(config.monitor_overrides["DP-1"].screensaver_timeout_seconds == 200 &&
-                    config.screensaver_timeout_seconds == 300,
+    test::check(config.monitor_overrides["DP-1"].screensaver_timeout == 200 &&
+                    config.screensaver_timeout == 300,
                 "monitor fields write the override");
-    astralia::settings_apply_field(config, SettingsField::visualizer_fps, "abc", "");
+    astralia::settings::apply_field(config, astralia::settings::Field::visualizer_fps, "abc", "");
     test::check(config.visualizer.fps == 60, "unparsable text keeps the value");
-    astralia::settings_apply_field(config, SettingsField::visualizer_thin, "2", "");
+    astralia::settings::apply_field(config, astralia::settings::Field::visualizer_thin, "2", "");
     test::check(config.visualizer.particle_thin == 0.95f, "floats clamp");
-    astralia::settings_apply_field(config, SettingsField::wallpaper_dir, "/tmp/x", "");
+    astralia::settings::apply_field(config, astralia::settings::Field::wallpaper_dir, "/tmp/x", "");
     test::check(config.wallpaper_dir == "/tmp/x", "directories are stored");
-    astralia::settings_apply_field(config, SettingsField::lock_wallpaper_dir, "/tmp/lock", "");
+    astralia::settings::apply_field(config, astralia::settings::Field::lock_wallpaper_dir,
+                                    "/tmp/lock", "");
     test::check(config.lock_wallpaper_dir == "/tmp/lock" && config.wallpaper_dir == "/tmp/x" &&
-                    astralia::settings_field_text(config, SettingsField::lock_wallpaper_dir, "") ==
-                        "/tmp/lock",
+                    astralia::settings::field_text(
+                        config, astralia::settings::Field::lock_wallpaper_dir, "") == "/tmp/lock",
                 "the lock directory is its own field");
-    test::check(astralia::settings_field_text(config, SettingsField::visualizer_thin, "") == "0.95",
+    test::check(astralia::settings::field_text(config, astralia::settings::Field::visualizer_thin,
+                                               "") == "0.95",
                 "floats print without trailing zeros");
-    test::check(astralia::settings_field_text(config, SettingsField::visualizer_fps, "") == "60",
+    test::check(astralia::settings::field_text(config, astralia::settings::Field::visualizer_fps,
+                                               "") == "60",
                 "integers print plainly");
-    test::check(astralia::settings_field_text(config, SettingsField::screensaver_timeout, "DP-1") ==
-                    "200",
+    test::check(astralia::settings::field_text(
+                    config, astralia::settings::Field::screensaver_timeout, "DP-1") == "200",
                 "monitor values read the override");
 }
 
 void check_tabs() {
     Instant instant;
     Env minimal;
-    std::vector<SettingsTab> order;
-    for (const astralia::SettingsTabInfo &info : minimal.model.tabs()) {
+    std::vector<astralia::settings::Tab> order;
+    for (const astralia::settings::TabInfo &info : minimal.model.tabs()) {
         order.push_back(info.tab);
     }
-    test::check(order == std::vector<SettingsTab>{SettingsTab::bar, SettingsTab::displays,
-                                                  SettingsTab::wallpaper},
+    test::check(order == std::vector<astralia::settings::Tab>{astralia::settings::Tab::bar,
+                                                              astralia::settings::Tab::displays,
+                                                              astralia::settings::Tab::wallpaper},
                 "a minimal backend has three tabs");
 
-    SettingsCaps full;
+    astralia::settings::Caps full;
     full.animation = full.idle = full.launcher = full.rain = full.visualizer = true;
     Env rich(full);
     test::check(rich.model.tabs().size() == 5 &&
-                    rich.model.tabs().front().tab == SettingsTab::ambient,
+                    rich.model.tabs().front().tab == astralia::settings::Tab::ambient,
                 "capabilities add the extra tabs in order");
-    test::check(rich.model.tabs()[3].tab == SettingsTab::general,
+    test::check(rich.model.tabs()[3].tab == astralia::settings::Tab::general,
                 "the general tab sits between displays and wallpaper");
 
-    SettingsCaps with_lock = full;
+    astralia::settings::Caps with_lock = full;
     with_lock.lock_wallpaper = true;
     Env locking(with_lock);
-    std::vector<SettingsTab> locking_order;
-    for (const astralia::SettingsTabInfo &info : locking.model.tabs()) {
+    std::vector<astralia::settings::Tab> locking_order;
+    for (const astralia::settings::TabInfo &info : locking.model.tabs()) {
         locking_order.push_back(info.tab);
     }
-    test::check(locking_order == std::vector<SettingsTab>{SettingsTab::ambient, SettingsTab::bar,
-                                                          SettingsTab::displays,
-                                                          SettingsTab::general, SettingsTab::lock,
-                                                          SettingsTab::wallpaper},
+    test::check(locking_order ==
+                    std::vector<astralia::settings::Tab>{
+                        astralia::settings::Tab::ambient, astralia::settings::Tab::bar,
+                        astralia::settings::Tab::displays, astralia::settings::Tab::general,
+                        astralia::settings::Tab::lock, astralia::settings::Tab::wallpaper},
                 "the lock screen tab sits between general and wallpaper");
-    SettingsCaps lock_only;
+    astralia::settings::Caps lock_only;
     lock_only.lock_wallpaper = true;
     Env lock_minimal(lock_only);
     test::check(lock_minimal.model.tabs().size() == 4 &&
-                    lock_minimal.model.tabs()[2].tab == SettingsTab::lock,
+                    lock_minimal.model.tabs()[2].tab == astralia::settings::Tab::lock,
                 "a backend that can lock gains the tab on its own");
 
     minimal.model.open();
     test::check(minimal.model.in_menu(), "the overlay opens on the tile menu");
-    minimal.click(SettingsAct::tab, static_cast<int>(SettingsTab::displays));
+    minimal.click(astralia::settings::Act::tab,
+                  static_cast<int>(astralia::settings::Tab::displays));
     test::check(!minimal.model.in_menu(), "picking a tile opens its page");
-    minimal.click(SettingsAct::menu);
+    minimal.click(astralia::settings::Act::menu);
     test::check(minimal.model.in_menu(), "the back key returns to the menu");
-    minimal.click(SettingsAct::tab, static_cast<int>(SettingsTab::displays));
-    test::check(minimal.model.active_tab() == SettingsTab::displays &&
+    minimal.click(astralia::settings::Act::tab,
+                  static_cast<int>(astralia::settings::Tab::displays));
+    test::check(minimal.model.active_tab() == astralia::settings::Tab::displays &&
                     minimal.model.tab_alpha() == 1.0f,
                 "a tab switch settles at once when instant");
     minimal.model.close();
     minimal.model.open();
-    test::check(minimal.model.in_menu() && minimal.model.active_tab() == SettingsTab::wallpaper,
+    test::check(minimal.model.in_menu() &&
+                    minimal.model.active_tab() == astralia::settings::Tab::wallpaper,
                 "reopening starts over");
 
-    Env keeper{SettingsCaps{}};
+    Env keeper{astralia::settings::Caps{}};
     keeper.model.open();
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.in_menu(), "arrows do nothing on the menu");
-    keeper.click(SettingsAct::tab, static_cast<int>(SettingsTab::wallpaper));
+    keeper.click(astralia::settings::Act::tab,
+                 static_cast<int>(astralia::settings::Tab::wallpaper));
     keeper.model.key(key(KeyKind::Down));
-    test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "down stops at the last tab");
+    test::check(keeper.model.active_tab() == astralia::settings::Tab::wallpaper,
+                "down stops at the last tab");
     keeper.model.key(key(KeyKind::Up));
-    test::check(keeper.model.active_tab() == SettingsTab::displays, "up moves to the previous tab");
+    test::check(keeper.model.active_tab() == astralia::settings::Tab::displays,
+                "up moves to the previous tab");
     keeper.model.key(key(KeyKind::Down));
-    test::check(keeper.model.active_tab() == SettingsTab::wallpaper, "down moves to the next tab");
+    test::check(keeper.model.active_tab() == astralia::settings::Tab::wallpaper,
+                "down moves to the next tab");
 
     int closes = 0;
     keeper.model.on_close_requested = [&] { ++closes; };
@@ -190,12 +202,13 @@ void check_tab_fade() {
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(1));
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(2));
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(3));
-    animated.click(SettingsAct::tab, static_cast<int>(SettingsTab::bar));
-    test::check(animated.model.active_tab() == SettingsTab::wallpaper && animated.model.animating(),
+    animated.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::bar));
+    test::check(animated.model.active_tab() == astralia::settings::Tab::wallpaper &&
+                    animated.model.animating(),
                 "a tab switch fades out first");
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(4));
     animated.model.tick(std::chrono::steady_clock::now() + std::chrono::seconds(5));
-    test::check(animated.model.active_tab() == SettingsTab::bar &&
+    test::check(animated.model.active_tab() == astralia::settings::Tab::bar &&
                     animated.model.tab_alpha() == 1.0f,
                 "then fades the new tab in");
 }
@@ -204,19 +217,19 @@ void check_scroll_stages() {
     using Kind = test::Op::Kind;
     using std::chrono::seconds;
     using std::chrono::steady_clock;
-    Env env{SettingsCaps{}};
+    Env env{astralia::settings::Caps{}};
     int closed = 0;
     int closes = 0;
     env.model.on_closed = [&] { ++closed; };
     env.model.on_close_requested = [&] { ++closes; };
-    astralia::SettingsArt art{"someone", "up 3 hours", {}};
+    astralia::settings::Art art{"someone", "up 3 hours", {}};
 
     env.model.open();
     test::check(env.model.is_open() && env.model.sequence().slide() == 1.0f &&
                     env.model.animating(),
                 "the closed scroll starts below the screen");
     test::RecordingCanvas rising;
-    astralia::paint_settings(rising, env.model, art, 1920, 1200);
+    astralia::settings::paint(rising, env.model, art, 1920, 1200);
     test::check(rising.count(Kind::rounded) > 0 && rising.count(Kind::text) == 0 &&
                     !env.model.clickable(960, 600),
                 "the closed scroll shows no content");
@@ -228,12 +241,12 @@ void check_scroll_stages() {
     test::check(env.model.sequence().settled() && env.model.sequence().grid() == 0.0f,
                 "the scroll unrolls before the content");
     test::RecordingCanvas unrolled;
-    astralia::paint_settings(unrolled, env.model, art, 1920, 1200);
+    astralia::settings::paint(unrolled, env.model, art, 1920, 1200);
     test::check(unrolled.count(Kind::text) == 0, "the open scroll is still empty");
 
     env.model.tick(steady_clock::now() + seconds(3));
     test::RecordingCanvas shown;
-    astralia::paint_settings(shown, env.model, art, 1920, 1200);
+    astralia::settings::paint(shown, env.model, art, 1920, 1200);
     test::check(shown.count(Kind::text) > 0 && shown.count(Kind::begin_group) == 0,
                 "then the content appears");
     env.model.click(5, 5);
@@ -245,7 +258,7 @@ void check_scroll_stages() {
     test::check(!env.model.key(key(KeyKind::Down)), "keys are ignored while closing");
     env.model.tick(steady_clock::now() + seconds(4));
     test::RecordingCanvas fading;
-    astralia::paint_settings(fading, env.model, art, 1920, 1200);
+    astralia::settings::paint(fading, env.model, art, 1920, 1200);
     test::check(fading.count(Kind::text) == 0 && env.model.sequence().scroll() == 1.0f &&
                     closed == 0,
                 "the content goes before the scroll rolls up");
@@ -256,69 +269,70 @@ void check_scroll_stages() {
 
 void check_actions() {
     Instant instant;
-    SettingsCaps caps;
+    astralia::settings::Caps caps;
     caps.rain = caps.visualizer = caps.animation = caps.idle = caps.launcher = true;
     Env env(caps);
     env.model.open();
 
-    env.click(SettingsAct::bar_style, 1);
+    env.click(astralia::settings::Act::bar_style, 1);
     test::check(env.config.bar_style == astralia::BarStyle::okinami, "the bar style tile applies");
-    SettingsCaps limited;
+    astralia::settings::Caps limited;
     limited.bar_styles = {astralia::BarStyle::continuous, astralia::BarStyle::okinami};
     Env x11(limited);
     x11.config.bar_style = astralia::BarStyle::islands;
     test::check(x11.model.effective_bar_style() == astralia::BarStyle::continuous,
                 "an unsupported style shows as continuous");
 
-    env.click(SettingsAct::toggle_osd);
-    test::check(!env.config.default_osd_enabled, "default toggles flip the default");
-    env.click(SettingsAct::displays_monitor, 0);
+    env.click(astralia::settings::Act::toggle_osd);
+    test::check(!env.config.default_osd, "default toggles flip the default");
+    env.click(astralia::settings::Act::displays_monitor, 0);
     test::check(env.model.displays_monitor() == "DP-1", "monitor tiles select a monitor");
-    env.click(SettingsAct::toggle_override);
+    env.click(astralia::settings::Act::toggle_override);
     test::check(env.config.monitor_overrides["DP-1"].enabled &&
                     !env.config.monitor_overrides["DP-1"].osd,
                 "the override starts from the defaults");
-    env.click(SettingsAct::toggle_notifications);
+    env.click(astralia::settings::Act::toggle_notifications);
     test::check(!env.config.monitor_overrides["DP-1"].notifications &&
-                    env.config.default_notifications_enabled,
+                    env.config.default_notifications,
                 "override toggles flip the override");
-    env.click(SettingsAct::toggle_override);
+    env.click(astralia::settings::Act::toggle_override);
     test::check(!env.config.monitor_overrides["DP-1"].enabled, "the override switches off");
-    env.click(SettingsAct::displays_monitor, -1);
+    env.click(astralia::settings::Act::displays_monitor, -1);
     test::check(env.model.displays_monitor().empty(), "the default tile clears the selection");
 
-    env.click(SettingsAct::idle_enable, 0, 1);
-    test::check(!env.config.idle_management_enabled, "idle management flips");
-    env.click(SettingsAct::displays_monitor, 1);
+    env.click(astralia::settings::Act::idle_enable, 0, 1);
+    test::check(!env.config.idle_enabled, "idle management flips");
+    env.click(astralia::settings::Act::displays_monitor, 1);
     test::check(env.model.displays_monitor() == "HDMI-1", "idle shares the display selection");
-    env.click(SettingsAct::toggle_override, 0, 1);
-    env.click(SettingsAct::idle_ambient, 0, 1);
+    env.click(astralia::settings::Act::toggle_override, 0, 1);
+    env.click(astralia::settings::Act::idle_ambient, 0, 1);
     test::check(!env.config.monitor_overrides["HDMI-1"].ambient_enabled &&
                     env.config.ambient_enabled,
                 "idle toggles write the override");
-    env.config.monitor_overrides["HDMI-1"].ambient_timeout_seconds = 20;
-    env.click(SettingsAct::idle_ambient_reset);
-    test::check(env.config.monitor_overrides["HDMI-1"].ambient_timeout_seconds ==
-                    env.config.ambient_timeout_seconds,
+    env.config.monitor_overrides["HDMI-1"].ambient_timeout = 20;
+    env.click(astralia::settings::Act::idle_ambient_reset);
+    test::check(env.config.monitor_overrides["HDMI-1"].ambient_timeout ==
+                    env.config.ambient_timeout,
                 "reset restores the default timeout");
 
-    env.click(SettingsAct::rain_mode, 1);
-    env.click(SettingsAct::rain_async);
+    env.click(astralia::settings::Act::rain_mode, 1);
+    env.click(astralia::settings::Act::rain_async);
     test::check(env.config.rain.mode == astralia::RainMode::Stiletto && env.config.rain.async_speed,
                 "rain settings apply");
-    env.click(SettingsAct::launcher_lightning);
+    env.click(astralia::settings::Act::launcher_lightning);
     test::check(!env.config.launcher_lightning, "the lightning toggle flips");
-    env.click(SettingsAct::visualizer_shape, 1);
+    env.click(astralia::settings::Act::visualizer_shape, 1);
     env.config.visualizer.fps = 30;
-    env.click(SettingsAct::visualizer_reset, static_cast<int>(SettingsField::visualizer_fps));
+    env.click(astralia::settings::Act::visualizer_reset,
+              static_cast<int>(astralia::settings::Field::visualizer_fps));
     test::check(env.config.visualizer.visualizer_shape == astralia::VisualizerShape::Sphere &&
                     env.config.visualizer.fps == 60,
                 "visualizer settings apply and reset");
-    env.click(SettingsAct::animation_disable);
+    env.click(astralia::settings::Act::animation_disable);
     test::check(env.config.animations_disabled, "single toggles flip");
-    env.click(SettingsAct::wallpaper_default);
-    env.click(SettingsAct::wallpaper_animated);
-    test::check(!env.config.default_wallpaper_enabled && env.config.wallpaper_animated_enabled,
+    env.click(astralia::settings::Act::wallpaper_default);
+    env.click(astralia::settings::Act::wallpaper_animated);
+    test::check(!env.config.default_wallpaper && env.config.wallpaper_animated_enabled,
                 "wallpaper mode toggles flip");
 }
 
@@ -335,12 +349,12 @@ void check_wallpaper() {
     std::ofstream(root / "notes.txt").put('x');
     std::ofstream(root / "sub" / "c.png").put('x');
 
-    SettingsCaps caps;
+    astralia::settings::Caps caps;
     caps.wallpaper_columns = true;
     Env env(caps);
     env.config.wallpaper_dir = root.string();
     env.model.open();
-    env.click(SettingsAct::tab, static_cast<int>(SettingsTab::wallpaper));
+    env.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::wallpaper));
     test::check(env.model.picker(WallpaperSlot::still).scanning &&
                     env.model.picker(WallpaperSlot::still).region == "HDMI-1",
                 "opening scans and picks the focused monitor");
@@ -353,44 +367,45 @@ void check_wallpaper() {
                     files[2].ends_with("c.png"),
                 "files sort by extension then name");
 
-    env.click(SettingsAct::wallpaper_pick, 1, 0);
+    env.click(astralia::settings::Act::wallpaper_pick, 1, 0);
     test::check(astralia::wallpaper_column_override(env.config, "HDMI-1", 0, false) == files[1],
                 "picking sets the column image");
-    env.click(SettingsAct::wallpaper_count, 1, 0);
+    env.click(astralia::settings::Act::wallpaper_count, 1, 0);
     test::check(astralia::wallpaper_column_count(env.config, "HDMI-1", false) == 2,
                 "the stepper adds a column");
-    env.click(SettingsAct::wallpaper_region, 0, 1);
+    env.click(astralia::settings::Act::wallpaper_region, 0, 1);
     test::check(env.model.picker(WallpaperSlot::still).region == "DP-1" &&
                     env.model.picker(WallpaperSlot::still).column == 1,
                 "chips select a region and column");
-    env.click(SettingsAct::wallpaper_fill, 1, 0);
+    env.click(astralia::settings::Act::wallpaper_fill, 1, 0);
     test::check(astralia::wallpaper_fill_mode(env.config, "DP-1", 1, false) == "fit",
                 "fill mode applies");
-    env.click(SettingsAct::dropdown_toggle, 1);
+    env.click(astralia::settings::Act::dropdown_toggle, 1);
     test::check(env.model.dropdown_open() == 1, "the drop-down opens");
     env.model.begin_frame();
-    env.model.add_region({0, 0, 10, 10}, SettingsAct::wallpaper_remove);
-    env.model.add_region_front({0, 0, 10, 10}, SettingsAct::capture_pick, 0, 1);
+    env.model.add_region({0, 0, 10, 10}, astralia::settings::Act::wallpaper_remove);
+    env.model.add_region_front({0, 0, 10, 10}, astralia::settings::Act::capture_pick, 0, 1);
     env.model.click(5, 5);
     test::check(env.config.capture_monitor == "DP-1" && env.config.capture_column == 1 &&
                     env.model.dropdown_open() == -1,
                 "an open list row wins over content beneath and closes the list");
-    env.click(SettingsAct::capture_pick, -1, 0);
+    env.click(astralia::settings::Act::capture_pick, -1, 0);
     test::check(env.config.capture_monitor.empty(), "Auto clears region capture");
-    env.click(SettingsAct::dropdown_toggle, 1);
-    env.click(SettingsAct::dropdown_dismiss);
+    env.click(astralia::settings::Act::dropdown_toggle, 1);
+    env.click(astralia::settings::Act::dropdown_dismiss);
     test::check(env.model.dropdown_open() == -1, "dismiss closes the list");
-    env.click(SettingsAct::wallpaper_region, 1, 0);
-    env.click(SettingsAct::wallpaper_remove, 0, 0);
+    env.click(astralia::settings::Act::wallpaper_region, 1, 0);
+    env.click(astralia::settings::Act::wallpaper_remove, 0, 0);
     test::check(astralia::wallpaper_column_override(env.config, "HDMI-1", 0, false).empty(),
                 "remove clears the column");
-    env.click(SettingsAct::wallpaper_count, -1, 0);
-    env.click(SettingsAct::wallpaper_count, -1, 0);
+    env.click(astralia::settings::Act::wallpaper_count, -1, 0);
+    env.click(astralia::settings::Act::wallpaper_count, -1, 0);
     test::check(astralia::wallpaper_column_count(env.config, "HDMI-1", false) == 1,
                 "the stepper stops at one");
 
-    env.click(SettingsAct::field_focus, static_cast<int>(SettingsField::wallpaper_dir));
-    test::check(env.model.focused() == SettingsField::wallpaper_dir &&
+    env.click(astralia::settings::Act::field_focus,
+              static_cast<int>(astralia::settings::Field::wallpaper_dir));
+    test::check(env.model.focused() == astralia::settings::Field::wallpaper_dir &&
                     env.model.field().text == astralia::path_collapse_home(root.string()),
                 "focusing a field loads its text");
     for (int i = 0; i < 3; ++i) {
@@ -399,13 +414,14 @@ void check_wallpaper() {
     env.model.key(key(KeyKind::Text, "x"));
     test::check(env.model.field().text.back() == 'x', "typing edits the buffer");
     env.model.key(key(KeyKind::Escape));
-    test::check(env.model.focused() == SettingsField::none &&
+    test::check(env.model.focused() == astralia::settings::Field::none &&
                     env.config.wallpaper_dir == root.string(),
                 "escape cancels the edit");
-    env.click(SettingsAct::field_focus, static_cast<int>(SettingsField::wallpaper_dir));
+    env.click(astralia::settings::Act::field_focus,
+              static_cast<int>(astralia::settings::Field::wallpaper_dir));
     env.model.commit_text("/");
     env.model.key(key(KeyKind::Enter));
-    test::check(env.model.focused() == SettingsField::none &&
+    test::check(env.model.focused() == astralia::settings::Field::none &&
                     env.config.wallpaper_dir == root.string() + "/",
                 "enter commits the edit");
 
@@ -427,18 +443,18 @@ void check_lock_wallpaper() {
     std::ofstream(root / "a.jpg").put('x');
 
     constexpr int lock_flag = static_cast<int>(WallpaperSlot::lock);
-    SettingsCaps caps;
+    astralia::settings::Caps caps;
     caps.wallpaper_columns = true;
     caps.lock_wallpaper = true;
     Env env(caps);
     env.config.lock_wallpaper_dir = root.string();
     env.model.open();
-    env.click(SettingsAct::tab, static_cast<int>(SettingsTab::lock));
-    WallpaperPicker &picker = env.model.picker(WallpaperSlot::lock);
+    env.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::lock));
+    astralia::settings::WallpaperPicker &picker = env.model.picker(WallpaperSlot::lock);
     test::check(!picker.scanning && picker.dir.empty() && picker.files.empty(),
                 "Auto mode loads nothing for the lock screen");
 
-    env.click(SettingsAct::lock_wallpaper_mode, 1);
+    env.click(astralia::settings::Act::lock_wallpaper_mode, 1);
     test::check(env.config.lock_wallpaper_custom && picker.scanning && picker.region == "HDMI-1",
                 "Custom mode scans the lock directory");
     test::check(test::pump_until(reactor, [&] { return !picker.scanning; }),
@@ -450,32 +466,33 @@ void check_lock_wallpaper() {
                     env.model.picker(WallpaperSlot::still).files.empty(),
                 "the desktop picker is not touched");
 
-    env.click(SettingsAct::wallpaper_pick, 1, lock_flag);
+    env.click(astralia::settings::Act::wallpaper_pick, 1, lock_flag);
     test::check(
         wallpaper_column_override(env.config, "HDMI-1", 0, WallpaperSlot::lock) ==
                 picker.files[1] &&
             wallpaper_column_override(env.config, "HDMI-1", 0, WallpaperSlot::still).empty(),
         "picking sets only the lock column");
-    env.click(SettingsAct::wallpaper_count, 1, lock_flag);
+    env.click(astralia::settings::Act::wallpaper_count, 1, lock_flag);
     test::check(wallpaper_column_count(env.config, "HDMI-1", WallpaperSlot::lock) == 2 &&
                     wallpaper_column_count(env.config, "HDMI-1", WallpaperSlot::still) == 1,
                 "the stepper changes only the lock count");
-    env.click(SettingsAct::wallpaper_region, 0, 1 | (lock_flag << 8));
+    env.click(astralia::settings::Act::wallpaper_region, 0, 1 | (lock_flag << 8));
     test::check(picker.region == "DP-1" && picker.column == 1 &&
                     env.model.picker(WallpaperSlot::still).region == "HDMI-1" &&
                     env.model.picker(WallpaperSlot::still).column == 0,
                 "chips move only the lock selection");
-    env.click(SettingsAct::wallpaper_fill, 1, lock_flag);
+    env.click(astralia::settings::Act::wallpaper_fill, 1, lock_flag);
     test::check(wallpaper_fill_mode(env.config, "DP-1", 1, WallpaperSlot::lock) == "fit" &&
                     wallpaper_fill_mode(env.config, "DP-1", 1, WallpaperSlot::still) == "crop",
                 "fill mode applies to the lock slot only");
-    env.click(SettingsAct::wallpaper_region, 1, 0 | (lock_flag << 8));
-    env.click(SettingsAct::wallpaper_remove, 0, lock_flag);
+    env.click(astralia::settings::Act::wallpaper_region, 1, 0 | (lock_flag << 8));
+    env.click(astralia::settings::Act::wallpaper_remove, 0, lock_flag);
     test::check(wallpaper_column_override(env.config, "HDMI-1", 0, WallpaperSlot::lock).empty(),
                 "remove clears the lock column");
 
-    env.click(SettingsAct::field_focus, static_cast<int>(SettingsField::lock_wallpaper_dir));
-    test::check(env.model.focused() == SettingsField::lock_wallpaper_dir &&
+    env.click(astralia::settings::Act::field_focus,
+              static_cast<int>(astralia::settings::Field::lock_wallpaper_dir));
+    test::check(env.model.focused() == astralia::settings::Field::lock_wallpaper_dir &&
                     env.model.field().text == astralia::path_collapse_home(root.string()),
                 "the lock directory field loads its text");
     env.model.commit_text("/");
@@ -483,7 +500,7 @@ void check_lock_wallpaper() {
     test::check(env.config.lock_wallpaper_dir == root.string() + "/",
                 "enter commits the lock directory");
 
-    env.click(SettingsAct::lock_wallpaper_mode, 0);
+    env.click(astralia::settings::Act::lock_wallpaper_mode, 0);
     test::check(!env.config.lock_wallpaper_custom, "Auto mode switches back");
 
     env.model.close();
@@ -495,18 +512,18 @@ void check_lock_wallpaper() {
 void check_lock_view() {
     using Kind = test::Op::Kind;
     Instant instant;
-    SettingsCaps caps;
+    astralia::settings::Caps caps;
     caps.lock_wallpaper = true;
     caps.wallpaper_columns = true;
     Env env(caps);
     env.model.open();
-    env.click(SettingsAct::tab, static_cast<int>(SettingsTab::lock));
-    astralia::SettingsArt art{"someone", "up 3 hours", {}};
+    env.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::lock));
+    astralia::settings::Art art{"someone", "up 3 hours", {}};
 
     auto paint_texts = [&] {
         test::RecordingCanvas canvas;
         env.model.begin_frame();
-        astralia::paint_settings(canvas, env.model, art, 1920, 1200);
+        astralia::settings::paint(canvas, env.model, art, 1920, 1200);
         std::vector<std::string> texts;
         for (const test::Op &op : canvas.ops) {
             if (op.kind == Kind::text) {
@@ -522,7 +539,7 @@ void check_lock_view() {
     std::vector<std::string> automatic = paint_texts();
     test::check(has(automatic, "Auto") && has(automatic, "Custom") && !has(automatic, "Display"),
                 "Auto mode shows only the selector");
-    env.click(SettingsAct::lock_wallpaper_mode, 1);
+    env.click(astralia::settings::Act::lock_wallpaper_mode, 1);
     std::vector<std::string> custom = paint_texts();
     test::check(has(custom, "Display") && has(custom, "Dir") && has(custom, "Crop"),
                 "Custom mode shows the column controls");
@@ -531,18 +548,18 @@ void check_lock_view() {
 void check_view() {
     using Kind = test::Op::Kind;
     Instant instant;
-    SettingsCaps caps;
+    astralia::settings::Caps caps;
     Env env(caps);
     env.model.open();
     test::RecordingCanvas canvas;
-    astralia::SettingsArt art{"someone", "up 3 hours", {}};
-    astralia::SettingsFrame frame = astralia::paint_settings(canvas, env.model, art, 1920, 1200);
+    astralia::settings::Art art{"someone", "up 3 hours", {}};
+    astralia::settings::Frame frame = astralia::settings::paint(canvas, env.model, art, 1920, 1200);
     test::check(frame.panel.w == cfg::card_max_width && frame.panel.h == cfg::card_max_height,
                 "a large output caps the card");
     test::check(frame.panel.x == (1920 - cfg::card_max_width) / 2, "the card is centered");
 
     test::RecordingCanvas small;
-    astralia::SettingsFrame narrow = astralia::paint_settings(small, env.model, art, 600, 400);
+    astralia::settings::Frame narrow = astralia::settings::paint(small, env.model, art, 600, 400);
     test::check(narrow.panel.w == 520 && narrow.panel.h == 320, "a small output leaves a margin");
     bool name = false;
     for (const test::Op &op : canvas.ops) {
@@ -557,7 +574,7 @@ void check_view() {
 
     int closes = 0;
     env.model.on_close_requested = [&] { ++closes; };
-    astralia::paint_settings(canvas, env.model, art, 1920, 1200);
+    astralia::settings::paint(canvas, env.model, art, 1920, 1200);
     float close_x =
         frame.panel.x + frame.panel.w - cfg::card_padding - cfg::action_button_size / 2.0f;
     float close_y = frame.panel.y + cfg::card_padding + cfg::header_height / 2.0f;
@@ -569,12 +586,12 @@ void check_view() {
     bool found_tab = false;
     for (float y = frame.panel.y; y < frame.panel.y + frame.panel.h; y += 4.0f) {
         env.model.begin_frame();
-        astralia::paint_settings(canvas, env.model, art, 1920, 1200);
+        astralia::settings::paint(canvas, env.model, art, 1920, 1200);
         if (env.model.clickable(tile_x, y) && y > frame.panel.y + 150.0f) {
             env.model.click(tile_x, y);
-            found_tab = env.model.active_tab() == SettingsTab::bar ||
-                        env.model.active_tab() == SettingsTab::wallpaper ||
-                        env.model.active_tab() == SettingsTab::displays;
+            found_tab = env.model.active_tab() == astralia::settings::Tab::bar ||
+                        env.model.active_tab() == astralia::settings::Tab::wallpaper ||
+                        env.model.active_tab() == astralia::settings::Tab::displays;
             break;
         }
     }

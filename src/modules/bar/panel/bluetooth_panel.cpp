@@ -6,7 +6,7 @@
 #include "modules/bar/panel/bluetooth_panel.h"
 #include "modules/bar/panel/widgets.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 namespace {
 
@@ -85,7 +85,7 @@ void BluetoothPanel::paint_header(ui::Canvas &canvas, const ui::Box &area, Panel
     ui::Box toggle{area.x + area.w - cfg::toggle_width,
                    area.y + (area.h - cfg::toggle_height) / 2.0f, cfg::toggle_width,
                    cfg::toggle_height};
-    panel_widgets::toggle(canvas, toggle, bluetooth_.status().powered);
+    widgets::toggle(canvas, toggle, bluetooth_.status().powered);
     paint.region(toggle, power);
 }
 
@@ -105,7 +105,7 @@ void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll
         }
         if (row.kind == BluetoothRow::Kind::message) {
             if (!row.text.empty()) {
-                panel_widgets::centered_text(canvas, row.text, text_style, box, palette::text_dim);
+                widgets::centered_text(canvas, row.text, text_style, box, palette::text_dim);
             }
             continue;
         }
@@ -118,7 +118,7 @@ void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll
         std::string subtitle = d.connecting     ? "Connecting\xE2\x80\xA6"
                                : d.battery >= 0 ? std::to_string(d.battery) + "%"
                                                 : std::string();
-        panel_widgets::DeviceRow device_row;
+        widgets::DeviceRow device_row;
         device_row.glyph = icon::bluetooth_device;
         device_row.title = d.name;
         device_row.subtitle = subtitle;
@@ -134,7 +134,7 @@ void BluetoothPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll
         int index = static_cast<int>(
             std::ranges::find(bluetooth_.devices(), d.path, &BluetoothDevice::path) -
             bluetooth_.devices().begin());
-        panel_widgets::device_row(canvas, box, device_row, paint, device, forget, index);
+        widgets::device_row(canvas, box, device_row, paint, device, forget, index);
     }
 }
 
@@ -159,9 +159,8 @@ void BluetoothPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelP
         return;
     }
     bool disconnecting = dialog_action_ == device;
-    panel_widgets::confirm_dialog(canvas, box, target->name,
-                                  disconnecting ? "Disconnect?" : "Forget?",
-                                  disconnecting ? "Disconnect" : "Forget", paint, cancel, confirm);
+    widgets::confirm_dialog(canvas, box, target->name, disconnecting ? "Disconnect?" : "Forget?",
+                            disconnecting ? "Disconnect" : "Forget", paint, cancel, confirm);
 }
 
 bool BluetoothPanel::dismiss_dialog() {
@@ -224,4 +223,4 @@ bool BluetoothPanel::key(const input::KeyEvent &event) {
     return event.kind == input::KeyKind::Escape && dismiss_dialog();
 }
 
-} // namespace astralia
+} // namespace astralia::bar

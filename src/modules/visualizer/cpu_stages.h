@@ -5,9 +5,9 @@
 
 #include "config/visualizer_config.h"
 
-namespace astralia {
+namespace astralia::visualizer {
 
-class VisualizerCpuStages {
+class CpuStages {
   public:
     bool run(int size, const std::vector<float> &left, const std::vector<float> &right, int fps);
 
@@ -32,4 +32,4 @@ class VisualizerCpuStages {
     int size_ = 0;
 };
 
-} // namespace astralia
+} // namespace astralia::visualizer

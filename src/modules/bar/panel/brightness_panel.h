@@ -4,7 +4,7 @@
 
 #include "service/brightness_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 class BrightnessPanel final : public PanelContent {
   public:
@@ -40,4 +40,4 @@ class BrightnessPanel final : public PanelContent {
     bool hovered_ = false;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

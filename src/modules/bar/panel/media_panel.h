@@ -6,7 +6,7 @@
 
 #include "render/marquee.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 class MediaPanel final : public PanelContent {
   public:
@@ -31,4 +31,4 @@ class MediaPanel final : public PanelContent {
     MarqueeTextState artist_marquee_;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

@@ -9,7 +9,7 @@ static void test_marquee_fits() {
     marquee_scroll_update(anim, state, "short", 40.0f, 100.0f);
     assert(!state.marqueeing);
     assert(state.scroll_offset == 0.0f);
-    assert(!anim.hasActive());
+    assert(!anim.has_active());
 }
 
 static void test_marquee_overflow_cycles() {
@@ -19,7 +19,7 @@ static void test_marquee_overflow_cycles() {
 
     marquee_scroll_update(anim, state, "a very long scrolling label", 300.0f, 100.0f);
     assert(state.marqueeing);
-    assert(anim.hasActive());
+    assert(anim.has_active());
     assert(state.scroll_offset == 0.0f);
 
     marquee_scroll_update(anim, state, "a very long scrolling label", 300.0f, 100.0f);
@@ -67,7 +67,7 @@ static void test_marquee_shrink_to_fit_stops() {
     marquee_scroll_update(anim, state, "long enough to overflow the box", 90.0f, 100.0f);
     assert(!state.marqueeing);
     assert(state.scroll_offset == 0.0f);
-    assert(!anim.hasActive());
+    assert(!anim.has_active());
 }
 
 void test_marquee_scroll() {

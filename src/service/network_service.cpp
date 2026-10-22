@@ -224,7 +224,7 @@ bool network_parse_wifi_device(const std::string &text) {
     return network_parse_device_status(text).wifi;
 }
 
-std::string network_connectivity_name(uint32_t value) {
+std::string connectivity_name(uint32_t value) {
     switch (value) {
     case 1:
         return "none";
@@ -257,7 +257,7 @@ int network_visible_count(const NetworkMap &networks) {
     }));
 }
 
-bool network_scan_would_collapse(const NetworkMap &current, const NetworkMap &parsed) {
+bool network_scan_collapses(const NetworkMap &current, const NetworkMap &parsed) {
     int in_range = 0;
     bool self_only = true;
     for (const auto &[ssid, info] : parsed) {
@@ -270,7 +270,7 @@ bool network_scan_would_collapse(const NetworkMap &current, const NetworkMap &pa
     return in_range == 1 && self_only && network_visible_count(current) > 1;
 }
 
-NetworkService::NetworkService(SystemBus &bus, Reactor &loop)
+NetworkService::NetworkService(Bus &bus, Reactor &loop)
     : bus_(bus), loop_(loop), manager_(bus_.proxy(nm_service, nm_path)), device_proc_(loop),
       profile_proc_(loop), quick_scan_proc_(loop), scan_proc_(loop), connect_proc_(loop),
       disconnect_proc_(loop), forget_proc_(loop), connectivity_proc_(loop) {
@@ -291,17 +291,16 @@ NetworkService::NetworkService(SystemBus &bus, Reactor &loop)
         });
     connectivity_timer_ = loop_.add_timer(
         [this] {
-            if (!next_connectivity_check_) {
+            if (!next_check_) {
                 return rescan_never;
             }
             auto left = std::chrono::ceil<std::chrono::milliseconds>(
-                *next_connectivity_check_ - std::chrono::steady_clock::now());
+                *next_check_ - std::chrono::steady_clock::now());
             return std::max(left, std::chrono::milliseconds(1));
         },
         [this] {
-            if (next_connectivity_check_ &&
-                std::chrono::steady_clock::now() >= *next_connectivity_check_) {
-                next_connectivity_check_ = std::chrono::steady_clock::now() + connectivity_interval;
+            if (next_check_ && std::chrono::steady_clock::now() >= *next_check_) {
+                next_check_ = std::chrono::steady_clock::now() + connectivity_interval;
                 if (status_.kind != NetworkKind::none) {
                     check_connectivity();
                 }
@@ -359,8 +358,8 @@ void NetworkService::refresh() {
             NetworkStatus next;
             std::string type =
                 dbus_value<std::string>(properties, "PrimaryConnectionType").value_or("");
-            set_connectivity(network_connectivity_name(
-                dbus_value<uint32_t>(properties, "Connectivity").value_or(0)));
+            set_connectivity(
+                connectivity_name(dbus_value<uint32_t>(properties, "Connectivity").value_or(0)));
             next.portal = connectivity_ == "portal";
             if (type == "802-3-ethernet") {
                 next.kind = NetworkKind::ethernet;
@@ -466,7 +465,7 @@ void NetworkService::start_watch() {
         device_ = network_parse_device_status(output);
         changed.emit();
     });
-    next_connectivity_check_ = std::chrono::steady_clock::now() + connectivity_interval;
+    next_check_ = std::chrono::steady_clock::now() + connectivity_interval;
     loop_.reschedule(connectivity_timer_);
     scan();
 }
@@ -474,7 +473,7 @@ void NetworkService::start_watch() {
 void NetworkService::stop_watch() {
     watching_ = false;
     next_rescan_.reset();
-    next_connectivity_check_.reset();
+    next_check_.reset();
 }
 
 void NetworkService::scan() {
@@ -526,7 +525,7 @@ void NetworkService::on_quick_scan(const std::string &output) {
 
 void NetworkService::on_scan(const std::string &output) {
     NetworkMap parsed = network_parse_networks(output, profiles_);
-    if (!network_scan_would_collapse(networks_, parsed)) {
+    if (!network_scan_collapses(networks_, parsed)) {
         networks_ = std::move(parsed);
     }
     bool has_real =

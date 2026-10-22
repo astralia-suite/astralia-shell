@@ -172,7 +172,7 @@ bool fill_drm_frame(MediaDrmFrame &out, const AVFrame *drm_frame) {
 }
 
 void decode_loop(std::string path, std::string filter_desc, int fps, bool supports_row_length,
-                 MediaDecodeFrameCallback on_frame, MediaDecodeDrmFrameCallback on_drm_frame,
+                 MediaFrameCallback on_frame, MediaDrmCallback on_drm_frame,
                  std::shared_ptr<std::atomic<bool>> stop_flag,
                  std::shared_ptr<std::atomic<bool>> pause_flag,
                  std::shared_ptr<std::atomic<MediaDecodeStatus>> status,
@@ -363,7 +363,7 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
     double anchor_pts_seconds = 0.0;
     clock::time_point anchor_time;
     bool have_shown_frame = false;
-    double last_shown_pts_seconds = 0.0;
+    double last_shown_pts = 0.0;
 
     auto reset_pacing = [&] {
         have_anchor = false;
@@ -381,10 +381,10 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
             double pts_seconds =
                 raw_pts != AV_NOPTS_VALUE
                     ? static_cast<double>(raw_pts) * pts_time_base
-                    : (have_shown_frame ? last_shown_pts_seconds + frame_interval_seconds : 0.0);
+                    : (have_shown_frame ? last_shown_pts + frame_interval_seconds : 0.0);
 
-            bool due = !have_shown_frame ||
-                       pts_seconds - last_shown_pts_seconds >= frame_interval_seconds - 1e-6;
+            bool due =
+                !have_shown_frame || pts_seconds - last_shown_pts >= frame_interval_seconds - 1e-6;
             if (!due) {
                 av_frame_unref(decoded.frame);
                 if (stop_flag->load())
@@ -441,7 +441,7 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
                 av_frame_unref(downloaded.frame);
             }
             av_frame_unref(decoded.frame);
-            last_shown_pts_seconds = pts_seconds;
+            last_shown_pts = pts_seconds;
             have_shown_frame = true;
 
             if (stop_flag->load())
@@ -591,10 +591,11 @@ std::vector<MediaFrame> decode_frames(std::string path, std::string filter_desc,
 
 } // namespace
 
-extern "C" MediaDecodePlayback
-astralia_shell_media_plugin_stream(const std::string &path, const std::string &filter_desc, int fps,
-                                   bool supports_row_length, MediaDecodeFrameCallback on_frame,
-                                   MediaDecodeDrmFrameCallback on_drm_frame) {
+extern "C" MediaDecodePlayback astralia_shell_media_plugin_stream(const std::string &path,
+                                                                  const std::string &filter_desc,
+                                                                  int fps, bool supports_row_length,
+                                                                  MediaFrameCallback on_frame,
+                                                                  MediaDrmCallback on_drm_frame) {
     MediaDecodePlayback playback;
     playback.stop_flag = std::make_shared<std::atomic<bool>>(false);
     playback.pause_flag = std::make_shared<std::atomic<bool>>(false);

@@ -25,7 +25,9 @@
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-struct LauncherState {
+namespace astralia::launcher {
+
+struct State {
     wl_surface *surface = nullptr;
     zwlr_layer_surface_v1 *layer_surface = nullptr;
     wl_egl_window *egl_window = nullptr;
@@ -45,44 +47,44 @@ struct LauncherState {
     float entrance_seed = 0.0f;
     bool entrance_active = false;
     ThunderBurst thunder;
-    std::unique_ptr<astralia::LauncherModel> model;
-    astralia::LauncherFrame frame;
+    std::unique_ptr<Model> model;
+    Frame frame;
     std::function<void(bool)> sync_text_input_focus;
     wl_compositor *compositor = nullptr;
     int32_t width = 0, height = 0;
     wl_output *bound_output = nullptr;
 };
 
-bool launcher_create_surface(LauncherState &state, wl_compositor *compositor,
-                             zwlr_layer_shell_v1 *layer_shell, wl_output *output = nullptr);
+bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+                    wl_output *output = nullptr);
 
-bool launcher_init_egl(LauncherState &state, Renderer &renderer, EGLDisplay display,
-                       EGLConfig config, EGLContext context);
+bool init_egl(State &state, Renderer &renderer, EGLDisplay display, EGLConfig config,
+              EGLContext context);
 
-void launcher_destroy_surface(LauncherState &state);
+void destroy_surface(State &state);
 
-void launcher_retarget(LauncherState &state, wl_compositor *compositor,
-                       zwlr_layer_shell_v1 *layer_shell, wl_display *display, Renderer &renderer,
-                       EGLDisplay egl_display, EGLConfig egl_config, EGLContext egl_context,
-                       wl_output *target_output, const char *target_name);
+void retarget(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
+              wl_display *display, Renderer &renderer, EGLDisplay egl_display, EGLConfig egl_config,
+              EGLContext egl_context, wl_output *target_output, const char *target_name);
 
-void launcher_request_frame(LauncherState &state);
+void request_frame(State &state);
 
-void launcher_toggle(LauncherState &state, bool global);
+void toggle(State &state, bool global);
 
-void launcher_handle_key_event(LauncherState &state, const KeyEvent &event);
+void handle_key_event(State &state, const KeyEvent &event);
 
-void launcher_handle_click(LauncherState &state, double px, double py);
+void handle_click(State &state, double px, double py);
 
-void launcher_handle_pointer_move(LauncherState &state, wl_surface *focused_surface, double px,
-                                  double py);
+void handle_pointer_move(State &state, wl_surface *focused_surface, double px, double py);
 
-void launcher_handle_pointer_release(LauncherState &state);
+void handle_pointer_release(State &state);
 
-void launcher_paint(LauncherState &state);
+void render(State &state);
 
-TextInputState launcher_text_input_state(const LauncherState &state);
+TextInputState text_input_state(const State &state);
 
-void launcher_text_input_apply_edit(LauncherState &state, const TextInputEdit &edit);
+void text_input_apply_edit(State &state, const TextInputEdit &edit);
 
-std::unique_ptr<Module> make_launcher_module();
+std::unique_ptr<Module> make_module();
+
+} // namespace astralia::launcher

@@ -15,7 +15,7 @@
 
 #include "modules/settings/model.h"
 
-namespace astralia::settings_view {
+namespace astralia::settings {
 
 namespace cfg = settings_config;
 
@@ -32,7 +32,7 @@ struct DropEntry {
 
 struct Pane {
     ui::Canvas &canvas;
-    SettingsModel &model;
+    Model &model;
     float alpha;
     ui::Box caret{};
     std::function<void()> overlay;
@@ -67,11 +67,11 @@ struct Pane {
         ui::TextSize size = canvas.measure(value, style);
         canvas.text(value, style, x, box.y + (box.h - size.h) / 2.0f, fade(c));
     }
-    void region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
+    void region(const ui::Box &box, Act act, int a = 0, int b = 0) {
         model.add_region(box, act, a, b);
     }
     void dropdown(const ui::Box &row, int id, std::string_view label, const std::string &current,
-                  std::vector<DropEntry> entries, size_t selected, SettingsAct pick) {
+                  std::vector<DropEntry> entries, size_t selected, Act pick) {
         chip(row, palette::surface);
         left(label, text_style, row.x + cfg::tile_margin, row,
              with_alpha(palette::text, cfg::label_opacity));
@@ -85,7 +85,7 @@ struct Pane {
         ui::TextSize arrow = canvas.measure(glyph, icon_style);
         canvas.text(glyph, icon_style, box.x + box.w - cfg::dropdown_pad - arrow.w,
                     box.y + (box.h - arrow.h) / 2.0f, fade(palette::text));
-        region(box, SettingsAct::dropdown_toggle, id);
+        region(box, Act::dropdown_toggle, id);
         if (!open) {
             return;
         }
@@ -94,7 +94,7 @@ struct Pane {
             ui::Box list{box.x, box.y + box.h + cfg::dropdown_gap, box.w,
                          row_h * static_cast<float>(entries.size())};
             chip(list, palette::paper);
-            model.add_region_front({0.0f, 0.0f, 1.0e5f, 1.0e5f}, SettingsAct::dropdown_dismiss);
+            model.add_region_front({0.0f, 0.0f, 1.0e5f, 1.0e5f}, Act::dropdown_dismiss);
             for (size_t i = 0; i < entries.size(); ++i) {
                 ui::Box item{list.x, list.y + row_h * static_cast<float>(i), list.w, row_h};
                 if (i == selected) {
@@ -107,4 +107,4 @@ struct Pane {
     }
 };
 
-} // namespace astralia::settings_view
+} // namespace astralia::settings

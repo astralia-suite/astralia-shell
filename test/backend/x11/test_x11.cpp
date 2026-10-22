@@ -146,15 +146,16 @@ void check_cover_cache() {
 void check_bar_styles() {
     using namespace astralia;
     test::apply_base_theme();
-    const BarStyleSpec &okinami = bar_style_spec(BarStyle::okinami, false);
-    BarFrame frame = bar_frame(okinami, 100.0f, IslandSpan{150.0f, 250.0f}, 300.0f, 400.0f);
+    const astralia::bar::StyleSpec &okinami = astralia::bar::style_spec(BarStyle::okinami, false);
+    astralia::bar::Frame frame = astralia::bar::bar_frame(
+        okinami, 100.0f, astralia::bar::IslandSpan{150.0f, 250.0f}, 300.0f, 400.0f);
 
     cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 400, 40);
     cairo_t *cr = cairo_create(surface);
     CairoCanvas canvas;
     canvas.bind(cr);
-    bar_frame_base(canvas, okinami, frame, 400, 40);
-    bar_frame_overlay(canvas, okinami, frame, 400, 40, 0.0f, false, false);
+    astralia::bar::frame_base(canvas, okinami, frame, 400, 40);
+    astralia::bar::frame_overlay(canvas, okinami, frame, 400, 40, 0.0f, false, false);
     cairo_surface_flush(surface);
     const unsigned char *data = cairo_image_surface_get_data(surface);
     int stride = cairo_image_surface_get_stride(surface);

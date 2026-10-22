@@ -7,7 +7,7 @@
 #include "render/icons.h"
 #include "render/tokens.h"
 
-namespace astralia {
+namespace astralia::wallpaper {
 
 namespace {
 
@@ -83,4 +83,4 @@ bool DesktopMenuModel::hover(float local_x, float local_y) {
 
 void DesktopMenuModel::clear_hover() { hovered_ = -1; }
 
-} // namespace astralia
+} // namespace astralia::wallpaper

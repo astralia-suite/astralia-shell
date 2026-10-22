@@ -1,31 +1,34 @@
 #pragma once
 
-struct LockRect {
+namespace astralia::lock {
+
+struct Rect {
     float x = 0.0f;
     float y = 0.0f;
     float w = 0.0f;
     float h = 0.0f;
 };
 
-float lock_icon_box_size();
+float icon_box_size();
 
-float lock_card_width(float output_h);
-float lock_card_height(float output_h);
-float lock_center_scale(float output_h);
+float card_width(float output_h);
+float card_height(float output_h);
+float center_scale(float output_h);
 
-void lock_columns(float card_w, float card_h, float center_w, LockRect &left, LockRect &center,
-                  LockRect &right);
+void columns(float card_w, float card_h, float center_w, Rect &left, Rect &center, Rect &right);
 
-float lock_side_card_height(float column_h);
+float side_card_height(float column_h);
 
-float lock_content_height(float clock_h, float date_h, float message_h);
+float content_height(float clock_h, float date_h, float message_h);
 
-int lock_fetch_colour_count(float available_w, int max_count);
+int fetch_colour_count(float available_w, int max_count);
 
-float lock_dot_row_width(int count);
-float lock_dot_x(int index, int count, float field_width);
+float dot_row_width(int count);
+float dot_x(int index, int count, float field_width);
 
-bool lock_dev_unlock_hit(double x, double y, double output_h);
+bool dev_unlock_hit(double x, double y, double output_h);
 
-void lock_panel_origin(float output_w, float output_h, float panel_w, float panel_h, float &out_x,
-                       float &out_y);
+void panel_origin(float output_w, float output_h, float panel_w, float panel_h, float &out_x,
+                  float &out_y);
+
+} // namespace astralia::lock

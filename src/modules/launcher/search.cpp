@@ -3,11 +3,11 @@
 #include <cctype>
 #include <string_view>
 
-#include "modules/launcher/apps_provider.h"
+#include "modules/launcher/apps.h"
 #include "modules/launcher/search.h"
-#include "modules/launcher/visit_store.h"
+#include "modules/launcher/visits.h"
 
-namespace astralia {
+namespace astralia::launcher {
 
 namespace {
 
@@ -106,4 +106,4 @@ std::vector<DrunResult> combined_drun_results(const std::vector<ScoredApp> &apps
     return out;
 }
 
-} // namespace astralia
+} // namespace astralia::launcher

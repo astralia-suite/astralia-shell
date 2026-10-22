@@ -7,7 +7,7 @@
 
 #include "service/bluetooth_service.h"
 
-namespace astralia {
+namespace astralia::bar {
 
 struct BluetoothRow {
     enum class Kind { message, section, device } kind;
@@ -44,4 +44,4 @@ class BluetoothPanel final : public PanelContent {
     int dialog_action_ = 0;
 };
 
-} // namespace astralia
+} // namespace astralia::bar

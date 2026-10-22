@@ -132,7 +132,7 @@
 
 ## `src/modules/bar/`
 
-- `style.{h,cpp}`: `BarStyleSpec` for the three styles, the `islands` fallback, island and fillet geometry, autohide geometry.
+- `style.{h,cpp}`: `bar::StyleSpec` for the three styles, the `islands` fallback, island and fillet geometry, autohide geometry.
 - `model.{h,cpp}`: Items, workspace pills, dock row, hover, pinning, linger, volume peek, layout and hit tests.
 - `view.{h,cpp}`: Paints items, workspaces, dock icons and dividers over the canvas.
 - `frame.{h,cpp}`: The bar background over the canvas for both backends: pill or rail and islands, then fillets and hug corners.
@@ -145,10 +145,10 @@
 
 ## `src/modules/lock/`
 
-- `model.{h,cpp}`: Password field, authentication generation, failure timeout, hit boxes and the per-output `LockMotion`.
+- `model.{h,cpp}`: Password field, authentication generation, failure timeout, hit boxes and the per-output `lock::Motion`.
 - `view.{h,cpp}`: Paints the battery, system, media, clock, avatar, password, resources and notification cards over the canvas.
 - `layout.{h,cpp}`: Card, column and password dot geometry and the development unlock corner shared by both hosts.
-- `pam_authenticator.{h,cpp}`: Blocking PAM check for a user and password against a service directory.
+- `pam.{h,cpp}`: Blocking PAM check for a user and password against a service directory.
 - `slash.{h,cpp}`: Display-free `SlashPlan` that samples the thunder-slash transition at a progress: shard polygons, straight cutmarks, logout-style strike parameters, impact flash, rays and shock, plus the run timeline.
 - `transition_view.{h,cpp}`: Paints the transition over the canvas in `lock` mode (the lock wallpaper, then the desktop shards cut out) or `unlock` mode (the held lock picture cut into snapshot shards over a transparent overlay), with bolts, rays and flash.
 - `wayland/`: `ext-session-lock` host that paints the shared view per output with its typing motion, and the transition host that plays the slash transition on transparent overlay surfaces: before the lock, and again after a correct password. Unlocking first paints and snapshots the lock picture on the overlays, then releases the session lock, then plays the slash, so the desktop never flashes; with animations disabled it unlocks at once. The strikes use the `thunder_burst` and `thunder_shock` shaders. X11 stays instant for both.
@@ -157,11 +157,11 @@
 ## `src/modules/idle/`, `rain/`, `bamboo/`, `visualizer/`
 
 - `idle/bounce.{h,cpp}`: Bouncing screensaver logo step shared by both hosts.
-- `idle/idle_clock.{h,cpp}`: Per-output activity clock, ambient and screensaver verdicts and the policy-change test.
+- `idle/clock.{h,cpp}`: Per-output activity clock, ambient and screensaver verdicts and the policy-change test.
 - `idle/x11/idle.{h,cpp}`: Polls `MIT-SCREEN-SAVER` idle time and shows a click-through overlay per output.
-- `rain/matrix_rain.{h,cpp}`, `rain/stiletto_rain.{h,cpp}`: CPU rain simulations into an ARGB buffer; `rain_random` seeds them and `rain_frame.h` views the buffer.
-- `bamboo/bamboo_grow.{h,cpp}`: ASCII bamboo with `│` culms on a character grid, drawn as monospace glyphs into an ARGB buffer: bare culms, then branches and alternating leaves, hold, fade, regrow.
-- `bamboo/bamboo_random.{h,cpp}`, `bamboo/bamboo_frame.h`: The seedable random source and the view of the bamboo buffer.
+- `rain/matrix.{h,cpp}`, `rain/stiletto.{h,cpp}`: CPU rain simulations into an ARGB buffer; `rain/random` seeds them and `rain/frame.h` views the buffer.
+- `bamboo/grow.{h,cpp}`: ASCII bamboo with `│` culms on a character grid, drawn as monospace glyphs into an ARGB buffer: bare culms, then branches and alternating leaves, hold, fade, regrow.
+- `bamboo/random.{h,cpp}`, `bamboo/frame.h`: The seedable random source and the view of the bamboo buffer.
 - `bamboo/wayland/`, `bamboo/x11/`: Managed bamboo window that uploads or blits the buffer on a timer.
 - `visualizer/audio_capture.{h,cpp}`: PipeWire capture of the sink into overlapping left and right fragments.
 - `visualizer/fft.{h,cpp}`: The windowed radix-2 FFT that turns a fragment into spectrum bins.
@@ -175,12 +175,12 @@
 - `view.{h,cpp}`: Paints the search field, caret and selection, mode bullets, result rows and highlight, with an optional entrance frame that fades the card in; maps pointer positions to field columns.
 - `entrance.{h,cpp}`: Pure lightning entrance: outline trace, sky bolt strike with flash, card snap-in, one rectangular burst and a backdrop dim.
 - `search.{h,cpp}`: Mode detection, query parsing and URL building.
-- `apps_provider.{h,cpp}`: Scores installed apps against a query.
-- `files_provider.{h,cpp}`: Walks and scores files below a search root.
+- `apps.{h,cpp}`: Scores installed apps against a query.
+- `files.{h,cpp}`: Walks and scores files below a search root.
 - `desktop_entry.{h,cpp}`: Parses desktop entries and scans application directories.
-- `launch_action.{h,cpp}`: Builds and runs launch commands.
+- `launch.{h,cpp}`: Builds and runs launch commands.
 - `submenu.{h,cpp}`: Desktop actions of an app as a submenu.
-- `visit_store.{h,cpp}`: Remembers visited results to rank them.
+- `visits.{h,cpp}`: Remembers visited results to rank them.
 
 ## `src/modules/overview/`
 

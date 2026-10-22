@@ -6,7 +6,7 @@
 
 #include "modules/rain/x11/rain.h"
 
-namespace astralia {
+namespace astralia::rain {
 
 namespace {
 
@@ -20,10 +20,10 @@ Rain::Rain(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false),
       keyboard_(x.conn()), params_(services.settings.config().rain) {
-    window_.make_managed(kRainDefaultWindowWidth, kRainDefaultWindowHeight);
+    window_.make_managed(rain_config::kDefaultWindowWidth, rain_config::kDefaultWindowHeight);
     timer_ = loop.add_timer(
         [this] {
-            return open_ ? std::chrono::milliseconds(static_cast<int>(kRainFallIntervalMs))
+            return open_ ? std::chrono::milliseconds(static_cast<int>(rain_config::kFallIntervalMs))
                          : idle_interval;
         },
         [this] { step(); });
@@ -43,9 +43,11 @@ void Rain::toggle() {
 
 void Rain::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
-    int16_t x = static_cast<int16_t>(target.x + (target.width - kRainDefaultWindowWidth) / 2);
-    int16_t y = static_cast<int16_t>(target.y + (target.height - kRainDefaultWindowHeight) / 2);
-    window_.place({x, y, kRainDefaultWindowWidth, kRainDefaultWindowHeight});
+    int16_t x =
+        static_cast<int16_t>(target.x + (target.width - rain_config::kDefaultWindowWidth) / 2);
+    int16_t y =
+        static_cast<int16_t>(target.y + (target.height - rain_config::kDefaultWindowHeight) / 2);
+    window_.place({x, y, rain_config::kDefaultWindowWidth, rain_config::kDefaultWindowHeight});
     keyboard_.reload();
     params_ = services_.settings.config().rain;
     open_ = true;
@@ -101,7 +103,7 @@ void Rain::step() {
     paint();
 }
 
-RainFrame Rain::frame() const {
+Frame Rain::frame() const {
     return params_.mode == RainMode::Matrix ? matrix_.frame() : stiletto_.frame();
 }
 
@@ -146,7 +148,7 @@ void Rain::paint() {
     canvas_.rect({0.0f, 0.0f, static_cast<float>(window_.geometry().width),
                   static_cast<float>(window_.geometry().height)},
                  palette::window_backdrop);
-    RainFrame current = frame();
+    Frame current = frame();
     if (current.ready()) {
         cairo_surface_t *surface = cairo_image_surface_create_for_data(
             const_cast<uint8_t *>(current.pixels), CAIRO_FORMAT_ARGB32, current.width,
@@ -158,4 +160,4 @@ void Rain::paint() {
     window_.present();
 }
 
-} // namespace astralia
+} // namespace astralia::rain

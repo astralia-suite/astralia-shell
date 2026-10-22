@@ -5,7 +5,9 @@
 
 #include "wayland/config/visualizer_gl_config.h"
 
-class VisualizerAudioStages {
+namespace astralia::visualizer {
+
+class AudioStages {
   public:
     bool init();
     void destroy();
@@ -49,6 +51,8 @@ class VisualizerAudioStages {
     int out_idx_ = 0;
     int out_idx_l_ = 0;
     int size_ = 0;
-    int fps_ = kVisualizerFps;
+    int fps_ = visualizer_config::kFps;
     bool ready_ = false;
 };
+
+} // namespace astralia::visualizer
