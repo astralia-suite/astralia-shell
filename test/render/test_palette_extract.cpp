@@ -1,10 +1,10 @@
 #include <cmath>
 #include <vector>
 
-#include "check.h"
-
 #include "render/oklab.h"
 #include "render/palette_extract.h"
+
+#include "check.h"
 
 namespace {
 

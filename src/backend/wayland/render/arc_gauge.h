@@ -1,6 +1,7 @@
 #pragma once
 
 #include "render/tokens.h"
+
 #include "wayland/render/texture.h"
 #include "wayland/render/texture_cache.h"
 

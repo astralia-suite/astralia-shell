@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "config/panel_config.h"
+
 #include "render/icons.h"
 #include "render/sticker.h"
 

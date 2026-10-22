@@ -8,14 +8,13 @@
 #include <wayland-egl.h>
 
 #include "wayland/app/per_monitor_module.h"
+#include "wayland/render/gl_canvas.h"
+#include "wayland/render/renderer.h"
 
 #include "modules/notification/model.h"
-
 #include "modules/notification/wayland/notification_style_config.h"
 
 #include "render/geometry.h"
-#include "wayland/render/gl_canvas.h"
-#include "wayland/render/renderer.h"
 
 #include "service/notification_service.h"
 #include "service/wayland/frame_service.h"

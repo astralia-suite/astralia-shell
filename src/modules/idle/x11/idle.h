@@ -7,6 +7,7 @@
 #include <xcb/xcb.h>
 
 #include "app/services.h"
+
 #include "core/event_loop.h"
 #include "core/x_connection.h"
 

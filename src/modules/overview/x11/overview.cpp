@@ -97,7 +97,7 @@ void Overview::handle(const xcb_generic_event_t &event) {
         const auto &pressed = reinterpret_cast<const xcb_button_press_event_t &>(event);
         if (open && pressed.detail == XCB_BUTTON_INDEX_1) {
             expect_focus_loss();
-            model_.press(pressed.event_x, pressed.event_y);
+            model_.press(pressed.event_x, pressed.event_y, keyboard_.modifiers(pressed.state));
             paint();
         }
         break;

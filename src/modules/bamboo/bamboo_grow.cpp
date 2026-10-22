@@ -89,7 +89,6 @@ void BambooGrow::start_cycle() {
         size_t shoot = static_cast<size_t>(order[static_cast<size_t>(i)]);
         Tip tip;
         tip.x = xs[shoot];
-        tip.root_x = tip.x;
         tip.y = ground - heights[shoot];
         tip.side = bamboo_random01() < 0.5f ? 1 : -1;
         tip.target = std::max(1, static_cast<int>(bamboo_random_range(kBambooCulmMinHeightRatio,
@@ -147,13 +146,6 @@ void BambooGrow::grow_tips() {
 }
 
 void BambooGrow::advance_culm(Tip &tip, std::vector<Tip> &spawned) {
-    float roll = bamboo_random01();
-    int dx = roll < kBambooLeanChance ? -1 : (roll < 2.0f * kBambooLeanChance ? 1 : 0);
-    int nx =
-        std::clamp(tip.x + dx, tip.root_x - kBambooMaxLeanCols, tip.root_x + kBambooMaxLeanCols);
-    nx = std::clamp(nx, 0, std::max(0, cols_ - 2));
-    dx = nx - tip.x;
-    tip.x = nx;
     tip.y -= 1;
     ++tip.length;
     ++tip.since_node;
@@ -173,9 +165,8 @@ void BambooGrow::advance_culm(Tip &tip, std::vector<Tip> &spawned) {
             tip.seeds.push_back({tip.x, tip.y});
         }
     } else {
-        char32_t glyph = dx < 0 ? U'\\' : (dx > 0 ? U'/' : kBambooCulmGlyph);
-        put(tip.x, tip.y, glyph, Ink::Culm);
-        put(tip.x + 1, tip.y, glyph, Ink::Culm);
+        put(tip.x, tip.y, kBambooCulmGlyph, Ink::Culm);
+        put(tip.x + 1, tip.y, kBambooCulmGlyph, Ink::Culm);
     }
 
     if (tip.length >= tip.target) {

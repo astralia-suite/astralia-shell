@@ -94,6 +94,8 @@ astralia::input::KeyEvent to_neutral(const KeyEvent &event);
 
 astralia::input::PointerEvent to_neutral(const PointerClick &click);
 
+astralia::input::Modifiers keyboard_modifiers(const KeyboardState &state);
+
 astralia::input::ScrollEvent to_neutral(const PointerScroll &scroll);
 
 std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode,

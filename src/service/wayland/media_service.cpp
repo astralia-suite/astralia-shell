@@ -15,9 +15,7 @@
 #include <vector>
 
 #include "wayland/core/log.h"
-
 #include "wayland/plugin/media_plugin.h"
-
 #include "wayland/render/image.h"
 
 #include "service/wayland/media_service.h"

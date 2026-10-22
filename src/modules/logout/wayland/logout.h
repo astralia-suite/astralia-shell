@@ -8,16 +8,15 @@
 
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
-
-#include "modules/logout/model.h"
-
-#include "modules/logout/wayland/logout_style_config.h"
-
-#include "render/geometry.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/renderer.h"
 #include "wayland/render/thunder.h"
+
+#include "modules/logout/model.h"
+#include "modules/logout/wayland/logout_style_config.h"
+
+#include "render/geometry.h"
 
 #include "service/wayland/input_service.h"
 

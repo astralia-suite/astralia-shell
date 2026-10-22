@@ -1,8 +1,8 @@
 #include <string>
 
-#include "check.h"
-
 #include "render/text_field.h"
+
+#include "check.h"
 
 void check_text_cursor() {
     using namespace astralia;

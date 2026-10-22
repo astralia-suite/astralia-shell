@@ -43,6 +43,7 @@ void check_config_parse();
 void check_monitor_overrides();
 void check_settings_service();
 void check_wallpaper_resolve();
+void check_wallpaper_lock_slot();
 void check_wallpaper_images();
 void check_wallpaper_listing();
 void check_wallpaper_select();
@@ -130,6 +131,7 @@ int main() {
     check_monitor_overrides();
     check_settings_service();
     check_wallpaper_resolve();
+    check_wallpaper_lock_slot();
     check_wallpaper_images();
     check_wallpaper_listing();
     check_wallpaper_select();

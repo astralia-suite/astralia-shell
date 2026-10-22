@@ -3,14 +3,13 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/layer_surface.h"
 
 #include "modules/idle/wayland/idle.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
-#include "wayland/render/layer_surface.h"
 
 #include "service/wayland/idle_service.h"
 

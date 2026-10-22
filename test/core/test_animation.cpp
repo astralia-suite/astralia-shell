@@ -1,9 +1,9 @@
 #include <chrono>
 #include <cmath>
 
-#include "check.h"
-
 #include "core/animation.h"
+
+#include "check.h"
 
 namespace {
 

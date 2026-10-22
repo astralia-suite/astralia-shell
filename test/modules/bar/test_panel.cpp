@@ -1,9 +1,6 @@
 #include <array>
 #include <chrono>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "core/animation.h"
 #include "core/poll_reactor.h"
 
@@ -13,6 +10,9 @@
 #include "modules/bar/panel/panel.h"
 #include "modules/bar/panel/panel_set.h"
 #include "modules/bar/panel/tray_panel.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

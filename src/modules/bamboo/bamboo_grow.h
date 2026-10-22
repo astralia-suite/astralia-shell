@@ -47,7 +47,6 @@ class BambooGrow {
     struct Tip {
         int x = 0;
         int y = 0;
-        int root_x = 0;
         int side = 1;
         int length = 0;
         int target = 1;

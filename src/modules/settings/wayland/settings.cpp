@@ -5,17 +5,15 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/user_info.h"
 #include "wayland/app/wayland_state.h"
-
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/renderer.h"
 
 #include "modules/settings/wayland/settings.h"
 
 #include "render/tokens.h"
 
 #include "config/settings_config.h"
-
-#include "wayland/render/gl.h"
-#include "wayland/render/renderer.h"
 
 namespace {
 

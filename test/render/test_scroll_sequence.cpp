@@ -1,10 +1,10 @@
 #include <chrono>
 
-#include "check.h"
-
 #include "core/animation.h"
 
 #include "render/scroll_sequence.h"
+
+#include "check.h"
 
 namespace {
 

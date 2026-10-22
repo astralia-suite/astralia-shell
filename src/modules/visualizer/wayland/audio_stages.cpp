@@ -5,13 +5,11 @@
 #include <cstdio>
 #include <cstring>
 
-#include "wayland/config/visualizer_config.h"
-
+#include "wayland/config/visualizer_gl_config.h"
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "modules/visualizer/wayland/audio_stages.h"
-
-#include "wayland/render/gl.h"
 
 #ifndef GL_R16
 #define GL_R16 0x822A

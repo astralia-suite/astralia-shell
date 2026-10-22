@@ -5,18 +5,17 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
+#include "wayland/core/log.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/layer_surface.h"
 
 #include "core/spawn.h"
-#include "wayland/core/log.h"
 
 #include "modules/logout/layout.h"
 #include "modules/logout/view.h"
-
 #include "modules/logout/wayland/logout.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
-#include "wayland/render/layer_surface.h"
 
 astralia::ui::Box logout_detail_button_rect(int index, float center_x, float center_y) {
     astralia::Point c = astralia::logout_button_center(index, {center_x, center_y});

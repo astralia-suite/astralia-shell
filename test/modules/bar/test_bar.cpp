@@ -1,9 +1,7 @@
 #include <chrono>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "config/bar_layout.h"
+
 #include "render/icons.h"
 
 #include "core/animation.h"
@@ -12,6 +10,9 @@
 #include "modules/bar/model.h"
 #include "modules/bar/style.h"
 #include "modules/bar/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

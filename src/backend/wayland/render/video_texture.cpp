@@ -8,7 +8,6 @@
 #include <drm_fourcc.h>
 
 #include "wayland/core/log.h"
-
 #include "wayland/render/video_texture.h"
 
 namespace {

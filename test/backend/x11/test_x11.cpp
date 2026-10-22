@@ -16,8 +16,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "palette_fixture.h"
-
 #include "core/config_file.h"
 #include "core/json.h"
 #include "core/pointer.h"
@@ -25,20 +23,20 @@
 #include "modules/bar/frame.h"
 #include "modules/bar/style.h"
 
+#include "render/app_icon.h"
 #include "render/cairo_canvas.h"
 #include "render/cover_cache.h"
-#include "render/image_decode.h"
-
-#include "service/settings_service.h"
-#include "service/wallpaper_service.h"
-
-#include "render/app_icon.h"
 #include "render/glyphs.h"
+#include "render/image_decode.h"
 #include "render/tokens.h"
 
 #include "service/audio_service.h"
 #include "service/bluetooth_service.h"
 #include "service/network_service.h"
+#include "service/settings_service.h"
+#include "service/wallpaper_service.h"
+
+#include "palette_fixture.h"
 
 namespace {
 

@@ -2,10 +2,10 @@
 #include <filesystem>
 #include <fstream>
 
+#include "service/theme_service.h"
+
 #include "check.h"
 #include "palette_fixture.h"
-
-#include "service/theme_service.h"
 
 void check_theme_service() {
     using namespace astralia;

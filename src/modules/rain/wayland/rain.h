@@ -6,15 +6,14 @@
 
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
+#include "wayland/render/renderer.h"
+#include "wayland/render/texture.h"
+#include "wayland/render/toplevel_window.h"
 
 #include "config/rain_config.h"
 
 #include "modules/rain/matrix_rain.h"
 #include "modules/rain/stiletto_rain.h"
-
-#include "wayland/render/renderer.h"
-#include "wayland/render/texture.h"
-#include "wayland/render/toplevel_window.h"
 
 #include "service/wayland/input_service.h"
 

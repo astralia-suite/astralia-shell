@@ -7,8 +7,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "check.h"
-
 #include "config/launcher_config.h"
 
 #include "modules/launcher/apps_provider.h"
@@ -18,6 +16,8 @@
 #include "modules/launcher/search.h"
 #include "modules/launcher/submenu.h"
 #include "modules/launcher/visit_store.h"
+
+#include "check.h"
 
 using test::check;
 

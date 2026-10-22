@@ -15,6 +15,7 @@
 #include "core/input.h"
 
 #include "service/settings_service.h"
+#include "service/wallpaper_service.h"
 
 #include "render/geometry.h"
 #include "render/scroll_sequence.h"
@@ -22,7 +23,7 @@
 
 namespace astralia {
 
-enum class SettingsTab : uint8_t { ambient, bar, displays, general, wallpaper };
+enum class SettingsTab : uint8_t { ambient, bar, displays, general, lock, wallpaper };
 
 struct SettingsTabInfo {
     SettingsTab tab;
@@ -37,6 +38,7 @@ struct SettingsCaps {
     bool rain = false;
     bool visualizer = false;
     bool animated_wallpaper = false;
+    bool lock_wallpaper = false;
     bool wallpaper_columns = false;
     bool default_wallpaper = false;
     bool autohide = false;
@@ -49,6 +51,7 @@ enum class SettingsField : uint8_t {
     none,
     wallpaper_dir,
     wallpaper_animated_dir,
+    lock_wallpaper_dir,
     ambient_timeout,
     screensaver_timeout,
     visualizer_fps,
@@ -82,6 +85,7 @@ enum class SettingsAct : uint8_t {
     launcher_lightning,
     wallpaper_default,
     wallpaper_animated,
+    lock_wallpaper_mode,
     wallpaper_region,
     wallpaper_pick,
     wallpaper_count,
@@ -172,12 +176,22 @@ class SettingsModel {
     const Config &config() const { return hooks_.config(); }
     const std::vector<std::string> &monitors() const { return monitors_; }
     const std::string &displays_monitor() const { return displays_monitor_; }
-    WallpaperPicker &picker(bool animated) { return animated ? animated_picker_ : static_picker_; }
+    WallpaperPicker &picker(WallpaperSlot slot) {
+        switch (slot) {
+        case WallpaperSlot::animated:
+            return animated_picker_;
+        case WallpaperSlot::lock:
+            return lock_picker_;
+        case WallpaperSlot::still:
+            break;
+        }
+        return static_picker_;
+    }
     bool cpu_fallback(const std::string &monitor, int column) const {
         return hooks_.cpu_fallback && hooks_.cpu_fallback(monitor, column);
     }
     BarStyle effective_bar_style() const;
-    void rescan(bool animated);
+    void rescan(WallpaperSlot slot);
 
     std::function<void()> on_close_requested;
     std::function<void()> on_closed;
@@ -219,6 +233,7 @@ class SettingsModel {
     std::string displays_monitor_;
     WallpaperPicker static_picker_;
     WallpaperPicker animated_picker_;
+    WallpaperPicker lock_picker_;
 };
 
 } // namespace astralia

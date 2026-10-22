@@ -2,10 +2,6 @@
 #include <cmath>
 #include <string>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-#include "service/fake_compositor.h"
-
 #include "config/overview_config.h"
 
 #include "core/animation.h"
@@ -14,6 +10,10 @@
 #include "modules/overview/view.h"
 
 #include "render/scroll.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
+#include "service/fake_compositor.h"
 
 namespace {
 
@@ -188,6 +188,10 @@ void check_input() {
     const astralia::OverviewCell &fourth = model.layout().cells[3];
     model.press(fourth.rect.x + 2, fourth.rect.y + 2);
     test::check(compositor.calls.back() == "focus 4", "clicking a cell focuses it");
+    model.press(fourth.rect.x + 2, fourth.rect.y + 2, {.shift = true});
+    test::check(compositor.calls.back() == "swap 4", "shift click swaps the workspace");
+    model.press(fourth.rect.x + 2, fourth.rect.y + 2, {.alt = true});
+    test::check(compositor.calls.back() == "move-in 4", "alt click moves the workspace in");
     model.press(1, 1);
     test::check(close_requests == 2, "clicking outside closes");
 

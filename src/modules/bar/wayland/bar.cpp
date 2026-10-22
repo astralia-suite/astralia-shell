@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/layer_surface.h"
 
 #include "config/bar_layout.h"
 
@@ -14,9 +16,6 @@
 #include "modules/bar/panel/panel_set.h"
 #include "modules/bar/view.h"
 #include "modules/bar/wayland/bar.h"
-
-#include "wayland/render/gl.h"
-#include "wayland/render/layer_surface.h"
 
 #include "service/wayland/output_service.h"
 

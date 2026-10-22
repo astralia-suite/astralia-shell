@@ -1,12 +1,12 @@
 #include <algorithm>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "config/lock_config.h"
 
 #include "modules/lock/model.h"
 #include "modules/lock/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

@@ -37,9 +37,7 @@ SessionEnvironment session_environment() {
 
 bool start_locked(std::string_view value) { return value == "1"; }
 
-std::string start_locked_ack_path(unsigned uid) {
-    return std::format("/tmp/astralia-{}", uid);
-}
+std::string start_locked_ack_path(unsigned uid) { return std::format("/tmp/astralia-{}", uid); }
 
 bool start_locked_pending() {
     return start_locked(environment_value("ASTRALIA_START_LOCKED")) &&

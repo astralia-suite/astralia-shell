@@ -3,13 +3,13 @@
 #include <numbers>
 #include <vector>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "config/lock_config.h"
 
 #include "modules/lock/slash.h"
 #include "modules/lock/transition_view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

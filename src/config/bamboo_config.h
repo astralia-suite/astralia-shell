@@ -29,8 +29,6 @@ constexpr int kBambooCulmCount = 8;
 constexpr float kBambooCulmMinHeightRatio = 0.5f;
 constexpr float kBambooCulmMaxHeightRatio = 0.92f;
 constexpr char32_t kBambooCulmGlyph = U'│';
-constexpr float kBambooLeanChance = 0.12f;
-constexpr int kBambooMaxLeanCols = 3;
 constexpr int kBambooNodeSpacingMinRows = 2;
 constexpr int kBambooNodeSpacingMaxRows = 3;
 

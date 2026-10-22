@@ -3,15 +3,12 @@
 #include <cstring>
 #include <string>
 
+#include "modules/polkit/view.h"
 #include "modules/polkit/wayland/polkit.h"
+#include "modules/polkit/wayland/polkit_style_config.h"
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
-#include "modules/polkit/view.h"
-
-#include "modules/polkit/wayland/polkit_style_config.h"
-
 #include "wayland/render/gl.h"
 
 namespace {

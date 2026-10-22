@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "config/rain_config.h"
+
 #include "modules/rain/rain_frame.h"
 
 namespace astralia {

@@ -7,10 +7,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include "check.h"
-#include "core/pump.h"
-#include "render/recording_canvas.h"
-
 #include "config/launcher_config.h"
 
 #include "core/animation.h"
@@ -18,6 +14,10 @@
 
 #include "modules/launcher/model.h"
 #include "modules/launcher/view.h"
+
+#include "check.h"
+#include "core/pump.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

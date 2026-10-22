@@ -4,15 +4,12 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
 #include "wayland/core/log.h"
-
-#include "modules/osd/view.h"
-
-#include "modules/osd/wayland/osd.h"
-
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
+
+#include "modules/osd/view.h"
+#include "modules/osd/wayland/osd.h"
 
 namespace {
 

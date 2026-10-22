@@ -1,6 +1,6 @@
-#include "check.h"
-
 #include "modules/overview/paging.h"
+
+#include "check.h"
 
 using test::check;
 

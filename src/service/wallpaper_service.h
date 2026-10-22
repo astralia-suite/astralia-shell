@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,26 @@ bool wallpaper_is_video(const std::string &path);
 bool wallpaper_picker_less(const std::string &a, const std::string &b);
 std::vector<std::string> wallpaper_list_files(const std::string &dir, bool animated,
                                               std::size_t limit);
+
+enum class WallpaperSlot : uint8_t { still, animated, lock };
+
+WallpaperSlot wallpaper_slot_of(bool animated);
+WallpaperSlot wallpaper_lock_slot(const Config &cfg);
+const std::string &wallpaper_slot_dir(const Config &cfg, WallpaperSlot slot);
+
+int wallpaper_column_count(const Config &cfg, const std::string &monitor_name, WallpaperSlot slot);
+std::string wallpaper_column_override(const Config &cfg, const std::string &monitor_name,
+                                      int column_index, WallpaperSlot slot);
+std::string wallpaper_column_path(const Config &cfg, const std::string &monitor_name,
+                                  int column_index, WallpaperSlot slot);
+std::string wallpaper_fill_mode(const Config &cfg, const std::string &monitor_name,
+                                int column_index, WallpaperSlot slot);
+void wallpaper_set_column(Config &cfg, const std::string &monitor_name, int column_index,
+                          const std::string &path, WallpaperSlot slot);
+void wallpaper_set_fill_mode(Config &cfg, const std::string &monitor_name, int column_index,
+                             const std::string &mode, WallpaperSlot slot);
+void wallpaper_set_column_count(Config &cfg, const std::string &monitor_name, int count,
+                                WallpaperSlot slot);
 
 int wallpaper_column_count(const Config &cfg, const std::string &monitor_name, bool animated);
 std::string wallpaper_column_override(const Config &cfg, const std::string &monitor_name,

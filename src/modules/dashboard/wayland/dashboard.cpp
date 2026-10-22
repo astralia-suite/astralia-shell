@@ -2,12 +2,12 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/overlay_panel.h"
 
 #include "modules/dashboard/wayland/dashboard.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
-#include "wayland/render/overlay_panel.h"
 
 void dashboard_request_frame(DashboardState &state) { toplevel_window_request_frame(state.base); }
 

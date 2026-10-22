@@ -2,8 +2,10 @@
 #include <algorithm>
 
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "config/bar_layout.h"
+
 #include "modules/bar/panel/battery_panel.h"
 #include "modules/bar/panel/bluetooth_panel.h"
 #include "modules/bar/panel/brightness_panel.h"
@@ -13,11 +15,8 @@
 #include "modules/bar/panel/resource_panel.h"
 #include "modules/bar/panel/tray_panel.h"
 #include "modules/bar/panel/volume_panel.h"
-
 #include "modules/bar/wayland/bar.h"
 #include "modules/bar/wayland/panel_surface.h"
-
-#include "wayland/render/gl.h"
 
 using astralia::PanelId;
 

@@ -9,12 +9,10 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_registry.h"
 #include "wayland/app/wayland_state.h"
-
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "modules/lock/wayland/lock.h"
-
-#include "wayland/render/gl.h"
 
 namespace {
 

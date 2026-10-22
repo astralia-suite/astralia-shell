@@ -3,9 +3,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "check.h"
-
 #include "core/spawn.h"
+
+#include "check.h"
 
 using test::check;
 

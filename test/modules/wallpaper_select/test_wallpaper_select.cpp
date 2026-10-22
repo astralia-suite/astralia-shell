@@ -4,10 +4,6 @@
 #include <string>
 #include <unistd.h>
 
-#include "check.h"
-#include "core/pump.h"
-#include "render/recording_canvas.h"
-
 #include "config/wallpaper_select_config.h"
 
 #include "core/animation.h"
@@ -18,6 +14,10 @@
 #include "modules/wallpaper_select/view.h"
 
 #include "service/wallpaper_service.h"
+
+#include "check.h"
+#include "core/pump.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

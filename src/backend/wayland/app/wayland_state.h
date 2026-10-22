@@ -13,21 +13,17 @@
 #include "wayland/app/config.h"
 #include "wayland/app/module.h"
 #include "wayland/app/service.h"
+#include "wayland/render/renderer.h"
 
 #include "modules/notification/wayland/notification.h"
 
-#include "wayland/render/renderer.h"
-
 #include "core/dbus.h"
-#include "service/bluetooth_service.h"
-#include "service/brightness_service.h"
-#include "service/compositor_service.h"
-#include "service/wayland/clipboard_service.h"
-#include "service/wayland/idle_service.h"
-#include "service/wayland/input_service.h"
 
 #include "service/audio_service.h"
 #include "service/battery_service.h"
+#include "service/bluetooth_service.h"
+#include "service/brightness_service.h"
+#include "service/compositor_service.h"
 #include "service/media_service.h"
 #include "service/network_service.h"
 #include "service/notification_service.h"
@@ -35,6 +31,9 @@
 #include "service/telemetry_service.h"
 #include "service/theme_service.h"
 #include "service/tray_service.h"
+#include "service/wayland/clipboard_service.h"
+#include "service/wayland/idle_service.h"
+#include "service/wayland/input_service.h"
 #include "service/wayland/text_input_service.h"
 
 #include "ext-session-lock-v1-client-protocol.h"

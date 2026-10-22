@@ -3,19 +3,18 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
+#include "wayland/core/log.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/layer_surface.h"
 
 #include "core/deferred_call.h"
-#include "wayland/core/log.h"
 
 #include "config/lock_config.h"
 
 #include "modules/lock/transition_view.h"
-
 #include "modules/lock/wayland/transition.h"
-#include "render/tokens.h"
 
-#include "wayland/render/gl.h"
-#include "wayland/render/layer_surface.h"
+#include "render/tokens.h"
 
 namespace {
 

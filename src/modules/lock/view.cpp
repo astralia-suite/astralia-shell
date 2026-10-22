@@ -3,13 +3,13 @@
 #include <string>
 
 #include "config/lock_config.h"
+
 #include "render/icons.h"
+#include "render/sticker.h"
+#include "render/tokens.h"
 
 #include "modules/lock/layout.h"
 #include "modules/lock/view.h"
-
-#include "render/sticker.h"
-#include "render/tokens.h"
 
 namespace astralia {
 

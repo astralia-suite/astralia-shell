@@ -6,14 +6,13 @@
 
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
+#include "wayland/render/renderer.h"
+#include "wayland/render/texture.h"
+#include "wayland/render/toplevel_window.h"
 
 #include "config/bamboo_config.h"
 
 #include "modules/bamboo/bamboo_grow.h"
-
-#include "wayland/render/renderer.h"
-#include "wayland/render/texture.h"
-#include "wayland/render/toplevel_window.h"
 
 #include "service/wayland/input_service.h"
 

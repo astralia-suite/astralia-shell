@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "core/path_home.h"
@@ -24,18 +26,78 @@ const typename Map::mapped_type *lookup(const Map &map, const std::string &monit
     return it != map.end() ? &it->second : nullptr;
 }
 
-const std::vector<std::string> *columns_for(const Config &cfg, const std::string &monitor_name,
-                                            bool animated) {
-    return lookup(animated ? cfg.wallpaper_animated_columns : cfg.wallpaper_columns, monitor_name);
+using ColumnMap = std::map<std::string, std::vector<std::string>>;
+using CountMap = std::map<std::string, int>;
+
+const ColumnMap &column_map(const Config &cfg, WallpaperSlot slot) {
+    switch (slot) {
+    case WallpaperSlot::animated:
+        return cfg.wallpaper_animated_columns;
+    case WallpaperSlot::lock:
+        return cfg.lock_wallpaper_columns;
+    case WallpaperSlot::still:
+        break;
+    }
+    return cfg.wallpaper_columns;
 }
 
-const std::vector<std::string> *fill_modes_for(const Config &cfg, const std::string &monitor_name,
-                                               bool animated) {
-    return lookup(animated ? cfg.wallpaper_animated_fill_modes : cfg.wallpaper_fill_modes,
-                  monitor_name);
+ColumnMap &column_map(Config &cfg, WallpaperSlot slot) {
+    return const_cast<ColumnMap &>(column_map(std::as_const(cfg), slot));
+}
+
+const ColumnMap &fill_mode_map(const Config &cfg, WallpaperSlot slot) {
+    switch (slot) {
+    case WallpaperSlot::animated:
+        return cfg.wallpaper_animated_fill_modes;
+    case WallpaperSlot::lock:
+        return cfg.lock_wallpaper_fill_modes;
+    case WallpaperSlot::still:
+        break;
+    }
+    return cfg.wallpaper_fill_modes;
+}
+
+ColumnMap &fill_mode_map(Config &cfg, WallpaperSlot slot) {
+    return const_cast<ColumnMap &>(fill_mode_map(std::as_const(cfg), slot));
+}
+
+const CountMap &count_map(const Config &cfg, WallpaperSlot slot) {
+    switch (slot) {
+    case WallpaperSlot::animated:
+        return cfg.wallpaper_animated_column_counts;
+    case WallpaperSlot::lock:
+        return cfg.lock_wallpaper_column_counts;
+    case WallpaperSlot::still:
+        break;
+    }
+    return cfg.wallpaper_column_counts;
+}
+
+CountMap &count_map(Config &cfg, WallpaperSlot slot) {
+    return const_cast<CountMap &>(count_map(std::as_const(cfg), slot));
 }
 
 } // namespace
+
+WallpaperSlot wallpaper_slot_of(bool animated) {
+    return animated ? WallpaperSlot::animated : WallpaperSlot::still;
+}
+
+WallpaperSlot wallpaper_lock_slot(const Config &cfg) {
+    return cfg.lock_wallpaper_custom ? WallpaperSlot::lock : WallpaperSlot::still;
+}
+
+const std::string &wallpaper_slot_dir(const Config &cfg, WallpaperSlot slot) {
+    switch (slot) {
+    case WallpaperSlot::animated:
+        return cfg.wallpaper_animated_dir;
+    case WallpaperSlot::lock:
+        return cfg.lock_wallpaper_dir;
+    case WallpaperSlot::still:
+        break;
+    }
+    return cfg.wallpaper_dir;
+}
 
 bool wallpaper_is_image(const std::string &path) {
     std::string extension = lowered(std::filesystem::path(path).extension().string());
@@ -82,16 +144,14 @@ std::vector<std::string> wallpaper_list_files(const std::string &dir, bool anima
     return found;
 }
 
-int wallpaper_column_count(const Config &cfg, const std::string &monitor_name, bool animated) {
-    const int *count =
-        lookup(animated ? cfg.wallpaper_animated_column_counts : cfg.wallpaper_column_counts,
-               monitor_name);
+int wallpaper_column_count(const Config &cfg, const std::string &monitor_name, WallpaperSlot slot) {
+    const int *count = lookup(count_map(cfg, slot), monitor_name);
     return count != nullptr && *count > 0 ? *count : 1;
 }
 
 std::string wallpaper_column_override(const Config &cfg, const std::string &monitor_name,
-                                      int column_index, bool animated) {
-    const std::vector<std::string> *columns = columns_for(cfg, monitor_name, animated);
+                                      int column_index, WallpaperSlot slot) {
+    const std::vector<std::string> *columns = lookup(column_map(cfg, slot), monitor_name);
     if (columns != nullptr && column_index >= 0 &&
         static_cast<std::size_t>(column_index) < columns->size()) {
         return (*columns)[static_cast<std::size_t>(column_index)];
@@ -100,8 +160,8 @@ std::string wallpaper_column_override(const Config &cfg, const std::string &moni
 }
 
 std::string wallpaper_column_path(const Config &cfg, const std::string &monitor_name,
-                                  int column_index, bool animated) {
-    std::string override = wallpaper_column_override(cfg, monitor_name, column_index, animated);
+                                  int column_index, WallpaperSlot slot) {
+    std::string override = wallpaper_column_override(cfg, monitor_name, column_index, slot);
     if (!override.empty()) {
         return override;
     }
@@ -109,8 +169,8 @@ std::string wallpaper_column_path(const Config &cfg, const std::string &monitor_
 }
 
 std::string wallpaper_fill_mode(const Config &cfg, const std::string &monitor_name,
-                                int column_index, bool animated) {
-    const std::vector<std::string> *modes = fill_modes_for(cfg, monitor_name, animated);
+                                int column_index, WallpaperSlot slot) {
+    const std::vector<std::string> *modes = lookup(fill_mode_map(cfg, slot), monitor_name);
     if (modes != nullptr && column_index >= 0 &&
         static_cast<std::size_t>(column_index) < modes->size() &&
         !(*modes)[static_cast<std::size_t>(column_index)].empty()) {
@@ -119,14 +179,9 @@ std::string wallpaper_fill_mode(const Config &cfg, const std::string &monitor_na
     return "crop";
 }
 
-std::string wallpaper_image_for(const Config &cfg, const std::string &monitor_name) {
-    return wallpaper_column_path(cfg, monitor_name, 0, false);
-}
-
 void wallpaper_set_column(Config &cfg, const std::string &monitor_name, int column_index,
-                          const std::string &path, bool animated) {
-    std::vector<std::string> &columns =
-        (animated ? cfg.wallpaper_animated_columns : cfg.wallpaper_columns)[monitor_name];
+                          const std::string &path, WallpaperSlot slot) {
+    std::vector<std::string> &columns = column_map(cfg, slot)[monitor_name];
     if (static_cast<std::size_t>(column_index) >= columns.size()) {
         columns.resize(static_cast<std::size_t>(column_index) + 1);
     }
@@ -134,9 +189,8 @@ void wallpaper_set_column(Config &cfg, const std::string &monitor_name, int colu
 }
 
 void wallpaper_set_fill_mode(Config &cfg, const std::string &monitor_name, int column_index,
-                             const std::string &mode, bool animated) {
-    std::vector<std::string> &modes =
-        (animated ? cfg.wallpaper_animated_fill_modes : cfg.wallpaper_fill_modes)[monitor_name];
+                             const std::string &mode, WallpaperSlot slot) {
+    std::vector<std::string> &modes = fill_mode_map(cfg, slot)[monitor_name];
     if (static_cast<std::size_t>(column_index) >= modes.size()) {
         modes.resize(static_cast<std::size_t>(column_index) + 1);
     }
@@ -144,9 +198,46 @@ void wallpaper_set_fill_mode(Config &cfg, const std::string &monitor_name, int c
 }
 
 void wallpaper_set_column_count(Config &cfg, const std::string &monitor_name, int count,
+                                WallpaperSlot slot) {
+    count_map(cfg, slot)[monitor_name] = count;
+}
+
+int wallpaper_column_count(const Config &cfg, const std::string &monitor_name, bool animated) {
+    return wallpaper_column_count(cfg, monitor_name, wallpaper_slot_of(animated));
+}
+
+std::string wallpaper_column_override(const Config &cfg, const std::string &monitor_name,
+                                      int column_index, bool animated) {
+    return wallpaper_column_override(cfg, monitor_name, column_index, wallpaper_slot_of(animated));
+}
+
+std::string wallpaper_column_path(const Config &cfg, const std::string &monitor_name,
+                                  int column_index, bool animated) {
+    return wallpaper_column_path(cfg, monitor_name, column_index, wallpaper_slot_of(animated));
+}
+
+std::string wallpaper_fill_mode(const Config &cfg, const std::string &monitor_name,
+                                int column_index, bool animated) {
+    return wallpaper_fill_mode(cfg, monitor_name, column_index, wallpaper_slot_of(animated));
+}
+
+void wallpaper_set_column(Config &cfg, const std::string &monitor_name, int column_index,
+                          const std::string &path, bool animated) {
+    wallpaper_set_column(cfg, monitor_name, column_index, path, wallpaper_slot_of(animated));
+}
+
+void wallpaper_set_fill_mode(Config &cfg, const std::string &monitor_name, int column_index,
+                             const std::string &mode, bool animated) {
+    wallpaper_set_fill_mode(cfg, monitor_name, column_index, mode, wallpaper_slot_of(animated));
+}
+
+void wallpaper_set_column_count(Config &cfg, const std::string &monitor_name, int count,
                                 bool animated) {
-    (animated ? cfg.wallpaper_animated_column_counts : cfg.wallpaper_column_counts)[monitor_name] =
-        count;
+    wallpaper_set_column_count(cfg, monitor_name, count, wallpaper_slot_of(animated));
+}
+
+std::string wallpaper_image_for(const Config &cfg, const std::string &monitor_name) {
+    return wallpaper_column_path(cfg, monitor_name, 0, WallpaperSlot::still);
 }
 
 void wallpaper_set_image(Config &cfg, const std::string &monitor_name, const std::string &path) {

@@ -1,11 +1,12 @@
 #include <cmath>
 
-#include "check.h"
-#include "palette_fixture.h"
-
 #include "modules/bar/style.h"
+
 #include "render/oklab.h"
 #include "render/theme.h"
+
+#include "check.h"
+#include "palette_fixture.h"
 
 namespace {
 

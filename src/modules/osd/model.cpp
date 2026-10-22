@@ -2,11 +2,11 @@
 #include <format>
 
 #include "config/osd_config.h"
+
+#include "render/glyphs.h"
 #include "render/icons.h"
 
 #include "modules/osd/model.h"
-
-#include "render/glyphs.h"
 
 namespace astralia {
 

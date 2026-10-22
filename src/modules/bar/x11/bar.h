@@ -9,8 +9,8 @@
 #include <xcb/xcb.h>
 
 #include "app/services.h"
-
 #include "app/shell.h"
+
 #include "core/event_loop.h"
 #include "core/x_connection.h"
 

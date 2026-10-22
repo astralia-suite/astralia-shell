@@ -1,9 +1,9 @@
 #include <cmath>
 
+#include "render/scroll.h"
+
 #include "check.h"
 #include "render/recording_canvas.h"
-
-#include "render/scroll.h"
 
 namespace {
 

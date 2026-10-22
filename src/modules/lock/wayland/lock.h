@@ -11,13 +11,13 @@
 #include <wayland-egl.h>
 
 #include "wayland/app/module.h"
+#include "wayland/render/gl_canvas.h"
 
 #include "config/lock_config.h"
 
 #include "modules/lock/model.h"
+#include "modules/lock/wayland/lock_wallpaper.h"
 #include "modules/lock/wayland/transition.h"
-
-#include "wayland/render/gl_canvas.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/input_service.h"
@@ -64,6 +64,7 @@ struct LockState {
 
     astralia::LockModel model;
     LockTransition transition;
+    LockWallpaper wallpaper;
     std::string user;
 
     std::function<void(const std::string &output_name, GlCanvas &canvas, int32_t w, int32_t h)>

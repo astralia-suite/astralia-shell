@@ -1,8 +1,8 @@
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "modules/wallpaper/model.h"
 #include "modules/wallpaper/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 void check_desktop_menu() {
     using astralia::DesktopMenuAction;

@@ -3,18 +3,16 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
-#include "modules/wallpaper_select/wayland/wallpaper_select.h"
-
-#include "config/wallpaper_select_config.h"
-
-#include "modules/wallpaper_select/model.h"
-#include "modules/wallpaper_select/view.h"
-
 #include "wayland/render/gl.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/renderer.h"
+
+#include "modules/wallpaper_select/model.h"
+#include "modules/wallpaper_select/view.h"
+#include "modules/wallpaper_select/wayland/wallpaper_select.h"
+
+#include "config/wallpaper_select_config.h"
 
 namespace {
 

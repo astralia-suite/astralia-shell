@@ -11,16 +11,16 @@
 #include <wayland-egl.h>
 
 #include "wayland/app/per_monitor_module.h"
-
-#include "config/idle_config.h"
-#include "modules/idle/bounce.h"
-
-#include "wayland/config/idle_config.h"
-
-#include "core/animation.h"
+#include "wayland/config/idle_overlay_config.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/renderer.h"
 #include "wayland/render/texture.h"
+
+#include "config/idle_config.h"
+
+#include "modules/idle/bounce.h"
+
+#include "core/animation.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/output_service.h"

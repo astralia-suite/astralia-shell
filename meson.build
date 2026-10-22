@@ -119,6 +119,7 @@ core_shared = static_library(
     'src/modules/rain/stiletto_rain.cpp',
     'src/modules/settings/model.cpp',
     'src/modules/settings/view.cpp',
+    'src/modules/settings/wallpaper_columns.cpp',
     'src/modules/polkit/layout.cpp',
     'src/modules/polkit/model.cpp',
     'src/modules/polkit/view.cpp',

@@ -6,7 +6,6 @@
 #include <string_view>
 
 #include "wayland/core/log.h"
-
 #include "wayland/render/gl.h"
 
 #ifndef ASTRALIA_SHELL_SHADER_DIR

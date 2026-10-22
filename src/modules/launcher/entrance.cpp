@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "config/launcher_config.h"
+
 #include "core/animation.h"
 
 #include "modules/launcher/entrance.h"

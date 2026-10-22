@@ -8,15 +8,15 @@
 #include <wayland-egl.h>
 
 #include "wayland/app/module.h"
+#include "wayland/render/gl_canvas.h"
+#include "wayland/render/overlay_panel.h"
+#include "wayland/render/renderer.h"
+#include "wayland/render/thunder.h"
 
 #include "modules/launcher/model.h"
 #include "modules/launcher/view.h"
 
 #include "core/animation.h"
-#include "wayland/render/gl_canvas.h"
-#include "wayland/render/overlay_panel.h"
-#include "wayland/render/renderer.h"
-#include "wayland/render/thunder.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/input_service.h"

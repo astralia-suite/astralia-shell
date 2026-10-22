@@ -4,10 +4,9 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
-#include "wayland/config/visualizer_config.h"
-
+#include "wayland/config/visualizer_gl_config.h"
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "modules/visualizer/fft.h"
 #include "modules/visualizer/wayland/audio_stages.h"
@@ -16,7 +15,6 @@
 #include "modules/visualizer/wayland/visualizer.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
 
 namespace {
 

@@ -46,7 +46,7 @@ class OverviewModel {
     void sync(float width, float height);
 
     bool key(const input::KeyEvent &event);
-    void press(double x, double y);
+    void press(double x, double y, const input::Modifiers &mods = {});
     void move(double x, double y);
     void release();
     bool clickable(double x, double y) const;
@@ -105,6 +105,7 @@ class OverviewModel {
     bool indicator_tracking_ = false;
     int indicator_page_ = -1;
     bool dragging_ = false;
+    input::Modifiers press_mods_;
     std::string drag_address_;
     int drag_from_ = -1;
     int drag_target_ = -1;

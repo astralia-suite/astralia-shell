@@ -1,11 +1,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <optional>
 #include <thread>
 
 #include "config/rain_config.h"
 #include "config/settings_config.h"
 #include "config/visualizer_config.h"
+
 #include "render/icons.h"
 
 #include "core/deferred_call.h"
@@ -26,12 +28,24 @@ SettingsCaps settings_caps(const Capabilities &capabilities) {
     caps.rain = capabilities.rain;
     caps.visualizer = capabilities.visualizer;
     caps.animated_wallpaper = capabilities.animated_wallpaper;
+    caps.lock_wallpaper = capabilities.lock;
     return caps;
 }
 
 namespace {
 
 namespace cfg = settings_config;
+
+WallpaperSlot slot_from(int value) {
+    switch (value) {
+    case static_cast<int>(WallpaperSlot::animated):
+        return WallpaperSlot::animated;
+    case static_cast<int>(WallpaperSlot::lock):
+        return WallpaperSlot::lock;
+    default:
+        return WallpaperSlot::still;
+    }
+}
 
 constexpr uint64_t owner_tab_fade = 20;
 constexpr uint64_t owner_field_anim = 10000;
@@ -65,6 +79,7 @@ const std::vector<SettingsTabInfo> &settings_all_tabs() {
         {SettingsTab::bar, "Bar", icon::layout_navbar},
         {SettingsTab::displays, "Displays", icon::device_desktop},
         {SettingsTab::general, "General", icon::adjustments},
+        {SettingsTab::lock, "Lock Screen", icon::lock},
         {SettingsTab::wallpaper, "Wallpaper", icon::wallpaper},
     };
     return tabs;
@@ -77,6 +92,8 @@ std::string settings_field_text(const Config &config, SettingsField field,
         return path_collapse_home(config.wallpaper_dir);
     case SettingsField::wallpaper_animated_dir:
         return path_collapse_home(config.wallpaper_animated_dir);
+    case SettingsField::lock_wallpaper_dir:
+        return path_collapse_home(config.lock_wallpaper_dir);
     case SettingsField::ambient_timeout:
         return std::to_string(ambient_effective_timeout_seconds(config, monitor));
     case SettingsField::screensaver_timeout:
@@ -108,6 +125,9 @@ void settings_apply_field(Config &config, SettingsField field, const std::string
             break;
         case SettingsField::wallpaper_animated_dir:
             config.wallpaper_animated_dir = path_expand_home(text);
+            break;
+        case SettingsField::lock_wallpaper_dir:
+            config.lock_wallpaper_dir = path_expand_home(text);
             break;
         case SettingsField::ambient_timeout: {
             auto value = static_cast<uint32_t>(
@@ -168,6 +188,9 @@ SettingsModel::SettingsModel(SettingsCaps caps, SettingsHooks hooks)
         case SettingsTab::general:
             present = caps_.animation || caps_.launcher;
             break;
+        case SettingsTab::lock:
+            present = caps_.lock_wallpaper;
+            break;
         default:
             break;
         }
@@ -204,13 +227,14 @@ void SettingsModel::close() {
     commit_field();
     sequence_.close([this] {
         open_ = false;
-        static_picker_.files.clear();
-        static_picker_.dir.clear();
-        animated_picker_.files.clear();
-        animated_picker_.dir.clear();
-        static_picker_.generation++;
-        animated_picker_.generation++;
-        static_picker_.scanning = animated_picker_.scanning = false;
+        for (WallpaperSlot slot :
+             {WallpaperSlot::still, WallpaperSlot::animated, WallpaperSlot::lock}) {
+            WallpaperPicker &picker = this->picker(slot);
+            picker.files.clear();
+            picker.dir.clear();
+            picker.generation++;
+            picker.scanning = false;
+        }
         if (on_closed) {
             on_closed();
         }
@@ -245,8 +269,9 @@ void SettingsModel::sync() {
     }
     std::string focused = hooks_.focused_monitor ? hooks_.focused_monitor() : std::string();
     const Config &current = config();
-    for (bool animated : {false, true}) {
-        WallpaperPicker &picker = animated ? animated_picker_ : static_picker_;
+    for (WallpaperSlot slot :
+         {WallpaperSlot::still, WallpaperSlot::animated, WallpaperSlot::lock}) {
+        WallpaperPicker &picker = this->picker(slot);
         if (monitors_.size() == 1) {
             picker.region = monitors_[0];
         } else if (picker.region.empty() || !known(picker.region)) {
@@ -254,23 +279,30 @@ void SettingsModel::sync() {
                 known(focused) ? focused : (monitors_.empty() ? std::string() : monitors_[0]);
         }
         int count =
-            picker.region.empty() ? 1 : wallpaper_column_count(current, picker.region, animated);
+            picker.region.empty() ? 1 : wallpaper_column_count(current, picker.region, slot);
         picker.column = std::clamp(picker.column, 0, count - 1);
     }
-    if (open_ && !sequence_.closing() && !menu_ && active_ == SettingsTab::wallpaper) {
-        bool animated = caps_.animated_wallpaper && current.wallpaper_animated_enabled;
-        const std::string &dir = animated ? current.wallpaper_animated_dir : current.wallpaper_dir;
-        WallpaperPicker &picker = animated ? animated_picker_ : static_picker_;
-        if (picker.dir != dir) {
-            scan(picker, dir, animated);
+    if (open_ && !sequence_.closing() && !menu_) {
+        std::optional<WallpaperSlot> slot;
+        if (active_ == SettingsTab::wallpaper) {
+            slot = caps_.animated_wallpaper && current.wallpaper_animated_enabled
+                       ? WallpaperSlot::animated
+                       : WallpaperSlot::still;
+        } else if (active_ == SettingsTab::lock && current.lock_wallpaper_custom) {
+            slot = WallpaperSlot::lock;
+        }
+        if (slot) {
+            const std::string &dir = wallpaper_slot_dir(current, *slot);
+            WallpaperPicker &picker = this->picker(*slot);
+            if (picker.dir != dir) {
+                scan(picker, dir, *slot == WallpaperSlot::animated);
+            }
         }
     }
 }
 
-void SettingsModel::rescan(bool animated) {
-    const Config &current = config();
-    scan(animated ? animated_picker_ : static_picker_,
-         animated ? current.wallpaper_animated_dir : current.wallpaper_dir, animated);
+void SettingsModel::rescan(WallpaperSlot slot) {
+    scan(picker(slot), wallpaper_slot_dir(config(), slot), slot == WallpaperSlot::animated);
 }
 
 void SettingsModel::scan(WallpaperPicker &picker, const std::string &dir, bool animated) {
@@ -471,11 +503,16 @@ void SettingsModel::scroll(float pixels) {
     if (!open_ || sequence_.closing() || !sequence_.settled()) {
         return;
     }
-    if (menu_ || active_ != SettingsTab::wallpaper) {
+    if (menu_ || (active_ != SettingsTab::wallpaper && active_ != SettingsTab::lock)) {
         return;
     }
-    bool animated = caps_.animated_wallpaper && config().wallpaper_animated_enabled;
-    WallpaperPicker &picker = this->picker(animated);
+    WallpaperSlot slot = WallpaperSlot::lock;
+    if (active_ == SettingsTab::wallpaper) {
+        slot = caps_.animated_wallpaper && config().wallpaper_animated_enabled
+                   ? WallpaperSlot::animated
+                   : WallpaperSlot::still;
+    }
+    WallpaperPicker &picker = this->picker(slot);
     float inset_w = picker.grid_width - cfg::grid_inset * 2.0f;
     float inset_h = picker.grid_height - cfg::grid_inset * 2.0f;
     int columns = cfg::thumb_columns;
@@ -645,8 +682,8 @@ void SettingsModel::dispatch(const SettingsRegion &region) {
 }
 
 void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
-    bool animated = region.b == 1;
-    WallpaperPicker &picker = this->picker(animated);
+    WallpaperSlot slot = slot_from(region.b);
+    WallpaperPicker &picker = this->picker(slot);
     switch (region.act) {
     case SettingsAct::wallpaper_default:
         edit([](Config &config) {
@@ -658,10 +695,12 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
             config.wallpaper_animated_enabled = !config.wallpaper_animated_enabled;
         });
         return;
+    case SettingsAct::lock_wallpaper_mode:
+        edit([&](Config &config) { config.lock_wallpaper_custom = region.a == 1; });
+        return;
     case SettingsAct::wallpaper_region: {
         int monitor = region.a;
-        animated = (region.b & 0x100) != 0;
-        WallpaperPicker &target = this->picker(animated);
+        WallpaperPicker &target = this->picker(slot_from(region.b >> 8));
         if (monitor >= 0 && static_cast<std::size_t>(monitor) < monitors_.size()) {
             target.region = monitors_[static_cast<std::size_t>(monitor)];
             target.column = region.b & 0xff;
@@ -673,14 +712,14 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
         if (region.a >= 0 && static_cast<std::size_t>(region.a) < picker.files.size()) {
             std::string path = picker.files[static_cast<std::size_t>(region.a)];
             edit([&](Config &config) {
-                wallpaper_set_column(config, picker.region, picker.column, path, animated);
+                wallpaper_set_column(config, picker.region, picker.column, path, slot);
             });
         }
         return;
     case SettingsAct::wallpaper_remove:
         edit([&](Config &config) {
-            if (caps_.wallpaper_columns) {
-                wallpaper_set_column(config, picker.region, picker.column, "", animated);
+            if (caps_.wallpaper_columns || slot == WallpaperSlot::lock) {
+                wallpaper_set_column(config, picker.region, picker.column, "", slot);
             } else {
                 wallpaper_clear_image(config, picker.region);
             }
@@ -689,19 +728,18 @@ void SettingsModel::dispatch_wallpaper(const SettingsRegion &region) {
     case SettingsAct::wallpaper_fill:
         edit([&](Config &config) {
             wallpaper_set_fill_mode(config, picker.region, picker.column,
-                                    region.a == 1 ? "fit" : "crop", animated);
+                                    region.a == 1 ? "fit" : "crop", slot);
         });
         return;
     case SettingsAct::wallpaper_count:
         edit([&](Config &config) {
-            int count =
-                std::clamp(wallpaper_column_count(config, picker.region, animated) + region.a, 1,
-                           cfg::max_columns);
-            wallpaper_set_column_count(config, picker.region, count, animated);
+            int count = std::clamp(wallpaper_column_count(config, picker.region, slot) + region.a,
+                                   1, cfg::max_columns);
+            wallpaper_set_column_count(config, picker.region, count, slot);
         });
         return;
     case SettingsAct::wallpaper_rescan:
-        rescan(animated);
+        rescan(slot);
         changed();
         return;
     case SettingsAct::dropdown_toggle:

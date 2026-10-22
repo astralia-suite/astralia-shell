@@ -2,12 +2,11 @@
 #include <cmath>
 #include <format>
 
+#include "render/glyphs.h"
 #include "render/icons.h"
 
 #include "modules/bar/panel/brightness_panel.h"
 #include "modules/bar/panel/widgets.h"
-
-#include "render/glyphs.h"
 
 namespace astralia {
 

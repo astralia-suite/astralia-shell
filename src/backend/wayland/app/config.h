@@ -6,7 +6,8 @@
 
 #include "config/bar_layout.h"
 #include "config/rain_config.h"
-#include "wayland/config/visualizer_config.h"
+
+#include "wayland/config/visualizer_gl_config.h"
 
 using Config = astralia::Config;
 using MonitorOverride = astralia::MonitorOverride;

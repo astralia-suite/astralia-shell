@@ -1,8 +1,8 @@
 #include <cmath>
 
-#include "check.h"
-
 #include "modules/logout/layout.h"
+
+#include "check.h"
 
 using test::check;
 

@@ -5,12 +5,11 @@
 #include <wayland-client.h>
 
 #include "wayland/app/module.h"
-
-#include "modules/polkit/model.h"
-
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/renderer.h"
+
+#include "modules/polkit/model.h"
 
 #include "service/wayland/input_service.h"
 

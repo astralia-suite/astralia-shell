@@ -1,6 +1,6 @@
-#include "check.h"
-
 #include "modules/polkit/layout.h"
+
+#include "check.h"
 
 using test::check;
 

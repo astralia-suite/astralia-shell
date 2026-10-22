@@ -8,14 +8,13 @@
 
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
+#include "wayland/render/gl_canvas.h"
+#include "wayland/render/overlay_panel.h"
+#include "wayland/render/renderer.h"
 
 #include "config/overview_config.h"
 
 #include "modules/overview/model.h"
-
-#include "wayland/render/gl_canvas.h"
-#include "wayland/render/overlay_panel.h"
-#include "wayland/render/renderer.h"
 
 #include "service/wayland/capture_service.h"
 #include "service/wayland/input_service.h"

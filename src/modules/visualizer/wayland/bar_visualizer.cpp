@@ -1,11 +1,10 @@
-#include "wayland/config/visualizer_config.h"
-
+#include "wayland/config/visualizer_gl_config.h"
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "modules/visualizer/wayland/bar_visualizer.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
 
 namespace {
 

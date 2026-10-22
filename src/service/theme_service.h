@@ -9,6 +9,7 @@
 #include "core/signal.h"
 
 #include "render/palette_extract.h"
+
 #include "service/settings_service.h"
 
 namespace astralia {

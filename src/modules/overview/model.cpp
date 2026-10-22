@@ -451,10 +451,11 @@ bool OverviewModel::key(const input::KeyEvent &event) {
     }
 }
 
-void OverviewModel::press(double x, double y) {
+void OverviewModel::press(double x, double y, const input::Modifiers &mods) {
     if (!fully_open()) {
         return;
     }
+    press_mods_ = mods;
     for (auto it = tiles_.rbegin(); it != tiles_.rend(); ++it) {
         ui::Box drawn = tile_rect(*it);
         if (!inside(drawn, x, y)) {
@@ -477,7 +478,7 @@ void OverviewModel::press(double x, double y) {
         return;
     }
     if (const OverviewCell *cell = cell_at(x, y)) {
-        select(cell->workspace, false, false);
+        select(cell->workspace, mods.shift, mods.alt);
         return;
     }
     constexpr float m = cfg::margin;
@@ -511,7 +512,7 @@ void OverviewModel::release() {
     if (cell->workspace != drag_from_) {
         compositor_.move_window(drag_address_, cell->workspace, global_mode_);
     } else {
-        select(cell->workspace, false, false);
+        select(cell->workspace, press_mods_.shift, press_mods_.alt);
     }
 }
 

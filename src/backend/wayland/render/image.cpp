@@ -3,7 +3,6 @@
 #include "render/decode.h"
 
 #include "wayland/core/log.h"
-
 #include "wayland/render/image.h"
 
 unsigned char *load_image_decode(const std::string &path, int &width, int &height,

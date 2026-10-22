@@ -8,14 +8,12 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/user_info.h"
 #include "wayland/app/wayland_state.h"
+#include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "app/session.h"
-#include "core/deferred_call.h"
-#include "wayland/core/log.h"
 
-#ifndef ASTRALIA_SHELL_PAM_DIR
-#define ASTRALIA_SHELL_PAM_DIR ""
-#endif
+#include "core/deferred_call.h"
 
 #include "modules/lock/layout.h"
 #include "modules/lock/pam_authenticator.h"
@@ -23,14 +21,32 @@
 #include "modules/lock/wayland/lock.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
 
 #include "service/telemetry_service.h"
+
+#ifndef ASTRALIA_SHELL_PAM_DIR
+#define ASTRALIA_SHELL_PAM_DIR ""
+#endif
 
 namespace {
 
 void lock_paint(LockState &st, LockOutputSurface &los);
 void finish_unlock(LockState &st);
+
+void load_wallpaper(LockState &st, WaylandState &app) {
+    if (app.cfg.lock_wallpaper_custom && !st.wallpaper.loaded())
+        st.wallpaper.load(app);
+}
+
+void release_wallpaper_if_idle(LockState &st) {
+    if (!st.active && !st.transition.active)
+        st.wallpaper.release();
+}
+
+void stop_transition(LockState &st) {
+    transition_stop(st.transition);
+    release_wallpaper_if_idle(st);
+}
 
 LockOutputSurface *surface_for(LockState &st, wl_surface *s) {
     for (auto &up : st.surfaces)
@@ -200,7 +216,7 @@ void handle_finished(void *data, ext_session_lock_v1 *) {
     st->lock = nullptr;
     st->locked = false;
     lock_teardown(*st);
-    transition_stop(st->transition);
+    stop_transition(*st);
 }
 
 constexpr ext_session_lock_v1_listener kLockListener = {
@@ -302,7 +318,7 @@ void finish_unlock(LockState &st) {
     if (!st.lock)
         return;
     release_session(st);
-    transition_stop(st.transition);
+    stop_transition(st);
 }
 
 } // namespace
@@ -326,6 +342,7 @@ bool lock_request(LockState &st, WaylandState &app) {
     st.locked = false;
     st.unlocking = false;
     st.model.reset();
+    load_wallpaper(st, app);
     if (st.user.empty())
         st.user = user_info::username();
 
@@ -341,15 +358,17 @@ void lock_begin(LockState &st, WaylandState &app, bool animate) {
     if (st.active || st.transition.active)
         return;
     st.app = &app;
+    load_wallpaper(st, app);
     bool animated = animate && !app.cfg.animations_disabled && app.session_lock_manager &&
                     !app.outputs.empty() && transition_open(st.transition, app);
     if (!animated) {
-        lock_request(st, app);
+        if (!lock_request(st, app))
+            release_wallpaper_if_idle(st);
         return;
     }
     transition_play(st.transition, [&st, &app] {
         if (!lock_request(st, app))
-            transition_stop(st.transition);
+            stop_transition(st);
     });
 }
 
@@ -369,6 +388,7 @@ void lock_teardown(LockState &st) {
             request_all_frames(*mon);
         wl_display_flush(st.app->display);
     }
+    release_wallpaper_if_idle(st);
 }
 
 void lock_begin_unlock(LockState &st) {
@@ -393,8 +413,8 @@ void lock_begin_unlock(LockState &st) {
             return;
         }
         release_session(st);
-        if (!transition_play(st.transition, [&st] { transition_stop(st.transition); }))
-            transition_stop(st.transition);
+        if (!transition_play(st.transition, [&st] { stop_transition(st); }))
+            stop_transition(st);
     };
     if (reuse)
         transition_rehold(st.transition, astralia::LockTransitionMode::unlock);
@@ -513,9 +533,12 @@ class LockModule final : public Module {
 
     bool init_egl(WaylandState &app) override {
         state_.app = &app;
+        state_.wallpaper.request_frames = [this] { request_all(state_); };
         state_.draw_wallpaper = [this, &app](const std::string &output_name, GlCanvas &canvas,
                                              int32_t w, int32_t h) {
-            if (draw_wallpaper_)
+            if (state_.wallpaper.loaded())
+                state_.wallpaper.draw(output_name, canvas, w, h);
+            else if (draw_wallpaper_)
                 draw_wallpaper_(app, output_name, canvas, w, h);
         };
         state_.transition.draw_wallpaper = state_.draw_wallpaper;

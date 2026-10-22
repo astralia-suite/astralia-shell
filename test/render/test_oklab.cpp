@@ -1,8 +1,8 @@
 #include <cmath>
 
-#include "check.h"
-
 #include "render/oklab.h"
+
+#include "check.h"
 
 namespace {
 

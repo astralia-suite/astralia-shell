@@ -6,12 +6,11 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
-#include "modules/bar/panel/panel_set.h"
-
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/popup_window.h"
+
+#include "modules/bar/panel/panel_set.h"
 
 #include "service/wayland/text_input_service.h"
 

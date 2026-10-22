@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <cmath>
 
-#include "check.h"
-
 #include "config/launcher_config.h"
 
 #include "modules/launcher/entrance.h"
+
+#include "check.h"
 
 namespace {
 

@@ -1,14 +1,14 @@
 #include <string>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "config/polkit_config.h"
 
 #include "core/animation.h"
 
 #include "modules/polkit/layout.h"
 #include "modules/polkit/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

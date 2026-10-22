@@ -12,10 +12,9 @@
 
 #include "config/lock_config.h"
 
+#include "modules/lock/layout.h"
 #include "modules/lock/pam_authenticator.h"
 #include "modules/lock/x11/lock.h"
-
-#include "modules/lock/layout.h"
 
 #include "render/draw.h"
 #include "render/wallpaper_paint.h"
@@ -363,14 +362,15 @@ void Lock::paint(Surface &surface, bool with_wallpaper) {
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     if (with_wallpaper) {
         const Config &config = services_.settings.config();
-        std::string key = wallpaper_signature(config, surface.output.name) + ":" +
+        WallpaperSlot slot = wallpaper_lock_slot(config);
+        std::string key = wallpaper_signature(config, surface.output.name, slot) + ":" +
                           std::to_string(area.width) + "x" + std::to_string(area.height);
         if (key != surface.wallpaper_key) {
             surface.wallpaper.reset(
                 cairo_image_surface_create(CAIRO_FORMAT_ARGB32, area.width, area.height));
             cairo_t *wallpaper_cr = cairo_create(surface.wallpaper.get());
             paint_wallpaper(wallpaper_cr, config, surface.output.name, 0, 0, area.width,
-                            area.height);
+                            area.height, slot);
             cairo_destroy(wallpaper_cr);
             surface.wallpaper_key = key;
         }

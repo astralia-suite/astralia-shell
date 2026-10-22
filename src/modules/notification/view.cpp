@@ -2,12 +2,12 @@
 #include <cmath>
 
 #include "config/notification_config.h"
+
 #include "render/icons.h"
 #include "render/sticker.h"
+#include "render/tokens.h"
 
 #include "modules/notification/view.h"
-
-#include "render/tokens.h"
 
 namespace astralia {
 

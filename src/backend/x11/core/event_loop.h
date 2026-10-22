@@ -9,7 +9,6 @@
 
 #include "core/poll_reactor.h"
 #include "core/reactor.h"
-
 #include "core/x_connection.h"
 
 namespace astralia {

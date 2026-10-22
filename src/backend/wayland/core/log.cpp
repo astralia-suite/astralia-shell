@@ -3,6 +3,7 @@
 #include <string>
 
 #include "core/log.h"
+
 #include "wayland/core/log.h"
 
 void klog(const char *fmt, ...) {

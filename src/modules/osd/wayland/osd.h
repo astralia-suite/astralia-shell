@@ -6,13 +6,11 @@
 #include <wayland-egl.h>
 
 #include "wayland/app/per_monitor_module.h"
-
-#include "modules/osd/model.h"
-
-#include "modules/osd/wayland/osd_style_config.h"
-
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/renderer.h"
+
+#include "modules/osd/model.h"
+#include "modules/osd/wayland/osd_style_config.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/output_service.h"

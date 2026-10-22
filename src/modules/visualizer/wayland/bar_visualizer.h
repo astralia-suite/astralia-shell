@@ -2,7 +2,7 @@
 
 #include <GLES2/gl2.h>
 
-#include "wayland/config/visualizer_config.h"
+#include "wayland/config/visualizer_gl_config.h"
 
 class BarVisualizer {
   public:

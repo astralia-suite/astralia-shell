@@ -3,6 +3,8 @@
 #include <memory>
 
 #include "core/dbus.h"
+#include "core/event_loop.h"
+#include "core/x_connection.h"
 
 #include "service/audio_service.h"
 #include "service/battery_service.h"
@@ -18,9 +20,6 @@
 #include "service/theme_service.h"
 #include "service/tray_service.h"
 #include "service/user_service.h"
-
-#include "core/event_loop.h"
-#include "core/x_connection.h"
 #include "service/x11/output_service.h"
 
 namespace astralia {

@@ -10,13 +10,13 @@
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/per_monitor_module.h"
 #include "wayland/app/wayland_state.h"
+#include "wayland/render/gl_canvas.h"
+#include "wayland/render/renderer.h"
 
 #include "modules/bar/model.h"
 #include "modules/bar/wayland/panel_surface.h"
 
 #include "core/animation.h"
-#include "wayland/render/gl_canvas.h"
-#include "wayland/render/renderer.h"
 
 #include "service/compositor_service.h"
 #include "service/wayland/frame_service.h"

@@ -4,10 +4,9 @@
 #include <unistd.h>
 
 #include "wayland/app/config.h"
+#include "wayland/core/log.h"
 
 #include "core/config_file.h"
-
-#include "wayland/core/log.h"
 
 std::string config_path() { return astralia::user_config_path("astralia/config.json"); }
 

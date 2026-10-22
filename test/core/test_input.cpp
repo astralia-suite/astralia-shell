@@ -1,6 +1,6 @@
-#include "check.h"
-
 #include "core/input.h"
+
+#include "check.h"
 
 void check_input() {
     using namespace astralia::input;

@@ -6,9 +6,9 @@
 #include <wayland-egl.h>
 
 #include "wayland/core/log.h"
+#include "wayland/render/layer_surface.h"
 
 #include "core/animation.h"
-#include "wayland/render/layer_surface.h"
 
 #include "service/wayland/frame_service.h"
 #include "service/wayland/output_service.h"

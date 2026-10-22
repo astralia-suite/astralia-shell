@@ -180,7 +180,7 @@ std::string default_wallpaper_path() {
 
 Config::Config()
     : wallpaper_path(default_wallpaper_path()), wallpaper_dir(home_subdir("Pictures")),
-      wallpaper_animated_dir(home_subdir("Videos")) {}
+      wallpaper_animated_dir(home_subdir("Videos")), lock_wallpaper_dir(home_subdir("Pictures")) {}
 
 namespace {
 
@@ -265,6 +265,11 @@ Config parse_config(std::string_view source) {
     read_columns(wallpaper, "animatedColumns", cfg.wallpaper_animated_columns, true);
     read_counts(wallpaper, "animatedColumnCounts", cfg.wallpaper_animated_column_counts);
     read_columns(wallpaper, "animatedFillModes", cfg.wallpaper_animated_fill_modes, false);
+    cfg.lock_wallpaper_custom = flag(wallpaper, "lockCustom", cfg.lock_wallpaper_custom);
+    cfg.lock_wallpaper_dir = path_expand_home(text(wallpaper, "lockDir", cfg.lock_wallpaper_dir));
+    read_columns(wallpaper, "lockColumns", cfg.lock_wallpaper_columns, true);
+    read_counts(wallpaper, "lockColumnCounts", cfg.lock_wallpaper_column_counts);
+    read_columns(wallpaper, "lockFillModes", cfg.lock_wallpaper_fill_modes, false);
     cfg.capture_monitor = text(wallpaper, "captureMonitor", cfg.capture_monitor);
     cfg.capture_column = integer(wallpaper, "captureColumn", cfg.capture_column);
 
@@ -369,6 +374,11 @@ std::string serialize_config(const Config &cfg) {
     wallpaper.set("animatedColumns", columns_json(cfg.wallpaper_animated_columns, true));
     wallpaper.set("animatedColumnCounts", counts_json(cfg.wallpaper_animated_column_counts));
     wallpaper.set("animatedFillModes", columns_json(cfg.wallpaper_animated_fill_modes, false));
+    wallpaper.set("lockCustom", Json::from_bool(cfg.lock_wallpaper_custom));
+    wallpaper.set("lockDir", Json::from_string(path_collapse_home(cfg.lock_wallpaper_dir)));
+    wallpaper.set("lockColumns", columns_json(cfg.lock_wallpaper_columns, true));
+    wallpaper.set("lockColumnCounts", counts_json(cfg.lock_wallpaper_column_counts));
+    wallpaper.set("lockFillModes", columns_json(cfg.lock_wallpaper_fill_modes, false));
     wallpaper.set("captureMonitor", Json::from_string(cfg.capture_monitor));
     wallpaper.set("captureColumn", Json::from_number(cfg.capture_column));
 

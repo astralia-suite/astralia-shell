@@ -5,7 +5,6 @@
 #include "core/deferred_call.h"
 
 #include "wayland/core/log.h"
-
 #include "wayland/render/arc_gauge.h"
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/icon.h"

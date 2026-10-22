@@ -11,12 +11,11 @@
 #include "wayland/app/config.h"
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
+#include "wayland/render/gl_canvas.h"
+#include "wayland/render/overlay_panel.h"
 
 #include "modules/settings/model.h"
 #include "modules/settings/view.h"
-
-#include "wayland/render/gl_canvas.h"
-#include "wayland/render/overlay_panel.h"
 
 #include "service/wayland/input_service.h"
 #include "service/wayland/media_service.h"

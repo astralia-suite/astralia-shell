@@ -2,7 +2,6 @@
 
 #include "wayland/app/module_registry.h"
 #include "wayland/app/monitor_output.h"
-
 #include "wayland/core/log.h"
 
 #include "core/animation.h"

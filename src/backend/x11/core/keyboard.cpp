@@ -37,18 +37,30 @@ bool Keyboard::reload() {
     return true;
 }
 
+input::Modifiers Keyboard::modifiers(uint16_t mask) {
+    if (!state_) {
+        return {};
+    }
+    xkb_state_update_mask(state_.get(), mask & 0xFF, 0, 0, 0, 0, (mask >> 13) & 0x3);
+    return {
+        .shift = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_SHIFT,
+                                              XKB_STATE_MODS_EFFECTIVE) > 0,
+        .alt = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_ALT,
+                                            XKB_STATE_MODS_EFFECTIVE) > 0,
+        .ctrl = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_CTRL,
+                                             XKB_STATE_MODS_EFFECTIVE) > 0,
+    };
+}
+
 KeyEvent Keyboard::press(xcb_keycode_t keycode, uint16_t modifiers) {
     if (!state_) {
         return {};
     }
-    xkb_state_update_mask(state_.get(), modifiers & 0xFF, 0, 0, 0, 0, (modifiers >> 13) & 0x3);
+    input::Modifiers mods = this->modifiers(modifiers);
     KeyEvent event;
-    event.shift = xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_SHIFT,
-                                               XKB_STATE_MODS_EFFECTIVE) > 0;
-    event.alt =
-        xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE) > 0;
-    event.ctrl =
-        xkb_state_mod_name_is_active(state_.get(), XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0;
+    event.shift = mods.shift;
+    event.alt = mods.alt;
+    event.ctrl = mods.ctrl;
     switch (xkb_state_key_get_one_sym(state_.get(), keycode)) {
     case XKB_KEY_BackSpace:
         event.kind = KeyKind::backspace;

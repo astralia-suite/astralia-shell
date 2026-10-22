@@ -5,11 +5,10 @@
 
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
-
-#include "config/dashboard_config.h"
-
 #include "wayland/render/renderer.h"
 #include "wayland/render/toplevel_window.h"
+
+#include "config/dashboard_config.h"
 
 #include "service/wayland/input_service.h"
 

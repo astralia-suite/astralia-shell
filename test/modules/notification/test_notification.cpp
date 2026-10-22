@@ -2,15 +2,15 @@
 #include <string>
 #include <vector>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "config/notification_config.h"
 
 #include "core/animation.h"
 
 #include "modules/notification/model.h"
 #include "modules/notification/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

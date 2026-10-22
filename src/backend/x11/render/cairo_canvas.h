@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "render/canvas.h"
-
 #include "render/image_decode.h"
 #include "render/text.h"
 

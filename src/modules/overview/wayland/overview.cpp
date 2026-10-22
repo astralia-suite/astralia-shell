@@ -4,14 +4,12 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/layer_surface.h"
 
 #include "modules/overview/view.h"
 #include "modules/overview/wayland/overview.h"
-
-#include "wayland/render/gl.h"
-#include "wayland/render/layer_surface.h"
 
 namespace {
 
@@ -110,7 +108,7 @@ std::vector<astralia::ShellBinding> overview_shell_bindings(OverviewState &overv
 }
 
 void overview_handle_click(OverviewState &state, WaylandState &app, double px, double py) {
-    ensure_model(state, app).press(px, py);
+    ensure_model(state, app).press(px, py, keyboard_modifiers(app.keyboard));
 }
 
 bool overview_point_is_clickable(OverviewState &state, WaylandState &app, double px, double py) {

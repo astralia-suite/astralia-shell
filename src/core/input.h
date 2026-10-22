@@ -21,6 +21,12 @@ enum class KeyKind : uint8_t {
     Delete,
 };
 
+struct Modifiers {
+    bool shift = false;
+    bool alt = false;
+    bool ctrl = false;
+};
+
 struct KeyEvent {
     KeyKind kind = KeyKind::Text;
     std::string text;

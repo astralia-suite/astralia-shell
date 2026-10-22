@@ -10,6 +10,7 @@
 
 #include "render/decode.h"
 #include "render/theme.h"
+
 #include "service/theme_service.h"
 #include "service/wallpaper_service.h"
 

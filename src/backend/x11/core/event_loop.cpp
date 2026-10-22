@@ -15,9 +15,8 @@
 #include <unistd.h>
 #include <utility>
 
-#include "core/log.h"
-
 #include "core/event_loop.h"
+#include "core/log.h"
 
 namespace astralia {
 

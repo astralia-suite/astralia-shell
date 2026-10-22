@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -9,18 +8,18 @@
 #include "config/rain_config.h"
 #include "config/settings_config.h"
 #include "config/visualizer_config.h"
-#include "render/icons.h"
-#include "render/scroll.h"
-
-#include "core/path_home.h"
-
-#include "modules/settings/view.h"
-
-#include "service/wallpaper_service.h"
 
 #include "render/field_view.h"
+#include "render/icons.h"
+#include "render/scroll.h"
 #include "render/sticker.h"
 #include "render/tokens.h"
+
+#include "modules/settings/pane.h"
+#include "modules/settings/view.h"
+#include "modules/settings/wallpaper_columns.h"
+
+#include "service/wallpaper_service.h"
 
 namespace astralia {
 
@@ -28,95 +27,15 @@ namespace {
 
 namespace cfg = settings_config;
 
-constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
-constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
+using settings_view::DropEntry;
+using settings_view::icon_style;
+using settings_view::Pane;
+using settings_view::small_style;
+using settings_view::text_style;
+using settings_view::transparent;
+
 constexpr ui::TextStyle title_style{ui::FontFamily::text, cfg::title_px, true};
-constexpr ui::TextStyle small_style{ui::FontFamily::text, cfg::small_px};
-constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 constexpr ui::TextStyle big_icon_style{ui::FontFamily::icon, cfg::menu_icon_px};
-
-struct DropEntry {
-    std::string label;
-    int a;
-    int b;
-};
-
-struct Pane {
-    ui::Canvas &canvas;
-    SettingsModel &model;
-    float alpha;
-    ui::Box caret{};
-    std::function<void()> overlay;
-
-    Color fade(const Color &c) const { return with_alpha(c, c.a * alpha); }
-    void rect(const ui::Box &box, const Color &c) { canvas.rect(box, fade(c)); }
-    void rounded(const ui::Box &box, float radius, const Color &fill, float border_width = 0.0f,
-                 const Color &border = transparent) {
-        canvas.rounded(box, radius, fade(fill), border_width, fade(border));
-    }
-    void selectable(const ui::Box &box, bool selected, const Color &idle = palette::surface) {
-        astralia::selectable(canvas, box, metrics::radius_widget, selected, false, idle, alpha);
-    }
-    void chip(const ui::Box &box, const Color &fill) {
-        astralia::sticker(canvas, box, metrics::radius_widget, fade(fill), fade(palette::ink),
-                          metrics::border_thin, metrics::shadow_widget);
-    }
-    ui::TextSize text(std::string_view value, const ui::TextStyle &style, float x, float y,
-                      const Color &c) {
-        ui::TextSize size = canvas.measure(value, style);
-        canvas.text(value, style, x, y, fade(c));
-        return size;
-    }
-    void centered(std::string_view value, const ui::TextStyle &style, const ui::Box &box,
-                  const Color &c) {
-        ui::TextSize size = canvas.measure(value, style);
-        canvas.text(value, style, box.x + (box.w - size.w) / 2.0f, box.y + (box.h - size.h) / 2.0f,
-                    fade(c));
-    }
-    void left(std::string_view value, const ui::TextStyle &style, float x, const ui::Box &box,
-              const Color &c) {
-        ui::TextSize size = canvas.measure(value, style);
-        canvas.text(value, style, x, box.y + (box.h - size.h) / 2.0f, fade(c));
-    }
-    void region(const ui::Box &box, SettingsAct act, int a = 0, int b = 0) {
-        model.add_region(box, act, a, b);
-    }
-    void dropdown(const ui::Box &row, int id, std::string_view label, const std::string &current,
-                  std::vector<DropEntry> entries, size_t selected, SettingsAct pick) {
-        chip(row, palette::surface);
-        left(label, text_style, row.x + cfg::tile_margin, row,
-             with_alpha(palette::text, cfg::label_opacity));
-        float box_w = std::min(row.w * 0.5f, cfg::dropdown_max_width);
-        ui::Box box{row.x + row.w - cfg::tile_margin - box_w,
-                    row.y + (row.h - cfg::field_height) / 2.0f, box_w, cfg::field_height};
-        bool open = model.dropdown_open() == id;
-        selectable(box, open);
-        left(current, text_style, box.x + cfg::dropdown_pad, box, palette::text);
-        const char *glyph = open ? icon::chevron_up : icon::chevron_down;
-        ui::TextSize arrow = canvas.measure(glyph, icon_style);
-        canvas.text(glyph, icon_style, box.x + box.w - cfg::dropdown_pad - arrow.w,
-                    box.y + (box.h - arrow.h) / 2.0f, fade(palette::text));
-        region(box, SettingsAct::dropdown_toggle, id);
-        if (!open) {
-            return;
-        }
-        overlay = [this, box, entries = std::move(entries), selected, pick] {
-            float row_h = cfg::field_height;
-            ui::Box list{box.x, box.y + box.h + cfg::dropdown_gap, box.w,
-                         row_h * static_cast<float>(entries.size())};
-            chip(list, palette::paper);
-            model.add_region_front({0.0f, 0.0f, 1.0e5f, 1.0e5f}, SettingsAct::dropdown_dismiss);
-            for (size_t i = 0; i < entries.size(); ++i) {
-                ui::Box item{list.x, list.y + row_h * static_cast<float>(i), list.w, row_h};
-                if (i == selected) {
-                    selectable(item, true);
-                }
-                left(entries[i].label, text_style, item.x + cfg::dropdown_pad, item, palette::text);
-                model.add_region_front(item, pick, entries[i].a, entries[i].b);
-            }
-        };
-    }
-};
 
 void toggle_switch(Pane &pane, float x, float y, bool on, SettingsAct act, int a, int b) {
     ui::Box track{x, y, cfg::toggle_width, cfg::toggle_height};
@@ -390,20 +309,13 @@ void general_tab(Pane &pane, float x, float y, float w) {
     }
 }
 
-struct Chip {
-    int monitor;
-    int column;
-    std::string label;
-};
-
 void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
     SettingsModel &model = pane.model;
     const SettingsCaps &caps = model.caps();
     const Config &config = model.config();
     bool animated = caps.animated_wallpaper && config.wallpaper_animated_enabled;
-    WallpaperPicker &picker = model.picker(animated);
-    int animated_flag = animated ? 1 : 0;
-    picker.grid_width = w;
+    WallpaperSlot slot = animated ? WallpaperSlot::animated : WallpaperSlot::still;
+    WallpaperPicker &picker = model.picker(slot);
 
     if (caps.default_wallpaper) {
         y += toggle_row(pane, x, y, w, "Use Default Wallpaper", config.default_wallpaper_enabled,
@@ -417,38 +329,11 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
              cfg::row_gap;
     }
 
-    std::vector<Chip> chips;
-    const std::vector<std::string> &monitors = model.monitors();
-    for (size_t m = 0; m < monitors.size(); ++m) {
-        int count =
-            caps.wallpaper_columns ? wallpaper_column_count(config, monitors[m], animated) : 1;
-        for (int col = 0; col < count; ++col) {
-            chips.push_back(
-                {static_cast<int>(m), col,
-                 count > 1 ? monitors[m] + "-" + std::to_string(col + 1) : monitors[m]});
-        }
-    }
     {
-        std::vector<DropEntry> region_entries;
-        size_t active = std::string::npos;
-        for (const Chip &chip : chips) {
-            if (monitors[static_cast<size_t>(chip.monitor)] == picker.region &&
-                chip.column == picker.column) {
-                active = region_entries.size();
-            }
-            region_entries.push_back(
-                {chip.label, chip.monitor, chip.column | (animated ? 0x100 : 0)});
-        }
-        std::string current = active < region_entries.size() ? region_entries[active].label : "";
-        pane.dropdown({x, y, w, cfg::tile_height}, 4, "Display", current, std::move(region_entries),
-                      active, SettingsAct::wallpaper_region);
-    }
-    y += cfg::tile_height + cfg::row_gap;
-
-    {
+        const std::vector<std::string> &monitors = model.monitors();
         std::vector<DropEntry> entries{{"Auto", -1, 0}};
         size_t selected = 0;
-        for (const Chip &chip : chips) {
+        for (const WallpaperChip &chip : wallpaper_chips(model, slot)) {
             if (monitors[static_cast<size_t>(chip.monitor)] == config.capture_monitor &&
                 chip.column == config.capture_column) {
                 selected = entries.size();
@@ -461,180 +346,8 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         y += cfg::tile_height + cfg::row_gap;
     }
 
-    SettingsField dir_field =
-        animated ? SettingsField::wallpaper_animated_dir : SettingsField::wallpaper_dir;
-    bool focused = model.focused() == dir_field;
-    ui::Box bar{x, y, w, cfg::dir_bar_height};
-    pane.rounded(bar, metrics::radius_widget, focused ? palette::pop_b : palette::field_bg,
-                 metrics::border_thin, palette::ink);
-    float input_x = x + cfg::dir_bar_label_margin;
-    input_x +=
-        pane.text("Dir", text_style, input_x,
-                  y + (cfg::dir_bar_height - pane.canvas.measure("Dir", text_style).h) / 2.0f,
-                  palette::lavender)
-            .w +
-        cfg::dir_bar_field_margin;
-    float button_x = x + w - cfg::dir_bar_edge_margin - cfg::dir_bar_button_width;
-    float input_w = button_x - cfg::dir_bar_edge_margin - input_x;
-    float center_y = y + cfg::dir_bar_height / 2.0f;
-    if (focused) {
-        ui::FieldDraw draw;
-        draw.style = text_style;
-        draw.x = input_x;
-        draw.center_y = center_y;
-        draw.caret_height = cfg::dir_bar_height - 16.0f;
-        draw.caret_width = 1.5f;
-        draw.caret_gap = 2.0f;
-        draw.color = pane.fade(palette::text);
-        pane.caret = ui::draw_field_input(pane.canvas, model.field().text, model.field(),
-                                          model.field_anim(), draw);
-    } else {
-        ui::TextStyle clipped = text_style;
-        clipped.max_width = static_cast<int>(input_w);
-        std::string shown =
-            path_collapse_home(animated ? config.wallpaper_animated_dir : config.wallpaper_dir);
-        ui::TextSize size = pane.canvas.measure(shown, clipped);
-        pane.text(shown, clipped, input_x, y + (cfg::dir_bar_height - size.h) / 2.0f,
-                  palette::text);
-    }
-    pane.region({input_x, y, input_w, cfg::dir_bar_height}, SettingsAct::field_focus,
-                static_cast<int>(dir_field), 0);
-    ui::Box button{button_x, y + (cfg::dir_bar_height - cfg::dir_bar_button_height) / 2.0f,
-                   cfg::dir_bar_button_width, cfg::dir_bar_button_height};
-    pane.selectable(button, false, palette::pop_b);
-    pane.centered(picker.scanning ? "\xE2\x80\xA6" : "Rescan", text_style, button, palette::text);
-    pane.region(button, SettingsAct::wallpaper_rescan, 0, animated_flag);
-    y += cfg::dir_bar_height + cfg::row_gap;
-
-    std::string own = wallpaper_column_override(config, picker.region, picker.column, animated);
-    float control_y = y;
-    if (caps.wallpaper_columns) {
-        int count =
-            picker.region.empty() ? 1 : wallpaper_column_count(config, picker.region, animated);
-        ui::Box minus{x, control_y, cfg::stepper_button, cfg::field_height};
-        pane.selectable(minus, false);
-        pane.centered("-", text_style, minus, palette::text);
-        pane.region(minus, SettingsAct::wallpaper_count, -1, animated_flag);
-        std::string count_text = std::to_string(count);
-        float count_w = pane.canvas.measure(count_text, text_style).w + 12.0f;
-        pane.centered(count_text, text_style,
-                      {x + cfg::stepper_button, control_y, count_w, cfg::field_height},
-                      palette::text);
-        ui::Box plus{x + cfg::stepper_button + count_w, control_y, cfg::stepper_button,
-                     cfg::field_height};
-        pane.selectable(plus, false);
-        pane.centered("+", text_style, plus, palette::text);
-        pane.region(plus, SettingsAct::wallpaper_count, 1, animated_flag);
-
-        std::string mode = wallpaper_fill_mode(config, picker.region, picker.column, animated);
-        const char *labels[2] = {"Crop", "Fit"};
-        float widths[2];
-        float pair = 0.0f;
-        for (int i = 0; i < 2; ++i) {
-            widths[i] = pane.canvas.measure(labels[i], text_style).w + 20.0f;
-            pair += widths[i] + (i == 0 ? 0.0f : 6.0f);
-        }
-        float fx = x + w - pair;
-        for (int i = 0; i < 2; ++i) {
-            bool active = mode == (i == 0 ? "crop" : "fit");
-            ui::Box box{fx, control_y, widths[i], cfg::field_height};
-            pane.selectable(box, active);
-            pane.centered(labels[i], text_style, box, palette::text);
-            pane.region(box, SettingsAct::wallpaper_fill, i, animated_flag);
-            fx += widths[i] + 6.0f;
-        }
-    }
-    if (!own.empty()) {
-        std::string label = caps.wallpaper_columns ? "Remove" : "Reset";
-        float rw = pane.canvas.measure(label, text_style).w + 20.0f;
-        float rx = caps.wallpaper_columns ? x + (w - rw) / 2.0f : x + w - rw;
-        ui::Box box{rx, control_y, rw, cfg::field_height};
-        pane.chip(box, palette::critical_container);
-        pane.centered(label, text_style, box, palette::text);
-        pane.region(box, SettingsAct::wallpaper_remove, 0, animated_flag);
-    }
-    y += cfg::row_height;
-
-    float available = bottom - y;
-    float inset_w = w - cfg::grid_inset * 2.0f;
-    int columns = cfg::thumb_columns;
-    float cell = cfg::thumb_size + cfg::thumb_gap;
-    size_t rows =
-        (picker.files.size() + static_cast<size_t>(columns) - 1) / static_cast<size_t>(columns);
-    float content_h = rows == 0 ? 0.0f : static_cast<float>(rows) * cell - cfg::thumb_gap;
-    picker.grid_height = std::min(available, content_h + cfg::grid_inset * 2.0f);
-    if (picker.files.empty()) {
-        pane.text(picker.scanning ? "Scanning\xE2\x80\xA6"
-                                  : (animated ? "No videos found" : "No images found"),
-                  text_style, x, y, palette::text_dim);
-        return;
-    }
-    pane.rounded({x, y, w, picker.grid_height}, metrics::radius_widget, transparent,
-                 metrics::border_thin, palette::ink);
-    float visible_h = std::min(picker.grid_height - cfg::grid_inset * 2.0f, content_h);
-    float row_w = static_cast<float>(columns) * cell - cfg::thumb_gap;
-    float grid_x = x + cfg::grid_inset + (inset_w - row_w) / 2.0f;
-    float grid_y = y + cfg::grid_inset;
-    picker.scroll = std::clamp(picker.scroll, 0.0f, std::max(0.0f, content_h - visible_h));
-    std::string selected = wallpaper_column_path(config, picker.region, picker.column, animated);
-
-    pane.canvas.begin_group({grid_x, grid_y, row_w, visible_h}, {1.0f, true});
-    int total_rows = static_cast<int>(rows);
-    int first_row =
-        std::clamp(static_cast<int>(picker.scroll / cell), 0, std::max(0, total_rows - 1));
-    int last_row = std::clamp(static_cast<int>((picker.scroll + visible_h) / cell), 0,
-                              std::max(0, total_rows - 1));
-    for (int row = first_row; row <= last_row; ++row) {
-        for (int col = 0; col < columns; ++col) {
-            size_t index =
-                static_cast<size_t>(row) * static_cast<size_t>(columns) + static_cast<size_t>(col);
-            if (index >= picker.files.size()) {
-                break;
-            }
-            const std::string &path = picker.files[index];
-            ui::Box tile{static_cast<float>(col) * cell,
-                         static_cast<float>(row) * cell - picker.scroll, cfg::thumb_size,
-                         cfg::thumb_size};
-            bool active = path == selected;
-            pane.rounded(tile, metrics::radius_widget, palette::field_bg);
-            ui::ImageId image = pane.canvas.thumbnail(path, static_cast<int>(cfg::thumb_size));
-            if (image != ui::no_image) {
-                ui::TextSize size = pane.canvas.image_size(image);
-                if (size.w > 0 && size.h > 0) {
-                    float scale = std::max(cfg::thumb_size / size.w, cfg::thumb_size / size.h);
-                    pane.canvas.begin_group(tile, {1.0f, true});
-                    pane.canvas.draw_image(image,
-                                           {(cfg::thumb_size - size.w * scale) / 2.0f,
-                                            (cfg::thumb_size - size.h * scale) / 2.0f,
-                                            size.w * scale, size.h * scale},
-                                           pane.fade(palette::white));
-                    pane.canvas.end_group();
-                }
-            }
-            ui::TextStyle clipped = small_style;
-            clipped.max_width = static_cast<int>(cfg::thumb_size - cfg::thumb_label_pad);
-            std::string name = std::filesystem::path(path).filename().string();
-            ui::TextSize name_size = pane.canvas.measure(name, clipped);
-            float label_h = name_size.h + cfg::thumb_label_pad;
-            pane.rect({tile.x, tile.y + cfg::thumb_size - label_h, cfg::thumb_size, label_h},
-                      palette::overlay);
-            pane.text(name, clipped, tile.x + cfg::thumb_label_pad / 2.0f,
-                      tile.y + cfg::thumb_size - (label_h + name_size.h) / 2.0f, palette::text);
-            pane.rounded(tile, metrics::radius_widget, transparent,
-                         active ? metrics::border_thick : 0.0f,
-                         active ? palette::ink : transparent);
-            ui::Box hit{grid_x + tile.x, grid_y + tile.y, tile.w, tile.h};
-            float top = std::max(hit.y, grid_y);
-            float bottom_edge = std::min(hit.y + hit.h, grid_y + visible_h);
-            if (bottom_edge > top) {
-                pane.region({hit.x, top, hit.w, bottom_edge - top}, SettingsAct::wallpaper_pick,
-                            static_cast<int>(index), animated_flag);
-            }
-        }
-    }
-    pane.canvas.end_group();
-    y += picker.grid_height;
-    if (animated && model.cpu_fallback(picker.region, picker.column)) {
+    y = wallpaper_columns_panel(pane, slot, x, y, w, bottom);
+    if (animated && model.cpu_fallback(picker.region, picker.column) && !picker.files.empty()) {
         y += cfg::row_gap;
         std::string warning = "Warning: Animated wallpaper is running on CPU.";
         ui::TextSize size = pane.canvas.measure(warning, text_style);
@@ -643,6 +356,23 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         pane.text(warning, text_style, x + cfg::warning_pad, y + (h - size.h) / 2.0f,
                   palette::text);
     }
+}
+
+void lock_tab(Pane &pane, float x, float y, float w, float bottom) {
+    const SettingsCaps &caps = pane.model.caps();
+    const Config &config = pane.model.config();
+    tiles(pane, x, y, w, {"Auto", "Custom"}, config.lock_wallpaper_custom ? 1 : 0,
+          SettingsAct::lock_wallpaper_mode, 0);
+    y += cfg::selector_height + cfg::row_gap;
+    if (!config.lock_wallpaper_custom) {
+        return;
+    }
+    if (caps.default_wallpaper) {
+        y += toggle_row(pane, x, y, w, "Use Default Wallpaper", config.default_wallpaper_enabled,
+                        SettingsAct::wallpaper_default, 0, 0, true) +
+             cfg::row_gap;
+    }
+    wallpaper_columns_panel(pane, WallpaperSlot::lock, x, y, w, bottom);
 }
 
 void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float bottom) {
@@ -658,6 +388,9 @@ void tab_content(Pane &pane, SettingsTab tab, float x, float y, float w, float b
         break;
     case SettingsTab::general:
         general_tab(pane, x, y, w);
+        break;
+    case SettingsTab::lock:
+        lock_tab(pane, x, y, w, bottom);
         break;
     case SettingsTab::wallpaper:
         wallpaper_tab(pane, x, y, w, bottom);
@@ -684,6 +417,8 @@ std::string tab_summary(const SettingsModel &model, SettingsTab tab) {
         return std::to_string(model.monitors().size()) + " connected";
     case SettingsTab::general:
         return config.animations_disabled ? "Animations off" : "Animations on";
+    case SettingsTab::lock:
+        return config.lock_wallpaper_custom ? "Custom" : "Auto";
     case SettingsTab::wallpaper:
         return config.wallpaper_animated_enabled ? "Animated" : "Static";
     }

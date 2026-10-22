@@ -5,6 +5,8 @@
 #include <xcb/xcb.h>
 #include <xkbcommon/xkbcommon.h>
 
+#include "core/input.h"
+
 namespace astralia {
 
 enum class KeyKind {
@@ -38,6 +40,7 @@ class Keyboard {
 
     bool reload();
     KeyEvent press(xcb_keycode_t keycode, uint16_t modifiers);
+    input::Modifiers modifiers(uint16_t mask);
 
   private:
     struct Free {

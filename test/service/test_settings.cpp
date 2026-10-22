@@ -37,7 +37,12 @@ std::string sample_config() {
     "columnCounts": {"eDP-1": 2},
     "columns": {"eDP-1": ["~/Pictures/a.jpg", "/abs/b.png"]},
     "dir": "~/Pictures",
-    "fillModes": {"eDP-1": ["fit", "crop"]}
+    "fillModes": {"eDP-1": ["fit", "crop"]},
+    "lockColumnCounts": {"eDP-1": 3},
+    "lockColumns": {"eDP-1": ["~/Locks/a.jpg"]},
+    "lockCustom": true,
+    "lockDir": "~/Locks",
+    "lockFillModes": {"eDP-1": ["fit"]}
   }
 })";
 }
@@ -78,6 +83,16 @@ void check_config_parse() {
     check(cfg.wallpaper_column_counts["eDP-1"] == 2 &&
               cfg.wallpaper_fill_modes["eDP-1"] == std::vector<std::string>{"fit", "crop"},
           "counts and fill modes");
+    check(cfg.lock_wallpaper_custom && cfg.lock_wallpaper_dir == "/home/tester/Locks" &&
+              cfg.lock_wallpaper_columns["eDP-1"] ==
+                  std::vector<std::string>{"/home/tester/Locks/a.jpg"} &&
+              cfg.lock_wallpaper_column_counts["eDP-1"] == 3 &&
+              cfg.lock_wallpaper_fill_modes["eDP-1"] == std::vector<std::string>{"fit"},
+          "lock wallpaper keys load beside the desktop ones");
+    check(!defaults.lock_wallpaper_custom &&
+              defaults.lock_wallpaper_dir == defaults.wallpaper_dir &&
+              defaults.lock_wallpaper_columns.empty(),
+          "the lock wallpaper defaults to Auto with the pictures directory");
 
     cfg.capture_monitor = "eDP-1";
     cfg.capture_column = 1;
@@ -89,6 +104,9 @@ void check_config_parse() {
     std::string text = serialize_config(cfg);
     check(text.find("\"autohideEnabled\": true") != std::string::npos, "bar key is written");
     check(text.find("~/Pictures/a.jpg") != std::string::npos, "home is collapsed when saving");
+    check(text.find("\"lockCustom\": true") != std::string::npos &&
+              text.find("~/Locks/a.jpg") != std::string::npos,
+          "lock wallpaper keys are written");
     check(text.find("\"particleThin\": 0.12") != std::string::npos,
           "floats are written in their shortest form");
 

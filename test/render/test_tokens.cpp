@@ -1,9 +1,9 @@
 #include <cmath>
 
-#include "check.h"
-
 #include "render/glyphs.h"
 #include "render/tokens.h"
+
+#include "check.h"
 
 namespace {
 

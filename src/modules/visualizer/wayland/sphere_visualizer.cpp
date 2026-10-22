@@ -5,15 +5,14 @@
 #include <cmath>
 #include <vector>
 
-#include "wayland/config/visualizer_config.h"
-
+#include "wayland/config/visualizer_gl_config.h"
 #include "wayland/core/log.h"
+#include "wayland/render/gl.h"
 
 #include "modules/visualizer/wayland/sphere_visualizer.h"
 #include "modules/visualizer/wayland/visualizer_shaders.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
 
 namespace {
 

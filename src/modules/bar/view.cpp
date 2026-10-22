@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "config/bar_layout.h"
+
 #include "render/icons.h"
 #include "render/sticker.h"
 

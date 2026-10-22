@@ -4,10 +4,6 @@
 #include <string>
 #include <unistd.h>
 
-#include "check.h"
-#include "core/pump.h"
-#include "render/recording_canvas.h"
-
 #include "config/settings_config.h"
 
 #include "core/animation.h"
@@ -20,6 +16,10 @@
 
 #include "service/wallpaper_service.h"
 
+#include "check.h"
+#include "core/pump.h"
+#include "render/recording_canvas.h"
+
 namespace {
 
 namespace cfg = astralia::settings_config;
@@ -29,6 +29,11 @@ using astralia::SettingsCaps;
 using astralia::SettingsField;
 using astralia::SettingsModel;
 using astralia::SettingsTab;
+using astralia::wallpaper_column_count;
+using astralia::wallpaper_column_override;
+using astralia::wallpaper_fill_mode;
+using astralia::WallpaperPicker;
+using astralia::WallpaperSlot;
 using astralia::input::KeyEvent;
 using astralia::input::KeyKind;
 
@@ -85,6 +90,11 @@ void check_fields() {
     test::check(config.visualizer.particle_thin == 0.95f, "floats clamp");
     astralia::settings_apply_field(config, SettingsField::wallpaper_dir, "/tmp/x", "");
     test::check(config.wallpaper_dir == "/tmp/x", "directories are stored");
+    astralia::settings_apply_field(config, SettingsField::lock_wallpaper_dir, "/tmp/lock", "");
+    test::check(config.lock_wallpaper_dir == "/tmp/lock" && config.wallpaper_dir == "/tmp/x" &&
+                    astralia::settings_field_text(config, SettingsField::lock_wallpaper_dir, "") ==
+                        "/tmp/lock",
+                "the lock directory is its own field");
     test::check(astralia::settings_field_text(config, SettingsField::visualizer_thin, "") == "0.95",
                 "floats print without trailing zeros");
     test::check(astralia::settings_field_text(config, SettingsField::visualizer_fps, "") == "60",
@@ -113,6 +123,25 @@ void check_tabs() {
                 "capabilities add the extra tabs in order");
     test::check(rich.model.tabs()[3].tab == SettingsTab::general,
                 "the general tab sits between displays and wallpaper");
+
+    SettingsCaps with_lock = full;
+    with_lock.lock_wallpaper = true;
+    Env locking(with_lock);
+    std::vector<SettingsTab> locking_order;
+    for (const astralia::SettingsTabInfo &info : locking.model.tabs()) {
+        locking_order.push_back(info.tab);
+    }
+    test::check(locking_order == std::vector<SettingsTab>{SettingsTab::ambient, SettingsTab::bar,
+                                                          SettingsTab::displays,
+                                                          SettingsTab::general, SettingsTab::lock,
+                                                          SettingsTab::wallpaper},
+                "the lock screen tab sits between general and wallpaper");
+    SettingsCaps lock_only;
+    lock_only.lock_wallpaper = true;
+    Env lock_minimal(lock_only);
+    test::check(lock_minimal.model.tabs().size() == 4 &&
+                    lock_minimal.model.tabs()[2].tab == SettingsTab::lock,
+                "a backend that can lock gains the tab on its own");
 
     minimal.model.open();
     test::check(minimal.model.in_menu(), "the overlay opens on the tile menu");
@@ -312,11 +341,13 @@ void check_wallpaper() {
     env.config.wallpaper_dir = root.string();
     env.model.open();
     env.click(SettingsAct::tab, static_cast<int>(SettingsTab::wallpaper));
-    test::check(env.model.picker(false).scanning && env.model.picker(false).region == "HDMI-1",
+    test::check(env.model.picker(WallpaperSlot::still).scanning &&
+                    env.model.picker(WallpaperSlot::still).region == "HDMI-1",
                 "opening scans and picks the focused monitor");
-    test::check(test::pump_until(reactor, [&] { return !env.model.picker(false).scanning; }),
-                "the scan finishes");
-    const std::vector<std::string> &files = env.model.picker(false).files;
+    test::check(
+        test::pump_until(reactor, [&] { return !env.model.picker(WallpaperSlot::still).scanning; }),
+        "the scan finishes");
+    const std::vector<std::string> &files = env.model.picker(WallpaperSlot::still).files;
     test::check(files.size() == 3, "images are found one folder deep, other files are skipped");
     test::check(files.size() == 3 && files[0].ends_with("a.jpg") && files[1].ends_with("b.png") &&
                     files[2].ends_with("c.png"),
@@ -329,7 +360,8 @@ void check_wallpaper() {
     test::check(astralia::wallpaper_column_count(env.config, "HDMI-1", false) == 2,
                 "the stepper adds a column");
     env.click(SettingsAct::wallpaper_region, 0, 1);
-    test::check(env.model.picker(false).region == "DP-1" && env.model.picker(false).column == 1,
+    test::check(env.model.picker(WallpaperSlot::still).region == "DP-1" &&
+                    env.model.picker(WallpaperSlot::still).column == 1,
                 "chips select a region and column");
     env.click(SettingsAct::wallpaper_fill, 1, 0);
     test::check(astralia::wallpaper_fill_mode(env.config, "DP-1", 1, false) == "fit",
@@ -378,8 +410,122 @@ void check_wallpaper() {
                 "enter commits the edit");
 
     env.model.close();
-    test::check(env.model.picker(false).files.empty(), "closing drops the scanned files");
+    test::check(env.model.picker(WallpaperSlot::still).files.empty(),
+                "closing drops the scanned files");
     std::filesystem::remove_all(root);
+}
+
+void check_lock_wallpaper() {
+    Instant instant;
+    astralia::PollReactor reactor = std::move(*astralia::PollReactor::create());
+    astralia::DeferredCall::attach(reactor);
+
+    std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                 ("astralia_test_settings_lock_" + std::to_string(getpid()));
+    std::filesystem::create_directories(root);
+    std::ofstream(root / "b.png").put('x');
+    std::ofstream(root / "a.jpg").put('x');
+
+    constexpr int lock_flag = static_cast<int>(WallpaperSlot::lock);
+    SettingsCaps caps;
+    caps.wallpaper_columns = true;
+    caps.lock_wallpaper = true;
+    Env env(caps);
+    env.config.lock_wallpaper_dir = root.string();
+    env.model.open();
+    env.click(SettingsAct::tab, static_cast<int>(SettingsTab::lock));
+    WallpaperPicker &picker = env.model.picker(WallpaperSlot::lock);
+    test::check(!picker.scanning && picker.dir.empty() && picker.files.empty(),
+                "Auto mode loads nothing for the lock screen");
+
+    env.click(SettingsAct::lock_wallpaper_mode, 1);
+    test::check(env.config.lock_wallpaper_custom && picker.scanning && picker.region == "HDMI-1",
+                "Custom mode scans the lock directory");
+    test::check(test::pump_until(reactor, [&] { return !picker.scanning; }),
+                "the lock scan finishes");
+    test::check(picker.files.size() == 2 && picker.files[0].ends_with("a.jpg") &&
+                    picker.files[1].ends_with("b.png"),
+                "the lock picker lists its own directory");
+    test::check(!env.model.picker(WallpaperSlot::still).scanning &&
+                    env.model.picker(WallpaperSlot::still).files.empty(),
+                "the desktop picker is not touched");
+
+    env.click(SettingsAct::wallpaper_pick, 1, lock_flag);
+    test::check(
+        wallpaper_column_override(env.config, "HDMI-1", 0, WallpaperSlot::lock) ==
+                picker.files[1] &&
+            wallpaper_column_override(env.config, "HDMI-1", 0, WallpaperSlot::still).empty(),
+        "picking sets only the lock column");
+    env.click(SettingsAct::wallpaper_count, 1, lock_flag);
+    test::check(wallpaper_column_count(env.config, "HDMI-1", WallpaperSlot::lock) == 2 &&
+                    wallpaper_column_count(env.config, "HDMI-1", WallpaperSlot::still) == 1,
+                "the stepper changes only the lock count");
+    env.click(SettingsAct::wallpaper_region, 0, 1 | (lock_flag << 8));
+    test::check(picker.region == "DP-1" && picker.column == 1 &&
+                    env.model.picker(WallpaperSlot::still).region == "HDMI-1" &&
+                    env.model.picker(WallpaperSlot::still).column == 0,
+                "chips move only the lock selection");
+    env.click(SettingsAct::wallpaper_fill, 1, lock_flag);
+    test::check(wallpaper_fill_mode(env.config, "DP-1", 1, WallpaperSlot::lock) == "fit" &&
+                    wallpaper_fill_mode(env.config, "DP-1", 1, WallpaperSlot::still) == "crop",
+                "fill mode applies to the lock slot only");
+    env.click(SettingsAct::wallpaper_region, 1, 0 | (lock_flag << 8));
+    env.click(SettingsAct::wallpaper_remove, 0, lock_flag);
+    test::check(wallpaper_column_override(env.config, "HDMI-1", 0, WallpaperSlot::lock).empty(),
+                "remove clears the lock column");
+
+    env.click(SettingsAct::field_focus, static_cast<int>(SettingsField::lock_wallpaper_dir));
+    test::check(env.model.focused() == SettingsField::lock_wallpaper_dir &&
+                    env.model.field().text == astralia::path_collapse_home(root.string()),
+                "the lock directory field loads its text");
+    env.model.commit_text("/");
+    env.model.key(key(KeyKind::Enter));
+    test::check(env.config.lock_wallpaper_dir == root.string() + "/",
+                "enter commits the lock directory");
+
+    env.click(SettingsAct::lock_wallpaper_mode, 0);
+    test::check(!env.config.lock_wallpaper_custom, "Auto mode switches back");
+
+    env.model.close();
+    test::check(picker.files.empty() && picker.dir.empty() && !picker.scanning,
+                "closing clears the lock picker");
+    std::filesystem::remove_all(root);
+}
+
+void check_lock_view() {
+    using Kind = test::Op::Kind;
+    Instant instant;
+    SettingsCaps caps;
+    caps.lock_wallpaper = true;
+    caps.wallpaper_columns = true;
+    Env env(caps);
+    env.model.open();
+    env.click(SettingsAct::tab, static_cast<int>(SettingsTab::lock));
+    astralia::SettingsArt art{"someone", "up 3 hours", {}};
+
+    auto paint_texts = [&] {
+        test::RecordingCanvas canvas;
+        env.model.begin_frame();
+        astralia::paint_settings(canvas, env.model, art, 1920, 1200);
+        std::vector<std::string> texts;
+        for (const test::Op &op : canvas.ops) {
+            if (op.kind == Kind::text) {
+                texts.push_back(op.text);
+            }
+        }
+        return texts;
+    };
+    auto has = [](const std::vector<std::string> &texts, const std::string &wanted) {
+        return std::ranges::find(texts, wanted) != texts.end();
+    };
+
+    std::vector<std::string> automatic = paint_texts();
+    test::check(has(automatic, "Auto") && has(automatic, "Custom") && !has(automatic, "Display"),
+                "Auto mode shows only the selector");
+    env.click(SettingsAct::lock_wallpaper_mode, 1);
+    std::vector<std::string> custom = paint_texts();
+    test::check(has(custom, "Display") && has(custom, "Dir") && has(custom, "Crop"),
+                "Custom mode shows the column controls");
 }
 
 void check_view() {
@@ -444,5 +590,7 @@ void check_settings() {
     check_scroll_stages();
     check_actions();
     check_wallpaper();
+    check_lock_wallpaper();
     check_view();
+    check_lock_view();
 }

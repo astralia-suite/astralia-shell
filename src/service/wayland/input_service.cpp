@@ -77,6 +77,20 @@ astralia::input::PointerEvent to_neutral(const PointerClick &click) {
 
 astralia::input::ScrollEvent to_neutral(const PointerScroll &scroll) { return {scroll.dy}; }
 
+astralia::input::Modifiers keyboard_modifiers(const KeyboardState &state) {
+    if (!state.xkb) {
+        return {};
+    }
+    auto active = [&](const char *name) {
+        return xkb_state_mod_name_is_active(state.xkb, name, XKB_STATE_MODS_EFFECTIVE) > 0;
+    };
+    return {
+        .shift = active(XKB_MOD_NAME_SHIFT),
+        .alt = active(XKB_MOD_NAME_ALT),
+        .ctrl = active(XKB_MOD_NAME_CTRL),
+    };
+}
+
 std::optional<KeyEvent> translate_key(xkb_state *state, uint32_t keycode,
                                       xkb_compose_state *compose) {
     xkb_keycode_t xkb_code = keycode + 8;

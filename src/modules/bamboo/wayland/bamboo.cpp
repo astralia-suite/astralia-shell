@@ -2,13 +2,13 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
+#include "wayland/render/gl.h"
+#include "wayland/render/overlay_panel.h"
+#include "wayland/render/text.h"
 
 #include "modules/bamboo/wayland/bamboo.h"
 
 #include "render/tokens.h"
-#include "wayland/render/gl.h"
-#include "wayland/render/overlay_panel.h"
-#include "wayland/render/text.h"
 
 namespace {
 

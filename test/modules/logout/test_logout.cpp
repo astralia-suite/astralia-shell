@@ -2,9 +2,6 @@
 #include <string>
 #include <vector>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "config/logout_config.h"
 
 #include "core/animation.h"
@@ -12,6 +9,9 @@
 #include "modules/logout/layout.h"
 #include "modules/logout/model.h"
 #include "modules/logout/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

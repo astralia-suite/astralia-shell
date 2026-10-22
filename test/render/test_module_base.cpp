@@ -1,11 +1,11 @@
 #include <filesystem>
 #include <memory>
 
-#include "check.h"
-
 #include "core/poll_reactor.h"
 
 #include "render/module_base.h"
+
+#include "check.h"
 
 namespace {
 

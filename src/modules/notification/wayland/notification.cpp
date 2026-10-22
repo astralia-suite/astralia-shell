@@ -7,15 +7,12 @@
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
-
 #include "wayland/core/log.h"
-
-#include "modules/notification/view.h"
-
-#include "modules/notification/wayland/notification.h"
-
 #include "wayland/render/gl.h"
 #include "wayland/render/layer_surface.h"
+
+#include "modules/notification/view.h"
+#include "modules/notification/wayland/notification.h"
 
 namespace {
 

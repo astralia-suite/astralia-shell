@@ -1,15 +1,15 @@
 #include <chrono>
 #include <cmath>
 
-#include "check.h"
-#include "render/recording_canvas.h"
-
 #include "render/icons.h"
 
 #include "core/animation.h"
 
 #include "modules/osd/model.h"
 #include "modules/osd/view.h"
+
+#include "check.h"
+#include "render/recording_canvas.h"
 
 namespace {
 

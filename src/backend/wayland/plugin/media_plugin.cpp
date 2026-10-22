@@ -24,7 +24,6 @@ extern "C" {
 #include <vector>
 
 #include "wayland/core/log.h"
-
 #include "wayland/plugin/media_plugin.h"
 
 namespace {

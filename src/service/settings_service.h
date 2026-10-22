@@ -48,6 +48,12 @@ struct Config {
     std::map<std::string, int> wallpaper_animated_column_counts;
     std::map<std::string, std::vector<std::string>> wallpaper_animated_fill_modes;
 
+    bool lock_wallpaper_custom = false;
+    std::string lock_wallpaper_dir;
+    std::map<std::string, std::vector<std::string>> lock_wallpaper_columns;
+    std::map<std::string, int> lock_wallpaper_column_counts;
+    std::map<std::string, std::vector<std::string>> lock_wallpaper_fill_modes;
+
     std::string capture_monitor;
     int capture_column = 0;
 

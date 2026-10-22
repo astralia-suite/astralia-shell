@@ -9,12 +9,10 @@
 
 #include "wayland/app/ipc.h"
 #include "wayland/app/module.h"
-
-#include "wayland/config/visualizer_config.h"
+#include "wayland/config/visualizer_gl_config.h"
+#include "wayland/render/toplevel_window.h"
 
 #include "modules/visualizer/audio_capture.h"
-
-#include "wayland/render/toplevel_window.h"
 
 #include "service/wayland/input_service.h"
 
