@@ -126,7 +126,7 @@ bool create_surface(State &wp, wl_compositor *compositor, zwlr_layer_shell_v1 *l
                     wl_output *output) {
     LayerSurfaceConfig cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
-        .name_space = kLayerNamespace,
+        .name_space = layer_namespace,
         .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
                   ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
     };
@@ -230,7 +230,7 @@ void wallpaper_sync_from_config(State &wp, const Config &cfg, const std::string 
 
     int target_w = (wp.width / std::max(1, count)) * std::max(1, wp.output_scale.scale);
     int target_h = wp.height * std::max(1, wp.output_scale.scale);
-    AnimateSize sz = animated ? animate_decode_size(target_w, target_h, kAnimateMaxDecodeDim)
+    AnimateSize sz = animated ? animate_decode_size(target_w, target_h, animate_max_decode_dim)
                               : AnimateSize{target_w, target_h};
 
     for (int i = 0; i < count; ++i) {

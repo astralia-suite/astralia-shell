@@ -32,7 +32,7 @@ constexpr zwlr_layer_surface_v1_listener layer_surface_listener = {
 void render(State &state) {
     gl_make_current(state.egl_display, state.egl_surface, state.egl_context);
     int32_t scale = state.output_scale.scale;
-    state.renderer->begin_frame(kSurfaceWidth, kSurfaceHeight, scale);
+    state.renderer->begin_frame(surface_width, surface_height, scale);
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -55,9 +55,9 @@ bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1
         .name_space = "astralia-shell-osd",
 
         .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
-        .width = kSurfaceWidth,
-        .height = kSurfaceHeight,
-        .margin_bottom = kMarginBottom,
+        .width = surface_width,
+        .height = surface_height,
+        .margin_bottom = margin_bottom,
         .empty_input_region = true,
     };
     state.layer_surface = layer_surface_create(state.surface, compositor, layer_shell, cfg,
@@ -66,7 +66,7 @@ bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1
         return false;
     state.output_scale.on_change = [&state](int32_t scale) {
         if (state.egl_window)
-            wl_egl_window_resize(state.egl_window, kSurfaceWidth * scale, kSurfaceHeight * scale, 0,
+            wl_egl_window_resize(state.egl_window, surface_width * scale, surface_height * scale, 0,
                                  0);
         if (state.frame_clock.surface)
             request_frame(state.frame_clock);
@@ -84,7 +84,7 @@ bool init_egl(State &state, Renderer &renderer, EGLDisplay display, EGLConfig co
     state.canvas.bind(renderer);
     int32_t scale = state.output_scale.scale;
     state.egl_window =
-        wl_egl_window_create(state.surface, kSurfaceWidth * scale, kSurfaceHeight * scale);
+        wl_egl_window_create(state.surface, surface_width * scale, surface_height * scale);
     state.egl_surface = eglCreateWindowSurface(
         display, config, reinterpret_cast<EGLNativeWindowType>(state.egl_window), nullptr);
     if (state.egl_surface == EGL_NO_SURFACE)

@@ -58,7 +58,7 @@ bindsym $mod+d exec astralia launcher
 
 Logs go to `~/.local/state/astralia/astralia.log`.
 
-Optional logos are not bundled. Set `general.logoutLogoPath` for the logout screen and `displays.idle.logoPath` for the idle screensaver to an image path in the config, and leave them empty to draw no logo.
+The logout screen and the idle screensaver draw bundled logos by default. Set `general.logoutLogoPath` and `displays.idle.logoPath` to an image path in the config to use your own, and leave them empty to keep the bundled ones.
 
 ## Configuration
 

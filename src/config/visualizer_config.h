@@ -3,52 +3,52 @@
 namespace astralia::visualizer_config {
 
 // canvas sizing
-constexpr float kCanvasFraction = 0.7f;
-constexpr int kCanvasMin = 200;
+constexpr float canvas_fraction = 0.7f;
+constexpr int canvas_min = 200;
 
 // bar visualizer
-constexpr float kBarWidth = 10.0f;
-constexpr float kBarSpacing = 7.0f;
-constexpr float kBarRadius = 3.0f;
-constexpr float kBarHeightRatio = 0.7f;
-constexpr float kBarOpacity = 0.6f;
-constexpr float kBarMinHeight = 5.0f;
-constexpr int kBarFps = 60;
+constexpr float bar_width = 10.0f;
+constexpr float bar_spacing = 7.0f;
+constexpr float bar_radius = 3.0f;
+constexpr float bar_height_ratio = 0.7f;
+constexpr float bar_opacity = 0.6f;
+constexpr float bar_min_height = 5.0f;
+constexpr int bar_fps = 60;
 
 // default window size
-constexpr int kDefaultWindow = 1000;
+constexpr int default_window = 1000;
 
 // audio capture
-constexpr unsigned int kSampleRate = 11000;
-constexpr int kChannels = 2;
-constexpr int kSampleSize = 1024;
-constexpr int kFragmentSize = 4096;
-constexpr float kFftScale = 10.2f;
-constexpr float kFftCutOff = 0.3f;
+constexpr unsigned int sample_rate = 11000;
+constexpr int channels = 2;
+constexpr int sample_size = 1024;
+constexpr int fragment_size = 4096;
+constexpr float fft_scale = 10.2f;
+constexpr float fft_cut_off = 0.3f;
 
 // gravity & smoothing
-constexpr int kGravityAverageFrames = 5;
-constexpr float kGravityStep = 4.2f;
-constexpr float kSampleHybridWeight = 0.065f;
-constexpr int kSampleMode = 0;
-constexpr int kAdjacentSampleNums = 1;
-constexpr float kSampleRange = 0.9f;
-constexpr float kSampleScale = 8.0f;
-constexpr float kSmoothFactor = 0.025f;
-constexpr int kFps = 60;
+constexpr int gravity_average_frames = 5;
+constexpr float gravity_step = 4.2f;
+constexpr float sample_hybrid_weight = 0.065f;
+constexpr int sample_mode = 0;
+constexpr int adjacent_sample_nums = 1;
+constexpr float sample_range = 0.9f;
+constexpr float sample_scale = 8.0f;
+constexpr float smooth_factor = 0.025f;
+constexpr int fps = 60;
 
 // clamp ranges
-constexpr int kFpsMin = 15;
-constexpr int kFpsMax = 144;
-constexpr float kParticleThinMin = 0.0f;
-constexpr float kParticleThinMax = 0.95f;
-constexpr int kParticleSize = 8;
-constexpr int kComplexityMin = 1;
-constexpr int kComplexityMax = 3;
-constexpr float kGlowDirectionsMin = 4.0f;
-constexpr float kGlowDirectionsMax = 32.0f;
-constexpr float kGlowQualityMin = 2.0f;
-constexpr float kGlowQualityMax = 8.0f;
+constexpr int fps_min = 15;
+constexpr int fps_max = 144;
+constexpr float particle_thin_min = 0.0f;
+constexpr float particle_thin_max = 0.95f;
+constexpr int particle_size = 8;
+constexpr int complexity_min = 1;
+constexpr int complexity_max = 3;
+constexpr float glow_directions_min = 4.0f;
+constexpr float glow_directions_max = 32.0f;
+constexpr float glow_quality_min = 2.0f;
+constexpr float glow_quality_max = 8.0f;
 
 } // namespace astralia::visualizer_config
 
@@ -58,9 +58,9 @@ enum class VisualizerShape { Bar, Sphere };
 
 struct VisualizerParams {
     VisualizerShape visualizer_shape = VisualizerShape::Bar;
-    int fps = visualizer_config::kFps;
+    int fps = visualizer_config::fps;
     float particle_thin = 0.12f;
-    int particle_size = visualizer_config::kParticleSize;
+    int particle_size = visualizer_config::particle_size;
     int fractal_complexity = 3;
     float glow_directions = 16.0f;
     float glow_quality = 6.0f;

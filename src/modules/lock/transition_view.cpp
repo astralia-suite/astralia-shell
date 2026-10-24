@@ -12,8 +12,8 @@ namespace astralia::lock {
 
 namespace {
 
-constexpr Color dim_color = color(lock_config::kDimHex);
-constexpr Color flash_color = color(lock_config::kFlashHex);
+constexpr Color dim_color = color(lock_config::dim_hex);
+constexpr Color flash_color = color(lock_config::flash_hex);
 
 void stroke(ui::Canvas &canvas, ui::Point a, ui::Point b, float width, const Color &color) {
     float dx = b.x - a.x;
@@ -46,20 +46,20 @@ void beam(ui::Canvas &canvas, const SlashBeam &beam) {
                                          beam.b,
                                          {middle.x - nx * half, middle.y - ny * half}}};
     };
-    canvas.polygon(shape(beam.width * lock_config::kBeamGlowScale),
-                   with_alpha(palette::electro, lock_config::kBeamGlowAlpha * beam.alpha));
+    canvas.polygon(shape(beam.width * lock_config::beam_glow_scale),
+                   with_alpha(palette::electro, lock_config::beam_glow_alpha * beam.alpha));
     canvas.polygon(shape(beam.width), with_alpha(flash_color, beam.alpha));
 }
 
 void fallback_strike(ui::Canvas &canvas, const SlashStrike &strike) {
     ui::Point tip{strike.a.x + (strike.b.x - strike.a.x) * strike.progress,
                   strike.a.y + (strike.b.y - strike.a.y) * strike.progress};
-    float width = lock_config::kFallbackBoltWidth * strike.thick;
+    float width = lock_config::fallback_bolt_width * strike.thick;
     float alpha = std::clamp(strike.intensity, 0.0f, 1.0f);
-    stroke(canvas, strike.a, tip, width * lock_config::kBoltGlowFarScale,
-           with_alpha(palette::electro, lock_config::kBoltGlowFarAlpha * alpha));
-    stroke(canvas, strike.a, tip, width * lock_config::kBoltGlowNearScale,
-           with_alpha(palette::electro, lock_config::kBoltGlowNearAlpha * alpha));
+    stroke(canvas, strike.a, tip, width * lock_config::bolt_glow_far_scale,
+           with_alpha(palette::electro, lock_config::bolt_glow_far_alpha * alpha));
+    stroke(canvas, strike.a, tip, width * lock_config::bolt_glow_near_scale,
+           with_alpha(palette::electro, lock_config::bolt_glow_near_alpha * alpha));
     stroke(canvas, strike.a, tip, width, with_alpha(palette::white, alpha));
 }
 
@@ -95,7 +95,7 @@ void paint_transition(ui::Canvas &canvas, const SlashPlan &plan, float progress,
     }
 
     for (const SlashPolygon &ray : frame.rays) {
-        canvas.polygon(ray, with_alpha(palette::white, lock_config::kSlashRayAlpha * frame.flash));
+        canvas.polygon(ray, with_alpha(palette::white, lock_config::slash_ray_alpha * frame.flash));
     }
 
     for (const SlashStrike &strike : frame.strikes) {
@@ -111,12 +111,12 @@ void paint_transition(ui::Canvas &canvas, const SlashPlan &plan, float progress,
 
     for (const SlashPolygon &sliver : frame.slivers) {
         canvas.polygon(sliver,
-                       with_alpha(flash_color, lock_config::kSliverAlpha * frame.sliver_alpha));
+                       with_alpha(flash_color, lock_config::sliver_alpha * frame.sliver_alpha));
     }
 
     if (frame.flash > 0.0f) {
         canvas.rect({0.0f, 0.0f, plan.width(), plan.height()},
-                    with_alpha(flash_color, lock_config::kSlashFlashPeak * frame.flash));
+                    with_alpha(flash_color, lock_config::slash_flash_peak * frame.flash));
     }
 }
 

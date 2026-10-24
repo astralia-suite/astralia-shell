@@ -131,7 +131,7 @@ void transition_render(Renderer &r, WallpaperColumn &col, float x, float y, floa
         glUniform4fv(glGetUniformLocation(p, "u_to_uv"), 1, to_uv);
         glUniform4f(glGetUniformLocation(p, "u_fill"), fill.r, fill.g, fill.b, fill.a);
         glUniform1f(glGetUniformLocation(p, "u_progress"), progress);
-        glUniform1f(glGetUniformLocation(p, "u_smoothness"), kWallpaperTransitionSmoothness);
+        glUniform1f(glGetUniformLocation(p, "u_smoothness"), wallpaper_transition_smoothness);
         glUniform1f(glGetUniformLocation(p, "u_direction"), col.tr_direction);
         glUniform2f(glGetUniformLocation(p, "u_center"), col.tr_center_x, col.tr_center_y);
         glUniform1f(glGetUniformLocation(p, "u_aspect"), aspect);
@@ -177,7 +177,7 @@ bool wallpaper_column_draw_transition(Renderer &renderer, WallpaperColumn &col, 
     float raw = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() -
                                                          col.transition_start)
                     .count() /
-                kWallpaperTransitionDurationMs;
+                wallpaper_transition_duration_ms;
     if (raw >= 1.0f || col.transition_kind == WallpaperTransition::None) {
         col.tex_prev.reset();
         col.transitioning = false;
@@ -316,7 +316,7 @@ void wallpaper_column_set_animated(WallpaperColumn &col, const WallpaperColumnGl
     std::string filter = animate_scale_filter(target_w, target_h, to_fit(mode));
 
     col.decode = media_decode_stream(
-        path, filter, kAnimateWallpaperFps, texture_row_length_supported(),
+        path, filter, animate_wallpaper_fps, texture_row_length_supported(),
         [&col, &gl, gen, life](unsigned char *rgba, int w, int h, int stride_px) {
             astralia::DeferredCall::call_later([&col, &gl, rgba, w, h, stride_px, gen, life] {
                 auto keep = life.lock();

@@ -28,7 +28,7 @@ class StilettoRain {
     };
 
     void decay();
-    float start_drop() const { return -2.0f * rain_config::kStilettoStepPx; }
+    float start_drop() const { return -2.0f * rain_config::stiletto_step_px; }
 
     int width_ = 0;
     int height_ = 0;

@@ -22,7 +22,7 @@
 
 namespace {
 
-constexpr uintmax_t kRgbaCacheMaxBytes = 512ull * 1024 * 1024;
+constexpr uintmax_t rgba_cache_max_bytes = 512ull * 1024 * 1024;
 
 using StreamFn = decltype(&astralia_shell_media_plugin_stream);
 using FramesFn = decltype(&astralia_shell_media_plugin_frames);
@@ -139,7 +139,7 @@ void rgba_prune(const std::filesystem::path &directory) {
         total += size;
     }
     std::ranges::sort(entries, {}, &Entry::used);
-    for (size_t i = 0; i + 1 < entries.size() && total > kRgbaCacheMaxBytes; ++i)
+    for (size_t i = 0; i + 1 < entries.size() && total > rgba_cache_max_bytes; ++i)
         if (std::filesystem::remove(entries[i].path, error))
             total -= entries[i].size;
 }

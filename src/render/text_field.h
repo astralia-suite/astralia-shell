@@ -71,11 +71,11 @@ size_t text_field_utf8_len(const std::string &text);
 
 bool text_field_idle_toggle(TextFieldState &field);
 
-inline constexpr float kTextFieldPopScaleMs = 200.0f;
-inline constexpr float kTextFieldPopSlideMs = 80.0f;
-inline constexpr float kTextFieldPopSlideOffsetPx = 8.0f;
-inline constexpr float kTextFieldRowSlideMs = 200.0f;
-inline constexpr size_t kTextFieldTypeAnimMax = 256;
+inline constexpr float text_field_pop_scale_ms = 200.0f;
+inline constexpr float text_field_pop_slide_ms = 80.0f;
+inline constexpr float text_field_pop_slide_offset_px = 8.0f;
+inline constexpr float text_field_row_slide_ms = 200.0f;
+inline constexpr size_t text_field_type_anim_max = 256;
 
 struct TextFieldCharAnim {
     float scale = 1.0f;

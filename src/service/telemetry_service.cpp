@@ -14,7 +14,7 @@ namespace astralia {
 
 namespace {
 
-constexpr std::array<const char *, 11> kVirtualIfacePrefixes = {
+constexpr std::array<const char *, 11> virtual_iface_prefixes = {
     "lo", "docker", "veth", "br-", "virbr", "vnet", "tun", "tap", "wg", "tailscale", "nordlynx"};
 
 } // namespace
@@ -361,7 +361,7 @@ std::optional<NetBytes> detail::parse_proc_net_dev(const std::string &text) {
             continue;
         iface = iface.substr(start);
         bool is_virtual = false;
-        for (const char *prefix : kVirtualIfacePrefixes) {
+        for (const char *prefix : virtual_iface_prefixes) {
             if (iface.starts_with(prefix)) {
                 is_virtual = true;
                 break;
@@ -387,7 +387,7 @@ std::optional<NetBytes> detail::parse_proc_net_dev(const std::string &text) {
 }
 
 std::string detail::format_speed(double bytes_per_sec) {
-    static constexpr const char *kUnits[] = {"KiB", "MiB", "GiB"};
+    static constexpr const char *units[] = {"KiB", "MiB", "GiB"};
     double v = bytes_per_sec / 1024.0;
     size_t i = 0;
     while (v >= 1024.0 && i < 2) {
@@ -398,9 +398,9 @@ std::string detail::format_speed(double bytes_per_sec) {
         v = 0.0;
     char buf[32];
     if (v < 10.0)
-        std::snprintf(buf, sizeof(buf), "%.1f%s", v, kUnits[i]);
+        std::snprintf(buf, sizeof(buf), "%.1f%s", v, units[i]);
     else
-        std::snprintf(buf, sizeof(buf), "%.0f%s", v, kUnits[i]);
+        std::snprintf(buf, sizeof(buf), "%.0f%s", v, units[i]);
     return buf;
 }
 

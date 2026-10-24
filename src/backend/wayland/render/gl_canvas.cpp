@@ -25,7 +25,7 @@ float texture_height(const Texture &tex) {
     return static_cast<float>(tex.height) / static_cast<float>(tex.scale > 0 ? tex.scale : 1);
 }
 
-constexpr float kWhite[4] = {1, 1, 1, 1};
+constexpr float white[4] = {1, 1, 1, 1};
 
 } // namespace
 
@@ -58,7 +58,7 @@ template <typename Draw> void GlCanvas::shape(const Draw &draw) {
 void GlCanvas::fillet(const ui::Box &box, bool circle_on_right, const astralia::Color &color) {
     shape([&](bool erase) {
         renderer_->draw_fillet(ox() + box.x, oy() + box.y, box.w, circle_on_right,
-                               erase ? kWhite : astralia::rgba(color));
+                               erase ? white : astralia::rgba(color));
     });
 }
 
@@ -88,7 +88,7 @@ const Texture *GlCanvas::glyphs(std::string_view text, const ui::TextStyle &styl
 void GlCanvas::rect(const ui::Box &box, const astralia::Color &fill) {
     shape([&](bool erase) {
         renderer_->draw_rect(ox() + box.x, oy() + box.y, box.w, box.h,
-                             erase ? kWhite : astralia::rgba(fill));
+                             erase ? white : astralia::rgba(fill));
     });
 }
 
@@ -101,7 +101,7 @@ void GlCanvas::polygon(std::span<const ui::Point> points, const astralia::Color 
     }
     int count = static_cast<int>(points.size());
     shape([&](bool erase) {
-        renderer_->draw_polygon(xy.data(), count, erase ? kWhite : astralia::rgba(fill));
+        renderer_->draw_polygon(xy.data(), count, erase ? white : astralia::rgba(fill));
     });
 }
 
@@ -113,7 +113,7 @@ void GlCanvas::cut_polygon(std::span<const ui::Point> points) {
         xy.push_back(oy() + point.y);
     }
     renderer_->set_erase_blend(true);
-    renderer_->draw_polygon(xy.data(), static_cast<int>(points.size()), kWhite);
+    renderer_->draw_polygon(xy.data(), static_cast<int>(points.size()), white);
     renderer_->set_erase_blend(false);
 }
 
@@ -144,8 +144,8 @@ void GlCanvas::rounded(const ui::Box &box, float radius, const astralia::Color &
                        float border_width, const astralia::Color &border) {
     shape([&](bool erase) {
         renderer_->draw_rounded_rect(ox() + box.x, oy() + box.y, box.w, box.h, radius, border_width,
-                                     erase ? kWhite : astralia::rgba(fill),
-                                     erase ? kWhite : astralia::rgba(border));
+                                     erase ? white : astralia::rgba(fill),
+                                     erase ? white : astralia::rgba(border));
     });
 }
 
@@ -190,11 +190,11 @@ ui::ImageId GlCanvas::image(std::string_view asset, int target_px) {
     return id;
 }
 
-constexpr size_t kThumbCache = 160;
-constexpr size_t kThumbInFlight = 2;
+constexpr size_t thumb_cache = 160;
+constexpr size_t thumb_in_flight = 2;
 
 void GlCanvas::evict_thumbnails() {
-    while (thumb_order_.size() > kThumbCache) {
+    while (thumb_order_.size() > thumb_cache) {
         auto it = thumbs_.find(thumb_order_.back());
         thumb_order_.pop_back();
         if (it == thumbs_.end()) {
@@ -265,13 +265,13 @@ ui::ImageId GlCanvas::thumbnail(std::string_view path, int px) {
                 thumb_order_.erase(order);
                 thumb_order_.push_front(key);
             }
-            if (px > thumb.px && !thumb.pending && in_flight_ < kThumbInFlight) {
+            if (px > thumb.px && !thumb.pending && in_flight_ < thumb_in_flight) {
                 start_thumbnail(key, px);
             }
         }
         return thumb.id;
     }
-    if (in_flight_ >= kThumbInFlight) {
+    if (in_flight_ >= thumb_in_flight) {
         return ui::no_image;
     }
     thumb_order_.push_front(key);
@@ -342,9 +342,9 @@ void GlCanvas::texture(const Texture &tex, const ui::Box &box, const float tint[
     shape([&](bool erase) {
         if (radius > 0.0f) {
             renderer_->draw_texture_rect_rounded(x, y, box.w, box.h, radius, tex,
-                                                 erase ? kWhite : tint);
+                                                 erase ? white : tint);
         } else {
-            renderer_->draw_texture_rect(x, y, box.w, box.h, tex, erase ? kWhite : tint);
+            renderer_->draw_texture_rect(x, y, box.w, box.h, tex, erase ? white : tint);
         }
     });
 }

@@ -48,25 +48,26 @@ void Grow::start_cycle() {
     phase_ = Phase::Growing;
     fade_ = 1.0f;
     tips_.clear();
-    cols_ = std::max(1, static_cast<int>(static_cast<float>(width_) / bamboo_config::kCellWidthPx));
+    cols_ =
+        std::max(1, static_cast<int>(static_cast<float>(width_) / bamboo_config::cell_width_px));
     rows_ =
-        std::max(1, static_cast<int>(static_cast<float>(height_) / bamboo_config::kCellHeightPx));
+        std::max(1, static_cast<int>(static_cast<float>(height_) / bamboo_config::cell_height_px));
     grid_.assign(static_cast<size_t>(cols_) * static_cast<size_t>(rows_), Cell{});
 
-    int ground = rows_ - 1 - bamboo_config::kGroundMarginRows;
-    for (int x = bamboo_config::kGroundInsetCols; x < cols_ - bamboo_config::kGroundInsetCols;
+    int ground = rows_ - 1 - bamboo_config::ground_margin_rows;
+    for (int x = bamboo_config::ground_inset_cols; x < cols_ - bamboo_config::ground_inset_cols;
          ++x) {
         put(x, ground, '=', Ink::Ground);
     }
 
-    int usable = cols_ - 2 * bamboo_config::kGroundInsetCols;
-    int slot = std::max(1, usable / bamboo_config::kShootCount);
-    std::vector<int> xs(bamboo_config::kShootCount);
-    std::vector<int> heights(bamboo_config::kShootCount);
-    for (int i = 0; i < bamboo_config::kShootCount; ++i) {
+    int usable = cols_ - 2 * bamboo_config::ground_inset_cols;
+    int slot = std::max(1, usable / bamboo_config::shoot_count);
+    std::vector<int> xs(bamboo_config::shoot_count);
+    std::vector<int> heights(bamboo_config::shoot_count);
+    for (int i = 0; i < bamboo_config::shoot_count; ++i) {
         int jitter = slot > 2 ? random_int(0, slot - 2) : 0;
-        int x = bamboo_config::kGroundInsetCols + slot * i + jitter;
-        int h = random_int(1, bamboo_config::kShootMaxRows);
+        int x = bamboo_config::ground_inset_cols + slot * i + jitter;
+        int h = random_int(1, bamboo_config::shoot_max_rows);
         xs[static_cast<size_t>(i)] = x;
         heights[static_cast<size_t>(i)] = h;
         if (h >= 2) {
@@ -80,12 +81,12 @@ void Grow::start_cycle() {
         }
     }
 
-    std::vector<int> order(bamboo_config::kShootCount);
+    std::vector<int> order(bamboo_config::shoot_count);
     std::iota(order.begin(), order.end(), 0);
-    int culms = std::min(bamboo_config::kCulmCount, bamboo_config::kShootCount);
+    int culms = std::min(bamboo_config::culm_count, bamboo_config::shoot_count);
     for (int i = 0; i < culms; ++i) {
         std::swap(order[static_cast<size_t>(i)],
-                  order[static_cast<size_t>(random_int(i, bamboo_config::kShootCount - 1))]);
+                  order[static_cast<size_t>(random_int(i, bamboo_config::shoot_count - 1))]);
     }
     for (int i = 0; i < culms; ++i) {
         size_t shoot = static_cast<size_t>(order[static_cast<size_t>(i)]);
@@ -93,11 +94,12 @@ void Grow::start_cycle() {
         tip.x = xs[shoot];
         tip.y = ground - heights[shoot];
         tip.side = random01() < 0.5f ? 1 : -1;
-        tip.target = std::max(1, static_cast<int>(random_range(bamboo_config::kCulmMinHeightRatio,
-                                                               bamboo_config::kCulmMaxHeightRatio) *
-                                                  static_cast<float>(std::max(1, ground))));
+        tip.target =
+            std::max(1, static_cast<int>(random_range(bamboo_config::culm_min_height_ratio,
+                                                      bamboo_config::culm_max_height_ratio) *
+                                         static_cast<float>(std::max(1, ground))));
         tip.next_node =
-            random_int(bamboo_config::kNodeSpacingMinRows, bamboo_config::kNodeSpacingMaxRows);
+            random_int(bamboo_config::node_spacing_min_rows, bamboo_config::node_spacing_max_rows);
         tips_.push_back(tip);
     }
     render(1.0f);
@@ -113,7 +115,7 @@ void Grow::tick() {
         render(1.0f);
         if (std::all_of(tips_.begin(), tips_.end(), [](const Tip &tip) { return tip.done; })) {
             phase_ = Phase::Holding;
-            hold_left_ = bamboo_config::kHoldTicks;
+            hold_left_ = bamboo_config::hold_ticks;
         }
         break;
     case Phase::Holding:
@@ -122,7 +124,7 @@ void Grow::tick() {
         }
         break;
     case Phase::Fading:
-        fade_ -= bamboo_config::kFadeStep;
+        fade_ -= bamboo_config::fade_step;
         if (fade_ <= 0.0f) {
             ++cycles_;
             start_cycle();
@@ -163,14 +165,14 @@ void Grow::advance_culm(Tip &tip, std::vector<Tip> &spawned) {
         put(tip.x + 1, tip.y, '=', Ink::Node);
         tip.since_node = 0;
         tip.next_node =
-            random_int(bamboo_config::kNodeSpacingMinRows, bamboo_config::kNodeSpacingMaxRows);
+            random_int(bamboo_config::node_spacing_min_rows, bamboo_config::node_spacing_max_rows);
         if (static_cast<float>(tip.length) >=
-            (1.0f - bamboo_config::kBranchZoneRatio) * static_cast<float>(tip.target)) {
+            (1.0f - bamboo_config::branch_zone_ratio) * static_cast<float>(tip.target)) {
             tip.seeds.push_back({tip.x, tip.y});
         }
     } else {
-        put(tip.x, tip.y, bamboo_config::kCulmGlyph, Ink::Culm);
-        put(tip.x + 1, tip.y, bamboo_config::kCulmGlyph, Ink::Culm);
+        put(tip.x, tip.y, bamboo_config::culm_glyph, Ink::Culm);
+        put(tip.x + 1, tip.y, bamboo_config::culm_glyph, Ink::Culm);
     }
 
     if (tip.length >= tip.target) {
@@ -182,7 +184,7 @@ void Grow::advance_culm(Tip &tip, std::vector<Tip> &spawned) {
 void Grow::spawn_branches(const Tip &culm, std::vector<Tip> &spawned) {
     int side = culm.side;
     for (const Seed &seed : culm.seeds) {
-        if (random01() >= bamboo_config::kBranchChance) {
+        if (random01() >= bamboo_config::branch_chance) {
             continue;
         }
         Tip branch;
@@ -191,7 +193,7 @@ void Grow::spawn_branches(const Tip &culm, std::vector<Tip> &spawned) {
         branch.x = side > 0 ? seed.x + 1 : seed.x;
         branch.y = seed.y;
         branch.target =
-            random_int(bamboo_config::kBranchMinLength, bamboo_config::kBranchMaxLength);
+            random_int(bamboo_config::branch_min_length, bamboo_config::branch_max_length);
         spawned.push_back(branch);
         side = -side;
     }
@@ -199,7 +201,7 @@ void Grow::spawn_branches(const Tip &culm, std::vector<Tip> &spawned) {
 
 void Grow::advance_branch(Tip &tip) {
     if (!tip.grown) {
-        bool flat = random01() < bamboo_config::kBranchFlatChance;
+        bool flat = random01() < bamboo_config::branch_flat_chance;
         tip.x += tip.side;
         if (!flat) {
             tip.y -= 1;
@@ -224,10 +226,11 @@ void Grow::advance_branch(Tip &tip) {
 }
 
 void Grow::plan_leaves(Tip &tip) {
-    char32_t glyph = tip.side > 0 ? bamboo_config::kLeafGlyphRight : bamboo_config::kLeafGlyphLeft;
+    char32_t glyph =
+        tip.side > 0 ? bamboo_config::leaf_glyph_right : bamboo_config::leaf_glyph_left;
     int above = 0;
     for (size_t i = 0; i < tip.path.size(); ++i) {
-        if (static_cast<int>(i + 1) % bamboo_config::kLeafSpacing != 0) {
+        if (static_cast<int>(i + 1) % bamboo_config::leaf_spacing != 0) {
             continue;
         }
         tip.leaves.push_back(
@@ -267,21 +270,21 @@ void Grow::render(float alpha) {
     cairo_set_font_options(cr, opts);
     cairo_font_options_destroy(opts);
     cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, bamboo_config::kFontPx);
+    cairo_set_font_size(cr, bamboo_config::font_px);
 
     cairo_font_extents_t font;
     cairo_font_extents(cr, &font);
     cairo_text_extents_t probe;
     cairo_text_extents(cr, "M", &probe);
     float origin_x =
-        (static_cast<float>(width_) - static_cast<float>(cols_) * bamboo_config::kCellWidthPx) /
+        (static_cast<float>(width_) - static_cast<float>(cols_) * bamboo_config::cell_width_px) /
         2.0f;
     float origin_y =
-        (static_cast<float>(height_) - static_cast<float>(rows_) * bamboo_config::kCellHeightPx) /
+        (static_cast<float>(height_) - static_cast<float>(rows_) * bamboo_config::cell_height_px) /
         2.0f;
-    float inset_x = (bamboo_config::kCellWidthPx - static_cast<float>(probe.x_advance)) / 2.0f;
+    float inset_x = (bamboo_config::cell_width_px - static_cast<float>(probe.x_advance)) / 2.0f;
     float inset_y =
-        (bamboo_config::kCellHeightPx - static_cast<float>(font.ascent + font.descent)) / 2.0f +
+        (bamboo_config::cell_height_px - static_cast<float>(font.ascent + font.descent)) / 2.0f +
         static_cast<float>(font.ascent);
 
     for (int y = 0; y < rows_; ++y) {
@@ -294,22 +297,22 @@ void Grow::render(float alpha) {
             uint32_t argb = 0;
             switch (cell.ink) {
             case Ink::Ground:
-                argb = bamboo_config::kGroundColor;
+                argb = bamboo_config::ground_color;
                 break;
             case Ink::Shoot:
-                argb = bamboo_config::kShootColor;
+                argb = bamboo_config::shoot_color;
                 break;
             case Ink::Culm:
-                argb = bamboo_config::kCulmColor;
+                argb = bamboo_config::culm_color;
                 break;
             case Ink::Node:
-                argb = bamboo_config::kNodeColor;
+                argb = bamboo_config::node_color;
                 break;
             case Ink::Branch:
-                argb = bamboo_config::kBranchColor;
+                argb = bamboo_config::branch_color;
                 break;
             case Ink::Leaf:
-                argb = bamboo_config::kLeafColor;
+                argb = bamboo_config::leaf_color;
                 break;
             case Ink::None:
                 break;
@@ -321,10 +324,10 @@ void Grow::render(float alpha) {
             std::string text = utf8_encode(cell.glyph);
             cairo_move_to(
                 cr,
-                static_cast<double>(origin_x + static_cast<float>(x) * bamboo_config::kCellWidthPx +
-                                    inset_x),
+                static_cast<double>(origin_x +
+                                    static_cast<float>(x) * bamboo_config::cell_width_px + inset_x),
                 static_cast<double>(
-                    origin_y + static_cast<float>(y) * bamboo_config::kCellHeightPx + inset_y));
+                    origin_y + static_cast<float>(y) * bamboo_config::cell_height_px + inset_y));
             cairo_show_text(cr, text.c_str());
         }
     }

@@ -144,19 +144,19 @@ void overlay_panel_toggle(OverlayPanelBase &base, bool fade) {
 
     overlay_panel_request_frame(base);
     if (!fade) {
-        base.animations.cancel_owner(kOverlayFadeOwner);
+        base.animations.cancel_owner(overlay_fade_owner);
         if (opening)
             base.opacity = 1.0f;
         return;
     }
     base.animations.animate(
-        base.opacity, opening ? 1.0f : 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+        base.opacity, opening ? 1.0f : 0.0f, overlay_fade_ms, astralia::Easing::EaseOutCubic,
         [&base](float v) { base.opacity = v; },
         [&base, opening] {
             if (!opening)
                 overlay_panel_release(base);
         },
-        kOverlayFadeOwner);
+        overlay_fade_owner);
 }
 
 void panel_reveal_open(PanelHeightReveal &r) {
@@ -173,13 +173,13 @@ float panel_reveal_tick(PanelHeightReveal &r, OverlayPanelBase &base, float targ
         r.visible_height = 0.0f;
         r.target = target_h;
         base.animations.animate(
-            r.visible_height, target_h, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
-            [&r](float v) { r.visible_height = v; }, {}, kPanelHeightAnimOwner);
+            r.visible_height, target_h, overlay_fade_ms, astralia::Easing::EaseOutCubic,
+            [&r](float v) { r.visible_height = v; }, {}, panel_height_anim_owner);
     } else if (std::fabs(target_h - r.target) > 0.5f) {
         r.target = target_h;
         base.animations.animate(
-            r.visible_height, target_h, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
-            [&r](float v) { r.visible_height = v; }, {}, kPanelHeightAnimOwner);
+            r.visible_height, target_h, overlay_fade_ms, astralia::Easing::EaseOutCubic,
+            [&r](float v) { r.visible_height = v; }, {}, panel_height_anim_owner);
     }
     return r.visible_height;
 }
@@ -188,7 +188,7 @@ void panel_reveal_close(PanelHeightReveal &r, OverlayPanelBase &base,
                         std::function<void()> on_done) {
     r.closing = true;
     base.animations.animate(
-        r.visible_height, 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+        r.visible_height, 0.0f, overlay_fade_ms, astralia::Easing::EaseOutCubic,
         [&r](float v) { r.visible_height = v; },
         [&r, on_done = std::move(on_done)] {
             r.visible_height = -1.0f;
@@ -197,5 +197,5 @@ void panel_reveal_close(PanelHeightReveal &r, OverlayPanelBase &base,
             if (on_done)
                 on_done();
         },
-        kPanelHeightAnimOwner);
+        panel_height_anim_owner);
 }

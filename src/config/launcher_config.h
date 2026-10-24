@@ -63,6 +63,10 @@ inline constexpr float highlight_anim_ms = 140.0f;
 inline constexpr float entrance_ms = 790.0f;
 inline constexpr float blast_reach = 200.0f;
 
+// Bullets
+inline constexpr const char *bullet_asset_prefix = "constellation/C";
+inline constexpr const char *bullet_asset_suffix = ".png";
+
 } // namespace launcher_config
 
 struct DesktopEntry {

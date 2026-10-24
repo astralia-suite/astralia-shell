@@ -25,10 +25,10 @@ namespace {
 
 namespace layout_cfg = astralia::bar_layout;
 
-constexpr int32_t kAutoHideStripPx = 1;
-constexpr float kAutoHideRevealMs = 150.0f;
-constexpr float kAutoHideHideMs = 150.0f;
-constexpr uint64_t kAutoHideAnimOwner = 1000;
+constexpr int32_t auto_hide_strip_px = 1;
+constexpr float auto_hide_reveal_ms = 150.0f;
+constexpr float auto_hide_hide_ms = 150.0f;
+constexpr uint64_t auto_hide_anim_owner = 1000;
 
 PanelId panel_of(Item item) {
     switch (item) {
@@ -292,7 +292,7 @@ void render(MonitorOutput &mon) {
                 detail::autohide_apply_geometry(mon, true, false, style);
             }
             float target = want_shown ? 1.0f : 0.0f;
-            float duration = want_shown ? kAutoHideRevealMs : kAutoHideHideMs;
+            float duration = want_shown ? auto_hide_reveal_ms : auto_hide_hide_ms;
             bs.animations.animate(
                 bs.autohide.opacity, target, duration, astralia::Easing::EaseOutCubic,
                 [&bs](float v) { bs.autohide.opacity = v; },
@@ -302,7 +302,7 @@ void render(MonitorOutput &mon) {
                         detail::autohide_apply_geometry(mon, true, true, style_of(mon));
                     }
                 },
-                kAutoHideAnimOwner);
+                auto_hide_anim_owner);
         }
     }
 

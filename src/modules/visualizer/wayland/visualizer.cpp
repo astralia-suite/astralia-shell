@@ -74,8 +74,8 @@ void render_thread_main(State *state) {
         }
         auto now = std::chrono::steady_clock::now();
         bool want_sphere = params.visualizer_shape == VisualizerShape::Sphere;
-        int fps = std::clamp(want_sphere ? params.fps : visualizer_config::kBarFps,
-                             visualizer_config::kFpsMin, visualizer_config::kFpsMax);
+        int fps = std::clamp(want_sphere ? params.fps : visualizer_config::bar_fps,
+                             visualizer_config::fps_min, visualizer_config::fps_max);
         next += std::chrono::nanoseconds(1'000'000'000 / fps);
         if (next < now)
             next = now;
@@ -99,17 +99,17 @@ void render_thread_main(State *state) {
 
         bool modified = false;
         state->capture.take(audio_l, audio_r, modified);
-        if (modified && static_cast<int>(audio_l.size()) >= visualizer_config::kFragmentSize &&
-            static_cast<int>(audio_r.size()) >= visualizer_config::kFragmentSize) {
+        if (modified && static_cast<int>(audio_l.size()) >= visualizer_config::fragment_size &&
+            static_cast<int>(audio_r.size()) >= visualizer_config::fragment_size) {
             fft_l = audio_l;
             fft_r = audio_r;
-            fft(fft_l.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
-                visualizer_config::kFftCutOff);
-            fft(fft_r.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
-                visualizer_config::kFftCutOff);
+            fft(fft_l.data(), visualizer_config::fragment_size, visualizer_config::fft_scale,
+                visualizer_config::fft_cut_off);
+            fft(fft_r.data(), visualizer_config::fragment_size, visualizer_config::fft_scale,
+                visualizer_config::fft_cut_off);
             if (audio_size == 0)
                 klog("visualizer: first audio at frame %d", tick);
-            audio_size = visualizer_config::kFragmentSize;
+            audio_size = visualizer_config::fragment_size;
         }
 
         tick++;
@@ -221,7 +221,7 @@ void toggle(State &state, WaylandState &app) {
     if (state.base.egl_surface == EGL_NO_SURFACE) {
         if (!toplevel_window_create_surface(
                 state.base, app.compositor, app.wm_base, "Visualizer", "astralia-shell-visualizer",
-                visualizer_config::kDefaultWindow, visualizer_config::kDefaultWindow))
+                visualizer_config::default_window, visualizer_config::default_window))
             return;
         while (!state.base.configured)
             wl_display_dispatch(app.display);

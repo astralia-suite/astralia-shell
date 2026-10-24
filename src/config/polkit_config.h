@@ -22,5 +22,6 @@ inline constexpr const char *title_text = "Authentication Required";
 inline constexpr const char *password_placeholder = "Password";
 inline constexpr const char *authenticating_text = "Authenticating...";
 inline constexpr const char *error_text = "Skill Issue";
+inline constexpr const char *echo_file_path = "polkit/electro.png";
 
 } // namespace astralia::polkit_config

@@ -74,7 +74,7 @@ std::chrono::milliseconds Lock::next_tick() const {
     if (!locked_) {
         return std::chrono::hours(1);
     }
-    auto tick = std::chrono::milliseconds(lock_config::kTickMs);
+    auto tick = std::chrono::milliseconds(lock_config::tick_ms);
     auto fail = std::chrono::duration_cast<std::chrono::milliseconds>(
         model_.until_fail_clear(Model::Clock::now()));
     return model_.failed() ? std::min(tick, std::max(fail, std::chrono::milliseconds(1))) : tick;
@@ -175,7 +175,7 @@ bool Lock::grab() {
     xcb_window_t window = surfaces_[grab_index_]->window.id();
     bool keyboard = false;
     bool pointer = false;
-    for (int attempt = 0; attempt < lock_config::kGrabAttempts && !(keyboard && pointer);
+    for (int attempt = 0; attempt < lock_config::grab_attempts && !(keyboard && pointer);
          ++attempt) {
         if (!keyboard) {
             xcb_grab_keyboard_reply_t *reply =
@@ -196,7 +196,7 @@ bool Lock::grab() {
             std::free(reply);
         }
         if (!(keyboard && pointer)) {
-            usleep(lock_config::kGrabRetryMs * 1000);
+            usleep(lock_config::grab_retry_ms * 1000);
         }
     }
     if (!pointer) {

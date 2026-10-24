@@ -26,8 +26,8 @@ enum class WallpaperTransition : uint8_t {
 };
 
 // transition timing
-inline constexpr float kWallpaperTransitionDurationMs = 900.0f;
-inline constexpr float kWallpaperTransitionSmoothness = 0.3f;
+inline constexpr float wallpaper_transition_duration_ms = 900.0f;
+inline constexpr float wallpaper_transition_smoothness = 0.3f;
 
 class Renderer;
 

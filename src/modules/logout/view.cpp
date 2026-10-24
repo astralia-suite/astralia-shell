@@ -66,7 +66,8 @@ void paint(ui::Canvas &canvas, const Model &model, float width, float height,
     constexpr float logo_size = cfg::logo_size;
     canvas.begin_group({cx - logo_size / 2.0f, cy - logo_size / 2.0f, logo_size, logo_size},
                        {model.logo_scale(), false});
-    ui::ImageId logo = logo_path.empty() ? ui::no_image : canvas.image(logo_path, cfg::logo_size);
+    ui::ImageId logo = canvas.image(
+        logo_path.empty() ? std::string_view(cfg::logo_asset) : logo_path, cfg::logo_size);
     if (logo != ui::no_image) {
         ui::TextSize extent = canvas.image_size(logo);
         float fit = std::min(logo_size / extent.w, logo_size / extent.h);

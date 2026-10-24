@@ -16,10 +16,10 @@ namespace astralia::visualizer {
 
 namespace {
 
-constexpr int kHalfSample = visualizer_config::kSampleSize / 2;
-constexpr int kQuarterSample = visualizer_config::kSampleSize / 4;
-constexpr int kSlide = kQuarterSample + kQuarterSample;
-constexpr int kTail = visualizer_config::kFragmentSize - kQuarterSample - kQuarterSample;
+constexpr int half_sample = visualizer_config::sample_size / 2;
+constexpr int quarter_sample = visualizer_config::sample_size / 4;
+constexpr int slide = quarter_sample + quarter_sample;
+constexpr int tail = visualizer_config::fragment_size - quarter_sample - quarter_sample;
 
 } // namespace
 
@@ -29,11 +29,11 @@ bool AudioCapture::start() {
     if (loop_)
         return true;
 
-    audio_buffer_.assign(static_cast<size_t>(kHalfSample + 1), 0.0f);
-    br_.assign(static_cast<size_t>(visualizer_config::kSampleSize * 4), 0.0f);
-    bl_.assign(static_cast<size_t>(visualizer_config::kSampleSize * 4), 0.0f);
-    rb_.assign(static_cast<size_t>(visualizer_config::kFragmentSize), 0.0f);
-    lb_.assign(static_cast<size_t>(visualizer_config::kFragmentSize), 0.0f);
+    audio_buffer_.assign(static_cast<size_t>(half_sample + 1), 0.0f);
+    br_.assign(static_cast<size_t>(visualizer_config::sample_size * 4), 0.0f);
+    bl_.assign(static_cast<size_t>(visualizer_config::sample_size * 4), 0.0f);
+    rb_.assign(static_cast<size_t>(visualizer_config::fragment_size), 0.0f);
+    lb_.assign(static_cast<size_t>(visualizer_config::fragment_size), 0.0f);
     filled_idx_ = 0;
     modified_ = false;
     have_data_ = false;
@@ -74,8 +74,8 @@ bool AudioCapture::start() {
     spa_pod_builder_init(&b, buf.data(), static_cast<uint32_t>(buf.size()));
     spa_audio_info_raw raw{};
     raw.format = SPA_AUDIO_FORMAT_F32_LE;
-    raw.rate = visualizer_config::kSampleRate;
-    raw.channels = static_cast<uint32_t>(visualizer_config::kChannels);
+    raw.rate = visualizer_config::sample_rate;
+    raw.channels = static_cast<uint32_t>(visualizer_config::channels);
     const spa_pod *params[1];
     params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &raw);
 
@@ -160,21 +160,21 @@ void AudioCapture::process_buffer() {
         std::lock_guard<std::mutex> lock(mutex_);
         int n_channels = channels_;
         for (int n = 0; n < n_samples; ++n) {
-            if (filled_idx_ <= kHalfSample) {
+            if (filled_idx_ <= half_sample) {
                 audio_buffer_[static_cast<size_t>(filled_idx_)] = samples[n];
                 ++filled_idx_;
                 continue;
             }
 
-            std::memmove(br_.data(), br_.data() + kSlide,
-                         static_cast<size_t>(visualizer_config::kFragmentSize - kSlide) *
+            std::memmove(br_.data(), br_.data() + slide,
+                         static_cast<size_t>(visualizer_config::fragment_size - slide) *
                              sizeof(float));
-            std::memmove(bl_.data(), bl_.data() + kSlide,
-                         static_cast<size_t>(visualizer_config::kFragmentSize - kSlide) *
+            std::memmove(bl_.data(), bl_.data() + slide,
+                         static_cast<size_t>(visualizer_config::fragment_size - slide) *
                              sizeof(float));
 
-            for (int k = 0, i = 0; i < kHalfSample; i += 2, k += 2) {
-                int idx = kTail + k;
+            for (int k = 0, i = 0; i < half_sample; i += 2, k += 2) {
+                int idx = tail + k;
                 if (n_channels == 1) {
                     float s = (audio_buffer_[static_cast<size_t>(i)] +
                                audio_buffer_[static_cast<size_t>(i + 1)]) /
@@ -191,9 +191,9 @@ void AudioCapture::process_buffer() {
 
             filled_idx_ = 0;
             std::memcpy(rb_.data(), br_.data(),
-                        static_cast<size_t>(visualizer_config::kFragmentSize) * sizeof(float));
+                        static_cast<size_t>(visualizer_config::fragment_size) * sizeof(float));
             std::memcpy(lb_.data(), bl_.data(),
-                        static_cast<size_t>(visualizer_config::kFragmentSize) * sizeof(float));
+                        static_cast<size_t>(visualizer_config::fragment_size) * sizeof(float));
             modified_ = true;
             have_data_ = true;
         }

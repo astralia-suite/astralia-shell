@@ -25,7 +25,7 @@ class TextureCache {
 
     void evict_if_needed();
 
-    static constexpr std::size_t kMaxEntries = 512;
+    static constexpr std::size_t max_entries = 512;
     std::unordered_map<std::string, Entry> index_;
     std::list<std::string> order_;
 };

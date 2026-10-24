@@ -26,7 +26,7 @@ cairo_surface_t *stiletto_sprite() {
                 break;
             }
         }
-        int h = static_cast<int>(rain_config::kStilettoHeadHeightPx);
+        int h = static_cast<int>(rain_config::stiletto_head_height_px);
         auto pixels = decode_pixels(path, {}, h * 1000, h);
         if (!pixels)
             return nullptr;
@@ -62,7 +62,7 @@ void draw_sprite_centered(cairo_t *cr, cairo_surface_t *sprite, float cx, float 
 void draw_trail_segment(cairo_t *cr, float x, float y0, float y1) {
     const Color &a = palette::accent;
     cairo_set_source_rgba(cr, a.r, a.g, a.b, a.a);
-    cairo_set_line_width(cr, rain_config::kStilettoTrailWidthPx);
+    cairo_set_line_width(cr, rain_config::stiletto_trail_width_px);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     cairo_move_to(cr, std::round(x), y0);
     cairo_line_to(cr, std::round(x), y1);
@@ -75,15 +75,15 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
     width_ = std::max(1, width);
     height_ = std::max(1, height);
 
-    column_count_ = std::max(1, static_cast<int>(width_ / rain_config::kStilettoColumnSpacingPx));
-    float content_w = (column_count_ - 1) * rain_config::kStilettoColumnSpacingPx;
+    column_count_ = std::max(1, static_cast<int>(width_ / rain_config::stiletto_column_spacing_px));
+    float content_w = (column_count_ - 1) * rain_config::stiletto_column_spacing_px;
     origin_x_ = (width_ - content_w) / 2.0f;
 
     comets_.assign(static_cast<size_t>(column_count_), Comet{});
     for (Comet &c : comets_) {
         c.drop = start_drop();
         c.speed = async_speed
-                      ? random_range(rain_config::kAsyncSpeedMin, rain_config::kAsyncSpeedMax)
+                      ? random_range(rain_config::async_speed_min, rain_config::async_speed_max)
                       : 1.0f;
     }
 
@@ -96,7 +96,7 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
 }
 
 void StilettoRain::decay() {
-    int alpha_step = std::clamp(static_cast<int>(255.0f * rain_config::kFadeAlpha), 1, 255);
+    int alpha_step = std::clamp(static_cast<int>(255.0f * rain_config::fade_alpha), 1, 255);
     for (int y = 0; y < height_; ++y) {
         uint8_t *row = buffer_.data() + static_cast<size_t>(y) * stride_;
         for (int x = 0; x < width_; ++x) {
@@ -130,7 +130,7 @@ void StilettoRain::tick() {
     cairo_t *tcr = cairo_create(trail);
     for (int i = 0; i < column_count_; ++i) {
         Comet &c = comets_[static_cast<size_t>(i)];
-        float x = origin_x_ + i * rain_config::kStilettoColumnSpacingPx;
+        float x = origin_x_ + i * rain_config::stiletto_column_spacing_px;
 
         float head = sweeping_ ? sweep_drop_ : c.drop;
         if (head >= 0.0f) {
@@ -152,15 +152,15 @@ void StilettoRain::tick() {
     cairo_t *cr = cairo_create(surface);
     for (int i = 0; i < column_count_; ++i) {
         const Comet &c = comets_[static_cast<size_t>(i)];
-        float x = origin_x_ + i * rain_config::kStilettoColumnSpacingPx;
+        float x = origin_x_ + i * rain_config::stiletto_column_spacing_px;
         float head = sweeping_ ? sweep_drop_ : c.drop;
         if (head >= 0.0f)
             draw_sprite_centered(cr, sprite, x, head, palette::pop_b);
     }
 
     if (sweeping_) {
-        sweep_drop_ += rain_config::kStilettoStepPx;
-        if (sweep_drop_ > static_cast<float>(height_) + rain_config::kStilettoStepPx) {
+        sweep_drop_ += rain_config::stiletto_step_px;
+        if (sweep_drop_ > static_cast<float>(height_) + rain_config::stiletto_step_px) {
             sweeping_ = false;
             for (Comet &c : comets_) {
                 c.drop = -(random01() * static_cast<float>(height_));
@@ -170,8 +170,8 @@ void StilettoRain::tick() {
         }
     } else {
         for (Comet &c : comets_) {
-            c.drop += rain_config::kStilettoStepPx * c.speed;
-            if (c.drop > static_cast<float>(height_) && random01() < rain_config::kResetChance) {
+            c.drop += rain_config::stiletto_step_px * c.speed;
+            if (c.drop > static_cast<float>(height_) && random01() < rain_config::reset_chance) {
                 c.drop = c.ever_reset ? -(random01() * static_cast<float>(height_)) : start_drop();
                 c.ever_reset = true;
                 c.last_valid = false;

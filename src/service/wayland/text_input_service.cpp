@@ -42,7 +42,7 @@ void text_input_language(void *, zwp_text_input_v3 *, const char *) {}
 
 void text_input_preedit_hint(void *, zwp_text_input_v3 *, uint32_t, uint32_t, uint32_t) {}
 
-constexpr zwp_text_input_v3_listener kTextInputListener = {
+constexpr zwp_text_input_v3_listener text_input_listener = {
     .enter = text_input_enter,
     .leave = text_input_leave,
     .preedit_string = text_input_preedit_string,
@@ -73,7 +73,7 @@ bool TextInputService::bind(zwp_text_input_manager_v3 *manager, wl_seat *seat) {
         cleanup();
         return false;
     }
-    zwp_text_input_v3_add_listener(text_input_, &kTextInputListener, this);
+    zwp_text_input_v3_add_listener(text_input_, &text_input_listener, this);
     klog("text-input: text-input-v3 bound");
     return true;
 }

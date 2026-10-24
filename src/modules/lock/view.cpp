@@ -15,7 +15,7 @@ namespace astralia::lock {
 
 namespace {
 
-constexpr Color gpu_color = color(lock_config::kResGaugeGpuColorHex);
+constexpr Color gpu_color = color(lock_config::res_gauge_gpu_color_hex);
 
 struct Pane {
     ui::Canvas &canvas;
@@ -68,40 +68,40 @@ struct CardBody {
 
 CardBody draw_card(ui::Canvas &canvas, const Rect &col, const std::string &title) {
     sticker(canvas, {col.x, col.y, col.w, col.h}, metrics::radius_card, palette::surface);
-    float x = col.x + lock_config::kSidePanelPad;
-    float y = col.y + lock_config::kSidePanelPad;
-    float w = col.w - 2.0f * lock_config::kSidePanelPad;
+    float x = col.x + lock_config::side_panel_pad;
+    float y = col.y + lock_config::side_panel_pad;
+    float w = col.w - 2.0f * lock_config::side_panel_pad;
     if (title.empty()) {
         return {x, y, w};
     }
-    ui::TextStyle style = text_style(static_cast<int>(lock_config::kFontNormal), true);
+    ui::TextStyle style = text_style(static_cast<int>(lock_config::font_normal), true);
     ui::TextSize measured = canvas.measure(title, style);
     sticker(canvas,
-            {x - lock_config::kCardTagPad, y - lock_config::kCardTagPad / 2.0f,
-             measured.w + 2.0f * lock_config::kCardTagPad + metrics::shadow_widget,
-             measured.h + lock_config::kCardTagPad + metrics::shadow_widget},
+            {x - lock_config::card_tag_pad, y - lock_config::card_tag_pad / 2.0f,
+             measured.w + 2.0f * lock_config::card_tag_pad + metrics::shadow_widget,
+             measured.h + lock_config::card_tag_pad + metrics::shadow_widget},
             metrics::radius_widget, palette::pop_a, palette::ink, metrics::border_thin,
             metrics::shadow_widget);
     ui::TextSize size = put(canvas, title, style, x, y, palette::text);
-    return {x, y + size.h + lock_config::kCardHeaderGap + lock_config::kCardTagPad, w};
+    return {x, y + size.h + lock_config::card_header_gap + lock_config::card_tag_pad, w};
 }
 
 void draw_pill(Pane &pane, float x, float y, float w) {
     ui::Canvas &canvas = pane.canvas;
     const Model &model = pane.model;
-    float h = lock_config::kInputHeight;
+    float h = lock_config::input_height;
     float r = h * 0.5f;
-    canvas.rounded({x, y, w, h}, metrics::radius_card, palette::pop_b, lock_config::kBgBorderWidth,
+    canvas.rounded({x, y, w, h}, metrics::radius_card, palette::pop_b, lock_config::bg_border_width,
                    palette::ink);
 
     float cy = y + h * 0.5f;
-    ui::TextStyle icon = icon_style(static_cast<int>(lock_config::kPillIconSize));
+    ui::TextStyle icon = icon_style(static_cast<int>(lock_config::pill_icon_size));
     ui::TextSize lock_size = canvas.measure(icon::lock, icon);
     canvas.text(icon::lock, icon, std::round(x + r - lock_size.w * 0.5f),
                 std::round(cy - lock_size.h * 0.5f), palette::text_muted);
 
     bool has_text = !model.password().empty();
-    float btn = lock_config::kPillButtonSize;
+    float btn = lock_config::pill_button_size;
     float btn_x = x + w - btn - (h - btn) * 0.5f;
     float btn_y = cy - btn * 0.5f;
     selectable(canvas, {btn_x, btn_y, btn, btn}, metrics::radius_widget, has_text, false,
@@ -115,39 +115,45 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     float mid_x = x + h;
     float mid_w = w - 2.0f * h;
     if (mid_w < 10.0f) {
-        mid_x = x + lock_config::kPillPad;
-        mid_w = w - 2.0f * lock_config::kPillPad;
+        mid_x = x + lock_config::pill_pad;
+        mid_w = w - 2.0f * lock_config::pill_pad;
     }
-    ui::TextStyle normal = text_style(static_cast<int>(lock_config::kFontNormal));
+    ui::TextStyle normal = text_style(static_cast<int>(lock_config::font_normal));
     Motion &motion = pane.motion;
     if (!has_text) {
         const char *message = model.failed()
-                                  ? lock_config::kFailText
-                                  : (model.authenticating() ? lock_config::kLoadingText
-                                                            : lock_config::kPlaceholderText);
+                                  ? lock_config::fail_text
+                                  : (model.authenticating() ? lock_config::loading_text
+                                                            : lock_config::placeholder_text);
         const Color &tone = model.failed() ? palette::critical : palette::text_muted;
         ui::TextSize size = canvas.measure(message, normal);
         canvas.text(message, normal, std::round(mid_x + (mid_w - size.w) * 0.5f),
                     std::round(cy - size.h * 0.5f), tone);
-        text_field_row_slide(motion.row, motion.animations, lock_config::kOwnerDotRowX,
+        text_field_row_slide(motion.row, motion.animations, lock_config::owner_dot_row_x,
                              mid_x + dot_x(0, 0, mid_w));
         return;
     }
     size_t length = utf8_len(model.password());
-    size_t capacity = std::max<size_t>(1, static_cast<size_t>(mid_w / lock_config::kDotSize));
+    size_t capacity = std::max<size_t>(1, static_cast<size_t>(mid_w / lock_config::dot_size));
     int visible = static_cast<int>(std::min(length, capacity));
-    float row_x = text_field_row_slide(motion.row, motion.animations, lock_config::kOwnerDotRowX,
+    float row_x = text_field_row_slide(motion.row, motion.animations, lock_config::owner_dot_row_x,
                                        mid_x + dot_x(0, visible, mid_w));
+    ui::ImageId echo =
+        canvas.image(lock_config::echo_asset, static_cast<int>(lock_config::dot_size));
     for (int i = 0; i < visible; ++i) {
         const TextFieldCharAnim *anim = static_cast<size_t>(i) < motion.dots.chars.size()
                                             ? &motion.dots.chars[static_cast<size_t>(i)]
                                             : nullptr;
-        float size = lock_config::kDotSize * (anim ? anim->scale : 1.0f);
+        float size = lock_config::dot_size * (anim ? anim->scale : 1.0f);
         float dx =
-            row_x + static_cast<float>(i) * lock_config::kDotSize + (anim ? anim->slide_x : 0.0f);
-        ui::Box box{std::round(dx + (lock_config::kDotSize - size) * 0.5f),
+            row_x + static_cast<float>(i) * lock_config::dot_size + (anim ? anim->slide_x : 0.0f);
+        ui::Box box{std::round(dx + (lock_config::dot_size - size) * 0.5f),
                     std::round(cy - size * 0.5f), size, size};
-        canvas.rounded(box, size * 0.5f, palette::accent);
+        if (echo != ui::no_image) {
+            canvas.draw_image(echo, box, palette::white);
+        } else {
+            canvas.rounded(box, size * 0.5f, palette::text);
+        }
     }
 }
 
@@ -176,40 +182,40 @@ float draw_battery(Pane &pane, const Rect &col) {
         return 0.0f;
     }
     ui::Canvas &canvas = pane.canvas;
-    int px = static_cast<int>(lock_config::kFontNormal);
+    int px = static_cast<int>(lock_config::font_normal);
     ui::TextSize title = canvas.measure("Battery", text_style(px, true));
     ui::TextSize icon = canvas.measure(battery_glyph(*status), icon_style(px));
     std::string label = status->full ? "Plugged in" : std::to_string(status->percent) + "%";
     std::string line = "Battery  " + label;
     ui::TextSize label_size = canvas.measure(line, text_style(px));
     float row_h = std::max(icon.h, label_size.h);
-    float card_h = lock_config::kSidePanelPad + title.h + lock_config::kCardHeaderGap + row_h +
-                   lock_config::kBatteryRowGap + lock_config::kBatteryBarHeight +
-                   lock_config::kSidePanelPad;
+    float card_h = lock_config::side_panel_pad + title.h + lock_config::card_header_gap + row_h +
+                   lock_config::battery_row_gap + lock_config::battery_bar_height +
+                   lock_config::side_panel_pad;
 
     CardBody body = draw_card(canvas, {col.x, col.y, col.w, card_h}, "Battery");
     float rx = body.x;
     canvas.text(battery_glyph(*status), icon_style(px), std::round(rx),
                 std::round(body.y + (row_h - icon.h) * 0.5f), palette::text);
-    rx += icon.w + lock_config::kBatteryIconGap;
+    rx += icon.w + lock_config::battery_icon_gap;
     canvas.text(line, text_style(px), std::round(rx),
                 std::round(body.y + (row_h - label_size.h) * 0.5f), palette::text);
-    float bar_y = body.y + row_h + lock_config::kBatteryRowGap;
-    canvas.rounded({std::round(body.x), std::round(bar_y), body.w, lock_config::kBatteryBarHeight},
-                   lock_config::kBatteryBarRadius, palette::text_alpha11);
+    float bar_y = body.y + row_h + lock_config::battery_row_gap;
+    canvas.rounded({std::round(body.x), std::round(bar_y), body.w, lock_config::battery_bar_height},
+                   lock_config::battery_bar_radius, palette::text_alpha11);
     float fill = body.w * std::clamp(status->percent / 100.0f, 0.0f, 1.0f);
     if (fill > 0.0f) {
         canvas.rounded(
-            {std::round(body.x), std::round(bar_y), fill, lock_config::kBatteryBarHeight},
-            lock_config::kBatteryBarRadius, palette::accent);
+            {std::round(body.x), std::round(bar_y), fill, lock_config::battery_bar_height},
+            lock_config::battery_bar_radius, palette::accent);
     }
     return card_h;
 }
 
 void draw_fetch(Pane &pane, const Rect &col) {
     ui::Canvas &canvas = pane.canvas;
-    int px = static_cast<int>(lock_config::kFontMono);
-    float inner_w = col.w - 2.0f * lock_config::kSidePanelPad;
+    int px = static_cast<int>(lock_config::font_mono);
+    float inner_w = col.w - 2.0f * lock_config::side_panel_pad;
     ui::TextStyle fit = text_style(px, false, static_cast<int>(inner_w));
     CardBody body = draw_card(canvas, col, "System");
     float x = body.x;
@@ -221,16 +227,16 @@ void draw_fetch(Pane &pane, const Rect &col) {
     float hx = x;
     canvas.text(">", text_style(px, true), std::round(hx),
                 std::round(y + (head_h - prompt.h) * 0.5f), palette::lavender);
-    hx += prompt.w + lock_config::kFetchChipPad;
+    hx += prompt.w + lock_config::fetch_chip_pad;
     canvas.text(pane.info.user, text_style(px, true), std::round(hx),
                 std::round(y + (head_h - name.h) * 0.5f), palette::text);
-    y += head_h + lock_config::kFetchLineGap;
+    y += head_h + lock_config::fetch_line_gap;
 
     for (const std::string &line :
          {"OS  : " + pane.info.os, "WM  : " + pane.info.wm, pane.info.uptime}) {
         ui::TextSize size = canvas.measure(line, fit);
         canvas.text(line, fit, std::round(x), std::round(y), palette::text_muted);
-        y += std::max(size.h, 1.0f) + lock_config::kFetchLineGap;
+        y += std::max(size.h, 1.0f) + lock_config::fetch_line_gap;
     }
 
     const Color *terminal[12] = {&palette::accent,     &palette::accent_container,
@@ -247,12 +253,12 @@ void draw_fetch(Pane &pane, const Rect &col) {
         int in_row = std::min(per_row, total - drawn);
         float bx = x;
         for (int i = 0; i < in_row; ++i) {
-            canvas.rounded({bx, y, lock_config::kFetchColorBox, lock_config::kFetchColorBox},
+            canvas.rounded({bx, y, lock_config::fetch_color_box, lock_config::fetch_color_box},
                            metrics::radius_widget, *terminal[drawn]);
-            bx += lock_config::kFetchColorBox + lock_config::kFetchColorGap;
+            bx += lock_config::fetch_color_box + lock_config::fetch_color_gap;
             ++drawn;
         }
-        y += lock_config::kFetchColorBox + lock_config::kFetchColorGap;
+        y += lock_config::fetch_color_box + lock_config::fetch_color_gap;
     }
 }
 
@@ -260,30 +266,30 @@ void draw_media(Pane &pane, const Rect &col) {
     ui::Canvas &canvas = pane.canvas;
     Hits &hits = pane.model.hits();
     hits.media_prev = hits.media_play = hits.media_next = {};
-    float pad = lock_config::kSidePanelPad;
-    if (col.h < lock_config::kMediaArt + 2.0f * pad || pane.info.media == nullptr) {
+    float pad = lock_config::side_panel_pad;
+    if (col.h < lock_config::media_art + 2.0f * pad || pane.info.media == nullptr) {
         return;
     }
     CardBody body = draw_card(canvas, col, "Media");
 
     const MediaStatus &media = *pane.info.media;
     float cx = col.x + col.w * 0.5f;
-    float art = lock_config::kMediaArt;
-    float bs = lock_config::kMediaBtnSize;
-    int title_px = static_cast<int>(lock_config::kFontNormal);
+    float art = lock_config::media_art;
+    float bs = lock_config::media_btn_size;
+    int title_px = static_cast<int>(lock_config::font_normal);
     int fit = static_cast<int>(col.w - 2.0f * pad);
     std::string title =
         media.has_player && !media.track.title.empty() ? media.track.title : "Nothing playing";
     std::string artist = media.has_player && !media.track.artist.empty() ? media.track.artist
                                                                          : "Try playing some music";
     ui::TextStyle title_style = text_style(title_px, true, fit);
-    ui::TextStyle artist_style = text_style(static_cast<int>(lock_config::kFontMono), false, fit);
+    ui::TextStyle artist_style = text_style(static_cast<int>(lock_config::font_mono), false, fit);
     ui::TextSize title_size = canvas.measure(title, title_style);
     ui::TextSize artist_size = canvas.measure(artist, artist_style);
 
-    float block_h = art + lock_config::kMediaTextGap * 3.0f + title_size.h +
-                    lock_config::kMediaTextGap + artist_size.h + lock_config::kMediaBtnGap * 1.5f +
-                    bs;
+    float block_h = art + lock_config::media_text_gap * 3.0f + title_size.h +
+                    lock_config::media_text_gap + artist_size.h +
+                    lock_config::media_btn_gap * 1.5f + bs;
     float avail_h = col.y + col.h - pad - body.y;
     float ay = body.y + std::max(0.0f, (avail_h - block_h) * 0.5f);
     ui::Box art_box{cx - art * 0.5f, ay, art, art};
@@ -302,16 +308,16 @@ void draw_media(Pane &pane, const Rect &col) {
                     std::round(ay + (art - note.h) * 0.5f), palette::text_dim);
     }
 
-    float ty = ay + art + lock_config::kMediaTextGap * 3.0f;
+    float ty = ay + art + lock_config::media_text_gap * 3.0f;
     put_centered(canvas, title, title_style, cx, ty, palette::lavender);
-    ty += title_size.h + lock_config::kMediaTextGap;
+    ty += title_size.h + lock_config::media_text_gap;
     put_centered(canvas, artist, artist_style, cx, ty, palette::text_muted);
-    ty += artist_size.h + lock_config::kMediaBtnGap * 1.5f;
+    ty += artist_size.h + lock_config::media_btn_gap * 1.5f;
 
     if (ty + bs > col.y + col.h - pad) {
         return;
     }
-    float row_w = 3.0f * bs + 2.0f * lock_config::kMediaBtnGap;
+    float row_w = 3.0f * bs + 2.0f * lock_config::media_btn_gap;
     float bx = cx - row_w * 0.5f;
     auto button = [&](float rx, const char *glyph, ui::Box &out) {
         canvas.rounded({rx, ty, bs, bs}, bs * 0.5f, palette::field_bg);
@@ -322,10 +328,10 @@ void draw_media(Pane &pane, const Rect &col) {
         out = absolute(pane, {rx, ty, bs, bs});
     };
     button(bx, icon::player_prev, hits.media_prev);
-    button(bx + bs + lock_config::kMediaBtnGap,
+    button(bx + bs + lock_config::media_btn_gap,
            media.playback == MediaPlayback::playing ? icon::player_pause : icon::player_play,
            hits.media_play);
-    button(bx + 2.0f * (bs + lock_config::kMediaBtnGap), icon::player_next, hits.media_next);
+    button(bx + 2.0f * (bs + lock_config::media_btn_gap), icon::player_next, hits.media_next);
 }
 
 struct Tile {
@@ -342,7 +348,7 @@ std::string temp_label(const char *base, float celsius, const Color *&label_colo
     if (celsius <= 0.0f) {
         return base;
     }
-    label_color = celsius >= lock_config::kResTempWarnC ? &palette::critical : &palette::text_dim;
+    label_color = celsius >= lock_config::res_temp_warn_c ? &palette::critical : &palette::text_dim;
     return std::string(base) + " - " + std::to_string(static_cast<int>(std::lround(celsius))) +
            "\xC2\xB0"
            "C";
@@ -350,9 +356,9 @@ std::string temp_label(const char *base, float celsius, const Color *&label_colo
 
 void draw_resources(Pane &pane, const Rect &col) {
     ui::Canvas &canvas = pane.canvas;
-    float gap = lock_config::kResTileGap;
+    float gap = lock_config::res_tile_gap;
     CardBody body = draw_card(canvas, col, "Resources");
-    float avail_h = col.y + col.h - lock_config::kSidePanelPad - body.y;
+    float avail_h = col.y + col.h - lock_config::side_panel_pad - body.y;
     if (pane.info.stats == nullptr || pane.info.cpu_temp == nullptr ||
         pane.info.gpu_temp == nullptr) {
         return;
@@ -383,10 +389,10 @@ void draw_resources(Pane &pane, const Rect &col) {
                      stats.disk_pct >= 0.0f ? static_cast<int>(std::lround(stats.disk_pct)) : -1,
                      &palette::accent_alt, &palette::text_dim, 1});
 
-    ui::TextStyle label_style = text_style(static_cast<int>(lock_config::kFontMono));
-    float cell_extra = canvas.measure("CPU", label_style).h + lock_config::kResGaugeLabelGap;
+    ui::TextStyle label_style = text_style(static_cast<int>(lock_config::font_mono));
+    float cell_extra = canvas.measure("CPU", label_style).h + lock_config::res_gauge_label_gap;
     float tile = std::min((col.w - 3.0f * gap) * 0.5f, (avail_h - gap - 2.0f * cell_extra) * 0.5f);
-    float stroke = tile * lock_config::kResGaugeStrokeRatio;
+    float stroke = tile * lock_config::res_gauge_stroke_ratio;
     float col_gap = (col.w - 2.0f * tile) / 3.0f;
     float block_h = 2.0f * tile + gap + 2.0f * cell_extra;
     float y0 = body.y + std::max(0.0f, (avail_h - block_h) * 0.5f);
@@ -397,8 +403,8 @@ void draw_resources(Pane &pane, const Rect &col) {
         ++row_count[t.row];
     }
     int row_seen[2] = {0, 0};
-    ui::TextStyle icon = icon_style(static_cast<int>(lock_config::kResIconSize));
-    ui::TextStyle value_style = text_style(static_cast<int>(lock_config::kResValueFont), true);
+    ui::TextStyle icon = icon_style(static_cast<int>(lock_config::res_icon_size));
+    ui::TextStyle value_style = text_style(static_cast<int>(lock_config::res_value_font), true);
     for (const Tile &t : tiles) {
         int within = row_seen[t.row]++;
         float tx = row_count[t.row] == 1
@@ -412,14 +418,14 @@ void draw_resources(Pane &pane, const Rect &col) {
         ui::TextSize icon_size = canvas.measure(t.glyph, icon);
         ui::TextSize value_size = canvas.measure(value, value_style);
         float stack_y =
-            ty + (tile - icon_size.h - lock_config::kResGaugeIconValueGap - value_size.h) * 0.5f;
+            ty + (tile - icon_size.h - lock_config::res_gauge_icon_value_gap - value_size.h) * 0.5f;
         canvas.text(t.glyph, icon, std::round(tx + (tile - icon_size.w) * 0.5f),
                     std::round(stack_y), *t.accent);
-        stack_y += icon_size.h + lock_config::kResGaugeIconValueGap;
+        stack_y += icon_size.h + lock_config::res_gauge_icon_value_gap;
         canvas.text(value, value_style, std::round(tx + (tile - value_size.w) * 0.5f),
                     std::round(stack_y), palette::text);
         put_centered(canvas, t.label, label_style, tx + tile * 0.5f,
-                     ty + tile + lock_config::kResGaugeLabelGap, *t.label_color);
+                     ty + tile + lock_config::res_gauge_label_gap, *t.label_color);
     }
 }
 
@@ -435,29 +441,29 @@ void draw_notifications(Pane &pane, const Rect &col) {
     CardBody body = draw_card(canvas, col, header);
 
     if (list.empty()) {
-        ui::TextStyle style = text_style(static_cast<int>(lock_config::kFontNormal));
+        ui::TextStyle style = text_style(static_cast<int>(lock_config::font_normal));
         ui::TextSize size = canvas.measure("No Notifications", style);
         canvas.text("No Notifications", style, std::round(col.x + (col.w - size.w) * 0.5f),
                     std::round(col.y + col.h * 0.5f), palette::text_dim);
         return;
     }
 
-    float clip_h = col.y + col.h - body.y - lock_config::kSidePanelPad;
-    float cw = col.w - 2.0f * lock_config::kSidePanelPad;
-    float pad = lock_config::kNotifCardPad;
+    float clip_h = col.y + col.h - body.y - lock_config::side_panel_pad;
+    float cw = col.w - 2.0f * lock_config::side_panel_pad;
+    float pad = lock_config::notif_card_pad;
     int fit = static_cast<int>(cw - 2.0f * pad);
     canvas.begin_group({body.x, body.y, body.w, clip_h}, {1.0f, true});
     float cy = 0.0f;
     int shown = 0;
     for (auto it = list.rbegin(); it != list.rend(); ++it) {
-        if (shown >= lock_config::kNotifMaxCards || cy >= clip_h) {
+        if (shown >= lock_config::notif_max_cards || cy >= clip_h) {
             break;
         }
         const Notification &record = *it;
-        ui::TextStyle app_style = text_style(static_cast<int>(lock_config::kFontMono), true, fit);
+        ui::TextStyle app_style = text_style(static_cast<int>(lock_config::font_mono), true, fit);
         ui::TextStyle summary_style =
-            text_style(static_cast<int>(lock_config::kFontNormal), false, fit);
-        ui::TextStyle body_style = text_style(static_cast<int>(lock_config::kFontMono), false, fit);
+            text_style(static_cast<int>(lock_config::font_normal), false, fit);
+        ui::TextStyle body_style = text_style(static_cast<int>(lock_config::font_mono), false, fit);
         std::string app = record.app.empty() ? "Notification" : record.app;
         ui::TextSize app_size = canvas.measure(app, app_style);
         ui::TextSize summary_size =
@@ -465,21 +471,21 @@ void draw_notifications(Pane &pane, const Rect &col) {
         ui::TextSize body_size =
             record.body.empty() ? ui::TextSize{} : canvas.measure(record.body, body_style);
         float ch = 2.0f * pad + app_size.h +
-                   (record.summary.empty() ? 0.0f : lock_config::kMediaTextGap + summary_size.h) +
-                   (record.body.empty() ? 0.0f : lock_config::kMediaTextGap + body_size.h);
+                   (record.summary.empty() ? 0.0f : lock_config::media_text_gap + summary_size.h) +
+                   (record.body.empty() ? 0.0f : lock_config::media_text_gap + body_size.h);
 
         canvas.rounded({0.0f, cy, cw, ch}, metrics::radius_card, palette::field_bg);
         float iy = cy + pad;
         canvas.text(app, app_style, pad, std::round(iy), palette::lavender);
-        iy += app_size.h + lock_config::kMediaTextGap;
+        iy += app_size.h + lock_config::media_text_gap;
         if (!record.summary.empty()) {
             canvas.text(record.summary, summary_style, pad, std::round(iy), palette::text);
-            iy += summary_size.h + lock_config::kMediaTextGap;
+            iy += summary_size.h + lock_config::media_text_gap;
         }
         if (!record.body.empty()) {
             canvas.text(record.body, body_style, pad, std::round(iy), palette::text_muted);
         }
-        cy += ch + lock_config::kNotifCardGap;
+        cy += ch + lock_config::notif_card_gap;
         ++shown;
     }
     canvas.end_group();
@@ -490,53 +496,53 @@ void draw_center(Pane &pane, const Rect &col, float output_h) {
     draw_card(canvas, col, "");
 
     float scale = center_scale(output_h);
-    int clock_px = std::max(1, static_cast<int>(lock_config::kFontClock * scale));
+    int clock_px = std::max(1, static_cast<int>(lock_config::font_clock * scale));
     ui::TextStyle clock_style = text_style(clock_px, true);
     ui::TextSize hour = canvas.measure(pane.info.hour, clock_style);
     ui::TextSize colon = canvas.measure(":", clock_style);
     ui::TextSize minute = canvas.measure(pane.info.minute, clock_style);
-    ui::TextStyle date_style = text_style(static_cast<int>(lock_config::kFontDate), true);
+    ui::TextStyle date_style = text_style(static_cast<int>(lock_config::font_date), true);
     ui::TextSize date = canvas.measure(pane.info.date, date_style);
 
     float clock_h = std::max(hour.h, minute.h);
-    float clock_w = hour.w + lock_config::kClockGap + colon.w + lock_config::kClockGap + minute.w;
+    float clock_w = hour.w + lock_config::clock_gap + colon.w + lock_config::clock_gap + minute.w;
     float total_h = content_height(clock_h, date.h, 0.0f);
     float y = col.y + (col.h - total_h) * 0.5f;
     float cx = col.x + col.w * 0.5f;
 
     float mx = cx - clock_w * 0.5f;
     canvas.text(pane.info.hour, clock_style, std::round(mx), std::round(y), palette::text);
-    mx += hour.w + lock_config::kClockGap;
+    mx += hour.w + lock_config::clock_gap;
     canvas.text(":", clock_style, std::round(mx), std::round(y), palette::text);
-    mx += colon.w + lock_config::kClockGap;
+    mx += colon.w + lock_config::clock_gap;
     canvas.text(pane.info.minute, clock_style, std::round(mx), std::round(y), palette::lavender);
-    y += clock_h + lock_config::kGapClockDate;
+    y += clock_h + lock_config::gap_clock_date;
 
     put_centered(canvas, pane.info.date, date_style, cx, y, palette::text);
-    y += date.h + lock_config::kGapDateAvatar;
+    y += date.h + lock_config::gap_date_avatar;
 
-    ui::Box avatar{std::round(cx - lock_config::kProfileSize * 0.5f), std::round(y),
-                   lock_config::kProfileSize, lock_config::kProfileSize};
-    canvas.rounded(avatar, lock_config::kProfileSize * 0.5f, palette::field_bg);
+    ui::Box avatar{std::round(cx - lock_config::profile_size * 0.5f), std::round(y),
+                   lock_config::profile_size, lock_config::profile_size};
+    canvas.rounded(avatar, lock_config::profile_size * 0.5f, palette::field_bg);
     ui::ImageId face =
         pane.info.face.empty()
             ? ui::no_image
-            : canvas.image(pane.info.face, static_cast<int>(lock_config::kProfileSize) * 2);
+            : canvas.image(pane.info.face, static_cast<int>(lock_config::profile_size) * 2);
     if (face != ui::no_image) {
-        canvas.begin_group(avatar, {1.0f, true, lock_config::kProfileSize * 0.5f});
+        canvas.begin_group(avatar, {1.0f, true, lock_config::profile_size * 0.5f});
         canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
         canvas.end_group();
     } else {
-        ui::TextStyle glyph_style = icon_style(static_cast<int>(lock_config::kProfileSize * 0.5f));
+        ui::TextStyle glyph_style = icon_style(static_cast<int>(lock_config::profile_size * 0.5f));
         ui::TextSize glyph = canvas.measure(icon::user, glyph_style);
         canvas.text(icon::user, glyph_style, std::round(avatar.x + (avatar.w - glyph.w) * 0.5f),
                     std::round(avatar.y + (avatar.h - glyph.h) * 0.5f), palette::text);
     }
-    canvas.rounded(avatar, lock_config::kProfileSize * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f},
-                   lock_config::kProfileBorderWidth, palette::ink);
-    y += lock_config::kProfileSize + lock_config::kGapAvatarInput;
+    canvas.rounded(avatar, lock_config::profile_size * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f},
+                   lock_config::profile_border_width, palette::ink);
+    y += lock_config::profile_size + lock_config::gap_avatar_input;
 
-    float pill_w = col.w * lock_config::kInputWidthFrac;
+    float pill_w = col.w * lock_config::input_width_frac;
     draw_pill(pane, cx - pill_w * 0.5f, y, pill_w);
 }
 
@@ -561,7 +567,7 @@ void paint(ui::Canvas &canvas, Model &model, Motion &motion, const Info &info, f
 
     if (motion.icon_alpha > 0.001f) {
         const char *glyph = icon::lock;
-        ui::TextStyle style = icon_style(static_cast<int>(lock_config::kFontIcon));
+        ui::TextStyle style = icon_style(static_cast<int>(lock_config::font_icon));
         ui::TextSize size = canvas.measure(glyph, style);
         canvas.text(glyph, style, std::round((pw - size.w) * 0.5f),
                     std::round((ph - size.h) * 0.5f),
@@ -572,7 +578,7 @@ void paint(ui::Canvas &canvas, Model &model, Motion &motion, const Info &info, f
         return;
     }
 
-    float center_w = lock_config::kCenterWidth * center_scale(height);
+    float center_w = lock_config::center_width * center_scale(height);
     Rect left, center, right;
     columns(card_w, card_h, center_w, left, center, right);
 
@@ -583,15 +589,15 @@ void paint(ui::Canvas &canvas, Model &model, Motion &motion, const Info &info, f
     Pane pane{canvas, model, motion, info, px + cx0, py + cy0};
 
     float bat_h = draw_battery(pane, left);
-    float top = left.y + (bat_h > 0.0f ? bat_h + lock_config::kPanelGap : 0.0f);
+    float top = left.y + (bat_h > 0.0f ? bat_h + lock_config::panel_gap : 0.0f);
     float rem = left.h - (top - left.y);
-    float ch = std::max(0.0f, (rem - lock_config::kPanelGap) * 0.5f);
+    float ch = std::max(0.0f, (rem - lock_config::panel_gap) * 0.5f);
     draw_fetch(pane, {left.x, top, left.w, ch});
-    draw_media(pane, {left.x, top + ch + lock_config::kPanelGap, left.w, ch});
+    draw_media(pane, {left.x, top + ch + lock_config::panel_gap, left.w, ch});
 
     float side_h = side_card_height(right.h);
     draw_resources(pane, {right.x, right.y, right.w, side_h});
-    draw_notifications(pane, {right.x, right.y + side_h + lock_config::kPanelGap, right.w, side_h});
+    draw_notifications(pane, {right.x, right.y + side_h + lock_config::panel_gap, right.w, side_h});
 
     draw_center(pane, center, height);
     canvas.end_group();

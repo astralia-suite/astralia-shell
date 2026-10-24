@@ -53,8 +53,8 @@ void toggle(State &state, WaylandState &app) {
         if (state.base.egl_surface == EGL_NO_SURFACE) {
             if (!toplevel_window_create_surface(state.base, app.compositor, app.wm_base, "Rain",
                                                 "astralia-shell-rain",
-                                                astralia::rain_config::kDefaultWindowWidth,
-                                                astralia::rain_config::kDefaultWindowHeight))
+                                                astralia::rain_config::default_window_width,
+                                                astralia::rain_config::default_window_height))
                 return;
             while (!state.base.configured)
                 wl_display_dispatch(app.display);
@@ -76,11 +76,11 @@ void toggle(State &state, WaylandState &app) {
 
     if (opening) {
         state.base.animations.animate(
-            state.base.opacity, 1.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
-            [&state](float v) { state.base.opacity = v; }, {}, kOverlayFadeOwner);
+            state.base.opacity, 1.0f, overlay_fade_ms, astralia::Easing::EaseOutCubic,
+            [&state](float v) { state.base.opacity = v; }, {}, overlay_fade_owner);
         toplevel_window_request_frame(state.base);
     } else {
-        state.base.animations.cancel_owner(kOverlayFadeOwner);
+        state.base.animations.cancel_owner(overlay_fade_owner);
         state.base.open = false;
         toplevel_window_destroy_surface(state.base);
         app_detail::rest_egl_current(app);
@@ -140,7 +140,7 @@ void render(State &state) {
     }
 
     float elapsed_ms = std::chrono::duration<float, std::milli>(now - state.last_tick).count();
-    if (elapsed_ms >= astralia::rain_config::kFallIntervalMs) {
+    if (elapsed_ms >= astralia::rain_config::fall_interval_ms) {
         tick_active(state);
         state.last_tick = now;
     }

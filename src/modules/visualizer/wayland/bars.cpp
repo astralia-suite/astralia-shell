@@ -10,7 +10,7 @@ namespace astralia::visualizer {
 
 namespace {
 
-constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
+constexpr GLfloat quad_verts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
 
 } // namespace
 
@@ -27,7 +27,7 @@ bool BarVisualizer::init() {
 
     glGenBuffers(1, &vbo_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(kQuadVerts), kQuadVerts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_verts), quad_verts, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     ready_ = true;
@@ -68,9 +68,9 @@ void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, 
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(prog_);
 
-    float slot = visualizer_config::kBarWidth + visualizer_config::kBarSpacing;
+    float slot = visualizer_config::bar_width + visualizer_config::bar_spacing;
     int bar_count =
-        static_cast<int>((static_cast<float>(width) - visualizer_config::kBarSpacing) / slot);
+        static_cast<int>((static_cast<float>(width) - visualizer_config::bar_spacing) / slot);
     bar_count = bar_count < 1 ? 1 : bar_count;
 
     glUniform2f(glGetUniformLocation(prog_, "u_resolution"), static_cast<float>(width),
@@ -78,13 +78,13 @@ void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, 
     glUniform3f(glGetUniformLocation(prog_, "u_accent"), astralia::palette::accent.r,
                 astralia::palette::accent.g, astralia::palette::accent.b);
     glUniform1i(glGetUniformLocation(prog_, "u_barCount"), bar_count);
-    glUniform1f(glGetUniformLocation(prog_, "u_barWidth"), visualizer_config::kBarWidth);
-    glUniform1f(glGetUniformLocation(prog_, "u_barSpacing"), visualizer_config::kBarSpacing);
-    glUniform1f(glGetUniformLocation(prog_, "u_barRadius"), visualizer_config::kBarRadius);
+    glUniform1f(glGetUniformLocation(prog_, "u_barWidth"), visualizer_config::bar_width);
+    glUniform1f(glGetUniformLocation(prog_, "u_barSpacing"), visualizer_config::bar_spacing);
+    glUniform1f(glGetUniformLocation(prog_, "u_barRadius"), visualizer_config::bar_radius);
     glUniform1f(glGetUniformLocation(prog_, "u_barHeightRatio"),
-                visualizer_config::kBarHeightRatio);
-    glUniform1f(glGetUniformLocation(prog_, "u_barOpacity"), visualizer_config::kBarOpacity);
-    glUniform1f(glGetUniformLocation(prog_, "u_minBarHeight"), visualizer_config::kBarMinHeight);
+                visualizer_config::bar_height_ratio);
+    glUniform1f(glGetUniformLocation(prog_, "u_barOpacity"), visualizer_config::bar_opacity);
+    glUniform1f(glGetUniformLocation(prog_, "u_minBarHeight"), visualizer_config::bar_min_height);
 
     glActiveTexture(GL_TEXTURE0 + 1);
     glBindTexture(GL_TEXTURE_2D, audio_r_tex);
@@ -97,7 +97,7 @@ void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, 
     glActiveTexture(GL_TEXTURE0);
 
     int band_h =
-        static_cast<int>(visualizer_config::kBarHeightRatio * static_cast<float>(height)) + 1;
+        static_cast<int>(visualizer_config::bar_height_ratio * static_cast<float>(height)) + 1;
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, width, band_h);
     draw_quad();

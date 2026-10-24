@@ -18,9 +18,9 @@ void toggle(State &state, WaylandState &app) {
     if (opening) {
         if (state.base.egl_surface == EGL_NO_SURFACE) {
             if (!toplevel_window_create_surface(
-                    state.base, app.compositor, app.wm_base, astralia::dashboard_config::kTitle,
-                    astralia::dashboard_config::kAppId, astralia::dashboard_config::kDefaultWidth,
-                    astralia::dashboard_config::kDefaultHeight))
+                    state.base, app.compositor, app.wm_base, astralia::dashboard_config::title,
+                    astralia::dashboard_config::app_id, astralia::dashboard_config::default_width,
+                    astralia::dashboard_config::default_height))
                 return;
             while (!state.base.configured)
                 wl_display_dispatch(app.display);
@@ -35,11 +35,11 @@ void toggle(State &state, WaylandState &app) {
         }
         state.base.open = true;
         state.base.animations.animate(
-            state.base.opacity, 1.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
-            [&state](float v) { state.base.opacity = v; }, {}, kOverlayFadeOwner);
+            state.base.opacity, 1.0f, overlay_fade_ms, astralia::Easing::EaseOutCubic,
+            [&state](float v) { state.base.opacity = v; }, {}, overlay_fade_owner);
         toplevel_window_request_frame(state.base);
     } else {
-        state.base.animations.cancel_owner(kOverlayFadeOwner);
+        state.base.animations.cancel_owner(overlay_fade_owner);
         state.base.open = false;
         toplevel_window_destroy_surface(state.base);
         app_detail::rest_egl_current(app);

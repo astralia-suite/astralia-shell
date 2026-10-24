@@ -8,8 +8,8 @@
 namespace astralia::visualizer {
 
 int bar_count(float width) {
-    float slot = visualizer_config::kBarWidth + visualizer_config::kBarSpacing;
-    return std::max(1, static_cast<int>((width - visualizer_config::kBarSpacing) / slot));
+    float slot = visualizer_config::bar_width + visualizer_config::bar_spacing;
+    return std::max(1, static_cast<int>((width - visualizer_config::bar_spacing) / slot));
 }
 
 int bar_texel(int index, int count, int size) {
@@ -20,9 +20,9 @@ int bar_texel(int index, int count, int size) {
 }
 
 float visualizer_bar_height(float magnitude, float area_height) {
-    return std::max(visualizer_config::kBarMinHeight, std::clamp(magnitude, 0.0f, 1.0f) *
-                                                          visualizer_config::kBarHeightRatio *
-                                                          area_height);
+    return std::max(visualizer_config::bar_min_height, std::clamp(magnitude, 0.0f, 1.0f) *
+                                                           visualizer_config::bar_height_ratio *
+                                                           area_height);
 }
 
 } // namespace astralia::visualizer

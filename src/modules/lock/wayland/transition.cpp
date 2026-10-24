@@ -20,15 +20,15 @@ namespace astralia::lock {
 
 namespace {
 
-constexpr int kTransitionDeadlineMarginMs = 1500;
-constexpr int kTransitionReadyMs = 400;
+constexpr int transition_deadline_margin_ms = 1500;
+constexpr int transition_ready_ms = 400;
 
 void transition_paint(Transition &transition, TransitionSurface &surface);
 
 bool wallpaper_pending(const Transition &transition, const TransitionSurface &surface,
                        float progress) {
     return transition.mode == TransitionMode::lock && transition.wallpaper_ready &&
-           progress < lock_config::kSlashFinalStart &&
+           progress < lock_config::slash_final_start &&
            !transition.wallpaper_ready(surface.output_name);
 }
 
@@ -123,7 +123,7 @@ void surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_
 
 void surface_closed(void *, zwlr_layer_surface_v1 *) {}
 
-constexpr zwlr_layer_surface_v1_listener kSurfaceListener = {
+constexpr zwlr_layer_surface_v1_listener surface_listener = {
     .configure = surface_configure,
     .closed = surface_closed,
 };
@@ -215,7 +215,7 @@ void transition_paint(Transition &transition, TransitionSurface &surface) {
     if (!eglSwapBuffers(app.egl_display, surface.egl_surface))
         klog("lock: transition eglSwapBuffers failed on '%s'", surface.output_name.c_str());
 
-    if (elapsed < lock_config::kSlashMs) {
+    if (elapsed < lock_config::slash_ms) {
         request_frame(surface.frame_clock);
     } else if (!transition.finishing && &surface == transition.surfaces.front().get()) {
         transition.finishing = true;
@@ -242,7 +242,7 @@ bool transition_open(Transition &transition, WaylandState &app, TransitionMode m
     transition.app = &app;
     transition.mode = mode;
     transition.ready_deadline =
-        std::chrono::steady_clock::now() + std::chrono::milliseconds(kTransitionReadyMs);
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(transition_ready_ms);
     transition.seed = static_cast<uint32_t>(
         std::chrono::steady_clock::now().time_since_epoch().count() & 0xFFFFFFFFu);
     transition.playing = false;
@@ -263,7 +263,7 @@ bool transition_open(Transition &transition, WaylandState &app, TransitionMode m
         };
         surface->layer_surface =
             layer_surface_create(surface->surface, app.compositor, app.layer_shell, config,
-                                 &kSurfaceListener, surface.get(), surface->output);
+                                 &surface_listener, surface.get(), surface->output);
         if (!surface->layer_surface) {
             klog("lock: transition layer surface failed on '%s'", surface->output_name.c_str());
             if (surface->surface)
@@ -306,7 +306,7 @@ void transition_release_keyboard(Transition &transition) {
 void transition_rehold(Transition &transition, TransitionMode mode) {
     transition.mode = mode;
     transition.ready_deadline =
-        std::chrono::steady_clock::now() + std::chrono::milliseconds(kTransitionReadyMs);
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(transition_ready_ms);
     transition.running = false;
     transition.finishing = false;
     for (auto &surface : transition.surfaces) {
@@ -328,8 +328,8 @@ bool transition_play(Transition &transition, std::function<void()> on_finished) 
     transition.finishing = false;
     transition.playing = true;
     transition.deadline = clock::now() +
-                          std::chrono::milliseconds(static_cast<int>(lock_config::kSlashMs)) +
-                          std::chrono::milliseconds(kTransitionDeadlineMarginMs);
+                          std::chrono::milliseconds(static_cast<int>(lock_config::slash_ms)) +
+                          std::chrono::milliseconds(transition_deadline_margin_ms);
 
     for (auto &surface : transition.surfaces) {
         zwlr_layer_surface_v1_set_keyboard_interactivity(

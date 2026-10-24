@@ -28,7 +28,7 @@ extern "C" {
 
 namespace {
 
-constexpr AVHWDeviceType kPreferredHwTypes[] = {AV_HWDEVICE_TYPE_VAAPI, AV_HWDEVICE_TYPE_CUDA};
+constexpr AVHWDeviceType preferred_hw_types[] = {AV_HWDEVICE_TYPE_VAAPI, AV_HWDEVICE_TYPE_CUDA};
 
 AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts) {
     auto *wanted = static_cast<AVPixelFormat *>(ctx->opaque);
@@ -208,7 +208,7 @@ void decode_loop(std::string path, std::string filter_desc, int fps, bool suppor
 
     HwDeviceGuard hw_device;
     AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
-    for (AVHWDeviceType type : kPreferredHwTypes) {
+    for (AVHWDeviceType type : preferred_hw_types) {
         AVPixelFormat candidate = AV_PIX_FMT_NONE;
         for (int i = 0;; ++i) {
             const AVCodecHWConfig *config = avcodec_get_hw_config(decoder, i);

@@ -21,8 +21,8 @@ float sinusoidal(float x) {
 }
 
 float scale_audio(float index) {
-    return -std::log(-visualizer_config::kSampleRange * index + 1.0f) /
-           visualizer_config::kSampleScale;
+    return -std::log(-visualizer_config::sample_range * index + 1.0f) /
+           visualizer_config::sample_scale;
 }
 
 float fetch(const std::vector<float> &source, float s) {
@@ -35,8 +35,8 @@ float fetch(const std::vector<float> &source, float s) {
 
 float CpuStages::smooth_at(const std::vector<float> &source, float u) const {
     float size = static_cast<float>(source.size());
-    float smin = scale_audio(clamp01(u - visualizer_config::kSmoothFactor)) * size;
-    float smax = scale_audio(clamp01(u + visualizer_config::kSmoothFactor)) * size;
+    float smin = scale_audio(clamp01(u - visualizer_config::smooth_factor)) * size;
+    float smax = scale_audio(clamp01(u + visualizer_config::smooth_factor)) * size;
     float half = (smax - smin) / 2.0f;
     float middle = smin + half;
     float weight_of_distance = 0.0f;
@@ -57,16 +57,16 @@ float CpuStages::smooth_at(const std::vector<float> &source, float u) const {
     }
     float average = weight > 0.0f ? total / weight : 0.0f;
     float result = 0.0f;
-    if (visualizer_config::kSampleMode == 0) {
+    if (visualizer_config::sample_mode == 0) {
         result = average;
-    } else if (visualizer_config::kSampleMode == 1) {
+    } else if (visualizer_config::sample_mode == 1) {
         result = peak;
     } else {
-        result = peak * (1.0f - visualizer_config::kSampleHybridWeight) +
-                 average * visualizer_config::kSampleHybridWeight;
+        result = peak * (1.0f - visualizer_config::sample_hybrid_weight) +
+                 average * visualizer_config::sample_hybrid_weight;
     }
     return result /
-           (2.0f * (static_cast<float>(visualizer_config::kAdjacentSampleNums) - 1.0f) + 1.0f);
+           (2.0f * (static_cast<float>(visualizer_config::adjacent_sample_nums) - 1.0f) + 1.0f);
 }
 
 void CpuStages::run_channel(Channel &channel, const std::vector<float> &raw, int fps) {
@@ -79,7 +79,7 @@ void CpuStages::run_channel(Channel &channel, const std::vector<float> &raw, int
         channel.average.assign(size, 0.0f);
         channel.ring_index = 0;
     }
-    float drop = visualizer_config::kGravityStep / static_cast<float>(fps);
+    float drop = visualizer_config::gravity_step / static_cast<float>(fps);
     for (size_t i = 0; i < size; ++i) {
         float held = std::max(channel.held[i], clamp01(raw[i]));
         channel.held[i] = clamp01(held - drop);
@@ -93,11 +93,11 @@ void CpuStages::run_channel(Channel &channel, const std::vector<float> &raw, int
                 frame += ring_size;
             }
             sum += hamming(static_cast<float>(t),
-                           static_cast<float>(visualizer_config::kGravityAverageFrames - 1)) *
+                           static_cast<float>(visualizer_config::gravity_average_frames - 1)) *
                    channel.ring[static_cast<size_t>(frame)][i];
         }
         channel.average[i] =
-            clamp01(sum / static_cast<float>(visualizer_config::kGravityAverageFrames));
+            clamp01(sum / static_cast<float>(visualizer_config::gravity_average_frames));
     }
     channel.ring_index = (channel.ring_index + 1) % ring_size;
 }

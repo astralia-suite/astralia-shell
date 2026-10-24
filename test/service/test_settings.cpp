@@ -133,7 +133,7 @@ void check_config_parse() {
           "the previous top-level sections still load");
     check(parse_config(serialize_config(grouped)) == grouped, "the grouped layout round-trips");
     check(parse_config(R"({"visualizer": {"fps": 9999, "glowQuality": 100}})").visualizer.fps ==
-              visualizer_config::kFpsMax,
+              visualizer_config::fps_max,
           "visualizer values are clamped");
     check(parse_config(R"({"bar": {"autohideEnabled": "yes"}})").autohide == false,
           "a wrongly typed value keeps the default");

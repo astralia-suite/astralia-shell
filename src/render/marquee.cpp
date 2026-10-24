@@ -4,8 +4,8 @@ namespace astralia {
 
 namespace {
 
-constexpr float kMarqueePauseMs = 1200.0f;
-constexpr float kMarqueeSpeedPxPerSec = 35.0f;
+constexpr float marquee_pause_ms = 1200.0f;
+constexpr float marquee_speed_px_per_sec = 35.0f;
 
 void start_pause_at_start(AnimationManager &anim, MarqueeTextState &state, std::uint64_t owner,
                           float overflow);
@@ -19,13 +19,13 @@ void start_snap(AnimationManager &anim, MarqueeTextState &state, std::uint64_t o
 void start_pause_at_start(AnimationManager &anim, MarqueeTextState &state, std::uint64_t owner,
                           float overflow) {
     anim.animate(
-        0.0f, 0.0f, kMarqueePauseMs, Easing::Linear, [](float) {},
+        0.0f, 0.0f, marquee_pause_ms, Easing::Linear, [](float) {},
         [&anim, &state, owner, overflow] { start_scroll(anim, state, owner, overflow); }, owner);
 }
 
 void start_scroll(AnimationManager &anim, MarqueeTextState &state, std::uint64_t owner,
                   float overflow) {
-    float duration_ms = overflow / kMarqueeSpeedPxPerSec * 1000.0f;
+    float duration_ms = overflow / marquee_speed_px_per_sec * 1000.0f;
     anim.animate(
         0.0f, overflow, duration_ms, Easing::Linear, [&state](float v) { state.scroll_offset = v; },
         [&anim, &state, owner, overflow] { start_pause_at_end(anim, state, owner, overflow); },
@@ -35,7 +35,7 @@ void start_scroll(AnimationManager &anim, MarqueeTextState &state, std::uint64_t
 void start_pause_at_end(AnimationManager &anim, MarqueeTextState &state, std::uint64_t owner,
                         float overflow) {
     anim.animate(
-        overflow, overflow, kMarqueePauseMs, Easing::Linear, [](float) {},
+        overflow, overflow, marquee_pause_ms, Easing::Linear, [](float) {},
         [&anim, &state, owner, overflow] { start_snap(anim, state, owner, overflow); }, owner);
 }
 

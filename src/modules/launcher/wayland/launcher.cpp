@@ -20,8 +20,8 @@ namespace astralia::launcher {
 
 namespace {
 
-constexpr uint64_t kEntranceOwner = 2;
-constexpr float kEntranceBoltGain = 1.3f;
+constexpr uint64_t entrance_owner = 2;
+constexpr float entrance_bolt_gain = 1.3f;
 
 void layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial,
                              uint32_t width, uint32_t height) {
@@ -44,7 +44,7 @@ constexpr zwlr_layer_surface_v1_listener layer_surface_listener = {
 
 void start_entrance(State &state) {
     state.opacity = 1.0f;
-    state.animations.cancel_owner(kOverlayFadeOwner);
+    state.animations.cancel_owner(overlay_fade_owner);
     state.entrance_active = true;
     state.entrance_t = 0.0f;
     state.entrance_seed =
@@ -53,7 +53,7 @@ void start_entrance(State &state) {
     state.animations.animate(
         0.0f, 1.0f, astralia::launcher_config::entrance_ms, astralia::Easing::Linear,
         [&state](float v) { state.entrance_t = v; }, [&state] { state.entrance_active = false; },
-        kEntranceOwner);
+        entrance_owner);
 }
 
 void draw_entrance(State &state) {
@@ -70,7 +70,7 @@ void draw_entrance(State &state) {
         r.reach = burst.reach;
         r.time_s = e.time_s;
         r.progress = burst.progress;
-        r.intensity = burst.intensity * kEntranceBoltGain;
+        r.intensity = burst.intensity * entrance_bolt_gain;
         r.core = astralia::rgba(core);
         r.glow = astralia::rgba(glow);
         thunder_rect_shock_draw(state.thunder, *state.renderer, r);
@@ -83,7 +83,7 @@ void draw_entrance(State &state) {
         p.by = bolt.by;
         p.time_s = e.time_s;
         p.progress = bolt.progress;
-        p.intensity = bolt.intensity * kEntranceBoltGain;
+        p.intensity = bolt.intensity * entrance_bolt_gain;
         p.seed = bolt.seed;
         p.amp = bolt.amp;
         p.thick = bolt.thick;
@@ -226,10 +226,10 @@ void toggle(State &state, bool global) {
             state.sync_text_input_focus(false);
 
         launcher::request_frame(state);
-        state.animations.cancel_owner(kEntranceOwner);
+        state.animations.cancel_owner(entrance_owner);
         state.entrance_active = false;
         state.animations.animate(
-            state.opacity, 0.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
+            state.opacity, 0.0f, overlay_fade_ms, astralia::Easing::EaseOutCubic,
             [&state](float v) { state.opacity = v; },
             [&state] {
                 state.open = false;
@@ -243,7 +243,7 @@ void toggle(State &state, bool global) {
                         destroy_surface(state);
                 });
             },
-            kOverlayFadeOwner);
+            overlay_fade_owner);
         return;
     }
 
@@ -258,8 +258,8 @@ void toggle(State &state, bool global) {
         start_entrance(state);
     else
         state.animations.animate(
-            state.opacity, 1.0f, kOverlayFadeMs, astralia::Easing::EaseOutCubic,
-            [&state](float v) { state.opacity = v; }, {}, kOverlayFadeOwner);
+            state.opacity, 1.0f, overlay_fade_ms, astralia::Easing::EaseOutCubic,
+            [&state](float v) { state.opacity = v; }, {}, overlay_fade_owner);
     launcher::request_frame(state);
     if (state.sync_text_input_focus)
         state.sync_text_input_focus(true);

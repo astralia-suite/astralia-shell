@@ -26,7 +26,7 @@ class AudioStages {
         GLuint tex_l = 0;
     };
 
-    static constexpr int kRing = 5;
+    static constexpr int ring = 5;
 
     void upload_raw(GLuint tex, const float *data, int size);
     GLuint ensure_tex(GLuint &tex, int size);
@@ -46,12 +46,12 @@ class AudioStages {
     Target pass_;
     Target average_;
     Target smooth_;
-    Target ring_[kRing];
+    Target ring_[ring];
 
     int out_idx_ = 0;
     int out_idx_l_ = 0;
     int size_ = 0;
-    int fps_ = visualizer_config::kFps;
+    int fps_ = visualizer_config::fps;
     bool ready_ = false;
 };
 

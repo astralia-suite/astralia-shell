@@ -2,6 +2,6 @@
 
 namespace astralia::polkit {
 
-constexpr const char *kNamespace = "astralia-shell-polkit";
+constexpr const char *layer_namespace = "astralia-shell-polkit";
 
 } // namespace astralia::polkit

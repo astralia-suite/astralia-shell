@@ -13,9 +13,9 @@
 #include "service/wayland/frame_service.h"
 #include "service/wayland/output_service.h"
 
-constexpr float kOverlayFadeMs = 220.0f;
-constexpr uint64_t kOverlayFadeOwner = 1;
-constexpr uint64_t kPanelHeightAnimOwner = 2;
+constexpr float overlay_fade_ms = 220.0f;
+constexpr uint64_t overlay_fade_owner = 1;
+constexpr uint64_t panel_height_anim_owner = 2;
 
 struct OverlayPanelBase {
     const char *name_space = nullptr;

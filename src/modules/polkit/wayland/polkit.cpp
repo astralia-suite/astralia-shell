@@ -48,7 +48,8 @@ void close_card(State &state) {
 bool create_surface(State &state, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
                     wl_output *output) {
     state.model.reset();
-    return overlay_panel_create_surface(state.base, compositor, layer_shell, kNamespace, output);
+    return overlay_panel_create_surface(state.base, compositor, layer_shell, layer_namespace,
+                                        output);
 }
 
 bool init_egl(State &state, Renderer &renderer, WaylandState &app, EGLDisplay display,

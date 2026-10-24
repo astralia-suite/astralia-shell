@@ -45,7 +45,7 @@ void overlay_bounce(OverlayState &state, float dt) {
     if (dt <= 0.0f || dt > 0.5f)
         return;
     bounce_step(state.bounce, dt, static_cast<float>(state.width), static_cast<float>(state.height),
-                astralia::idle_config::kLogoSize);
+                astralia::idle_config::logo_size);
 }
 
 void overlay_paint(OverlayState &state) {
@@ -76,22 +76,20 @@ void overlay_paint(OverlayState &state) {
         state.canvas.begin(state.output_scale.scale);
         state.canvas.rect({0, 0, static_cast<float>(state.width), static_cast<float>(state.height)},
                           {0.0f, 0.0f, 0.0f, state.screensaver_opacity});
-        astralia::ui::ImageId logo =
-            state.logo_path.empty()
-                ? astralia::ui::no_image
-                : state.canvas.image(state.logo_path,
-                                     static_cast<int>(astralia::idle_config::kLogoSize) *
-                                         state.output_scale.scale);
+        astralia::ui::ImageId logo = state.canvas.image(
+            state.logo_path.empty() ? std::string_view(astralia::idle_config::logo_asset)
+                                    : std::string_view(state.logo_path),
+            static_cast<int>(astralia::idle_config::logo_size) * state.output_scale.scale);
         if (logo != astralia::ui::no_image) {
             astralia::ui::TextSize extent = state.canvas.image_size(logo);
-            float fit = std::min(astralia::idle_config::kLogoSize / extent.w,
-                                 astralia::idle_config::kLogoSize / extent.h);
+            float fit = std::min(astralia::idle_config::logo_size / extent.w,
+                                 astralia::idle_config::logo_size / extent.h);
             float w = extent.w * fit;
             float h = extent.h * fit;
             state.canvas.draw_image(
                 logo,
-                {state.bounce.x + (astralia::idle_config::kLogoSize - w) / 2.0f,
-                 state.bounce.y + (astralia::idle_config::kLogoSize - h) / 2.0f, w, h},
+                {state.bounce.x + (astralia::idle_config::logo_size - w) / 2.0f,
+                 state.bounce.y + (astralia::idle_config::logo_size - h) / 2.0f, w, h},
                 astralia::with_alpha(astralia::palette::white, state.screensaver_opacity));
         }
         state.canvas.flush();
@@ -109,7 +107,7 @@ bool overlay_create_surface(OverlayState &state, wl_compositor *compositor,
                             zwlr_layer_shell_v1 *layer_shell, wl_output *output) {
     LayerSurfaceConfig cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
-        .name_space = idle_overlay_config::kLayerNamespace,
+        .name_space = idle_overlay_config::layer_namespace,
         .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
                   ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
         .empty_input_region = true,
@@ -162,18 +160,18 @@ void overlay_set_active(OverlayState &state, bool ambient_active, bool screensav
     if (ambient_shown != state.ambient_active) {
         state.ambient_active = ambient_shown;
         state.animations.animate(
-            state.ambient_opacity, ambient_shown ? 1.0f : 0.0f, idle_overlay_config::kFadeMs,
+            state.ambient_opacity, ambient_shown ? 1.0f : 0.0f, idle_overlay_config::fade_ms,
             astralia::Easing::EaseOutCubic, [&state](float v) { state.ambient_opacity = v; }, {},
-            idle_overlay_config::kAmbientFadeOwner);
+            idle_overlay_config::ambient_fade_owner);
         changed = true;
     }
     if (screensaver_active != state.screensaver_active) {
         state.screensaver_active = screensaver_active;
         state.animations.animate(
             state.screensaver_opacity, screensaver_active ? 1.0f : 0.0f,
-            idle_overlay_config::kFadeMs, astralia::Easing::EaseOutCubic,
+            idle_overlay_config::fade_ms, astralia::Easing::EaseOutCubic,
             [&state](float v) { state.screensaver_opacity = v; }, {},
-            idle_overlay_config::kScreensaverFadeOwner);
+            idle_overlay_config::screensaver_fade_owner);
         changed = true;
     }
     if (changed)

@@ -181,7 +181,7 @@ void surface_configure(void *data, ext_session_lock_surface_v1 *s, uint32_t seri
     app_detail::rest_egl_current(*st->app);
 }
 
-constexpr ext_session_lock_surface_v1_listener kSurfaceListener = {
+constexpr ext_session_lock_surface_v1_listener surface_listener = {
     .configure = surface_configure,
 };
 
@@ -220,7 +220,7 @@ void handle_finished(void *data, ext_session_lock_v1 *) {
     stop_transition(*st);
 }
 
-constexpr ext_session_lock_v1_listener kListener = {
+constexpr ext_session_lock_v1_listener listener = {
     .locked = handle_locked,
     .finished = handle_finished,
 };
@@ -270,7 +270,7 @@ void create_output_surface(State &st, wl_output *output, const std::string &name
         wl_surface_destroy(los->surface);
         return;
     }
-    ext_session_lock_surface_v1_add_listener(los->lock_surface, &kSurfaceListener, los.get());
+    ext_session_lock_surface_v1_add_listener(los->lock_surface, &surface_listener, los.get());
     los->output_scale.on_change = [ptr = los.get()](int32_t s) {
         if (ptr->egl_window)
             wl_egl_window_resize(ptr->egl_window, ptr->width * s, ptr->height * s, 0, 0);
@@ -336,7 +336,7 @@ bool request(State &st, WaylandState &app) {
         klog("lock: failed to create session lock");
         return false;
     }
-    ext_session_lock_v1_add_listener(st.lock, &kListener, &st);
+    ext_session_lock_v1_add_listener(st.lock, &listener, &st);
 
     st.active = true;
     st.locked = false;

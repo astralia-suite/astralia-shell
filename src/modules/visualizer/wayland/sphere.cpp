@@ -18,18 +18,18 @@ namespace astralia::visualizer {
 
 namespace {
 
-constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
+constexpr GLfloat quad_verts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
 
 int canvas_size(int width, int height) {
     int smaller = width < height ? width : height;
-    int size = static_cast<int>(static_cast<float>(smaller) * visualizer_config::kCanvasFraction);
-    return size < visualizer_config::kCanvasMin ? visualizer_config::kCanvasMin : size;
+    int size = static_cast<int>(static_cast<float>(smaller) * visualizer_config::canvas_fraction);
+    return size < visualizer_config::canvas_min ? visualizer_config::canvas_min : size;
 }
 
 float particle_thin_hash(float px, float py) {
-    constexpr float kTwoPi = 6.2831853071794f;
+    constexpr float two_pi = 6.2831853071794f;
     float d = px * 127.1f + py * 311.7f;
-    float m = std::fmod(d, kTwoPi);
+    float m = std::fmod(d, two_pi);
     float s = std::sin(m) * 43758.5453123f;
     return s - std::floor(s);
 }
@@ -60,7 +60,7 @@ bool SphereVisualizer::init() {
 
     glGenBuffers(1, &vbo_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(kQuadVerts), kQuadVerts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_verts), quad_verts, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glGenBuffers(1, &particle_vbo_);

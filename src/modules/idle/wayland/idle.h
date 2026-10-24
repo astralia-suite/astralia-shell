@@ -53,8 +53,8 @@ struct OverlayState {
     bool screensaver_active = false;
     std::string logo_path;
 
-    Bounce bounce{40.0f, 40.0f, astralia::idle_config::kLogoSpeed,
-                  astralia::idle_config::kLogoSpeed * 0.75f};
+    Bounce bounce{40.0f, 40.0f, astralia::idle_config::logo_speed,
+                  astralia::idle_config::logo_speed * 0.75f};
     std::chrono::steady_clock::time_point last_tick = std::chrono::steady_clock::now();
 
     std::function<void(GlCanvas &canvas, float w, float h)> draw_ambient;

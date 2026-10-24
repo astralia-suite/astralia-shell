@@ -7,21 +7,21 @@ namespace astralia {
 namespace {
 
 uint64_t type_anim_owner(uint64_t base, size_t index, uint64_t prop) {
-    return base + (index % kTextFieldTypeAnimMax) * 2 + prop;
+    return base + (index % text_field_type_anim_max) * 2 + prop;
 }
 
 void type_anim_push(TextFieldTypeAnim &anim, AnimationManager &am, uint64_t owner_base) {
     size_t idx = anim.chars.size();
-    anim.chars.push_back({0.0f, kTextFieldPopSlideOffsetPx});
+    anim.chars.push_back({0.0f, text_field_pop_slide_offset_px});
     am.animate(
-        0.0f, 1.0f, kTextFieldPopScaleMs, Easing::EaseOutBack,
+        0.0f, 1.0f, text_field_pop_scale_ms, Easing::EaseOutBack,
         [&anim, idx](float v) {
             if (idx < anim.chars.size())
                 anim.chars[idx].scale = v;
         },
         {}, type_anim_owner(owner_base, idx, 0));
     am.animate(
-        kTextFieldPopSlideOffsetPx, 0.0f, kTextFieldPopSlideMs, Easing::Linear,
+        text_field_pop_slide_offset_px, 0.0f, text_field_pop_slide_ms, Easing::Linear,
         [&anim, idx](float v) {
             if (idx < anim.chars.size())
                 anim.chars[idx].slide_x = v;
@@ -293,7 +293,7 @@ float text_field_row_slide(TextFieldRowSlide &slide, AnimationManager &am, uint6
         slide.target = anchor_x;
         am.cancel_owner(owner);
         am.animate(
-            slide.x, anchor_x, kTextFieldRowSlideMs, Easing::EaseOutCubic,
+            slide.x, anchor_x, text_field_row_slide_ms, Easing::EaseOutCubic,
             [&slide](float v) { slide.x = v; }, {}, owner);
     }
     return slide.x;

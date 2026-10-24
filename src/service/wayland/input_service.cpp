@@ -290,7 +290,7 @@ void repeat_info_cb(void *data, wl_keyboard *, int32_t rate, int32_t delay) {
         set_repeat_timer(*state, true);
 }
 
-constexpr wl_keyboard_listener kKeyboardListener = {
+constexpr wl_keyboard_listener keyboard_listener = {
     .keymap = keymap_cb,
     .enter = enter_cb,
     .leave = leave_cb,
@@ -354,7 +354,7 @@ void axis_value120_cb(void *, wl_pointer *, uint32_t, int32_t) {}
 void axis_relative_direction_cb(void *, wl_pointer *, uint32_t, uint32_t) {}
 void warp_cb(void *, wl_pointer *, wl_fixed_t, wl_fixed_t) {}
 
-constexpr wl_pointer_listener kPointerListener = {
+constexpr wl_pointer_listener pointer_listener = {
     .enter = enter_cb,
     .leave = leave_cb,
     .motion = motion_cb,
@@ -378,7 +378,7 @@ void seat_capabilities_cb(void *data, wl_seat *seat, uint32_t caps) {
     bool has_keyboard = caps & WL_SEAT_CAPABILITY_KEYBOARD;
     if (has_keyboard && !kb->keyboard) {
         kb->keyboard = wl_seat_get_keyboard(seat);
-        wl_keyboard_add_listener(kb->keyboard, &kbd::kKeyboardListener, kb);
+        wl_keyboard_add_listener(kb->keyboard, &kbd::keyboard_listener, kb);
     } else if (!has_keyboard && kb->keyboard) {
         wl_keyboard_release(kb->keyboard);
         kb->keyboard = nullptr;
@@ -395,7 +395,7 @@ void seat_capabilities_cb(void *data, wl_seat *seat, uint32_t caps) {
 
 void seat_name_cb(void *, wl_seat *, const char *) {}
 
-constexpr wl_seat_listener kSeatListener = {
+constexpr wl_seat_listener seat_listener = {
     .capabilities = seat_capabilities_cb,
     .name = seat_name_cb,
 };
@@ -416,7 +416,7 @@ void keyboard_attach_seat(SeatCapabilityState &seat_state, wl_seat *seat) {
     if (seat_state.keyboard->repeat_timer_fd < 0) {
         seat_state.keyboard->repeat_timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     }
-    wl_seat_add_listener(seat, &kSeatListener, &seat_state);
+    wl_seat_add_listener(seat, &seat_listener, &seat_state);
 }
 
 std::vector<KeyEvent> keyboard_drain_events(KeyboardState &state) {
@@ -435,14 +435,14 @@ void keyboard_repeat_tick(KeyboardState &state) {
     auto ev = translate_key(state.xkb, state.repeat_keycode, state.compose_state);
     if (!ev)
         return;
-    constexpr uint64_t kMaxCatchUp = 8;
-    for (uint64_t i = 0; i < std::min(expirations, kMaxCatchUp); ++i)
+    constexpr uint64_t max_catch_up = 8;
+    for (uint64_t i = 0; i < std::min(expirations, max_catch_up); ++i)
         state.pending.push_back(*ev);
 }
 
 void pointer_bind(PointerState &state, wl_seat *seat) {
     state.pointer = wl_seat_get_pointer(seat);
-    wl_pointer_add_listener(state.pointer, &ptr::kPointerListener, &state);
+    wl_pointer_add_listener(state.pointer, &ptr::pointer_listener, &state);
 }
 
 void pointer_release(PointerState &state) {

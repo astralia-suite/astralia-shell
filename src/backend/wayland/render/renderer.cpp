@@ -11,7 +11,7 @@
 
 namespace {
 
-constexpr float kEdgePad = 2.0f;
+constexpr float edge_pad = 2.0f;
 
 } // namespace
 
@@ -132,11 +132,11 @@ void Renderer::draw_rect(float x, float y, float w, float h, const float color[4
 void Renderer::draw_rounded_rect(float x, float y, float w, float h, float radius,
                                  float border_width, const float fill[4], const float border[4]) {
     glUseProgram(rrect_program_);
-    set_common_uniforms(rrect_program_, x - kEdgePad, y - kEdgePad, w + 2.0f * kEdgePad,
-                        h + 2.0f * kEdgePad);
+    set_common_uniforms(rrect_program_, x - edge_pad, y - edge_pad, w + 2.0f * edge_pad,
+                        h + 2.0f * edge_pad);
     float size[2] = {w, h};
     glUniform2fv(glGetUniformLocation(rrect_program_, "u_size"), 1, size);
-    glUniform1f(glGetUniformLocation(rrect_program_, "u_pad"), kEdgePad);
+    glUniform1f(glGetUniformLocation(rrect_program_, "u_pad"), edge_pad);
     glUniform1f(glGetUniformLocation(rrect_program_, "u_radius"), radius);
     glUniform1f(glGetUniformLocation(rrect_program_, "u_border_width"), border_width);
     float fc[4] = {fill[0], fill[1], fill[2], fill[3] * opacity_};
@@ -149,10 +149,10 @@ void Renderer::draw_rounded_rect(float x, float y, float w, float h, float radiu
 void Renderer::draw_fillet(float x, float y, float size, bool circle_on_right,
                            const float color[4]) {
     glUseProgram(fillet_program_);
-    set_common_uniforms(fillet_program_, x - kEdgePad, y - kEdgePad, size + 2.0f * kEdgePad,
-                        size + 2.0f * kEdgePad);
+    set_common_uniforms(fillet_program_, x - edge_pad, y - edge_pad, size + 2.0f * edge_pad,
+                        size + 2.0f * edge_pad);
     glUniform1f(glGetUniformLocation(fillet_program_, "u_size"), size);
-    glUniform1f(glGetUniformLocation(fillet_program_, "u_pad"), kEdgePad);
+    glUniform1f(glGetUniformLocation(fillet_program_, "u_pad"), edge_pad);
     glUniform1f(glGetUniformLocation(fillet_program_, "u_circle_right"),
                 circle_on_right ? 1.0f : 0.0f);
     float c[4] = {color[0], color[1], color[2], color[3] * opacity_};
@@ -185,9 +185,9 @@ void Renderer::draw_texture_rect_rounded(float x, float y, float w, float h, flo
     x = std::round(x);
     y = std::round(y);
     glUseProgram(rounded_tex_program_);
-    set_common_uniforms(rounded_tex_program_, x - kEdgePad, y - kEdgePad, w + 2.0f * kEdgePad,
-                        h + 2.0f * kEdgePad);
-    glUniform1f(glGetUniformLocation(rounded_tex_program_, "u_pad"), kEdgePad);
+    set_common_uniforms(rounded_tex_program_, x - edge_pad, y - edge_pad, w + 2.0f * edge_pad,
+                        h + 2.0f * edge_pad);
+    glUniform1f(glGetUniformLocation(rounded_tex_program_, "u_pad"), edge_pad);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.id);
     glUniform1i(glGetUniformLocation(rounded_tex_program_, "u_tex"), 0);

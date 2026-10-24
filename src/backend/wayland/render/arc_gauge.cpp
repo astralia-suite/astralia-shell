@@ -6,8 +6,8 @@
 #include "wayland/render/text.h"
 
 // segments
-constexpr int kArcGaugeSegments = 10;
-constexpr float kArcGaugeSegmentGapDeg = 6.0f;
+constexpr int arc_gauge_segments = 10;
+constexpr float arc_gauge_segment_gap_deg = 6.0f;
 
 const Texture *cached_arc_gauge(TextureCache &tcache, int32_t scale, float diameter, float stroke,
                                 float value01, const astralia::Color &fill_color) {
@@ -28,15 +28,15 @@ const Texture *cached_arc_gauge(TextureCache &tcache, int32_t scale, float diame
         float radius = px_diameter / 2.0f - px_stroke / 2.0f;
         float start = -static_cast<float>(M_PI) / 2.0f;
         float full = 2.0f * static_cast<float>(M_PI);
-        float step = full / kArcGaugeSegments;
-        float gap = kArcGaugeSegmentGapDeg * static_cast<float>(M_PI) / 180.0f;
+        float step = full / arc_gauge_segments;
+        float gap = arc_gauge_segment_gap_deg * static_cast<float>(M_PI) / 180.0f;
         float span = step - gap;
 
         cairo_set_line_width(cr, px_stroke);
         cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
 
-        float lit = static_cast<float>(bucket) / 100.0f * kArcGaugeSegments;
-        for (int i = 0; i < kArcGaugeSegments; ++i) {
+        float lit = static_cast<float>(bucket) / 100.0f * arc_gauge_segments;
+        for (int i = 0; i < arc_gauge_segments; ++i) {
             float seg_start = start + i * step + gap / 2.0f;
             cairo_set_source_rgba(cr, fill_color.r, fill_color.g, fill_color.b, 0.15f);
             cairo_arc(cr, cx, cy, radius, seg_start, seg_start + span);

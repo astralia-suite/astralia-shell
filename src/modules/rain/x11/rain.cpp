@@ -20,11 +20,12 @@ Rain::Rain(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false),
       keyboard_(x.conn()), params_(services.settings.config().rain) {
-    window_.make_managed(rain_config::kDefaultWindowWidth, rain_config::kDefaultWindowHeight);
+    window_.make_managed(rain_config::default_window_width, rain_config::default_window_height);
     timer_ = loop.add_timer(
         [this] {
-            return open_ ? std::chrono::milliseconds(static_cast<int>(rain_config::kFallIntervalMs))
-                         : idle_interval;
+            return open_
+                       ? std::chrono::milliseconds(static_cast<int>(rain_config::fall_interval_ms))
+                       : idle_interval;
         },
         [this] { step(); });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
@@ -44,10 +45,10 @@ void Rain::toggle() {
 void Rain::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
-        static_cast<int16_t>(target.x + (target.width - rain_config::kDefaultWindowWidth) / 2);
+        static_cast<int16_t>(target.x + (target.width - rain_config::default_window_width) / 2);
     int16_t y =
-        static_cast<int16_t>(target.y + (target.height - rain_config::kDefaultWindowHeight) / 2);
-    window_.place({x, y, rain_config::kDefaultWindowWidth, rain_config::kDefaultWindowHeight});
+        static_cast<int16_t>(target.y + (target.height - rain_config::default_window_height) / 2);
+    window_.place({x, y, rain_config::default_window_width, rain_config::default_window_height});
     keyboard_.reload();
     params_ = services_.settings.config().rain;
     open_ = true;

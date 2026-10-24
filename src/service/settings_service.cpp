@@ -329,20 +329,20 @@ Config parse_config(std::string_view source) {
         visualizer = section(root, "visualizer", "resonance");
     }
     cfg.visualizer.fps = std::clamp(integer(visualizer, "fps", cfg.visualizer.fps),
-                                    visualizer_config::kFpsMin, visualizer_config::kFpsMax);
+                                    visualizer_config::fps_min, visualizer_config::fps_max);
     cfg.visualizer.particle_thin =
         std::clamp(real(visualizer, "particleThin", cfg.visualizer.particle_thin),
-                   visualizer_config::kParticleThinMin, visualizer_config::kParticleThinMax);
-    cfg.visualizer.particle_size = visualizer_config::kParticleSize;
+                   visualizer_config::particle_thin_min, visualizer_config::particle_thin_max);
+    cfg.visualizer.particle_size = visualizer_config::particle_size;
     cfg.visualizer.fractal_complexity =
         std::clamp(integer(visualizer, "fractalComplexity", cfg.visualizer.fractal_complexity),
-                   visualizer_config::kComplexityMin, visualizer_config::kComplexityMax);
+                   visualizer_config::complexity_min, visualizer_config::complexity_max);
     cfg.visualizer.glow_directions =
         std::clamp(real(visualizer, "glowDirections", cfg.visualizer.glow_directions),
-                   visualizer_config::kGlowDirectionsMin, visualizer_config::kGlowDirectionsMax);
+                   visualizer_config::glow_directions_min, visualizer_config::glow_directions_max);
     cfg.visualizer.glow_quality =
         std::clamp(real(visualizer, "glowQuality", cfg.visualizer.glow_quality),
-                   visualizer_config::kGlowQualityMin, visualizer_config::kGlowQualityMax);
+                   visualizer_config::glow_quality_min, visualizer_config::glow_quality_max);
     cfg.visualizer.visualizer_shape = text(visualizer, "visualizerShape", "bar") == "sphere"
                                           ? VisualizerShape::Sphere
                                           : VisualizerShape::Bar;

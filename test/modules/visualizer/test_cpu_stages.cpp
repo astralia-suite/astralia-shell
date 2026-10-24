@@ -58,8 +58,8 @@ void check_visualizer_bars() {
     using test::check;
     check(astralia::visualizer::bar_count(0.0f) == 1 &&
               astralia::visualizer::bar_count(1000.0f) ==
-                  static_cast<int>((1000.0f - visualizer_config::kBarSpacing) /
-                                   (visualizer_config::kBarWidth + visualizer_config::kBarSpacing)),
+                  static_cast<int>((1000.0f - visualizer_config::bar_spacing) /
+                                   (visualizer_config::bar_width + visualizer_config::bar_spacing)),
           "the bar count follows the slot width and never drops below one");
     int last = -1;
     bool rising = true;
@@ -72,8 +72,8 @@ void check_visualizer_bars() {
     check(astralia::visualizer::bar_texel(0, 0, 0) == 0,
           "an empty spectrum maps to the first texel");
     check(astralia::visualizer::visualizer_bar_height(0.0f, 800.0f) ==
-                  visualizer_config::kBarMinHeight &&
+                  visualizer_config::bar_min_height &&
               astralia::visualizer::visualizer_bar_height(2.0f, 800.0f) ==
-                  visualizer_config::kBarHeightRatio * 800.0f,
+                  visualizer_config::bar_height_ratio * 800.0f,
           "a bar has a minimum height and clamps at the ratio");
 }

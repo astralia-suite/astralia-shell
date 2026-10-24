@@ -85,14 +85,14 @@ void check_lock() {
                                    [&](const test::Op &op) { return op.text == value; });
     };
     test::check(has("12") && has("34") && has(info.date.c_str()) &&
-                    has(astralia::lock_config::kPlaceholderText),
+                    has(astralia::lock_config::placeholder_text),
                 "the view draws the clock, date and placeholder");
     test::check(model.hits().pill_button.w > 0.0f, "the view reports the submit button");
     astralia::lock::Motion fresh;
     astralia::lock::motion_fit(fresh, 900.0f, 600.0f);
     test::check(!fresh.animations.has_active() && fresh.panel_w == 900.0f &&
                     fresh.panel_h == 600.0f && fresh.panel_rotation == 0.0f &&
-                    fresh.panel_scale == astralia::lock_config::kScaleFull &&
+                    fresh.panel_scale == astralia::lock_config::scale_full &&
                     fresh.content_alpha == 1.0f && fresh.icon_alpha == 0.0f,
                 "the lock card enters at rest, with no spin");
     model.key(text("z"));
@@ -100,5 +100,5 @@ void check_lock() {
     model.finish_auth(model.generation(), false);
     canvas.ops.clear();
     astralia::lock::paint(canvas, model, motion, info, 2560.0f, 1440.0f);
-    test::check(has(astralia::lock_config::kFailText), "the view shows the failure text");
+    test::check(has(astralia::lock_config::fail_text), "the view shows the failure text");
 }

@@ -19,7 +19,7 @@ namespace astralia::visualizer {
 
 namespace {
 
-constexpr GLfloat kQuadVerts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
+constexpr GLfloat quad_verts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0, -1, 1, 0};
 
 void quantize(std::vector<uint16_t> &out, const float *data, int size) {
     out.resize(static_cast<size_t>(size));
@@ -51,7 +51,7 @@ bool AudioStages::init() {
 
     glGenBuffers(1, &vbo_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(kQuadVerts), kQuadVerts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_verts), quad_verts, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     const char *gl_ext = reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS));
@@ -77,15 +77,15 @@ bool AudioStages::init() {
     }
 
     glUseProgram(smooth_prog_);
-    glUniform1i(glGetUniformLocation(smooth_prog_, "sample_mode"), visualizer_config::kSampleMode);
+    glUniform1i(glGetUniformLocation(smooth_prog_, "sample_mode"), visualizer_config::sample_mode);
     glUniform1f(glGetUniformLocation(smooth_prog_, "sample_hybrid_weight"),
-                visualizer_config::kSampleHybridWeight);
+                visualizer_config::sample_hybrid_weight);
     glUniform1f(glGetUniformLocation(smooth_prog_, "sample_scale"),
-                visualizer_config::kSampleScale);
+                visualizer_config::sample_scale);
     glUniform1f(glGetUniformLocation(smooth_prog_, "sample_range"),
-                visualizer_config::kSampleRange);
+                visualizer_config::sample_range);
     glUniform1f(glGetUniformLocation(smooth_prog_, "smooth_factor"),
-                visualizer_config::kSmoothFactor);
+                visualizer_config::smooth_factor);
     glUseProgram(0);
 
     ready_ = true;
@@ -188,7 +188,7 @@ void AudioStages::run_channel(int offset, int size) {
     glBindTexture(GL_TEXTURE_2D, pass_tex);
     glUniform1i(glGetUniformLocation(gravity_prog_, "audioR"), offset);
     glUniform1f(glGetUniformLocation(gravity_prog_, "diff"),
-                visualizer_config::kGravityStep / static_cast<float>(fps_));
+                visualizer_config::gravity_step / static_cast<float>(fps_));
     glUniform1f(glGetUniformLocation(gravity_prog_, "u_texWidth"), static_cast<float>(size));
     glViewport(0, 0, size, 1);
     draw_quad();
@@ -206,13 +206,13 @@ void AudioStages::run_channel(int offset, int size) {
     glViewport(0, 0, size, 1);
     glUseProgram(average_prog_);
     glUniform1i(glGetUniformLocation(average_prog_, "avgFrames"),
-                visualizer_config::kGravityAverageFrames);
+                visualizer_config::gravity_average_frames);
     glUniform1f(glGetUniformLocation(average_prog_, "u_texWidth"), static_cast<float>(size));
-    for (int t = 0; t < kRing; ++t) {
+    for (int t = 0; t < ring; ++t) {
         int unit = offset + 1 + t;
         int fr = oidx - t;
         if (fr < 0)
-            fr += kRing;
+            fr += ring;
         glActiveTexture(GL_TEXTURE0 + unit);
         glBindTexture(GL_TEXTURE_2D, (offset == 1) ? ring_[fr].tex_r : ring_[fr].tex_l);
         char name[12];
@@ -221,14 +221,14 @@ void AudioStages::run_channel(int offset, int size) {
     }
     draw_quad();
 
-    oidx = (oidx + 1) % kRing;
+    oidx = (oidx + 1) % ring;
 
     bind_target(smooth_, offset, size);
     glViewport(0, 0, size, 1);
     glUseProgram(smooth_prog_);
     glUniform1i(glGetUniformLocation(smooth_prog_, "audioRSize"), size);
     glUniform1i(glGetUniformLocation(smooth_prog_, "adjacentSampleNums"),
-                visualizer_config::kAdjacentSampleNums);
+                visualizer_config::adjacent_sample_nums);
     glActiveTexture(GL_TEXTURE0 + offset);
     glBindTexture(GL_TEXTURE_2D, (offset == 1) ? average_.tex_r : average_.tex_l);
     glUniform1i(glGetUniformLocation(smooth_prog_, "audioR"), offset);

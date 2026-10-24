@@ -15,14 +15,14 @@
 
 namespace {
 
-constexpr size_t kMaxPaste = 1 << 20;
-constexpr std::array<const char *, 5> kMimes = {"text/plain;charset=utf-8", "text/plain",
-                                                "UTF8_STRING", "TEXT", "STRING"};
+constexpr size_t max_paste = 1 << 20;
+constexpr std::array<const char *, 5> mimes = {"text/plain;charset=utf-8", "text/plain",
+                                               "UTF8_STRING", "TEXT", "STRING"};
 
 int mime_rank(const char *mime) {
-    for (size_t i = 0; i < kMimes.size(); ++i)
-        if (std::strcmp(mime, kMimes[i]) == 0)
-            return static_cast<int>(kMimes.size() - i);
+    for (size_t i = 0; i < mimes.size(); ++i)
+        if (std::strcmp(mime, mimes[i]) == 0)
+            return static_cast<int>(mimes.size() - i);
     return 0;
 }
 
@@ -34,7 +34,7 @@ void offer_source_actions(void *, wl_data_offer *, uint32_t) {}
 
 void offer_action(void *, wl_data_offer *, uint32_t) {}
 
-constexpr wl_data_offer_listener kOfferListener = {
+constexpr wl_data_offer_listener offer_listener = {
     .offer = offer_mime,
     .source_actions = offer_source_actions,
     .action = offer_action,
@@ -42,7 +42,7 @@ constexpr wl_data_offer_listener kOfferListener = {
 
 void device_data_offer(void *data, wl_data_device *, wl_data_offer *offer) {
     static_cast<ClipboardService *>(data)->handle_data_offer(offer);
-    wl_data_offer_add_listener(offer, &kOfferListener, data);
+    wl_data_offer_add_listener(offer, &offer_listener, data);
 }
 
 void device_enter(void *, wl_data_device *, uint32_t, wl_surface *, wl_fixed_t, wl_fixed_t,
@@ -58,7 +58,7 @@ void device_selection(void *data, wl_data_device *, wl_data_offer *offer) {
     static_cast<ClipboardService *>(data)->handle_selection(offer);
 }
 
-constexpr wl_data_device_listener kDeviceListener = {
+constexpr wl_data_device_listener device_listener = {
     .data_offer = device_data_offer,
     .enter = device_enter,
     .leave = device_leave,
@@ -83,7 +83,7 @@ void source_dnd_finished(void *, wl_data_source *) {}
 
 void source_action(void *, wl_data_source *, uint32_t) {}
 
-constexpr wl_data_source_listener kSourceListener = {
+constexpr wl_data_source_listener source_listener = {
     .target = source_target,
     .send = source_send,
     .cancelled = source_cancelled,
@@ -104,7 +104,7 @@ bool ClipboardService::bind(wl_data_device_manager *manager, wl_seat *seat, wl_d
     display_ = display;
     keyboard_ = keyboard;
     device_ = wl_data_device_manager_get_data_device(manager, seat);
-    wl_data_device_add_listener(device_, &kDeviceListener, this);
+    wl_data_device_add_listener(device_, &device_listener, this);
     return true;
 }
 
@@ -135,8 +135,8 @@ void ClipboardService::set(std::string text) {
     }
     wl_data_source *previous = source_;
     source_ = wl_data_device_manager_create_data_source(manager_);
-    wl_data_source_add_listener(source_, &kSourceListener, this);
-    for (const char *mime : kMimes)
+    wl_data_source_add_listener(source_, &source_listener, this);
+    for (const char *mime : mimes)
         wl_data_source_offer(source_, mime);
     text_ = std::move(text);
     wl_data_device_set_selection(device_, source_, keyboard_ ? keyboard_->last_key_serial : 0);
@@ -180,7 +180,7 @@ void ClipboardService::read_ready() {
         ssize_t n = read(read_fd_, buf.data(), buf.size());
         if (n > 0) {
             received_.append(buf.data(), static_cast<size_t>(n));
-            if (received_.size() >= kMaxPaste)
+            if (received_.size() >= max_paste)
                 break;
             continue;
         }

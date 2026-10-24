@@ -3,29 +3,29 @@
 namespace astralia::rain_config {
 
 // window size
-constexpr int kDefaultWindowWidth = 480;
-constexpr int kDefaultWindowHeight = 600;
+constexpr int default_window_width = 480;
+constexpr int default_window_height = 600;
 
 // shared rain timing
-constexpr float kFallIntervalMs = 45.0f;
-constexpr float kResetChance = 0.025f;
-constexpr float kFadeAlpha = 0.05f;
+constexpr float fall_interval_ms = 45.0f;
+constexpr float reset_chance = 0.025f;
+constexpr float fade_alpha = 0.05f;
 
 // async fall speed
-constexpr float kAsyncSpeedMin = 0.4f;
-constexpr float kAsyncSpeedMax = 1.0f;
+constexpr float async_speed_min = 0.4f;
+constexpr float async_speed_max = 1.0f;
 
 // matrix sim: font and cell geometry
-constexpr float kMatrixFontPx = 20.0f;
-constexpr float kMatrixCellWidth = 12.0f;
-constexpr float kMatrixCellHeight = 24.0f;
-constexpr float kMatrixBoldChance = 0.5f;
+constexpr float matrix_font_px = 20.0f;
+constexpr float matrix_cell_width = 12.0f;
+constexpr float matrix_cell_height = 24.0f;
+constexpr float matrix_bold_chance = 0.5f;
 
 // stiletto sim: comet row geometry
-constexpr float kStilettoColumnSpacingPx = 24.0f;
-constexpr float kStilettoHeadHeightPx = 24.0f;
-constexpr float kStilettoStepPx = 24.0f;
-constexpr float kStilettoTrailWidthPx = 3.0f;
+constexpr float stiletto_column_spacing_px = 24.0f;
+constexpr float stiletto_head_height_px = 24.0f;
+constexpr float stiletto_step_px = 24.0f;
+constexpr float stiletto_trail_width_px = 3.0f;
 
 } // namespace astralia::rain_config
 

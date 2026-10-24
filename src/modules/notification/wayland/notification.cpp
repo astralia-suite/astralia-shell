@@ -40,10 +40,10 @@ bool view_create_surface(View &view, wl_compositor *compositor, zwlr_layer_shell
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         .name_space = "astralia-shell-notification",
         .anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
-        .width = kSurfaceWidth,
-        .height = kSurfaceHeight,
-        .margin_right = kMarginRight,
-        .margin_bottom = kMarginBottom,
+        .width = surface_width,
+        .height = surface_height,
+        .margin_right = margin_right,
+        .margin_bottom = margin_bottom,
         .empty_input_region = true,
     };
     view.layer_surface = layer_surface_create(view.surface, compositor, layer_shell, cfg,
@@ -53,7 +53,7 @@ bool view_create_surface(View &view, wl_compositor *compositor, zwlr_layer_shell
     view.compositor = compositor;
     view.output_scale.on_change = [&view](int32_t scale) {
         if (view.egl_window)
-            wl_egl_window_resize(view.egl_window, kSurfaceWidth * scale, kSurfaceHeight * scale, 0,
+            wl_egl_window_resize(view.egl_window, surface_width * scale, surface_height * scale, 0,
                                  0);
         if (view.frame_clock.surface)
             request_frame(view.frame_clock);
@@ -71,7 +71,7 @@ bool view_init_egl(View &view, Model &service, Renderer &renderer, EGLDisplay di
     view.canvas.bind(renderer);
     int32_t scale = view.output_scale.scale;
     view.egl_window =
-        wl_egl_window_create(view.surface, kSurfaceWidth * scale, kSurfaceHeight * scale);
+        wl_egl_window_create(view.surface, surface_width * scale, surface_height * scale);
     view.egl_surface = eglCreateWindowSurface(
         display, config, reinterpret_cast<EGLNativeWindowType>(view.egl_window), nullptr);
     if (view.egl_surface == EGL_NO_SURFACE)
@@ -92,7 +92,7 @@ void view_request_frame(View &view) {
 void render(View &view, Model &model) {
     if (!gl_make_current(view.egl_display, view.egl_surface, view.egl_context))
         return;
-    view.renderer->begin_frame(kSurfaceWidth, kSurfaceHeight, view.output_scale.scale);
+    view.renderer->begin_frame(surface_width, surface_height, view.output_scale.scale);
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -103,9 +103,9 @@ void render(View &view, Model &model) {
 
     view.canvas.begin(view.output_scale.scale);
     Layout layout =
-        layout_notifications(view.canvas, model, view.state, static_cast<float>(kSurfaceHeight));
-    float origin = static_cast<float>(kSurfaceHeight) - layout.height;
-    view.canvas.begin_group({0.0f, origin, static_cast<float>(kSurfaceWidth), layout.height}, {});
+        layout_notifications(view.canvas, model, view.state, static_cast<float>(surface_height));
+    float origin = static_cast<float>(surface_height) - layout.height;
+    view.canvas.begin_group({0.0f, origin, static_cast<float>(surface_width), layout.height}, {});
     notification::paint(view.canvas, view.state, layout);
     view.canvas.end_group();
 

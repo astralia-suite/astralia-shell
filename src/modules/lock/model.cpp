@@ -41,7 +41,7 @@ bool Model::finish_auth(uint64_t generation, bool success) {
     clear_password();
     failed_ = true;
     fail_clear_at_ =
-        Clock::now() + std::chrono::milliseconds(static_cast<int>(lock_config::kTimerFailMs));
+        Clock::now() + std::chrono::milliseconds(static_cast<int>(lock_config::timer_fail_ms));
     return false;
 }
 
@@ -74,13 +74,13 @@ namespace {
 
 void enter(Motion &m, float card_w, float card_h) {
     m.started = true;
-    m.panel_scale = lock_config::kScaleFull;
+    m.panel_scale = lock_config::scale_full;
     m.panel_rotation = 0.0f;
     m.panel_w = card_w;
     m.panel_h = card_h;
     m.icon_alpha = 0.0f;
     m.content_alpha = 1.0f;
-    m.content_scale = lock_config::kScaleFull;
+    m.content_scale = lock_config::scale_full;
 }
 
 } // namespace
@@ -95,12 +95,13 @@ void motion_fit(Motion &motion, float card_w, float card_h) {
 }
 
 void motion_type(Motion &motion, const std::string &password) {
-    text_field_type_anim_sync(motion.dots, motion.animations, lock_config::kOwnerDotBase, password);
+    text_field_type_anim_sync(motion.dots, motion.animations, lock_config::owner_dot_base,
+                              password);
 }
 
 void motion_clear_dots(Motion &motion) {
-    text_field_type_anim_clear(motion.dots, motion.animations, lock_config::kOwnerDotBase);
-    text_field_row_slide_reset(motion.row, motion.animations, lock_config::kOwnerDotRowX);
+    text_field_type_anim_clear(motion.dots, motion.animations, lock_config::owner_dot_base);
+    text_field_row_slide_reset(motion.row, motion.animations, lock_config::owner_dot_row_x);
 }
 
 } // namespace astralia::lock

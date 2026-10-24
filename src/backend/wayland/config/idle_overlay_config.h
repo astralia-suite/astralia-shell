@@ -5,11 +5,11 @@
 namespace astralia::idle_overlay_config {
 
 // overlay fade
-constexpr float kFadeMs = 400.0f;
-constexpr uint64_t kAmbientFadeOwner = 1;
-constexpr uint64_t kScreensaverFadeOwner = 2;
+constexpr float fade_ms = 400.0f;
+constexpr uint64_t ambient_fade_owner = 1;
+constexpr uint64_t screensaver_fade_owner = 2;
 
 // layer-shell namespace
-constexpr const char *kLayerNamespace = "astralia-shell-idle-overlay";
+constexpr const char *layer_namespace = "astralia-shell-idle-overlay";
 
 } // namespace astralia::idle_overlay_config

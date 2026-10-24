@@ -5,120 +5,120 @@
 namespace astralia::lock_config {
 
 // development unlock corner
-inline constexpr float kDevUnlockWidth = 140.0f;
-inline constexpr float kDevUnlockHeight = 48.0f;
+inline constexpr float dev_unlock_width = 140.0f;
+inline constexpr float dev_unlock_height = 48.0f;
 
 // layer namespace
-inline constexpr const char *kLayerNamespace = "astralia-shell-lock";
+inline constexpr const char *layer_namespace = "astralia-shell-lock";
 
 // background & dot
-inline constexpr float kBgBorderWidth = 5.0f;
+inline constexpr float bg_border_width = 5.0f;
 
-inline constexpr float kDotSize = 18.0f;
+inline constexpr float dot_size = 18.0f;
 
 // fonts
-inline constexpr float kFontIcon = 200.0f;
-inline constexpr float kFontClock = 120.0f;
-inline constexpr float kFontDate = 34.0f;
-inline constexpr float kFontNormal = 20.0f;
-inline constexpr float kFontMono = 18.0f;
+inline constexpr float font_icon = 200.0f;
+inline constexpr float font_clock = 120.0f;
+inline constexpr float font_date = 34.0f;
+inline constexpr float font_normal = 20.0f;
+inline constexpr float font_mono = 18.0f;
 
 // card layout
-inline constexpr float kCardHeightMult = 0.7f;
-inline constexpr float kCardRatio = 16.0f / 9.0f;
-inline constexpr float kPanelGap = 25.0f;
-inline constexpr float kCenterWidth = 560.0f;
-inline constexpr float kCenterRefHeight = 1440.0f;
+inline constexpr float card_height_mult = 0.7f;
+inline constexpr float card_ratio = 16.0f / 9.0f;
+inline constexpr float panel_gap = 25.0f;
+inline constexpr float center_width = 560.0f;
+inline constexpr float center_ref_height = 1440.0f;
 
 // icon box
-inline constexpr float kIconBoxMargin = 20.0f;
+inline constexpr float icon_box_margin = 20.0f;
 
 // clock/date/avatar/input gaps
-inline constexpr float kClockGap = 10.0f;
-inline constexpr float kGapClockDate = 6.0f;
-inline constexpr float kGapDateAvatar = 40.0f;
-inline constexpr float kGapAvatarInput = 34.0f;
-inline constexpr float kGapInputMessage = 18.0f;
+inline constexpr float clock_gap = 10.0f;
+inline constexpr float gap_clock_date = 6.0f;
+inline constexpr float gap_date_avatar = 40.0f;
+inline constexpr float gap_avatar_input = 34.0f;
+inline constexpr float gap_input_message = 18.0f;
 
 // input & pill
-inline constexpr float kInputHeight = 56.0f;
-inline constexpr float kInputWidthFrac = 0.85f;
-inline constexpr float kPillPad = 12.0f;
-inline constexpr float kPillIconSize = 26.0f;
-inline constexpr float kPillButtonSize = 44.0f;
+inline constexpr float input_height = 56.0f;
+inline constexpr float input_width_frac = 0.85f;
+inline constexpr float pill_pad = 12.0f;
+inline constexpr float pill_icon_size = 26.0f;
+inline constexpr float pill_button_size = 44.0f;
 
 // profile
-inline constexpr float kProfileBorderWidth = 4.0f;
-inline constexpr float kProfileSize = 180.0f;
+inline constexpr float profile_border_width = 4.0f;
+inline constexpr float profile_size = 180.0f;
 
 // side panel
-inline constexpr float kSidePanelPad = 20.0f;
+inline constexpr float side_panel_pad = 20.0f;
 
 // fetch
-inline constexpr float kFetchLineGap = 6.0f;
-inline constexpr float kFetchChipPad = 8.0f;
-inline constexpr float kFetchColorBox = 26.0f;
-inline constexpr float kFetchColorGap = 10.0f;
+inline constexpr float fetch_line_gap = 6.0f;
+inline constexpr float fetch_chip_pad = 8.0f;
+inline constexpr float fetch_color_box = 26.0f;
+inline constexpr float fetch_color_gap = 10.0f;
 
 // card chrome
-inline constexpr float kCardBorderWidth = 2.0f;
-inline constexpr float kCardHeaderGap = 12.0f;
-inline constexpr float kCardTagPad = 6.0f;
-inline constexpr float kBatteryRowGap = 8.0f;
-inline constexpr float kBatteryIconGap = 10.0f;
-inline constexpr float kBatteryBarHeight = 6.0f;
-inline constexpr float kBatteryBarRadius = 3.0f;
+inline constexpr float card_border_width = 2.0f;
+inline constexpr float card_header_gap = 12.0f;
+inline constexpr float card_tag_pad = 6.0f;
+inline constexpr float battery_row_gap = 8.0f;
+inline constexpr float battery_icon_gap = 10.0f;
+inline constexpr float battery_bar_height = 6.0f;
+inline constexpr float battery_bar_radius = 3.0f;
 
 // media
-inline constexpr float kMediaArt = 116.0f;
-inline constexpr float kMediaBtnSize = 40.0f;
-inline constexpr float kMediaBtnGap = 12.0f;
-inline constexpr float kMediaTextGap = 4.0f;
+inline constexpr float media_art = 116.0f;
+inline constexpr float media_btn_size = 40.0f;
+inline constexpr float media_btn_gap = 12.0f;
+inline constexpr float media_text_gap = 4.0f;
 
 // resource gauges
-inline constexpr float kResTileGap = 14.0f;
-inline constexpr float kResIconSize = 26.0f;
-inline constexpr float kResValueFont = 32.0f;
-inline constexpr float kResTempWarnC = 85.0f;
-inline constexpr float kResGaugeStrokeRatio = 6.0f / 68.0f;
-inline constexpr float kResGaugeIconValueGap = 2.0f;
-inline constexpr float kResGaugeLabelGap = 6.0f;
-inline constexpr const char *kResGaugeGpuColorHex = "#3FB6C8";
+inline constexpr float res_tile_gap = 14.0f;
+inline constexpr float res_icon_size = 26.0f;
+inline constexpr float res_value_font = 32.0f;
+inline constexpr float res_temp_warn_c = 85.0f;
+inline constexpr float res_gauge_stroke_ratio = 6.0f / 68.0f;
+inline constexpr float res_gauge_icon_value_gap = 2.0f;
+inline constexpr float res_gauge_label_gap = 6.0f;
+inline constexpr const char *res_gauge_gpu_color_hex = "#3FB6C8";
 
 // notifications
-inline constexpr float kNotifCardGap = 8.0f;
-inline constexpr float kNotifCardPad = 12.0f;
-inline constexpr int kNotifMaxCards = 6;
+inline constexpr float notif_card_gap = 8.0f;
+inline constexpr float notif_card_pad = 12.0f;
+inline constexpr int notif_max_cards = 6;
 
 // scale state
-inline constexpr float kScaleHidden = 0.0f;
-inline constexpr float kScaleFull = 1.0f;
+inline constexpr float scale_hidden = 0.0f;
+inline constexpr float scale_full = 1.0f;
 
 // animation durations
-inline constexpr float kAnimFastMs = 100.0f;
+inline constexpr float anim_fast_ms = 100.0f;
 
 // transition timeline in milliseconds
-inline constexpr float kSlashMs = 2800.0f;
-inline constexpr int kStarCount = 5;
-inline constexpr int kFlurryCount = 14;
-inline constexpr int kSlashCount = kStarCount + kFlurryCount;
-inline constexpr float kSlashFirstStartMs = 40.0f;
-inline constexpr float kSlashStrikeMs = 260.0f;
-inline constexpr float kStarAdvanceMs = 100.0f;
-inline constexpr float kSlashWaitMs = 600.0f;
-inline constexpr float kSlashFinalDrawMs = 70.0f;
-inline constexpr float kSlashFinalFadeMs = 280.0f;
-inline constexpr float kSlashImpactMs = 60.0f;
-inline constexpr float kSlashShockMs = 200.0f;
-inline constexpr float kSlashFlashHoldMs = 60.0f;
-inline constexpr float kSlashFlashMs = 400.0f;
-inline constexpr float kSlashFinalBeamMs = 280.0f;
-inline constexpr float kSlashSliverMs = 420.0f;
-inline constexpr float kSlashDimRampMs = 300.0f;
-inline constexpr float kSlashDimLiftMs = 320.0f;
-inline constexpr float kSlashShatterHoldMs = 25.0f;
-inline constexpr float kSlashShatterSpreadMs = 200.0f;
-inline constexpr float kSlashFallMs = 320.0f;
+inline constexpr float slash_ms = 2800.0f;
+inline constexpr int star_count = 5;
+inline constexpr int flurry_count = 14;
+inline constexpr int slash_count = star_count + flurry_count;
+inline constexpr float slash_first_start_ms = 40.0f;
+inline constexpr float slash_strike_ms = 260.0f;
+inline constexpr float star_advance_ms = 100.0f;
+inline constexpr float slash_wait_ms = 600.0f;
+inline constexpr float slash_final_draw_ms = 70.0f;
+inline constexpr float slash_final_fade_ms = 280.0f;
+inline constexpr float slash_impact_ms = 60.0f;
+inline constexpr float slash_shock_ms = 200.0f;
+inline constexpr float slash_flash_hold_ms = 60.0f;
+inline constexpr float slash_flash_ms = 400.0f;
+inline constexpr float slash_final_beam_ms = 280.0f;
+inline constexpr float slash_sliver_ms = 420.0f;
+inline constexpr float slash_dim_ramp_ms = 300.0f;
+inline constexpr float slash_dim_lift_ms = 320.0f;
+inline constexpr float slash_shatter_hold_ms = 25.0f;
+inline constexpr float slash_shatter_spread_ms = 200.0f;
+inline constexpr float slash_fall_ms = 320.0f;
 
 // transition star
 struct StarCorner {
@@ -126,7 +126,7 @@ struct StarCorner {
     float y;
 };
 
-inline constexpr StarCorner kStarCorners[kStarCount] = {
+inline constexpr StarCorner star_corners[star_count] = {
     {0.50f, 0.24f}, {0.78f, 0.77f}, {0.24f, 0.36f}, {0.80f, 0.36f}, {0.16f, 0.79f},
 };
 
@@ -137,9 +137,9 @@ struct FlurrySlash {
     float start_ms;
 };
 
-inline constexpr float kReferenceWidth = 16.0f;
-inline constexpr float kReferenceHeight = 9.0f;
-inline constexpr FlurrySlash kFlurrySlashes[kFlurryCount] = {
+inline constexpr float reference_width = 16.0f;
+inline constexpr float reference_height = 9.0f;
+inline constexpr FlurrySlash flurry_slashes[flurry_count] = {
     {-89.0f, 0.28f, 480.0f},  {34.0f, 0.16f, 560.0f},    {-10.0f, -0.22f, 720.0f},
     {-32.0f, 0.16f, 800.0f},  {-63.0f, -0.29f, 830.0f},  {11.0f, 0.26f, 880.0f},
     {77.0f, -0.30f, 910.0f},  {53.0f, 0.34f, 960.0f},    {-79.0f, -0.34f, 1040.0f},
@@ -148,93 +148,96 @@ inline constexpr FlurrySlash kFlurrySlashes[kFlurryCount] = {
 };
 
 // transition timeline as shares of progress
-inline constexpr float kSlashFirstStart = kSlashFirstStartMs / kSlashMs;
-inline constexpr float kSlashDrawSpan = kSlashStrikeMs / kSlashMs;
-inline constexpr float kSlashFinalStart =
-    (kSlashFirstStartMs + kFlurrySlashes[kFlurryCount - 1].start_ms + kSlashStrikeMs +
-     kSlashWaitMs) /
-    kSlashMs;
-inline constexpr float kSlashFinalDrawSpan = kSlashFinalDrawMs / kSlashMs;
-inline constexpr float kSlashFinalFade = kSlashFinalFadeMs / kSlashMs;
-inline constexpr float kSlashImpactSpan = kSlashImpactMs / kSlashMs;
-inline constexpr float kSlashShockSpan = kSlashShockMs / kSlashMs;
-inline constexpr float kSlashFlashHold = kSlashFlashHoldMs / kSlashMs;
-inline constexpr float kSlashFlashSpan = kSlashFlashMs / kSlashMs;
-inline constexpr float kSlashFinalBeamSpan = kSlashFinalBeamMs / kSlashMs;
-inline constexpr float kSlashSliverSpan = kSlashSliverMs / kSlashMs;
-inline constexpr float kSlashDimRamp = kSlashDimRampMs / kSlashMs;
-inline constexpr float kSlashDimLift = kSlashDimLiftMs / kSlashMs;
-inline constexpr float kSlashShatterHold = kSlashShatterHoldMs / kSlashMs;
-inline constexpr float kSlashShatterSpread = kSlashShatterSpreadMs / kSlashMs;
-inline constexpr float kSlashFallSpan = kSlashFallMs / kSlashMs;
+inline constexpr float slash_first_start = slash_first_start_ms / slash_ms;
+inline constexpr float slash_draw_span = slash_strike_ms / slash_ms;
+inline constexpr float slash_final_start =
+    (slash_first_start_ms + flurry_slashes[flurry_count - 1].start_ms + slash_strike_ms +
+     slash_wait_ms) /
+    slash_ms;
+inline constexpr float slash_final_draw_span = slash_final_draw_ms / slash_ms;
+inline constexpr float slash_final_fade = slash_final_fade_ms / slash_ms;
+inline constexpr float slash_impact_span = slash_impact_ms / slash_ms;
+inline constexpr float slash_shock_span = slash_shock_ms / slash_ms;
+inline constexpr float slash_flash_hold = slash_flash_hold_ms / slash_ms;
+inline constexpr float slash_flash_span = slash_flash_ms / slash_ms;
+inline constexpr float slash_final_beam_span = slash_final_beam_ms / slash_ms;
+inline constexpr float slash_sliver_span = slash_sliver_ms / slash_ms;
+inline constexpr float slash_dim_ramp = slash_dim_ramp_ms / slash_ms;
+inline constexpr float slash_dim_lift = slash_dim_lift_ms / slash_ms;
+inline constexpr float slash_shatter_hold = slash_shatter_hold_ms / slash_ms;
+inline constexpr float slash_shatter_spread = slash_shatter_spread_ms / slash_ms;
+inline constexpr float slash_fall_span = slash_fall_ms / slash_ms;
 
 // transition geometry
-inline constexpr float kSlashGapFrac = 0.012f;
-inline constexpr float kSlashMinPieceArea = 1.0f;
-inline constexpr float kSlashFinalReach = 0.05f;
-inline constexpr float kFinalTilt = 0.14f;
-inline constexpr int kSliverCount = 36;
-inline constexpr float kSliverLengthMin = 24.0f;
-inline constexpr float kSliverLengthMax = 80.0f;
-inline constexpr float kSliverThickMin = 2.0f;
-inline constexpr float kSliverThickMax = 4.0f;
-inline constexpr float kSliverSpreadFrac = 0.14f;
-inline constexpr float kSliverDriftFrac = 0.10f;
-inline constexpr float kSliverAlongFrac = 0.12f;
-inline constexpr float kSlashStrikeOvershoot = 0.05f;
-inline constexpr float kSlashShardDrift = 0.06f;
-inline constexpr float kSlashShardSpin = 0.25f;
-inline constexpr float kSlashShardRankNoise = 0.25f;
-inline constexpr int kSlashRayCount = 18;
-inline constexpr float kSlashRayHalfAngle = 0.012f;
+inline constexpr float slash_gap_frac = 0.012f;
+inline constexpr float slash_min_piece_area = 1.0f;
+inline constexpr float slash_final_reach = 0.05f;
+inline constexpr float final_tilt = 0.14f;
+inline constexpr int sliver_count = 36;
+inline constexpr float sliver_length_min = 24.0f;
+inline constexpr float sliver_length_max = 80.0f;
+inline constexpr float sliver_thick_min = 2.0f;
+inline constexpr float sliver_thick_max = 4.0f;
+inline constexpr float sliver_spread_frac = 0.14f;
+inline constexpr float sliver_drift_frac = 0.10f;
+inline constexpr float sliver_along_frac = 0.12f;
+inline constexpr float slash_strike_overshoot = 0.05f;
+inline constexpr float slash_shard_drift = 0.06f;
+inline constexpr float slash_shard_spin = 0.25f;
+inline constexpr float slash_shard_rank_noise = 0.25f;
+inline constexpr int slash_ray_count = 18;
+inline constexpr float slash_ray_half_angle = 0.012f;
 
 // transition thunder
-inline constexpr float kStrikeAmp = 13.0f;
-inline constexpr float kStrikePeak = 1.2f;
-inline constexpr float kFinalThick = 3.4f;
-inline constexpr float kFinalAmpMult = 2.4f;
-inline constexpr float kFinalIntensity = 2.8f;
-inline constexpr float kFinalSeed = 21.0f;
-inline constexpr float kShockRadiusFrac = 0.6f;
-inline constexpr float kShockIntensity = 1.3f;
+inline constexpr float strike_amp = 13.0f;
+inline constexpr float strike_peak = 1.2f;
+inline constexpr float final_thick = 3.4f;
+inline constexpr float final_amp_mult = 2.4f;
+inline constexpr float final_intensity = 2.8f;
+inline constexpr float final_seed = 21.0f;
+inline constexpr float shock_radius_frac = 0.6f;
+inline constexpr float shock_intensity = 1.3f;
 
 // transition paint
-inline constexpr float kCutmarkWidth = 4.0f;
-inline constexpr float kCutmarkAlpha = 0.85f;
-inline constexpr float kFallbackBoltWidth = 3.0f;
-inline constexpr float kBoltGlowNearScale = 2.8f;
-inline constexpr float kBoltGlowFarScale = 6.0f;
-inline constexpr float kBoltGlowNearAlpha = 0.35f;
-inline constexpr float kBoltGlowFarAlpha = 0.15f;
-inline constexpr float kSlashRayAlpha = 0.5f;
-inline constexpr float kSlashFlashPeak = 0.9f;
-inline constexpr float kDimPeak = 0.5f;
-inline constexpr const char *kDimHex = "#0B0620";
-inline constexpr const char *kFlashHex = "#EDE6FF";
-inline constexpr float kBeamPeakFrac = 0.05f;
-inline constexpr float kFinalBeamFrac = 0.3f;
-inline constexpr float kFinalThinFrac = 0.012f;
-inline constexpr float kBeamGlowScale = 1.8f;
-inline constexpr float kBeamGlowAlpha = 0.3f;
-inline constexpr float kSliverAlpha = 0.9f;
+inline constexpr float cutmark_width = 4.0f;
+inline constexpr float cutmark_alpha = 0.85f;
+inline constexpr float fallback_bolt_width = 3.0f;
+inline constexpr float bolt_glow_near_scale = 2.8f;
+inline constexpr float bolt_glow_far_scale = 6.0f;
+inline constexpr float bolt_glow_near_alpha = 0.35f;
+inline constexpr float bolt_glow_far_alpha = 0.15f;
+inline constexpr float slash_ray_alpha = 0.5f;
+inline constexpr float slash_flash_peak = 0.9f;
+inline constexpr float dim_peak = 0.5f;
+inline constexpr const char *dim_hex = "#0B0620";
+inline constexpr const char *flash_hex = "#EDE6FF";
+inline constexpr float beam_peak_frac = 0.05f;
+inline constexpr float final_beam_frac = 0.3f;
+inline constexpr float final_thin_frac = 0.012f;
+inline constexpr float beam_glow_scale = 1.8f;
+inline constexpr float beam_glow_alpha = 0.3f;
+inline constexpr float sliver_alpha = 0.9f;
 
 // fail timer
-inline constexpr float kTimerFailMs = 3000.0f;
+inline constexpr float timer_fail_ms = 3000.0f;
 
 // text strings
-inline constexpr const char *kFailText = "Skill Issue";
-inline constexpr const char *kPlaceholderText = "Enter your password";
-inline constexpr const char *kLoadingText = "Loading...";
+inline constexpr const char *fail_text = "Skill Issue";
+inline constexpr const char *placeholder_text = "Enter your password";
+inline constexpr const char *loading_text = "Loading...";
+
+// assets
+inline constexpr const char *echo_asset = "polkit/electro.png";
 
 // x11 tick
-inline constexpr int kTickMs = 1000;
-inline constexpr int kGrabAttempts = 100;
-inline constexpr int kGrabRetryMs = 10;
+inline constexpr int tick_ms = 1000;
+inline constexpr int grab_attempts = 100;
+inline constexpr int grab_retry_ms = 10;
 
 enum AnimOwner : uint64_t {
-    kOwnerDotRowX = 8,
-    kOwnerAvatarFrame = 10,
-    kOwnerDotBase = 1000,
+    owner_dot_row_x = 8,
+    owner_avatar_frame = 10,
+    owner_dot_base = 1000,
 };
 
 } // namespace astralia::lock_config

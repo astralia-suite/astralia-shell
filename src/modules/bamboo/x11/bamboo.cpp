@@ -20,12 +20,12 @@ Bamboo::Bamboo(XConnection &x, EventLoop &loop, Shell &shell, Services &services
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false, "astralia-shell-bamboo"),
       keyboard_(x.conn()) {
-    window_.make_managed(bamboo_config::kDefaultWindowWidth, bamboo_config::kDefaultWindowHeight);
+    window_.make_managed(bamboo_config::default_window_width, bamboo_config::default_window_height);
     timer_ = loop.add_timer(
         [this] {
-            return open_
-                       ? std::chrono::milliseconds(static_cast<int>(bamboo_config::kTickIntervalMs))
-                       : idle_interval;
+            return open_ ? std::chrono::milliseconds(
+                               static_cast<int>(bamboo_config::tick_interval_ms))
+                         : idle_interval;
         },
         [this] { step(); });
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
@@ -44,10 +44,11 @@ void Bamboo::toggle() {
 void Bamboo::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
-        static_cast<int16_t>(target.x + (target.width - bamboo_config::kDefaultWindowWidth) / 2);
+        static_cast<int16_t>(target.x + (target.width - bamboo_config::default_window_width) / 2);
     int16_t y =
-        static_cast<int16_t>(target.y + (target.height - bamboo_config::kDefaultWindowHeight) / 2);
-    window_.place({x, y, bamboo_config::kDefaultWindowWidth, bamboo_config::kDefaultWindowHeight});
+        static_cast<int16_t>(target.y + (target.height - bamboo_config::default_window_height) / 2);
+    window_.place(
+        {x, y, bamboo_config::default_window_width, bamboo_config::default_window_height});
     keyboard_.reload();
     open_ = true;
     rebuild();

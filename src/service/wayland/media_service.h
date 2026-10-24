@@ -86,8 +86,8 @@ struct MediaFrame {
 std::vector<MediaFrame> media_decode_frames(const std::string &path, const std::string &filter_desc,
                                             int max_frames);
 
-inline constexpr int kAnimateWallpaperFps = 15;
-inline constexpr int kAnimateMaxDecodeDim = 1440;
+inline constexpr int animate_wallpaper_fps = 15;
+inline constexpr int animate_max_decode_dim = 1440;
 
 enum class AnimateFit { Crop, Fit };
 

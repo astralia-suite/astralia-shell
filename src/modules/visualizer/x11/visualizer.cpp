@@ -38,7 +38,7 @@ Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
               false),
       keyboard_(x.conn()) {
-    window_.make_managed(visualizer_config::kDefaultWindow, visualizer_config::kDefaultWindow);
+    window_.make_managed(visualizer_config::default_window, visualizer_config::default_window);
     timer_ = loop.add_timer(
         [this] { return open_ ? std::chrono::milliseconds(1000 / fps()) : idle_interval; },
         [this] { step(); });
@@ -50,8 +50,8 @@ Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &
 Visualizer::~Visualizer() { capture_.stop(); }
 
 int Visualizer::fps() const {
-    return std::clamp(visualizer_config::kBarFps, visualizer_config::kFpsMin,
-                      visualizer_config::kFpsMax);
+    return std::clamp(visualizer_config::bar_fps, visualizer_config::fps_min,
+                      visualizer_config::fps_max);
 }
 
 void Visualizer::toggle() {
@@ -65,10 +65,10 @@ void Visualizer::toggle() {
 void Visualizer::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
-        static_cast<int16_t>(target.x + (target.width - visualizer_config::kDefaultWindow) / 2);
+        static_cast<int16_t>(target.x + (target.width - visualizer_config::default_window) / 2);
     int16_t y =
-        static_cast<int16_t>(target.y + (target.height - visualizer_config::kDefaultWindow) / 2);
-    window_.place({x, y, visualizer_config::kDefaultWindow, visualizer_config::kDefaultWindow});
+        static_cast<int16_t>(target.y + (target.height - visualizer_config::default_window) / 2);
+    window_.place({x, y, visualizer_config::default_window, visualizer_config::default_window});
     keyboard_.reload();
     stages_ = {};
     audio_size_ = 0;
@@ -100,15 +100,15 @@ void Visualizer::step() {
     std::vector<float> right;
     bool modified = false;
     capture_.take(left, right, modified);
-    if (modified && static_cast<int>(left.size()) >= visualizer_config::kFragmentSize &&
-        static_cast<int>(right.size()) >= visualizer_config::kFragmentSize) {
+    if (modified && static_cast<int>(left.size()) >= visualizer_config::fragment_size &&
+        static_cast<int>(right.size()) >= visualizer_config::fragment_size) {
         left_ = std::move(left);
         right_ = std::move(right);
-        fft(left_.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
-            visualizer_config::kFftCutOff);
-        fft(right_.data(), visualizer_config::kFragmentSize, visualizer_config::kFftScale,
-            visualizer_config::kFftCutOff);
-        audio_size_ = visualizer_config::kFragmentSize;
+        fft(left_.data(), visualizer_config::fragment_size, visualizer_config::fft_scale,
+            visualizer_config::fft_cut_off);
+        fft(right_.data(), visualizer_config::fragment_size, visualizer_config::fft_scale,
+            visualizer_config::fft_cut_off);
+        audio_size_ = visualizer_config::fragment_size;
     }
     if (audio_size_ > 0) {
         stages_.run(audio_size_, left_, right_, fps());
@@ -158,12 +158,12 @@ void Visualizer::paint() {
     canvas_.rect({0.0f, 0.0f, width, height}, palette::window_backdrop);
     int count = bar_count(width);
     double total =
-        count * visualizer_config::kBarWidth + (count - 1) * visualizer_config::kBarSpacing;
+        count * visualizer_config::bar_width + (count - 1) * visualizer_config::bar_spacing;
     double start = (width - total) / 2.0;
-    double slot = visualizer_config::kBarWidth + visualizer_config::kBarSpacing;
-    double radius = std::min(visualizer_config::kBarRadius, visualizer_config::kBarWidth * 0.5f);
+    double slot = visualizer_config::bar_width + visualizer_config::bar_spacing;
+    double radius = std::min(visualizer_config::bar_radius, visualizer_config::bar_width * 0.5f);
     cairo_set_source_rgba(cr, palette::accent.r, palette::accent.g, palette::accent.b,
-                          visualizer_config::kBarOpacity);
+                          visualizer_config::bar_opacity);
     for (int i = 0; i < count; ++i) {
         float magnitude = 0.0f;
         if (stages_.ready()) {
@@ -171,7 +171,7 @@ void Visualizer::paint() {
             magnitude = std::max(stages_.smooth_texel(0, texel), stages_.smooth_texel(1, texel));
         }
         double bar_height = visualizer_bar_height(magnitude, height);
-        top_rounded(cr, start + i * slot, height - bar_height, visualizer_config::kBarWidth,
+        top_rounded(cr, start + i * slot, height - bar_height, visualizer_config::bar_width,
                     bar_height, std::min(radius, bar_height));
         cairo_fill(cr);
     }

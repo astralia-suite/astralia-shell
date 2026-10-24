@@ -19,7 +19,7 @@ const Texture *TextureCache::get(const std::string &key,
 }
 
 void TextureCache::evict_if_needed() {
-    while (index_.size() > kMaxEntries) {
+    while (index_.size() > max_entries) {
         index_.erase(order_.back());
         order_.pop_back();
     }

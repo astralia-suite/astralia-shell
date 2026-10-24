@@ -20,7 +20,7 @@ namespace {
 
 namespace cfg = astralia::wallpaper_select_config;
 
-constexpr const char *kNamespace = "astralia-shell-wallpaper-select";
+constexpr const char *layer_namespace = "astralia-shell-wallpaper-select";
 
 class Adapter final : public Module {
   public:
@@ -38,8 +38,8 @@ class Adapter final : public Module {
 
     bool create_surface(WaylandState &app, wl_output *output) override {
         output_ = output;
-        want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell, kNamespace,
-                                             output);
+        want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell,
+                                             layer_namespace, output);
         return want_;
     }
 
@@ -132,7 +132,7 @@ class Adapter final : public Module {
                 [&](wl_output *out) {
                     output_ = out;
                     want_ = overlay_panel_create_surface(base_, app.compositor, app.layer_shell,
-                                                         kNamespace, out);
+                                                         layer_namespace, out);
                     return want_;
                 },
                 [&] { return init_egl(app); });

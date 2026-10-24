@@ -143,30 +143,30 @@ void apply_field(Config &config, Field field, const std::string &text, const std
         }
         case Field::visualizer_fps:
             config.visualizer.fps =
-                std::clamp(std::stoi(text), visualizer_config::kFpsMin, visualizer_config::kFpsMax);
+                std::clamp(std::stoi(text), visualizer_config::fps_min, visualizer_config::fps_max);
             break;
         case Field::visualizer_thin:
             config.visualizer.particle_thin =
-                std::clamp(std::stof(text), visualizer_config::kParticleThinMin,
-                           visualizer_config::kParticleThinMax);
+                std::clamp(std::stof(text), visualizer_config::particle_thin_min,
+                           visualizer_config::particle_thin_max);
             break;
         case Field::visualizer_size:
-            config.visualizer.particle_size = visualizer_config::kParticleSize;
+            config.visualizer.particle_size = visualizer_config::particle_size;
             break;
         case Field::visualizer_complexity:
             config.visualizer.fractal_complexity =
-                std::clamp(std::stoi(text), visualizer_config::kComplexityMin,
-                           visualizer_config::kComplexityMax);
+                std::clamp(std::stoi(text), visualizer_config::complexity_min,
+                           visualizer_config::complexity_max);
             break;
         case Field::visualizer_glow_directions:
             config.visualizer.glow_directions =
-                std::clamp(std::stof(text), visualizer_config::kGlowDirectionsMin,
-                           visualizer_config::kGlowDirectionsMax);
+                std::clamp(std::stof(text), visualizer_config::glow_directions_min,
+                           visualizer_config::glow_directions_max);
             break;
         case Field::visualizer_glow_quality:
             config.visualizer.glow_quality =
-                std::clamp(std::stof(text), visualizer_config::kGlowQualityMin,
-                           visualizer_config::kGlowQualityMax);
+                std::clamp(std::stof(text), visualizer_config::glow_quality_min,
+                           visualizer_config::glow_quality_max);
             break;
         case Field::none:
             break;

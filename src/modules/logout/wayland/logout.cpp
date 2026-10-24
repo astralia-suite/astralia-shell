@@ -21,9 +21,9 @@ namespace astralia::logout {
 
 astralia::ui::Box detail::button_rect(int index, float center_x, float center_y) {
     Point c = button_center(index, {center_x, center_y});
-    float half = kButtonSize / 2.0f;
-    return {static_cast<float>(c.x) - half, static_cast<float>(c.y) - half, kButtonSize,
-            kButtonSize};
+    float half = button_size / 2.0f;
+    return {static_cast<float>(c.x) - half, static_cast<float>(c.y) - half, button_size,
+            button_size};
 }
 
 namespace {
@@ -37,7 +37,7 @@ void finish_close(State &state) {
 }
 
 int star_vertex(int step_index) {
-    return step_index * astralia::logout_config::star_step % kButtonCount;
+    return step_index * astralia::logout_config::star_step % button_count;
 }
 
 } // namespace
@@ -158,9 +158,9 @@ void render(State &state) {
         p.time_s = time_s;
         p.core = astralia::rgba(core);
         p.glow = astralia::rgba(glow);
-        p.amp = kBoltAmp;
+        p.amp = bolt_amp;
 
-        for (int e = 0; e < kButtonCount; ++e) {
+        for (int e = 0; e < button_count; ++e) {
             float s = state.model.slash()[static_cast<size_t>(e)];
             if (s <= 0.002f)
                 continue;
@@ -171,8 +171,8 @@ void render(State &state) {
             float ay = va.y + va.h / 2.0f;
             float bx = vb.x + vb.w / 2.0f;
             float by = vb.y + vb.h / 2.0f;
-            float ox = (bx - ax) * kSlashOvershoot;
-            float oy = (by - ay) * kSlashOvershoot;
+            float ox = (bx - ax) * slash_overshoot;
+            float oy = (by - ay) * slash_overshoot;
 
             p.ax = ax - ox;
             p.ay = ay - oy;
@@ -189,7 +189,7 @@ void render(State &state) {
             ThunderShockParams s;
             s.cx = cx;
             s.cy = cy;
-            s.radius = kBurstRingMax;
+            s.radius = burst_ring_max;
             s.time_s = time_s;
             s.progress = burst;
             s.intensity = 1.3f;
@@ -197,29 +197,29 @@ void render(State &state) {
             s.glow = astralia::rgba(glow);
             thunder_shock_draw(state.thunder, *state.renderer, s);
 
-            p.ax = cx - kFinishSpan / 2.0f;
-            p.ay = cy + kFinishRise / 2.0f;
-            p.bx = cx + kFinishSpan / 2.0f;
-            p.by = cy - kFinishRise / 2.0f;
-            float sweep = burst * kFinishSweep;
+            p.ax = cx - finish_span / 2.0f;
+            p.ay = cy + finish_rise / 2.0f;
+            p.bx = cx + finish_span / 2.0f;
+            p.by = cy - finish_rise / 2.0f;
+            float sweep = burst * finish_sweep;
             p.progress = sweep < 1.0f ? sweep : 1.0f;
-            p.intensity = (1.0f - burst) * kFinishIntensity;
+            p.intensity = (1.0f - burst) * finish_intensity;
             p.seed = 21.0f;
-            p.amp = kBoltAmp * 2.4f;
-            p.thick = kFinishThick;
+            p.amp = bolt_amp * 2.4f;
+            p.thick = finish_thick;
             thunder_burst_draw(state.thunder, *state.renderer, p);
 
             if (sweep >= 1.0f) {
-                float head_end = 1.0f / kFinishSweep;
+                float head_end = 1.0f / finish_sweep;
                 float linger = 1.0f - (burst - head_end) / (1.0f - head_end);
                 linger = linger < 0.0f ? 0.0f : linger;
                 float crackle =
                     0.55f + 0.45f * std::sin(time_s * 71.0f) * std::sin(time_s * 127.0f);
                 p.progress = 1.0f;
-                p.intensity = linger * linger * kFinishLingerIntensity * crackle;
+                p.intensity = linger * linger * finish_linger_intensity * crackle;
                 p.seed = 53.0f;
-                p.amp = kBoltAmp * 1.5f;
-                p.thick = kFinishThick * 0.55f;
+                p.amp = bolt_amp * 1.5f;
+                p.thick = finish_thick * 0.55f;
                 thunder_burst_draw(state.thunder, *state.renderer, p);
             }
         }

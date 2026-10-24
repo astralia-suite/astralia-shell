@@ -27,7 +27,7 @@ struct WaylandState;
 
 namespace astralia::wallpaper {
 
-inline constexpr const char *kLayerNamespace = "astralia-shell-wallpaper";
+inline constexpr const char *layer_namespace = "astralia-shell-wallpaper";
 
 struct State {
     wl_surface *surface = nullptr;

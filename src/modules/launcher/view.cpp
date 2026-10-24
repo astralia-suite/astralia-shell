@@ -186,11 +186,18 @@ Frame paint(ui::Canvas &canvas, Model &model, float width, float height,
     }
 
     for (int slot = 0; slot < cfg::max_visible; ++slot) {
-        canvas.rounded({(cfg::search_height - cfg::bullet_size) / 2.0f,
-                        static_cast<float>(slot) * cfg::row_pitch +
-                            (cfg::row_height - cfg::bullet_size) / 2.0f,
-                        cfg::bullet_size, cfg::bullet_size},
-                       cfg::bullet_size / 2.0f, palette::accent);
+        std::string asset = std::string(cfg::bullet_asset_prefix) + std::to_string(slot + 1) +
+                            cfg::bullet_asset_suffix;
+        ui::ImageId bullet = canvas.image(asset, static_cast<int>(cfg::bullet_size));
+        if (bullet == ui::no_image) {
+            continue;
+        }
+        canvas.draw_image(bullet,
+                          {(cfg::search_height - cfg::bullet_size) / 2.0f,
+                           static_cast<float>(slot) * cfg::row_pitch +
+                               (cfg::row_height - cfg::bullet_size) / 2.0f,
+                           cfg::bullet_size, cfg::bullet_size},
+                          palette::white);
     }
 
     canvas.end_group();

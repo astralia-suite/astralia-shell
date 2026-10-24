@@ -97,7 +97,7 @@ void Idle::poll() {
     }
     uint32_t idle_ms = reply->ms_since_user_input;
     std::free(reply);
-    if (idle_ms >= idle_config::kRecentActivityPulseSeconds * 1000u) {
+    if (idle_ms >= idle_config::recent_activity_pulse_seconds * 1000u) {
         return;
     }
     const std::string &focused = services_.compositor->state().focused_monitor;
@@ -131,7 +131,7 @@ void Idle::step() {
         apply(output, overlay, verdict);
         if (overlay.shown.screensaver && seconds > 0.0f && seconds <= max_frame_seconds) {
             bounce_step(overlay.bounce, seconds, output.geometry.width, output.geometry.height,
-                        idle_config::kLogoSize);
+                        idle_config::logo_size);
             paint(output, overlay);
         }
     }
@@ -152,7 +152,7 @@ void Idle::apply(const Output &output, Overlay &overlay, Verdict verdict) {
     }
     overlay.window.place(output.geometry);
     if (next.screensaver) {
-        overlay.bounce = {40.0f, 40.0f, idle_config::kLogoSpeed, idle_config::kLogoSpeed * 0.75f};
+        overlay.bounce = {40.0f, 40.0f, idle_config::logo_speed, idle_config::logo_speed * 0.75f};
     }
     paint(output, overlay);
     overlay.window.show(false);
@@ -186,9 +186,9 @@ void Idle::paint(const Output &output, Overlay &overlay) {
         overlay.canvas.bind(cr);
         const std::string &logo_path = services_.settings.config().idle_logo_path;
         ui::ImageId logo =
-            logo_path.empty()
-                ? ui::no_image
-                : overlay.canvas.image(logo_path, static_cast<int>(idle_config::kLogoSize));
+            overlay.canvas.image(logo_path.empty() ? std::string_view(idle_config::logo_asset)
+                                                   : std::string_view(logo_path),
+                                 static_cast<int>(idle_config::logo_size));
         if (logo != ui::no_image) {
             ui::TextSize size = overlay.canvas.image_size(logo);
             overlay.canvas.draw_image(logo, {overlay.bounce.x, overlay.bounce.y, size.w, size.h},

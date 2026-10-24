@@ -187,7 +187,7 @@ install_data(
   'assets/fonts/YujiMai.ttf',
   install_dir: data_dir / 'fonts',
 )
-install_data('assets/stiletto.svg', install_dir: data_dir)
+install_data('assets/stellar-restoration.svg', 'assets/stiletto.svg', install_dir: data_dir)
 install_data('assets/wallpaper/default.jpg', install_dir: data_dir / 'wallpaper')
 install_data('assets/bamboo/bamboo.png', install_dir: data_dir / 'bamboo')
 configure_file(
@@ -197,7 +197,18 @@ configure_file(
   install: true,
   install_dir: get_option('prefix') / get_option('datadir') / 'applications',
 )
+install_data('assets/logout/logo.png', install_dir: data_dir / 'logout')
+install_data('assets/polkit/electro.png', install_dir: data_dir / 'polkit')
 install_data('assets/pam/astralia-shell', install_dir: data_dir / 'pam')
+install_data(
+  'assets/constellation/C1.png',
+  'assets/constellation/C2.png',
+  'assets/constellation/C3.png',
+  'assets/constellation/C4.png',
+  'assets/constellation/C5.png',
+  'assets/constellation/C6.png',
+  install_dir: data_dir / 'constellation',
+)
 
 wayland_enabled = 'wayland' in get_option('backends')
 

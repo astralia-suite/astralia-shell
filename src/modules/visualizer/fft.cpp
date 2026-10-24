@@ -9,9 +9,9 @@ namespace astralia::visualizer {
 
 namespace {
 
-constexpr double kTwoPi = 6.28318530718;
+constexpr double two_pi = 6.28318530718;
 
-double hann(double t, double sz) { return 0.53836 - (0.46164 * std::cos(kTwoPi * t / sz)); }
+double hann(double t, double sz) { return 0.53836 - (0.46164 * std::cos(two_pi * t / sz)); }
 
 } // namespace
 

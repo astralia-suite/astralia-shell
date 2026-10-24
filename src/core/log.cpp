@@ -17,7 +17,7 @@ namespace astralia::log {
 
 namespace {
 
-constexpr off_t kMaxLogBytes = 1024 * 1024;
+constexpr off_t max_log_bytes = 1024 * 1024;
 
 FILE *open_state_file() {
     const char *state_home = std::getenv("XDG_STATE_HOME");
@@ -33,7 +33,7 @@ FILE *open_state_file() {
     mkdir(dir.c_str(), 0755);
     std::string path = dir + "/astralia.log";
     struct stat info{};
-    if (stat(path.c_str(), &info) == 0 && info.st_size > kMaxLogBytes) {
+    if (stat(path.c_str(), &info) == 0 && info.st_size > max_log_bytes) {
         std::rename(path.c_str(), (path + ".1").c_str());
     }
     return std::fopen(path.c_str(), "a");
