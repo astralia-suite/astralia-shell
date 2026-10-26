@@ -21,6 +21,17 @@ std::string stamp(const char *pattern, const std::tm &local) {
     return std::string(buffer, std::strftime(buffer, sizeof buffer, pattern, &local));
 }
 
+std::string utc_offset(const std::tm &local) {
+    long minutes = local.tm_gmtoff / 60;
+    long magnitude = minutes < 0 ? -minutes : minutes;
+    long rest = magnitude % 60;
+    std::string text = (minutes < 0 ? "UTC-" : "UTC+") + std::to_string(magnitude / 60);
+    if (rest != 0) {
+        text += (rest < 10 ? ":0" : ":") + std::to_string(rest);
+    }
+    return text;
+}
+
 } // namespace
 
 float TimePanel::content_height(ui::Canvas &) { return total_height; }
@@ -36,8 +47,8 @@ void TimePanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPaint
         y += height + cfg::time_gap;
     };
     line(stamp("%I:%M", local), big_style, cfg::time_big_row, palette::text);
-    line(stamp("%S %p", local), seconds_style, cfg::time_line, palette::text);
-    line(stamp("%Z (UTC%z)", local), text_style, cfg::time_zone_line, palette::text_muted);
+    line(stamp("%S", local), seconds_style, cfg::time_line, palette::text);
+    line(utc_offset(local), text_style, cfg::time_zone_line, palette::text_muted);
 }
 
 } // namespace astralia::bar

@@ -50,6 +50,7 @@ struct PerMonitorState {
     std::unique_ptr<Model> model;
     std::unique_ptr<PanelSurface> panels;
     int32_t applied_hug_radius_px = 0;
+    int32_t applied_side_margin_px = 0;
 };
 
 class PerMonitor final : public PerMonitorModule {
@@ -85,6 +86,12 @@ const PerMonitorState &bar_state(const MonitorOutput &mon);
 
 inline const StyleSpec &style_of(const MonitorOutput &mon) {
     return style_spec(mon.app->cfg.bar_style, true);
+}
+
+inline int32_t bar_side_margin_px(const MonitorOutput &mon, const StyleSpec &style) {
+    if (style.side_margin == 0)
+        return 0;
+    return mon.app->desktop->state().gaps_out_px.value_or(style.side_margin);
 }
 
 inline int32_t bar_hug_radius_px(const MonitorOutput &mon) {

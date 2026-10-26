@@ -223,7 +223,7 @@ void Bar::refresh_clock() {
     std::tm local{};
     localtime_r(&now, &local);
     char buffer[64]{};
-    std::size_t length = std::strftime(buffer, sizeof buffer, "%I:%M %p %Y-%m-%d", &local);
+    std::size_t length = std::strftime(buffer, sizeof buffer, "%I:%M:%S %Y-%m-%d", &local);
     clock_label_.assign(buffer, length);
 }
 

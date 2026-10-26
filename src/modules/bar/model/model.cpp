@@ -103,7 +103,7 @@ void Model::refresh(Clock::time_point now) {
         char buf[32];
         return std::string(buf, std::strftime(buf, sizeof(buf), pattern, &local));
     };
-    set(Item::time, icon::clock, format("%I:%M %p"), true);
+    set(Item::time, icon::clock, format("%I:%M:%S"), true);
     set(Item::date, icon::calendar, format("%a %Y-%m-%d"), true);
     set(Item::notifications, icon::bell, "Notifications", sources_.notifications != nullptr);
     if (sources_.notifications != nullptr && !sources_.notifications->list().empty()) {

@@ -137,7 +137,8 @@ void autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed,
                                    style.top_margin, bar_hug_radius_px(mon));
     set_surface_geometry(bar_state(mon).layer_surface, bar_state(mon).surface,
                          bar_state(mon).egl_window, bar_state(mon).width, g.height, g.margin_top,
-                         style.side_margin, g.exclusive_zone, bar_state(mon).output_scale.scale);
+                         bar_side_margin_px(mon, style), g.exclusive_zone,
+                         bar_state(mon).output_scale.scale);
 }
 
 void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const StyleSpec &style) {
@@ -326,8 +327,8 @@ bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output
                   ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
         .height = geometry.height,
         .margin_top = geometry.margin_top,
-        .margin_right = style.side_margin,
-        .margin_left = style.side_margin,
+        .margin_right = bar_side_margin_px(mon, style),
+        .margin_left = bar_side_margin_px(mon, style),
         .exclusive_zone = geometry.exclusive_zone,
     };
     state.layer_surface = layer_surface_create(state.surface, app.compositor, app.layer_shell,
@@ -398,8 +399,10 @@ void PerMonitor::apply_config(WaylandState &app, MonitorOutput &mon, const Confi
 
 void PerMonitor::tick(WaylandState &, MonitorOutput &mon) {
     int32_t hug = bar_hug_radius_px(mon);
-    if (hug != state.applied_hug_radius_px) {
+    int32_t side = bar_side_margin_px(mon, style_of(mon));
+    if (hug != state.applied_hug_radius_px || side != state.applied_side_margin_px) {
         state.applied_hug_radius_px = hug;
+        state.applied_side_margin_px = side;
         detail::autohide_apply_geometry(mon, state.autohide.enabled, state.autohide.collapsed,
                                         style_of(mon));
         bar::request_frame(mon);

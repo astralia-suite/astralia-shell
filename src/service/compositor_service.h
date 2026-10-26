@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -68,6 +69,7 @@ struct CompositorState {
     std::vector<CompositorMonitor> monitors;
     std::vector<CompositorClient> clients;
     int32_t hug_radius_px = 0;
+    std::optional<int32_t> gaps_out_px;
 
     bool operator==(const CompositorState &) const = default;
 };

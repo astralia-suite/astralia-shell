@@ -336,9 +336,10 @@ HyprlandCompositor::HyprlandCompositor(Reactor &loop) : loop_(loop) {
         return;
     }
     refresh();
+    int32_t gaps_out = hypr_parse_gaps_out(request(request_path_, "j/getoption general:gaps_out"));
+    state_.gaps_out_px = gaps_out;
     state_.hug_radius_px =
-        hypr_parse_gaps_out(request(request_path_, "j/getoption general:gaps_out")) +
-        hypr_parse_rounding(request(request_path_, "j/getoption decoration:rounding"));
+        gaps_out + hypr_parse_rounding(request(request_path_, "j/getoption decoration:rounding"));
     int fd = connect_socket(event_path_);
     if (fd < 0) {
         log::error("hyprland: cannot connect the event socket: {}", std::strerror(errno));
