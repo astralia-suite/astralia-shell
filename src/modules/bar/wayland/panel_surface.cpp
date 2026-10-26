@@ -6,15 +6,16 @@
 
 #include "config/bar_layout.h"
 
-#include "modules/bar/panel/battery_panel.h"
-#include "modules/bar/panel/bluetooth_panel.h"
-#include "modules/bar/panel/brightness_panel.h"
-#include "modules/bar/panel/clock_panel.h"
-#include "modules/bar/panel/media_panel.h"
-#include "modules/bar/panel/network_panel.h"
-#include "modules/bar/panel/resource_panel.h"
-#include "modules/bar/panel/tray_panel.h"
-#include "modules/bar/panel/volume_panel.h"
+#include "modules/bar/panel/content/battery_panel.h"
+#include "modules/bar/panel/content/bluetooth_panel.h"
+#include "modules/bar/panel/content/brightness_panel.h"
+#include "modules/bar/panel/content/date_panel.h"
+#include "modules/bar/panel/content/time_panel.h"
+#include "modules/bar/panel/content/media_panel.h"
+#include "modules/bar/panel/content/network_panel.h"
+#include "modules/bar/panel/content/resource_panel.h"
+#include "modules/bar/panel/content/tray_panel.h"
+#include "modules/bar/panel/content/volume_panel.h"
 #include "modules/bar/wayland/bar.h"
 #include "modules/bar/wayland/panel_surface.h"
 
@@ -30,8 +31,9 @@ PanelSurface::PanelSurface(WaylandState &app, MonitorOutput &mon)
     set_.add(PanelId::volume, std::make_unique<VolumePanel>(*app.audio));
     set_.add(PanelId::battery, std::make_unique<BatteryPanel>(*app.battery));
     set_.add(PanelId::media, std::make_unique<MediaPanel>(*app.media));
-    set_.add(PanelId::brightness, std::make_unique<BrightnessPanel>(*app.brightness_service));
-    set_.add(PanelId::clock, std::make_unique<ClockPanel>());
+    set_.add(PanelId::brightness, std::make_unique<BrightnessPanel>(*app.brightness_service, mon_.output.name));
+    set_.add(PanelId::time, std::make_unique<TimePanel>());
+    set_.add(PanelId::date, std::make_unique<DatePanel>());
     set_.on_changed = [this] { request_frame(); };
     set_.on_state = [this](PanelId id, bool open) { state_changed(id, open); };
 }

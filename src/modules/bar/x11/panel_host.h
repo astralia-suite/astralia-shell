@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <xcb/xcb.h>
 
 #include "app/services.h"
@@ -10,7 +11,7 @@
 #include "core/signal.h"
 #include "core/x_connection.h"
 
-#include "modules/bar/panel/panel_set.h"
+#include "modules/bar/panel/core/panel_set.h"
 
 #include "render/cairo_canvas.h"
 #include "render/x_window.h"
@@ -19,7 +20,7 @@ namespace astralia::bar {
 
 class PanelHost {
   public:
-    PanelHost(XConnection &x, EventLoop &loop, Services &services);
+    PanelHost(XConnection &x, EventLoop &loop, Services &services, const std::string &output_name);
     PanelHost(const PanelHost &) = delete;
     PanelHost &operator=(const PanelHost &) = delete;
 

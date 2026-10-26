@@ -269,6 +269,9 @@ Config parse_config(std::string_view source) {
     read_columns(wallpaper, "lockColumns", cfg.lock_wallpaper_columns, true);
     read_counts(wallpaper, "lockColumnCounts", cfg.lock_wallpaper_column_counts);
     read_columns(wallpaper, "lockFillModes", cfg.lock_wallpaper_fill_modes, false);
+    cfg.palette_source = text(object_in(&root, "palette"), "source", "") == "region"
+                             ? PaletteSource::region_capture
+                             : PaletteSource::default_palette;
     cfg.capture_monitor = text(wallpaper, "captureMonitor", cfg.capture_monitor);
     cfg.capture_column = integer(wallpaper, "captureColumn", cfg.capture_column);
 
@@ -322,6 +325,8 @@ Config parse_config(std::string_view source) {
     cfg.screensaver_timeout = seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout);
     cfg.idle_logo_path = path_expand_home(text(idle, "logoPath", cfg.idle_logo_path));
     cfg.logout_logo_path = path_expand_home(text(general, "logoutLogoPath", cfg.logout_logo_path));
+    cfg.sync_compositor_borders =
+        flag(general, "syncCompositorBorders", cfg.sync_compositor_borders);
 
     const Json *ambient = object_in(&root, "ambient");
     const Json *visualizer = object_in(ambient, "visualizer");
@@ -377,6 +382,11 @@ std::string serialize_config(const Config &cfg) {
     wallpaper.set("captureMonitor", Json::from_string(cfg.capture_monitor));
     wallpaper.set("captureColumn", Json::from_number(cfg.capture_column));
 
+    Json palette = Json::make_object();
+    palette.set("source",
+                Json::from_string(cfg.palette_source == PaletteSource::region_capture ? "region"
+                                                                                      : "default"));
+
     Json idle = Json::make_object();
     idle.set("enabled", Json::from_bool(cfg.idle_enabled));
     idle.set("ambientEnabled", Json::from_bool(cfg.ambient_enabled));
@@ -431,6 +441,7 @@ std::string serialize_config(const Config &cfg) {
     general.set("animationsDisabled", Json::from_bool(cfg.animations_disabled));
     general.set("launcherLightning", Json::from_bool(cfg.launcher_lightning));
     general.set("logoutLogoPath", Json::from_string(path_collapse_home(cfg.logout_logo_path)));
+    general.set("syncCompositorBorders", Json::from_bool(cfg.sync_compositor_borders));
 
     Json ambient = Json::make_object();
     ambient.set("rain", std::move(rain));
@@ -441,6 +452,7 @@ std::string serialize_config(const Config &cfg) {
     root.set("bar", std::move(bar));
     root.set("displays", std::move(displays));
     root.set("general", std::move(general));
+    root.set("palette", std::move(palette));
     root.set("wallpaper", std::move(wallpaper));
     return write_json(root, true) + "\n";
 }

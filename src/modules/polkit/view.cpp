@@ -78,7 +78,7 @@ void paint(ui::Canvas &canvas, Model &model, float surface_width, float surface_
     float tag_pad = static_cast<float>(cfg::title_tag_pad);
     sticker(canvas,
             {pad - tag_pad, y - tag_pad / 2.0f,
-             title_size.w + 2.0f * tag_pad + metrics::shadow_widget,
+             title_size.w + 2.0f * tag_pad,
              static_cast<float>(cfg::title_line_height) + tag_pad + metrics::shadow_widget},
             metrics::radius_widget, palette::accent, palette::ink, metrics::border_thin,
             metrics::shadow_widget);

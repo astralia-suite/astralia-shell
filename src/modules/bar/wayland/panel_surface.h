@@ -10,7 +10,7 @@
 #include "wayland/render/overlay_panel.h"
 #include "wayland/render/popup_window.h"
 
-#include "modules/bar/panel/panel_set.h"
+#include "modules/bar/panel/core/panel_set.h"
 
 #include "service/wayland/text_input_service.h"
 

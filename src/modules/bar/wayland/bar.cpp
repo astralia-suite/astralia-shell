@@ -11,10 +11,11 @@
 
 #include "config/bar_layout.h"
 
-#include "modules/bar/frame.h"
-#include "modules/bar/model.h"
-#include "modules/bar/panel/panel_set.h"
-#include "modules/bar/view.h"
+#include "modules/bar/model/items.h"
+#include "modules/bar/model/model.h"
+#include "modules/bar/paint/frame.h"
+#include "modules/bar/paint/view.h"
+#include "modules/bar/panel/core/panel_set.h"
 #include "modules/bar/wayland/bar.h"
 
 #include "service/wayland/output_service.h"
@@ -29,48 +30,6 @@ constexpr int32_t auto_hide_strip_px = 1;
 constexpr float auto_hide_reveal_ms = 150.0f;
 constexpr float auto_hide_hide_ms = 150.0f;
 constexpr uint64_t auto_hide_anim_owner = 1000;
-
-PanelId panel_of(Item item) {
-    switch (item) {
-    case Item::tray:
-        return PanelId::tray;
-    case Item::resource:
-        return PanelId::resource;
-    case Item::network:
-        return PanelId::network;
-    case Item::bluetooth:
-        return PanelId::bluetooth;
-    case Item::volume:
-        return PanelId::volume;
-    case Item::battery:
-        return PanelId::battery;
-    case Item::media:
-        return PanelId::media;
-    case Item::brightness:
-        return PanelId::brightness;
-    case Item::clock:
-        return PanelId::clock;
-    case Item::logout:
-    case Item::count:
-        break;
-    }
-    return PanelId::count;
-}
-
-std::optional<Item> item_of(PanelId panel) {
-    for (size_t i = 0; i < item_count; ++i) {
-        if (panel_of(static_cast<Item>(i)) == panel)
-            return static_cast<Item>(i);
-    }
-    return std::nullopt;
-}
-
-std::string clock_text() {
-    char buf[32];
-    time_t now = time(nullptr);
-    strftime(buf, sizeof(buf), layout_cfg::clock_format, localtime(&now));
-    return buf;
-}
 
 void set_surface_geometry(zwlr_layer_surface_v1 *layer_surface, wl_surface *surface,
                           wl_egl_window *egl_window, int32_t width, int32_t height_px,
@@ -111,6 +70,7 @@ Sources bar_sources(WaylandState &app, const std::string &output) {
     sources.battery = app.battery.get();
     sources.bluetooth = app.bluetooth.get();
     sources.network = app.network.get();
+    sources.notifications = app.notifications.get();
     sources.brightness = app.brightness_service.get();
     sources.compositor = [&app]() -> const astralia::CompositorState & {
         return app.desktop->state();
@@ -128,11 +88,11 @@ void adjust_volume(WaylandState &app, double dy) {
     audio.set_volume(audio.sink_id(), next);
 }
 
-void adjust_brightness(WaylandState &app, double dy) {
+void adjust_brightness(WaylandState &app, const std::string &output, double dy) {
     astralia::BrightnessService &service = *app.brightness_service;
-    if (!service.available())
+    if (!service.available(output))
         return;
-    service.set(std::clamp(service.percent() + (dy < 0 ? 1 : -1), 0, 100));
+    service.set(output, std::clamp(service.percent(output) + (dy < 0 ? 1 : -1), 0, 100));
 }
 
 } // namespace
@@ -160,7 +120,8 @@ void toggle_panel(MonitorOutput &mon, Item item) {
     if (!bs.panels)
         return;
     close_other_overlays(mon, item);
-    bs.panels->panels().toggle(panel_of(item));
+    bs.panels->panels().toggle(panel_of(item),
+                               bs.model ? std::optional(bs.model->zone(item)) : std::nullopt);
 }
 
 int32_t current_height(const MonitorOutput &mon) {
@@ -252,7 +213,6 @@ void render(MonitorOutput &mon) {
         return;
     Model &model = *bs.model;
     model.set_style(style);
-    model.set_clock_label(bs.clock_label);
 
     Module *logout_m = find_overlay_by_name(app, "logout");
     Module *overview_m = find_overlay_by_name(app, "overview");
@@ -265,18 +225,20 @@ void render(MonitorOutput &mon) {
     if (bs.panels) {
         const PanelSet &set = bs.panels->panels();
         if (PanelId id = set.active_id(); id != PanelId::count)
-            open = item_of(id);
+            open = item_for(id);
         if (!open) {
             for (size_t i = 0; i < static_cast<size_t>(PanelId::count); ++i) {
                 const Panel *panel = set.find(static_cast<PanelId>(i));
                 if (panel != nullptr && panel->is_open()) {
-                    open = item_of(static_cast<PanelId>(i));
+                    open = item_for(static_cast<PanelId>(i));
                     break;
                 }
             }
         }
-        const Panel *clock = set.find(PanelId::clock);
-        clock_open = clock != nullptr && clock->is_open();
+        for (PanelId id : {PanelId::time, PanelId::date}) {
+            const Panel *clock = set.find(id);
+            clock_open = clock_open || (clock != nullptr && clock->is_open());
+        }
     }
     if (!open && logout_here)
         open = Item::logout;
@@ -353,7 +315,6 @@ bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output
     state.autohide.enabled = autohide_enabled_for(app.cfg, mon.output.name);
     state.model = std::make_unique<Model>(bar_sources(app, mon.output.name),
                                           std::chrono::steady_clock::now());
-    state.clock_label = clock_text();
     const StyleSpec &style = style_spec(app.cfg.bar_style, true);
     Geometry geometry = autohide_geometry(state.autohide.enabled, state.autohide.collapsed,
                                           static_cast<int>(layout_cfg::height), style.top_margin,
@@ -435,25 +396,6 @@ void PerMonitor::apply_config(WaylandState &app, MonitorOutput &mon, const Confi
                                         new_style);
 }
 
-std::vector<astralia::ShellBinding> PerMonitor::shell_bindings(WaylandState &app) {
-    using astralia::ShellVerb;
-    constexpr std::pair<ShellVerb, Item> entries[] = {
-        {ShellVerb::panel_tray, Item::tray},       {ShellVerb::panel_resource, Item::resource},
-        {ShellVerb::panel_network, Item::network}, {ShellVerb::panel_bluetooth, Item::bluetooth},
-        {ShellVerb::panel_volume, Item::volume},   {ShellVerb::panel_battery, Item::battery},
-        {ShellVerb::panel_media, Item::media},     {ShellVerb::panel_brightness, Item::brightness},
-        {ShellVerb::panel_clock, Item::clock},
-    };
-    std::vector<astralia::ShellBinding> bindings;
-    for (const auto &[verb, item] : entries) {
-        bindings.push_back({verb, [&app, item] {
-                                if (MonitorOutput *target = app_detail::active_target_monitor(app))
-                                    detail::toggle_panel(*target, item);
-                            }});
-    }
-    return bindings;
-}
-
 void PerMonitor::tick(WaylandState &, MonitorOutput &mon) {
     int32_t hug = bar_hug_radius_px(mon);
     if (hug != state.applied_hug_radius_px) {
@@ -464,10 +406,7 @@ void PerMonitor::tick(WaylandState &, MonitorOutput &mon) {
     }
 }
 
-void PerMonitor::timer_tick(WaylandState &, MonitorOutput &mon) {
-    state.clock_label = clock_text();
-    bar::request_frame(mon);
-}
+void PerMonitor::timer_tick(WaylandState &, MonitorOutput &mon) { bar::request_frame(mon); }
 
 bool PerMonitor::is_open() const { return state.panels && state.panels->is_open(); }
 
@@ -503,7 +442,7 @@ void PerMonitor::handle_scroll(WaylandState &app, MonitorOutput &mon, wl_surface
     if (hit.item == Item::volume)
         adjust_volume(app, dy);
     else if (hit.item == Item::brightness)
-        adjust_brightness(app, dy);
+        adjust_brightness(app, mon.output.name, dy);
 }
 
 void PerMonitor::handle_key_event(WaylandState &app, MonitorOutput &, const KeyEvent &event) {

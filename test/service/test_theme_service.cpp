@@ -50,6 +50,9 @@ void check_theme_service() {
         std::filesystem::temp_directory_path() / "astralia-theme-source-test.png";
     std::ofstream(file) << "x";
     cfg.wallpaper_path = file.string();
+    check(theme_source(cfg, "").fixed && theme_source(cfg, "").path.empty(),
+          "the default palette source is fixed and ignores the wallpaper");
+    cfg.palette_source = PaletteSource::region_capture;
     ThemeSource first = theme_source(cfg, "");
     check(first.path == file.string() && first.modified != 0,
           "a source records its path and mtime");
@@ -59,6 +62,11 @@ void check_theme_service() {
     check(!(first == theme_source(cfg, "")), "a changed mtime gives a different source");
     std::filesystem::remove(file);
     check(theme_source(cfg, "").modified == 0, "a missing file records no mtime");
+    check(!theme_source(cfg, "").fixed, "region capture follows the wallpaper");
+    Extraction keqing = default_palette_extraction();
+    check(keqing.found && keqing.seeds.size() == 4 && keqing.seeds[0].hue > 300.0f &&
+              keqing.seeds[0].hue < 315.0f,
+          "the default palette is Keqing's lavender");
 
     Extraction a{{{200.0f, 0.1f, 0.7f}}, true};
     Extraction b{{{200.2f, 0.1f, 0.7f}}, true};

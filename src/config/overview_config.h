@@ -4,7 +4,7 @@ namespace astralia::overview_config {
 
 // Grid
 inline constexpr int columns = 5;
-inline constexpr int rows = 2;
+inline constexpr int rows = 1;
 inline constexpr int per_page = columns * rows;
 inline constexpr float scale = 0.15f;
 inline constexpr float global_scale = 0.08f;

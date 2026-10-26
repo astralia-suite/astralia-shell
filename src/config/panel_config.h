@@ -86,25 +86,35 @@ inline constexpr float media_side_button = 28.0f;
 inline constexpr float media_play_button = 32.0f;
 inline constexpr int media_poll_ms = 1000;
 
-// Clock
-inline constexpr float clock_width = 504.0f;
-inline constexpr float clock_column_gap = 16.0f;
-inline constexpr float clock_weekday_line = 26.0f;
-inline constexpr float clock_date_line = 18.0f;
-inline constexpr float clock_line_gap = 2.0f;
-inline constexpr float clock_big_day_row = 74.0f;
-inline constexpr float clock_big_day_gap = 6.0f;
-inline constexpr float clock_week_line = 16.0f;
-inline constexpr float clock_grid_header = 24.0f;
-inline constexpr float clock_grid_header_gap = 15.0f;
-inline constexpr float clock_weekday_row = 22.0f;
-inline constexpr float clock_grid_top_gap = 2.0f;
-inline constexpr float clock_cell_padding = 4.0f;
-inline constexpr float clock_nav_button = 20.0f;
-inline constexpr float clock_nav_gap = 6.0f;
-inline constexpr float clock_today_dot = 6.0f;
-inline constexpr int clock_big_day_px = 64;
-inline constexpr int clock_weekday_px = 22;
+// Time
+inline constexpr float time_width = 280.0f;
+inline constexpr float time_big_row = 76.0f;
+inline constexpr float time_line = 26.0f;
+inline constexpr float time_zone_line = 18.0f;
+inline constexpr float time_gap = 6.0f;
+inline constexpr int time_big_px = 64;
+inline constexpr int time_seconds_px = 22;
+inline constexpr int time_poll_ms = 1000;
+
+// Date
+inline constexpr float date_width = 504.0f;
+inline constexpr float date_column_gap = 16.0f;
+inline constexpr float date_weekday_line = 26.0f;
+inline constexpr float date_line = 18.0f;
+inline constexpr float date_line_gap = 2.0f;
+inline constexpr float date_big_day_row = 74.0f;
+inline constexpr float date_big_day_gap = 6.0f;
+inline constexpr float date_week_line = 16.0f;
+inline constexpr float date_grid_header = 24.0f;
+inline constexpr float date_grid_header_gap = 15.0f;
+inline constexpr float date_weekday_row = 22.0f;
+inline constexpr float date_grid_top_gap = 2.0f;
+inline constexpr float date_cell_padding = 4.0f;
+inline constexpr float date_nav_button = 20.0f;
+inline constexpr float date_nav_gap = 6.0f;
+inline constexpr float date_today_dot = 6.0f;
+inline constexpr int date_big_day_px = 64;
+inline constexpr int date_weekday_px = 22;
 
 // Volume
 inline constexpr float volume_label_row = 20.0f;

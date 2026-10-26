@@ -25,6 +25,7 @@ int hypr_resolve_workspace(const CompositorState &state, int id, bool global);
 std::string hypr_lua_focus(int workspace);
 std::string hypr_lua_move(const std::string &address, int workspace, bool follow);
 std::string hypr_lua_close(const std::string &address);
+std::string hypr_lua_border(Color active, Color inactive);
 bool hypr_socket_paths(std::string &request_path, std::string &event_path);
 
 class HyprlandCompositor final : public Compositor {
@@ -49,6 +50,7 @@ class HyprlandCompositor final : public Compositor {
     void close_windows(CloseScope scope, int id = -1) override;
     void move_workspace_in(int id, bool global = false) override;
     void swap_workspace(int id, bool global = false) override;
+    void apply_border_colors(Color active, Color inactive) override;
 
     void set_request_socket(std::string path) { request_path_ = std::move(path); }
 
@@ -66,6 +68,7 @@ class HyprlandCompositor final : public Compositor {
     std::string clients_reply_;
     std::string event_buffer_;
     UniqueFd event_fd_;
+    std::string border_lua_;
     bool watching_ = false;
     int timer_ = -1;
 };

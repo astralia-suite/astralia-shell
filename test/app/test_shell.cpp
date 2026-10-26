@@ -27,14 +27,11 @@ void check_shell() {
     check(shell_verb_available(wayland, ShellVerb::dashboard) &&
               !shell_verb_available(bare, ShellVerb::dashboard),
           "the dashboard needs its capability");
-    check(shell_verb_available(wayland, ShellVerb::panel_resource) &&
-              !shell_verb_available(bare, ShellVerb::panel_resource),
-          "the resource panel needs its capability");
     check(shell_verb_available(x11, ShellVerb::dashboard) &&
               shell_verb_available(x11, ShellVerb::rain),
           "X11 offers the dashboard and the rain");
     check(shell_verb_available(x11, ShellVerb::overview) &&
-              shell_verb_available(x11, ShellVerb::panel_network),
+              shell_verb_available(x11, ShellVerb::logout),
           "shared verbs need none");
 
     Shell shell("x11", x11);
@@ -84,8 +81,6 @@ void check_shell() {
     check(report.find("| `dashboard` | yes | yes |") != std::string::npos &&
               report.find("| `launcher` | yes | yes |") != std::string::npos,
           "the report lists modules by capability");
-    check(report.find("| `panel-resource` | toggle the resource panel | yes | yes |") !=
-                  std::string::npos &&
-              report.find("| `overview` | toggle the overview | yes | yes |") != std::string::npos,
+    check(report.find("| `overview` | toggle the overview | yes | yes |") != std::string::npos,
           "the report lists verbs by capability");
 }

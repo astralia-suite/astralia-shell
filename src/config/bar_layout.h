@@ -38,6 +38,17 @@ inline constexpr float dock_reorder_ms = 200.0f;
 inline constexpr std::chrono::milliseconds peek_duration{2000};
 inline constexpr std::chrono::milliseconds peek_ready_delay{1000};
 
+// Pop! style
+inline constexpr float pop_radius = 15.0f;
+inline constexpr float pop_badge = 36.0f;
+inline constexpr float pop_badge_active = 42.0f;
+inline constexpr float pop_badge_gap = 6.0f;
+inline constexpr int pop_side_margin = 16;
+inline constexpr float pop_icon_gap = 7.0f;
+inline constexpr float active_window_cap = 260.0f;
+inline constexpr int active_window_name_px = 13;
+inline constexpr int active_window_title_px = 11;
+
 inline constexpr int battery_critical_percent = 10;
 
 inline constexpr uint64_t owner_expand = 100;
@@ -45,19 +56,19 @@ inline constexpr uint64_t owner_workspace = 200;
 inline constexpr uint64_t owner_dock_width = 250;
 inline constexpr uint64_t owner_dock = 1000;
 
-inline constexpr const char *clock_format = "%a %Y-%m-%d %H:%M:%S";
-
 } // namespace astralia::bar_layout
 
 namespace astralia {
 
-enum class BarStyle : std::size_t { islands, okinami, continuous };
+enum class BarStyle : std::size_t { islands, okinami, continuous, pop };
 
 namespace bar_style {
 
-inline constexpr std::size_t count = 3;
-inline constexpr std::array<std::string_view, count> names{"islands", "okinami", "continuous"};
-inline constexpr std::array<std::string_view, count> labels{"Islands", "Okinami", "Continuous"};
+inline constexpr std::size_t count = 4;
+inline constexpr std::array<std::string_view, count> names{"islands", "okinami", "continuous",
+                                                           "pop"};
+inline constexpr std::array<std::string_view, count> labels{"Islands", "Okinami", "Continuous",
+                                                            "Pop!"};
 
 } // namespace bar_style
 

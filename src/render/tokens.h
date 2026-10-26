@@ -91,7 +91,8 @@ inline constexpr float radius_card = 10.0f;
 inline constexpr float radius_widget = 5.0f;
 inline constexpr float border_thin = 2.0f;
 inline constexpr float border_thick = 3.0f;
-inline constexpr float shadow_offset = 3.0f;
+inline constexpr float shadow_offset = 4.0f;
+inline constexpr float ring_width = 3.0f;
 inline constexpr float shadow_widget = 2.0f;
 
 } // namespace metrics

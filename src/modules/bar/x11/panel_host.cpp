@@ -3,15 +3,16 @@
 
 #include "core/pointer.h"
 
-#include "modules/bar/panel/battery_panel.h"
-#include "modules/bar/panel/bluetooth_panel.h"
-#include "modules/bar/panel/brightness_panel.h"
-#include "modules/bar/panel/clock_panel.h"
-#include "modules/bar/panel/media_panel.h"
-#include "modules/bar/panel/network_panel.h"
-#include "modules/bar/panel/resource_panel.h"
-#include "modules/bar/panel/tray_panel.h"
-#include "modules/bar/panel/volume_panel.h"
+#include "modules/bar/panel/content/battery_panel.h"
+#include "modules/bar/panel/content/bluetooth_panel.h"
+#include "modules/bar/panel/content/brightness_panel.h"
+#include "modules/bar/panel/content/date_panel.h"
+#include "modules/bar/panel/content/time_panel.h"
+#include "modules/bar/panel/content/media_panel.h"
+#include "modules/bar/panel/content/network_panel.h"
+#include "modules/bar/panel/content/resource_panel.h"
+#include "modules/bar/panel/content/tray_panel.h"
+#include "modules/bar/panel/content/volume_panel.h"
 #include "modules/bar/x11/panel_host.h"
 
 namespace astralia::bar {
@@ -24,7 +25,8 @@ constexpr double wheel_step = 40.0;
 
 } // namespace
 
-PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
+PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services,
+                     const std::string &output_name)
     : x_(x), keyboard_(x.conn()), set_(loop),
       window_(x, "astralia-panel",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -42,8 +44,10 @@ PanelHost::PanelHost(XConnection &x, EventLoop &loop, Services &services)
     set_.add(PanelId::volume, std::make_unique<VolumePanel>(services.audio));
     set_.add(PanelId::battery, std::make_unique<BatteryPanel>(services.battery));
     set_.add(PanelId::media, std::make_unique<MediaPanel>(services.media));
-    set_.add(PanelId::brightness, std::make_unique<BrightnessPanel>(services.brightness));
-    set_.add(PanelId::clock, std::make_unique<ClockPanel>());
+    set_.add(PanelId::brightness,
+             std::make_unique<BrightnessPanel>(services.brightness, output_name));
+    set_.add(PanelId::time, std::make_unique<TimePanel>());
+    set_.add(PanelId::date, std::make_unique<DatePanel>());
     set_.on_changed = [this] {
         if (window_.mapped()) {
             paint();

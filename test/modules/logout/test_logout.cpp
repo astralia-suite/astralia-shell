@@ -158,14 +158,14 @@ void check_logout_view() {
     h.model.open();
     test::RecordingCanvas canvas;
     astralia::logout::paint(canvas, h.model, 1920, 1200, "");
-    test::check(canvas.count(Kind::rounded) == 16 && canvas.count(Kind::text) == 8,
+    test::check(canvas.count(Kind::rounded) == 17 && canvas.count(Kind::text) == 8,
                 "eight buttons with a glyph each");
     test::check(canvas.count(Kind::begin_group) == 1 && canvas.count(Kind::end_group) == 1,
                 "one logo group");
-    constexpr float face = astralia::logout_config::button_size - astralia::metrics::shadow_offset;
+    constexpr float face = astralia::logout_config::button_size;
     const test::Op &top = canvas.ops[1];
     test::check(top.box.w > face && top.box.w < face * 1.06, "the selected button is enlarged");
-    const test::Op &next = canvas.ops[4];
+    const test::Op &next = canvas.ops[5];
     test::check(next.box.w == face, "the others keep their size");
     const test::Op &group = canvas.ops.back().kind == Kind::end_group
                                 ? canvas.ops[canvas.ops.size() - 2]

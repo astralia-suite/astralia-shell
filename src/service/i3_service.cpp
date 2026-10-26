@@ -273,6 +273,7 @@ CompositorState i3_build_state(const I3Tree &tree, const std::vector<I3Workspace
         client.address = std::to_string(window.id);
         client.window_class = window.window_class;
         client.title = window.title;
+        client.initial_title = window.window_class;
         client.workspace_id = static_cast<int>(window.workspace);
         client.monitor_id = monitor_index(window.output);
         double origin_x = 0.0;

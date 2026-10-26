@@ -326,6 +326,34 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
              cfg::row_gap;
     }
 
+    y = wallpaper_columns_panel(pane, slot, x, y, w, bottom);
+    if (animated && model.cpu_fallback(picker.region, picker.column) && !picker.files.empty()) {
+        y += cfg::row_gap;
+        std::string warning = "Warning: Animated wallpaper is running on CPU.";
+        ui::TextSize size = pane.canvas.measure(warning, text_style);
+        float h = size.h + cfg::warning_pad * 2.0f;
+        pane.chip({x, y, w, h}, palette::critical_container);
+        pane.text(warning, text_style, x + cfg::warning_pad, y + (h - size.h) / 2.0f,
+                  palette::text);
+    }
+}
+
+void palette_tab(Pane &pane, float x, float y, float w) {
+    Model &model = pane.model;
+    const Config &config = model.config();
+    bool region = config.palette_source == PaletteSource::region_capture;
+    std::vector<DropEntry> sources{{"Default", 0, 0}, {"Region capture", 1, 0}};
+    size_t selected = region ? 1 : 0;
+    std::string current = sources[selected].label;
+    pane.dropdown({x, y, w, cfg::tile_height}, 2, "Palette", current, std::move(sources), selected,
+                  Act::palette_source);
+    if (!region) {
+        return;
+    }
+    y += cfg::tile_height + cfg::row_gap;
+    WallpaperSlot slot = model.caps().animated_wallpaper && config.wallpaper_animated_enabled
+                             ? WallpaperSlot::animated
+                             : WallpaperSlot::still;
     {
         const std::vector<std::string> &monitors = model.monitors();
         std::vector<DropEntry> entries{{"Auto", -1, 0}};
@@ -341,17 +369,6 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
         pane.dropdown({x, y, w, cfg::tile_height}, 1, "Region Capture", current, std::move(entries),
                       selected, Act::capture_pick);
         y += cfg::tile_height + cfg::row_gap;
-    }
-
-    y = wallpaper_columns_panel(pane, slot, x, y, w, bottom);
-    if (animated && model.cpu_fallback(picker.region, picker.column) && !picker.files.empty()) {
-        y += cfg::row_gap;
-        std::string warning = "Warning: Animated wallpaper is running on CPU.";
-        ui::TextSize size = pane.canvas.measure(warning, text_style);
-        float h = size.h + cfg::warning_pad * 2.0f;
-        pane.chip({x, y, w, h}, palette::critical_container);
-        pane.text(warning, text_style, x + cfg::warning_pad, y + (h - size.h) / 2.0f,
-                  palette::text);
     }
 }
 
@@ -392,6 +409,9 @@ void tab_content(Pane &pane, Tab tab, float x, float y, float w, float bottom) {
     case Tab::wallpaper:
         wallpaper_tab(pane, x, y, w, bottom);
         break;
+    case Tab::palette:
+        palette_tab(pane, x, y, w);
+        break;
     }
     if (pane.overlay) {
         pane.overlay();
@@ -418,6 +438,9 @@ std::string tab_summary(const Model &model, Tab tab) {
         return config.lock_wallpaper_custom ? "Custom" : "Auto";
     case Tab::wallpaper:
         return config.wallpaper_animated_enabled ? "Animated" : "Static";
+    case Tab::palette:
+        return config.palette_source == PaletteSource::region_capture ? "Region capture"
+                                                                      : "Default";
     }
     return {};
 }

@@ -102,8 +102,20 @@ std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_n
     return cfg.default_wallpaper ? cfg.wallpaper_path : "";
 }
 
+Extraction default_palette_extraction() {
+    return {{{307.6f, 0.111f, 0.712f},
+             {355.3f, 0.095f, 0.808f},
+             {297.5f, 0.127f, 0.495f},
+             {306.7f, 0.060f, 0.902f}},
+            true};
+}
+
 ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
     ThemeSource source;
+    if (cfg.palette_source == PaletteSource::default_palette) {
+        source.fixed = true;
+        return source;
+    }
     source.path = theme_wallpaper_path(cfg, monitor_name);
     if (source.path.empty()) {
         return source;
@@ -141,6 +153,10 @@ void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
     has_source_ = true;
     source_ = source;
     uint64_t gen = ++generation_;
+    if (source.fixed) {
+        apply(default_palette_extraction());
+        return;
+    }
     if (first) {
         if (std::optional<Extraction> extraction = resolve_theme(source.path, decode_video_frame)) {
             apply(*extraction);

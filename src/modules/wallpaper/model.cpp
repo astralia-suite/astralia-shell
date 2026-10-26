@@ -54,7 +54,7 @@ ui::Box DesktopMenuModel::row(int index) const {
     float top =
         cfg::menu_padding + static_cast<float>(index) * (cfg::menu_row_height + cfg::menu_row_gap);
     return {cfg::menu_padding, top,
-            cfg::menu_width - cfg::menu_padding * 2.0f - metrics::shadow_offset,
+            cfg::menu_width - cfg::menu_padding * 2.0f,
             cfg::menu_row_height};
 }
 

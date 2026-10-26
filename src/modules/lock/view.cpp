@@ -78,7 +78,7 @@ CardBody draw_card(ui::Canvas &canvas, const Rect &col, const std::string &title
     ui::TextSize measured = canvas.measure(title, style);
     sticker(canvas,
             {x - lock_config::card_tag_pad, y - lock_config::card_tag_pad / 2.0f,
-             measured.w + 2.0f * lock_config::card_tag_pad + metrics::shadow_widget,
+             measured.w + 2.0f * lock_config::card_tag_pad,
              measured.h + lock_config::card_tag_pad + metrics::shadow_widget},
             metrics::radius_widget, palette::pop_a, palette::ink, metrics::border_thin,
             metrics::shadow_widget);

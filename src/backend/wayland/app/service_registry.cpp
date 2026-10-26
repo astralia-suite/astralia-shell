@@ -184,6 +184,7 @@ class CompositorWorkspaceService final : public Service {
     bool init(WaylandState &app) override {
         app.desktop = astralia::make_compositor(*app.reactor);
         app.desktop->watch_client_order(true);
+        app_detail::sync_compositor_borders(app);
         app.desktop->active_changed.connect([&app] { redraw_all_monitors(app); });
         app.desktop->structure_changed.connect([&app] {
             redraw_all_monitors(app);
@@ -207,6 +208,7 @@ class ThemeFollowService final : public Service {
             return animate_decode_scaled(path, 256, 256, w, h);
         };
         app.theme->changed.connect([&app] {
+            app_detail::sync_compositor_borders(app);
             redraw_all_monitors(app);
             for (auto &m : app.overlays)
                 if (m->is_open())

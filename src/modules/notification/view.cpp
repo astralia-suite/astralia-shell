@@ -74,8 +74,7 @@ void paint(ui::Canvas &canvas, const ViewState &view, const Layout &layout) {
         float tag_w = cfg::urgency_dot + cfg::header_spacing + app_size.w + 2.0f * tag_pad;
         float tag_h = app_size.h + tag_pad;
         sticker(canvas,
-                {x - tag_pad, top + (card.header - tag_h) / 2.0f, tag_w + metrics::shadow_widget,
-                 tag_h + metrics::shadow_widget},
+                {x - tag_pad, top + (card.header - tag_h) / 2.0f, tag_w, tag_h + metrics::shadow_widget},
                 metrics::radius_widget, with_alpha(accent, opacity),
                 with_alpha(palette::ink, opacity), metrics::border_thin, metrics::shadow_widget);
         canvas.rounded(

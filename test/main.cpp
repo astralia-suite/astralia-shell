@@ -49,6 +49,7 @@ void check_wallpaper_listing();
 void check_wallpaper_select();
 void check_desktop_menu();
 void check_theme_service();
+void check_brightness();
 void check_dock();
 void check_hyprland();
 void check_i3();
@@ -137,6 +138,7 @@ int main() {
     check_wallpaper_select();
     check_desktop_menu();
     check_theme_service();
+    check_brightness();
     check_dock();
     check_hyprland();
     check_i3();

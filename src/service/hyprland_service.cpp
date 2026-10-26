@@ -21,7 +21,7 @@ namespace astralia {
 namespace {
 
 constexpr timeval request_timeout{0, 100000};
-constexpr int workspaces_per_monitor = 10;
+constexpr int workspaces_per_monitor = 5;
 constexpr const char *swap_temp_workspace = "special:__tmp_swp";
 constexpr std::chrono::milliseconds client_poll_interval{1000};
 constexpr std::chrono::milliseconds client_poll_idle = std::chrono::hours(1);
@@ -148,6 +148,7 @@ std::vector<CompositorClient> hypr_parse_clients(std::string_view reply) {
         client.address = entry.string_or("address");
         client.window_class = entry.string_or("class");
         client.title = entry.string_or("title");
+        client.initial_title = entry.string_or("initialTitle");
         if (const Json *workspace = entry.find("workspace")) {
             client.workspace_id = static_cast<int>(workspace->number_or("id", -1));
         }
@@ -308,6 +309,21 @@ std::string hypr_lua_close(const std::string &address) {
     return "hl.dsp.window.close({window='address:" + address + "'})";
 }
 
+std::string hypr_lua_border(Color active, Color inactive) {
+    auto rgba_text = [](Color c, const char *alpha) {
+        static constexpr char digits[] = "0123456789abcdef";
+        std::string out = "rgba(";
+        for (float channel : {c.r, c.g, c.b}) {
+            int value = static_cast<int>(std::clamp(channel, 0.0f, 1.0f) * 255.0f + 0.5f);
+            out += digits[value >> 4];
+            out += digits[value & 15];
+        }
+        return out + alpha + ")";
+    };
+    return "hl.config({general={col={active_border=\"" + rgba_text(active, "ee") +
+           "\",inactive_border=\"" + rgba_text(inactive, "cc") + "\"}}})";
+}
+
 bool HyprlandCompositor::available() {
     std::string request_path;
     std::string event_path;
@@ -403,6 +419,10 @@ void HyprlandCompositor::read_events() {
     HyprEventKind result = HyprEventKind::none;
     std::size_t newline = 0;
     while ((newline = event_buffer_.find('\n')) != std::string::npos) {
+        if (!border_lua_.empty() &&
+            std::string_view(event_buffer_).substr(0, newline).starts_with("configreloaded>>")) {
+            request(request_path_, "eval " + border_lua_);
+        }
         HyprEventKind kind =
             hypr_apply_event(state_, std::string_view(event_buffer_).substr(0, newline));
         event_buffer_.erase(0, newline + 1);
@@ -421,6 +441,11 @@ void HyprlandCompositor::read_events() {
 
 void HyprlandCompositor::dispatch(const std::string &lua) {
     request(request_path_, "dispatch " + lua);
+}
+
+void HyprlandCompositor::apply_border_colors(Color active, Color inactive) {
+    border_lua_ = hypr_lua_border(active, inactive);
+    request(request_path_, "eval " + border_lua_);
 }
 
 std::vector<const CompositorClient *> HyprlandCompositor::clients_in(int workspace) const {

@@ -14,7 +14,7 @@
 #include "core/event_loop.h"
 #include "core/x_connection.h"
 
-#include "modules/bar/model.h"
+#include "modules/bar/model/model.h"
 #include "modules/bar/x11/panel_host.h"
 
 #include "render/cairo_canvas.h"
@@ -33,7 +33,6 @@ class Bar {
     void hide();
     const std::string &output_name() const { return output_name_; }
     bool panels_open() const { return panels_->is_open(); }
-    void toggle_panel(PanelId id);
 
   private:
     bool refresh_style();
@@ -74,7 +73,6 @@ class Bar {
     Model model_;
     std::unique_ptr<PanelHost> panels_;
     std::string clock_label_;
-    float clock_width_ = 0.0f;
     int linger_timer_ = -1;
 };
 

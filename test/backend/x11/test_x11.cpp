@@ -20,8 +20,8 @@
 #include "core/json.h"
 #include "core/pointer.h"
 
-#include "modules/bar/frame.h"
-#include "modules/bar/style.h"
+#include "modules/bar/paint/frame.h"
+#include "modules/bar/paint/style.h"
 
 #include "render/app_icon.h"
 #include "render/cairo_canvas.h"

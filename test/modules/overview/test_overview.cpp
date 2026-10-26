@@ -67,9 +67,9 @@ void check_layout() {
     model.open("A", 1366, 768);
     model.sync(1366, 768);
     const astralia::overview::Layout &layout = model.layout();
-    test::check(layout.cells.size() == 10 && layout.cells[0].workspace == 1 &&
-                    layout.cells[9].workspace == 10,
-                "ten cells in ids");
+    test::check(layout.cells.size() == 5 && layout.cells[0].workspace == 1 &&
+                    layout.cells[4].workspace == 5,
+                "five cells in ids");
     test::check(layout.panels.size() == 1, "one panel");
     const astralia::ui::Box &panel = layout.panels[0];
     test::check(panel.x >= 0 && panel.y >= 0 && panel.x + panel.w <= 1366 &&
@@ -103,9 +103,9 @@ void check_layout() {
     global.key(key(KeyKind::Tab));
     test::check(global.global_mode(), "tab switches to the global view");
     global.sync(1920, 1080);
-    test::check(global.layout().panels.size() == 2 && global.layout().cells.size() == 20,
+    test::check(global.layout().panels.size() == 2 && global.layout().cells.size() == 10,
                 "one block per monitor");
-    test::check(global.layout().cells[10].workspace == 11, "each block shows its own page");
+    test::check(global.layout().cells[5].workspace == 11, "each block shows its own page");
     global.key(key(KeyKind::Tab));
     test::check(!global.global_mode(), "tab switches back");
 }
@@ -158,17 +158,17 @@ void check_input() {
     test::check(model.key(key(KeyKind::Left)) && model.key(key(KeyKind::Left)) &&
                     compositor.calls.back() == "focus 5",
                 "left wraps within the page");
-    test::check(model.key(key(KeyKind::Down)) && compositor.calls.back() == "focus 10",
-                "down changes the row");
-    test::check(model.key(key(KeyKind::Right, "", 0, true)) && compositor.calls.back() == "swap 6",
+    test::check(model.key(key(KeyKind::Down)) && compositor.calls.back() == "focus 5",
+                "down stays on the only row");
+    test::check(model.key(key(KeyKind::Right, "", 0, true)) && compositor.calls.back() == "swap 1",
                 "shift moves the workspace contents");
     test::check(model.key(key(KeyKind::Right, "", 0, false, true)) &&
-                    compositor.calls.back() == "move-in 7",
+                    compositor.calls.back() == "move-in 2",
                 "alt moves the workspace into the monitor");
     test::check(model.key(key(KeyKind::Text, "3", '3')) && compositor.calls.back() == "focus 3",
                 "digits pick a workspace on the page");
-    test::check(model.key(key(KeyKind::Text, "0", '0')) && compositor.calls.back() == "focus 10",
-                "zero is the tenth");
+    test::check(model.key(key(KeyKind::Text, "0", '0')) && compositor.calls.back() == "focus 3",
+                "zero is past the five and does nothing");
     test::check(model.key(key(KeyKind::Text, "#", '3', true)) &&
                     compositor.calls.back() == "swap 3",
                 "shift digit uses the base symbol");
@@ -199,15 +199,15 @@ void check_input() {
     model.press(tile.x + 2, tile.y + 2);
     test::check(model.dragging() && model.clickable(tile.x + 2, tile.y + 2),
                 "pressing a tile starts a drag");
-    const astralia::overview::Cell &target = model.layout().cells[6];
+    const astralia::overview::Cell &target = model.layout().cells[4];
     model.move(target.rect.x + 3, target.rect.y + 3);
-    test::check(model.drag_target() == 7, "the cell under the pointer is the drop target");
+    test::check(model.drag_target() == 5, "the cell under the pointer is the drop target");
     model.sync(1366, 768);
     test::check(model.tile_rect(model.tiles().back()).x ==
                     static_cast<float>(target.rect.x + 3 - (2)),
                 "the dragged tile follows the pointer");
     model.release();
-    test::check(!model.dragging() && compositor.calls.back() == "move 0x1 7",
+    test::check(!model.dragging() && compositor.calls.back() == "move 0x1 5",
                 "dropping on another workspace moves the window");
 
     model.press(tile.x + 2, tile.y + 2);
@@ -298,9 +298,9 @@ void check_view() {
 
     test::RecordingCanvas canvas;
     astralia::overview::paint(canvas, model, {});
-    test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 1 + 2,
+    test::check(canvas.count(Kind::rounded) == scroll_ops + 5 + 1 + 2,
                 "the scroll, cells, one tile and the indicator with its shadow");
-    test::check(canvas.count(Kind::text) == 10 && canvas.count(Kind::image) <= 1,
+    test::check(canvas.count(Kind::text) == 5 && canvas.count(Kind::image) <= 1,
                 "a number per cell");
 
     test::RecordingCanvas live;
@@ -311,7 +311,7 @@ void check_view() {
                                   ++art_calls;
                                   return true;
                               });
-    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 2,
+    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 5 + 2,
                 "live art replaces the placeholder tile");
 }
 
@@ -352,7 +352,7 @@ void check_staged_view() {
     model.sync(1366, 768);
     test::RecordingCanvas open;
     astralia::overview::paint(open, model, {});
-    test::check(open.count(Kind::text) == 10 && open.count(Kind::begin_group) == 0,
+    test::check(open.count(Kind::text) == 5 && open.count(Kind::begin_group) == 0,
                 "the grid appears once the scroll is open");
 
     model.close();
@@ -362,7 +362,7 @@ void check_staged_view() {
     test::RecordingCanvas fading;
     astralia::overview::paint(fading, model, {});
     test::check(model.grid_alpha() > 0.0f && model.grid_alpha() < 1.0f && model.scroll() == 1.0f &&
-                    fading.count(Kind::text) == 10,
+                    fading.count(Kind::text) == 5,
                 "the grid fades while the scroll stays open");
 
     model.tick(steady_clock::now() + seconds(4));

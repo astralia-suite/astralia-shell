@@ -278,7 +278,7 @@
 
 - `settings_service.{h,cpp}`: The unified `Config`, its JSON load and save, per-output override accessors and hot reload.
 - `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output, and lists folders.
-- `theme_service.{h,cpp}`: Themes from the wallpaper or the first animated frame, off-thread after the first sync.
+- `theme_service.{h,cpp}`: Themes from the fixed Keqing default palette, or from the wallpaper or the first animated frame, off-thread after the first sync.
 - `battery_service.{h,cpp}`: UPower display-device status, device list and `on_battery`, read asynchronously.
 - `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds and `rfkill` control.
 - `network_service.{h,cpp}`: NetworkManager status, `nmcli` scans while watched, ethernet state and connectivity checks.
@@ -291,7 +291,7 @@
 - `icon_service.{h,cpp}`: Resolves icon-theme and window-class icon file paths.
 - `telemetry_service.{h,cpp}`: CPU and GPU temperature, usage, clock and system statistics from `sysfs` and `/proc`.
 - `compositor_service.{h,cpp}`: The `Compositor` interface, shared state types, work-area maths and `make_compositor`.
-- `hyprland_service.{h,cpp}`: Hyprland compositor over its request and event sockets, with Lua dispatch and workspace paging.
+- `hyprland_service.{h,cpp}`: Hyprland compositor over its request and event sockets, with Lua dispatch, workspace paging and palette-driven window border colours.
 - `i3_service.{h,cpp}`: i3 compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
 - `dock_service.{h,cpp}`: Per-output dock entries from the compositor client list, ordered left to right.
 - `user_service.{h,cpp}`: Display name, OS name, uptime text and the profile picture path.
@@ -326,22 +326,35 @@
 
 - `bamboo.{h,cpp}`: Managed bamboo window that blits the buffer on a timer.
 
-## `src/modules/bar/`
+## `src/modules/bar/model/`
 
-- `style.{h,cpp}`: `bar::StyleSpec` for the three styles, the `islands` fallback, island, fillet and autohide geometry.
-- `model.{h,cpp}`: Items, workspace pills, dock row, hover, pinning, linger, volume peek, layout and hit tests.
-- `view.{h,cpp}`: Paints items, workspaces, dock icons and dividers over the canvas.
+- `model.{h,cpp}`: `bar::Model` state: items, refresh, hover, pinning, linger, volume peek, press and hit tests.
+- `layout.cpp`: `Model::layout`, one zone-driven layout for every style; the style only supplies data (zones, dividers, workspace badge size, icon gap).
+- `motion.cpp`: Workspace pill growth and the animated dock row.
+- `items.{h,cpp}`: The one `Item` to `PanelId` mapping and back, shared by both backends.
+- `zones.{h,cpp}`: Left, centre and right slot lists a style points at (`classic_zones`, `pop_zones`).
+- `item.h`: The `Item` enum.
+
+## `src/modules/bar/paint/`
+
+- `style.{h,cpp}`: `bar::StyleSpec` for the four styles (`islands`, `okinami`, `continuous`, `pop`), the `islands` and `pop` fallback, island, fillet and autohide geometry.
 - `frame.{h,cpp}`: The bar background over the canvas for both backends: pill or rail and islands, then fillets.
+- `view.{h,cpp}`: Paints items, workspaces, dock icons and dividers over the canvas.
+- `chips.{h,cpp}`: Shared painters: pill with ring, icon and label chip, two-line chip, numbered badge, icon row.
 
-## `src/modules/bar/panel/`
+## `src/modules/bar/panel/core/`
 
 - `panel.{h,cpp}`: `Panel` scroll card with staged open, content scrolling, drag, dialogs and a refresh timer.
 - `panel_set.{h,cpp}`: Owns the panels, keeps one open at a time and routes changes to the host.
 - `widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm dialog the panels share.
+
+## `src/modules/bar/panel/content/`
+
 - `battery_panel.{h,cpp}`: Battery panel content.
 - `bluetooth_panel.{h,cpp}`: Bluetooth panel content.
 - `brightness_panel.{h,cpp}`: Brightness panel content.
-- `clock_panel.{h,cpp}`: Clock and calendar panel content.
+- `date_panel.{h,cpp}`: Date and calendar panel content.
+- `time_panel.{h,cpp}`: Time panel content: big time, seconds, AM/PM and timezone, repainted every second.
 - `media_panel.{h,cpp}`: Media player panel content.
 - `network_panel.{h,cpp}`: Network panel content with the password dialog.
 - `resource_panel.{h,cpp}`: CPU, GPU and memory panel content.
@@ -509,7 +522,7 @@
 
 ## `src/modules/settings/`
 
-- `model.{h,cpp}`: Tile menu, tabs by capability opened as pages with a back key, monitor selections, fields, pickers and actions.
+- `model.{h,cpp}`: Tile menu, tabs by capability (Color Palette always last) opened as pages with a back key, monitor selections, fields, pickers and actions.
 - `view.{h,cpp}`: Paints the scroll, the tile menu with live summaries, each tab page, fields, pickers and thumbnails.
 - `pane.h`: `Pane`, the faded drawing helpers every settings page paints through.
 - `wallpaper_columns.{h,cpp}`: Wallpaper column chips and the per-monitor column panel.

@@ -12,9 +12,10 @@
 
 #include "core/pointer.h"
 
-#include "modules/bar/frame.h"
-#include "modules/bar/panel/panel_set.h"
-#include "modules/bar/view.h"
+#include "modules/bar/model/items.h"
+#include "modules/bar/paint/frame.h"
+#include "modules/bar/paint/view.h"
+#include "modules/bar/panel/core/panel_set.h"
 #include "modules/bar/x11/bar.h"
 
 #include "render/app_fonts.h"
@@ -26,43 +27,7 @@ namespace {
 
 namespace layout_cfg = bar_layout;
 
-constexpr int bar_workspace_slots = 10;
-
-std::optional<PanelId> panel_for(Item item) {
-    switch (item) {
-    case Item::tray:
-        return PanelId::tray;
-    case Item::network:
-        return PanelId::network;
-    case Item::bluetooth:
-        return PanelId::bluetooth;
-    case Item::volume:
-        return PanelId::volume;
-    case Item::brightness:
-        return PanelId::brightness;
-    case Item::battery:
-        return PanelId::battery;
-    case Item::media:
-        return PanelId::media;
-    case Item::clock:
-        return PanelId::clock;
-    case Item::resource:
-        return PanelId::resource;
-    case Item::logout:
-    case Item::count:
-        break;
-    }
-    return std::nullopt;
-}
-
-std::optional<Item> item_for(PanelId panel) {
-    for (size_t i = 0; i < item_count; ++i) {
-        if (panel_for(static_cast<Item>(i)) == panel) {
-            return static_cast<Item>(i);
-        }
-    }
-    return std::nullopt;
-}
+constexpr int bar_workspace_slots = 5;
 
 Sources make_sources(Services &services, const std::string &output) {
     Sources sources;
@@ -70,6 +35,7 @@ Sources make_sources(Services &services, const std::string &output) {
     sources.battery = &services.battery;
     sources.bluetooth = &services.bluetooth;
     sources.network = &services.network;
+    sources.notifications = &services.notifications;
     sources.brightness = &services.brightness;
     sources.compositor = [&services]() -> const CompositorState & {
         return services.compositor->state();
@@ -93,7 +59,7 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
     register_app_fonts();
     refresh_style();
     refresh_autohide();
-    panels_ = std::make_unique<PanelHost>(x_, loop, services_);
+    panels_ = std::make_unique<PanelHost>(x_, loop, services_, output_name_);
     panels_->changed.connect([this] { sync_panels(); });
     apply_output(output.geometry);
     refresh_clock();
@@ -257,9 +223,8 @@ void Bar::refresh_clock() {
     std::tm local{};
     localtime_r(&now, &local);
     char buffer[64]{};
-    std::size_t length = std::strftime(buffer, sizeof buffer, bar_layout::clock_format, &local);
+    std::size_t length = std::strftime(buffer, sizeof buffer, "%I:%M %p %Y-%m-%d", &local);
     clock_label_.assign(buffer, length);
-    model_.set_clock_label(clock_label_);
 }
 
 void Bar::prepare() {
@@ -267,7 +232,6 @@ void Bar::prepare() {
     float width = static_cast<float>(width_) - 2.0f * static_cast<float>(spec_->side_margin);
     model_.refresh(now);
     model_.layout(canvas_, width);
-    clock_width_ = model_.item(Item::clock).box.w;
 }
 
 void Bar::draw(const ui::Box *dirty) {
@@ -322,28 +286,10 @@ void Bar::redraw_clock() {
     if (before == clock_label_) {
         return;
     }
-    if (model_.item(Item::clock).expand == 0.0f) {
+    if (model_.item(Item::time).expand == 0.0f && model_.item(Item::date).expand == 0.0f) {
         return;
     }
-    float previous = clock_width_;
-    canvas_.bind(window_.cr());
-    prepare();
-    if (model_.item(Item::clock).box.w != previous) {
-        draw();
-        return;
-    }
-    const ui::Box &box = model_.item(Item::clock).box;
-    float pad = bar_layout::capsule_gap / 2.0f;
-    ui::Box dirty{box.x - pad, 0.0f, box.w + 2.0f * pad, bar_layout::height};
-    draw(&dirty);
-}
-
-void Bar::toggle_panel(PanelId id) {
-    set_collapsed(false);
-    if (std::optional<Item> item = item_for(id)) {
-        close_other_overlays(*item);
-    }
-    panels_->panels().toggle(id);
+    draw();
 }
 
 void Bar::close_other_overlays(Item keep) {
@@ -378,8 +324,10 @@ void Bar::scroll(const xcb_button_press_event_t &event) {
         }
     } else if (hit.item == Item::brightness) {
         BrightnessService &brightness = services_.brightness;
-        if (brightness.available()) {
-            brightness.set(std::clamp(brightness.percent() + (wheel->dy < 0 ? 1 : -1), 0, 100));
+        if (brightness.available(output_name_)) {
+            brightness.set(output_name_,
+                           std::clamp(brightness.percent(output_name_) + (wheel->dy < 0 ? 1 : -1),
+                                      0, 100));
         }
     }
 }
@@ -400,7 +348,7 @@ void Bar::click(const xcb_button_press_event_t &event) {
     case ActionKind::toggle:
         close_other_overlays(action.item);
         if (std::optional<PanelId> panel = panel_for(action.item)) {
-            panels_->panels().toggle(*panel);
+            panels_->panels().toggle(*panel, model_.zone(action.item));
         } else if (action.item == Item::logout) {
             services_.overlay_hint = output_name_;
             shell_.run(ShellVerb::logout);

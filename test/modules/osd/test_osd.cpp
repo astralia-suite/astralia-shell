@@ -109,7 +109,7 @@ void check_osd_view() {
     constexpr float shadow = astralia::metrics::shadow_offset;
     test::check(canvas.count(Kind::rounded) == 4, "shadow, card, track and fill");
     const test::Op &card = canvas.ops[2];
-    test::check(card.box.w == 300 - shadow && card.box.h == 50 - shadow &&
+    test::check(card.box.w == 300 && card.box.h == 50 - shadow &&
                     card.radius == astralia::metrics::radius_card && card.border_width > 0,
                 "card geometry");
     const test::Op &track = canvas.ops[4];

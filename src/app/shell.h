@@ -37,15 +37,6 @@ enum class ShellVerb : int {
     bamboo,
     visualizer,
     lock,
-    panel_tray,
-    panel_resource,
-    panel_network,
-    panel_bluetooth,
-    panel_volume,
-    panel_battery,
-    panel_media,
-    panel_brightness,
-    panel_clock,
     count
 };
 

@@ -104,6 +104,14 @@ void theme_sync(WaylandState &app) {
     app.theme->sync(app.cfg, primary);
 }
 
+void sync_compositor_borders(WaylandState &app) {
+    if (!app.desktop || !app.cfg.sync_compositor_borders)
+        return;
+    app.desktop->apply_border_colors(
+        astralia::palette::accent,
+        astralia::lerp_color(astralia::palette::accent, astralia::palette::base, 0.6f));
+}
+
 void apply_config_update(WaylandState &app, Config new_cfg) {
     bool idle_changed = app.cfg.idle_enabled != new_cfg.idle_enabled ||
                         app.cfg.ambient_enabled != new_cfg.ambient_enabled ||

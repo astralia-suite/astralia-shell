@@ -6,10 +6,10 @@
 
 #include "core/animation.h"
 
-#include "modules/bar/frame.h"
-#include "modules/bar/model.h"
-#include "modules/bar/style.h"
-#include "modules/bar/view.h"
+#include "modules/bar/model/model.h"
+#include "modules/bar/paint/frame.h"
+#include "modules/bar/paint/style.h"
+#include "modules/bar/paint/view.h"
 
 #include "check.h"
 #include "render/recording_canvas.h"
@@ -64,6 +64,14 @@ void check_bar_style() {
     test::check(astralia::bar::style_spec(BarStyle::islands, true).has_pill_bg() &&
                     !astralia::bar::style_spec(BarStyle::continuous, true).has_pill_bg(),
                 "only islands has pill backgrounds");
+    test::check(style_resolve(BarStyle::pop, false) == BarStyle::continuous &&
+                    style_resolve(BarStyle::pop, true) == BarStyle::pop,
+                "pop falls back like islands");
+    test::check(style_spec(BarStyle::pop, true).has_pill_bg() &&
+                    !style_spec(BarStyle::pop, true).has_rail() &&
+                    !style_spec(BarStyle::pop, true).continuous &&
+                    style_spec(BarStyle::pop, true).shadow_dx == 0.0f,
+                "pop is a pill style with a straight shadow");
 
     using astralia::bar::autohide_geometry;
     auto shown = astralia::bar::autohide_geometry(false, false, 40, 10, 0);
@@ -71,10 +79,9 @@ void check_bar_style() {
                 "autohide off keeps the bar shown");
     for (BarStyle pill : {BarStyle::islands, BarStyle::continuous}) {
         const astralia::bar::StyleSpec &spec = astralia::bar::style_spec(pill, true);
-        test::check(spec.shadow == astralia::metrics::shadow_offset &&
-                        spec.shadow_dx == astralia::metrics::shadow_offset &&
+        test::check(spec.shadow == astralia::metrics::shadow_offset && spec.shadow_dx == 0.0f &&
                         spec.radius == astralia::metrics::radius_card,
-                    "the bar shadow and corners match every other component");
+                    "islands and continuous drop the same straight shadow and ring as pop");
     }
     test::check(astralia::bar::style_spec(BarStyle::okinami, true).island_radius ==
                         astralia::metrics::radius_card &&
@@ -165,7 +172,6 @@ void check_bar_layout() {
     astralia::bar::Model model(make_sources(state), now);
     test::RecordingCanvas canvas;
     model.set_style(astralia::bar::style_spec(BarStyle::continuous, false));
-    model.set_clock_label("Fri");
     model.refresh(now);
     model.layout(canvas, 1000.0f);
 
@@ -182,9 +188,12 @@ void check_bar_layout() {
                 "the tray is always shown, the network needs its service");
 
     const astralia::bar::ItemView &media = model.item(astralia::bar::Item::media);
-    const astralia::bar::ItemView &clock = model.item(astralia::bar::Item::clock);
+    const astralia::bar::ItemView &clock = model.item(astralia::bar::Item::time);
     test::check(media.box.x + media.box.w + 10.0f == clock.box.x, "center pills are one gap apart");
-    float center = (media.box.x + clock.box.x + clock.box.w) / 2.0f;
+    const astralia::bar::ItemView &classic_date = model.item(astralia::bar::Item::date);
+    test::check(clock.box.x + clock.box.w + 10.0f == classic_date.box.x,
+                "the date pill follows the time pill");
+    float center = (media.box.x + classic_date.box.x + classic_date.box.w) / 2.0f;
     test::check(center == 500.0f, "the center group is centered");
     test::check(model.item(astralia::bar::Item::tray).box.x +
                         model.item(astralia::bar::Item::tray).box.w ==
@@ -211,6 +220,47 @@ void check_bar_layout() {
     test::check(model.frame().islands.size() == 3, "the frame follows the layout");
     test::check(model.item(astralia::bar::Item::logout).box.x == 6.0f,
                 "okinami uses the island padding");
+
+    using astralia::bar::Item;
+    model.set_style(astralia::bar::style_spec(BarStyle::pop, true));
+    model.refresh(now);
+    model.layout(canvas, 1000.0f);
+    const astralia::bar::ItemView &window = model.item(Item::active_window);
+    const astralia::bar::ItemView &pop_media = model.item(Item::media);
+    const astralia::bar::ItemView &pop_clock = model.item(Item::time);
+    const astralia::bar::ItemView &date = model.item(Item::date);
+    test::check(window.visible && window.box.x == 0.0f &&
+                    pop_media.box.x == window.box.x + window.box.w + 10.0f &&
+                    model.item(Item::tray).box.x == pop_media.box.x + pop_media.box.w + 10.0f,
+                "pop left zone is active window, media, tray");
+    test::check(model.item(Item::logout).box.w == 0.0f && model.layout().dock.w == 0.0f,
+                "pop leaves out logout and the dock");
+    test::check(date.box.x == pop_clock.box.x + pop_clock.box.w + 10.0f &&
+                    std::abs((model.layout().workspaces.x + date.box.x + date.box.w) / 2.0f -
+                             500.0f) <= 1.0f,
+                "pop center zone is centered: workspaces, clock, date");
+    test::check(model.workspaces()[1].box.w == 42.0f && model.workspaces()[0].box.w == 36.0f &&
+                    model.workspaces()[1].box.x ==
+                        model.workspaces()[0].box.x + 36.0f + astralia::bar_layout::pop_badge_gap,
+                "pop workspaces are separate badges, the active one wider");
+    test::check(model.layout().dividers.empty() && !model.layout().left_end,
+                "pop has no dividers or islands");
+    test::check(pop_clock.box.w == pop_clock.icon_w + 2.0f * 13.0f &&
+                    date.box.w == date.icon_w + 26.0f,
+                "pop items retract to their icon until hovered, like every style");
+    using astralia::bar::PanelAnchor;
+    test::check(model.zone(Item::media) == PanelAnchor::left &&
+                    model.zone(Item::tray) == PanelAnchor::left &&
+                    model.zone(Item::time) == PanelAnchor::center &&
+                    model.zone(Item::date) == PanelAnchor::center,
+                "panels follow the zone their widget is in");
+    model.set_style(astralia::bar::style_spec(BarStyle::continuous, false));
+    model.refresh(now);
+    model.layout(canvas, 1000.0f);
+    test::check(model.zone(Item::media) == PanelAnchor::center &&
+                    model.zone(Item::time) == PanelAnchor::center &&
+                    model.zone(Item::tray) == PanelAnchor::right,
+                "the other styles keep media and clock centred, the rest right");
 }
 
 void check_bar_dock_slide() {
@@ -262,17 +312,17 @@ void check_bar_workspace_slots() {
     state.by_monitor["HDMI-1"].workspaces = {{5, "5", true}};
     auto now = astralia::bar::Model::Clock::now();
     astralia::bar::Sources sources = make_sources(state);
-    sources.workspace_slots = 10;
+    sources.workspace_slots = 5;
     astralia::bar::Model model(sources, now);
     model.refresh(now);
-    test::check(model.workspaces().size() == 10, "persistent slots always show ten pills");
+    test::check(model.workspaces().size() == 5, "persistent slots always show five pills");
     test::check(model.workspaces()[1].active && !model.workspaces()[4].active,
                 "the output's own workspace is active");
     test::check(model.workspaces()[0].occupied && model.workspaces()[4].occupied &&
                     !model.workspaces()[2].occupied,
                 "occupied covers every output");
     astralia::bar::Sources unknown = make_sources(state);
-    unknown.workspace_slots = 10;
+    unknown.workspace_slots = 5;
     unknown.output = "unknown";
     astralia::bar::Model fallback(unknown, now);
     fallback.refresh(now);
@@ -286,25 +336,24 @@ void check_bar_interaction() {
     astralia::bar::Model model(make_sources(state), now);
     test::RecordingCanvas canvas;
     model.set_style(astralia::bar::style_spec(BarStyle::continuous, false));
-    model.set_clock_label("Fri 2026-10-09");
     model.refresh(now);
     model.layout(canvas, 1000.0f);
 
-    const astralia::bar::ItemView &clock = model.item(astralia::bar::Item::clock);
+    const astralia::bar::ItemView &clock = model.item(astralia::bar::Item::time);
     float collapsed = clock.box.w;
     double cx = clock.box.x + 5;
     astralia::bar::Action action = model.press(cx, 20);
     test::check(action.kind == astralia::bar::ActionKind::toggle &&
-                    action.item == astralia::bar::Item::clock,
+                    action.item == astralia::bar::Item::time,
                 "clicking an item toggles it");
     model.hover(cx, 20.0, now);
     model.layout(canvas, 1000.0f);
-    test::check(model.item(astralia::bar::Item::clock).expand == 1.0f &&
-                    model.item(astralia::bar::Item::clock).box.w > collapsed,
+    test::check(model.item(astralia::bar::Item::time).expand == 1.0f &&
+                    model.item(astralia::bar::Item::time).box.w > collapsed,
                 "hover expands the label");
     model.hover(std::nullopt, std::nullopt, now);
     model.layout(canvas, 1000.0f);
-    test::check(model.item(astralia::bar::Item::clock).box.w == collapsed, "leaving collapses it");
+    test::check(model.item(astralia::bar::Item::time).box.w == collapsed, "leaving collapses it");
 
     model.set_open(astralia::bar::Item::tray, now);
     model.layout(canvas, 1000.0f);

@@ -23,7 +23,7 @@
 
 namespace astralia::settings {
 
-enum class Tab : uint8_t { ambient, bar, displays, general, lock, wallpaper };
+enum class Tab : uint8_t { ambient, bar, displays, general, lock, wallpaper, palette };
 
 struct TabInfo {
     Tab tab;
@@ -42,7 +42,8 @@ struct Caps {
     bool wallpaper_columns = false;
     bool default_wallpaper = false;
     bool autohide = false;
-    std::vector<BarStyle> bar_styles{BarStyle::islands, BarStyle::okinami, BarStyle::continuous};
+    std::vector<BarStyle> bar_styles{BarStyle::islands, BarStyle::okinami, BarStyle::continuous,
+                                     BarStyle::pop};
 };
 
 Caps settings_caps(const Capabilities &capabilities);
@@ -95,6 +96,7 @@ enum class Act : uint8_t {
     dropdown_toggle,
     dropdown_dismiss,
     capture_pick,
+    palette_source,
     field_focus,
 };
 

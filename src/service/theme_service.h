@@ -17,12 +17,14 @@ namespace astralia {
 struct ThemeSource {
     std::string path;
     int64_t modified = 0;
+    bool fixed = false;
 
     bool operator==(const ThemeSource &) const = default;
 };
 
 std::string theme_wallpaper_path(const Config &cfg, const std::string &monitor_name);
 ThemeSource theme_source(const Config &cfg, const std::string &monitor_name);
+Extraction default_palette_extraction();
 bool extraction_differs(const std::optional<Extraction> &a, const Extraction &b);
 
 class ThemeService {

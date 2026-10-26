@@ -92,9 +92,11 @@ void check_config_parse() {
               defaults.lock_wallpaper_columns.empty(),
           "the lock wallpaper defaults to Auto with the pictures directory");
 
+    cfg.palette_source = PaletteSource::region_capture;
     cfg.capture_monitor = "eDP-1";
     cfg.capture_column = 1;
     Config round = parse_config(serialize_config(cfg));
+    check(round.palette_source == PaletteSource::region_capture, "the palette source round-trips");
     check(round.capture_monitor == "eDP-1" && round.capture_column == 1,
           "region capture round-trips");
     check(round == cfg, "serialize then parse round-trips");
@@ -108,6 +110,8 @@ void check_config_parse() {
     check(text.find("\"particleThin\": 0.12") != std::string::npos,
           "floats are written in their shortest form");
 
+    check(parse_config(R"({"bar": {"style": "pop"}})").bar_style == BarStyle::pop,
+          "the pop style parses");
     check(parse_config(R"({"bar": {"style": "classic"}})").bar_style == BarStyle::islands,
           "an unknown style falls back");
     check(parse_config(R"({"launcher": {"lightning": "yes"}})").launcher_lightning,

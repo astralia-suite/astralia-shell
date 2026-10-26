@@ -34,6 +34,8 @@ struct MonitorOverride {
     bool operator==(const MonitorOverride &) const = default;
 };
 
+enum class PaletteSource : uint8_t { default_palette, region_capture };
+
 struct Config {
     std::string wallpaper_path;
     std::string wallpaper_dir;
@@ -54,6 +56,7 @@ struct Config {
     std::map<std::string, int> lock_wallpaper_column_counts;
     std::map<std::string, std::vector<std::string>> lock_wallpaper_fill_modes;
 
+    PaletteSource palette_source = PaletteSource::default_palette;
     std::string capture_monitor;
     int capture_column = 0;
 
@@ -70,6 +73,7 @@ struct Config {
     bool animations_disabled = false;
 
     std::string logout_logo_path;
+    bool sync_compositor_borders = true;
     std::string idle_logo_path;
 
     bool idle_enabled = true;

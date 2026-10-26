@@ -11,6 +11,8 @@
 #include "core/reactor.h"
 #include "core/signal.h"
 
+#include "render/tokens.h"
+
 namespace astralia {
 
 struct Workspace {
@@ -46,6 +48,7 @@ struct CompositorClient {
     std::string address;
     std::string window_class;
     std::string title;
+    std::string initial_title;
     int workspace_id = -1;
     int monitor_id = -1;
     std::array<double, 2> at{0.0, 0.0};
@@ -100,6 +103,7 @@ class Compositor {
     virtual void close_windows(CloseScope scope, int id = -1) = 0;
     virtual void move_workspace_in(int id, bool global = false) = 0;
     virtual void swap_workspace(int id, bool global = false) = 0;
+    virtual void apply_border_colors(Color, Color) {}
 
     Signal<> active_changed;
     Signal<> structure_changed;

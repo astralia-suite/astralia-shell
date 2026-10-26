@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "modules/bar/style.h"
+#include "modules/bar/paint/style.h"
 
 #include "render/oklab.h"
 #include "render/theme.h"

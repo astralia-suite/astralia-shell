@@ -75,10 +75,11 @@ MonitorOverride &enable_defaults(MonitorOverride &override, const Config &config
 
 const std::vector<TabInfo> &all_tabs() {
     static const std::vector<TabInfo> tabs{
+        {Tab::general, "General", icon::adjustments},
         {Tab::ambient, "Ambient", icon::wave_sine},
         {Tab::bar, "Bar", icon::layout_navbar},
+        {Tab::palette, "Color Palette", icon::palette_icon},
         {Tab::displays, "Displays", icon::device_desktop},
-        {Tab::general, "General", icon::adjustments},
         {Tab::lock, "Lock Screen", icon::lock},
         {Tab::wallpaper, "Wallpaper", icon::wallpaper},
     };
@@ -750,6 +751,12 @@ void Model::dispatch_wallpaper(const Region &region) {
             bool valid = region.a >= 0 && static_cast<std::size_t>(region.a) < monitors_.size();
             config.capture_monitor = valid ? monitors_[static_cast<std::size_t>(region.a)] : "";
             config.capture_column = valid ? region.b : 0;
+        });
+        return;
+    case Act::palette_source:
+        edit([&](Config &config) {
+            config.palette_source =
+                region.a == 1 ? PaletteSource::region_capture : PaletteSource::default_palette;
         });
         return;
     default:

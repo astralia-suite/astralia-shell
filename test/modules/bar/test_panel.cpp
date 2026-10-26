@@ -4,12 +4,12 @@
 #include "core/animation.h"
 #include "core/poll_reactor.h"
 
-#include "modules/bar/panel/battery_panel.h"
-#include "modules/bar/panel/clock_panel.h"
-#include "modules/bar/panel/network_panel.h"
-#include "modules/bar/panel/panel.h"
-#include "modules/bar/panel/panel_set.h"
-#include "modules/bar/panel/tray_panel.h"
+#include "modules/bar/panel/content/battery_panel.h"
+#include "modules/bar/panel/content/date_panel.h"
+#include "modules/bar/panel/content/network_panel.h"
+#include "modules/bar/panel/content/tray_panel.h"
+#include "modules/bar/panel/core/panel.h"
+#include "modules/bar/panel/core/panel_set.h"
 
 #include "check.h"
 #include "render/recording_canvas.h"
@@ -231,8 +231,8 @@ void check_panel_set_lookup() {
     test::check(set.find(astralia::bar::PanelId::count) == nullptr &&
                     set.find(set.active_id()) == nullptr,
                 "an empty set has no active panel to find");
-    set.add(astralia::bar::PanelId::clock, std::make_unique<FakeContent>());
-    test::check(set.find(astralia::bar::PanelId::clock) != nullptr &&
+    set.add(astralia::bar::PanelId::time, std::make_unique<FakeContent>());
+    test::check(set.find(astralia::bar::PanelId::time) != nullptr &&
                     set.find(astralia::bar::PanelId::tray) == nullptr,
                 "find returns only the panels that were added");
 }
@@ -348,28 +348,28 @@ void check_panel_resting_scroll() {
 
 void check_calendar() {
     using astralia::bar::CalendarDay;
-    std::array<astralia::bar::CalendarDay, 42> oct = astralia::bar::clock_panel_cells(2026, 9);
+    std::array<astralia::bar::CalendarDay, 42> oct = astralia::bar::date_panel_cells(2026, 9);
     test::check(oct[0].year == 2026 && oct[0].month == 8 && oct[0].day == 28 && !oct[0].in_month,
                 "October 2026 grid starts on Monday 28 September");
     test::check(oct[3].month == 9 && oct[3].day == 1 && oct[3].in_month,
                 "1 October 2026 is a Thursday");
     test::check(oct[41].month == 10 && oct[41].day == 8, "grid ends on 8 November");
-    std::array<astralia::bar::CalendarDay, 42> jun = astralia::bar::clock_panel_cells(2026, 5);
+    std::array<astralia::bar::CalendarDay, 42> jun = astralia::bar::date_panel_cells(2026, 5);
     test::check(jun[0].day == 1 && jun[0].in_month,
                 "a month starting on Monday has no leading days");
-    test::check(astralia::bar::clock_panel_same_day(oct[3], 2026, 9, 1), "same day matches");
-    test::check(!astralia::bar::clock_panel_same_day(oct[0], 2026, 9, 28),
+    test::check(astralia::bar::date_panel_same_day(oct[3], 2026, 9, 1), "same day matches");
+    test::check(!astralia::bar::date_panel_same_day(oct[0], 2026, 9, 28),
                 "same day needs the month");
-    astralia::bar::CalendarMonth back = astralia::bar::clock_panel_month_shifted(2026, 0, -1);
+    astralia::bar::CalendarMonth back = astralia::bar::date_panel_month_shifted(2026, 0, -1);
     test::check(back.year == 2025 && back.month == 11, "January minus one is last December");
-    astralia::bar::CalendarMonth ahead = astralia::bar::clock_panel_month_shifted(2026, 11, 13);
+    astralia::bar::CalendarMonth ahead = astralia::bar::date_panel_month_shifted(2026, 11, 13);
     test::check(ahead.year == 2028 && ahead.month == 0, "December plus 13 is January two years on");
-    test::check(astralia::bar::clock_panel_iso_week(2026, 0, 1) == 1, "1 January 2026 is week 1");
-    test::check(astralia::bar::clock_panel_iso_week(2027, 0, 1) == 53,
+    test::check(astralia::bar::date_panel_iso_week(2026, 0, 1) == 1, "1 January 2026 is week 1");
+    test::check(astralia::bar::date_panel_iso_week(2027, 0, 1) == 53,
                 "1 January 2027 is week 53 of 2026");
-    test::check(astralia::bar::clock_panel_iso_week(2024, 11, 30) == 1,
+    test::check(astralia::bar::date_panel_iso_week(2024, 11, 30) == 1,
                 "30 December 2024 is week 1 of 2025");
-    test::check(astralia::bar::clock_panel_iso_week(2026, 9, 4) == 40, "4 October 2026 is week 40");
+    test::check(astralia::bar::date_panel_iso_week(2026, 9, 4) == 40, "4 October 2026 is week 40");
 }
 
 void check_battery_text() {

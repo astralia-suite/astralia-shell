@@ -115,18 +115,19 @@ void check_tabs() {
         order.push_back(info.tab);
     }
     test::check(order == std::vector<astralia::settings::Tab>{astralia::settings::Tab::bar,
+                                                              astralia::settings::Tab::palette,
                                                               astralia::settings::Tab::displays,
                                                               astralia::settings::Tab::wallpaper},
-                "a minimal backend has three tabs");
+                "a minimal backend has four tabs");
 
     astralia::settings::Caps full;
     full.animation = full.idle = full.launcher = full.rain = full.visualizer = true;
     Env rich(full);
-    test::check(rich.model.tabs().size() == 5 &&
-                    rich.model.tabs().front().tab == astralia::settings::Tab::ambient,
+    test::check(rich.model.tabs().size() == 6 &&
+                    rich.model.tabs().front().tab == astralia::settings::Tab::general,
                 "capabilities add the extra tabs in order");
-    test::check(rich.model.tabs()[3].tab == astralia::settings::Tab::general,
-                "the general tab sits between displays and wallpaper");
+    test::check(rich.model.tabs()[1].tab == astralia::settings::Tab::ambient,
+                "the remaining tabs follow alphabetically after general");
 
     astralia::settings::Caps with_lock = full;
     with_lock.lock_wallpaper = true;
@@ -137,15 +138,16 @@ void check_tabs() {
     }
     test::check(locking_order ==
                     std::vector<astralia::settings::Tab>{
-                        astralia::settings::Tab::ambient, astralia::settings::Tab::bar,
-                        astralia::settings::Tab::displays, astralia::settings::Tab::general,
-                        astralia::settings::Tab::lock, astralia::settings::Tab::wallpaper},
-                "the lock screen tab sits between general and wallpaper");
+                        astralia::settings::Tab::general, astralia::settings::Tab::ambient,
+                        astralia::settings::Tab::bar, astralia::settings::Tab::palette,
+                        astralia::settings::Tab::displays, astralia::settings::Tab::lock,
+                        astralia::settings::Tab::wallpaper},
+                "the lock screen tab sits between displays and wallpaper");
     astralia::settings::Caps lock_only;
     lock_only.lock_wallpaper = true;
     Env lock_minimal(lock_only);
-    test::check(lock_minimal.model.tabs().size() == 4 &&
-                    lock_minimal.model.tabs()[2].tab == astralia::settings::Tab::lock,
+    test::check(lock_minimal.model.tabs().size() == 5 &&
+                    lock_minimal.model.tabs()[3].tab == astralia::settings::Tab::lock,
                 "a backend that can lock gains the tab on its own");
 
     minimal.model.open();
@@ -170,8 +172,7 @@ void check_tabs() {
     keeper.model.open();
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.in_menu(), "arrows do nothing on the menu");
-    keeper.click(astralia::settings::Act::tab,
-                 static_cast<int>(astralia::settings::Tab::wallpaper));
+    keeper.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::wallpaper));
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.active_tab() == astralia::settings::Tab::wallpaper,
                 "down stops at the last tab");
@@ -181,6 +182,35 @@ void check_tabs() {
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.active_tab() == astralia::settings::Tab::wallpaper,
                 "down moves to the next tab");
+    keeper.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::palette));
+    keeper.click(astralia::settings::Act::palette_source, 1);
+    test::check(keeper.config.palette_source == astralia::PaletteSource::region_capture,
+                "the palette source switches to region capture");
+    keeper.click(astralia::settings::Act::palette_source, 0);
+    test::check(keeper.config.palette_source == astralia::PaletteSource::default_palette,
+                "the palette source switches back to the default");
+    auto palette_texts = [&] {
+        test::RecordingCanvas canvas;
+        astralia::settings::Art art{"someone", "up 3 hours", {}};
+        keeper.model.begin_frame();
+        astralia::settings::paint(canvas, keeper.model, art, 1920, 1200);
+        std::vector<std::string> texts;
+        for (const test::Op &op : canvas.ops) {
+            if (op.kind == test::Op::Kind::text) {
+                texts.push_back(op.text);
+            }
+        }
+        return texts;
+    };
+    std::vector<std::string> shown = palette_texts();
+    test::check(std::ranges::find(shown, "Default") != shown.end() &&
+                    std::ranges::find(shown, "Region Capture") == shown.end(),
+                "the palette page paints and hides Region Capture on the default source");
+    keeper.click(astralia::settings::Act::palette_source, 1);
+    shown = palette_texts();
+    test::check(std::ranges::find(shown, "Region Capture") != shown.end(),
+                "Region Capture shows on the region source");
+    keeper.click(astralia::settings::Act::palette_source, 0);
 
     int closes = 0;
     keeper.model.on_close_requested = [&] { ++closes; };
@@ -591,6 +621,7 @@ void check_view() {
             env.model.click(tile_x, y);
             found_tab = env.model.active_tab() == astralia::settings::Tab::bar ||
                         env.model.active_tab() == astralia::settings::Tab::wallpaper ||
+                        env.model.active_tab() == astralia::settings::Tab::palette ||
                         env.model.active_tab() == astralia::settings::Tab::displays;
             break;
         }

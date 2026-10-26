@@ -111,8 +111,10 @@ void check_hyprland() {
     using test::check;
     {
         std::vector<CompositorClient> clients = hypr_parse_clients(
-            R"([{"address":"0x1","class":"kitty","title":"t","workspace":{"id":3,"name":"3"},"monitor":1,"at":[10,20],"size":[300,200],"floating":true,"fullscreen":2,"pinned":true,"focusHistoryID":4,"xwayland":true},{"address":"0x2"}])");
+            R"([{"address":"0x1","class":"kitty","title":"t","initialTitle":"Kitty","workspace":{"id":3,"name":"3"},"monitor":1,"at":[10,20],"size":[300,200],"floating":true,"fullscreen":2,"pinned":true,"focusHistoryID":4,"xwayland":true},{"address":"0x2"}])");
         check(clients.size() == 2, "two clients parse");
+        check(clients[0].initial_title == "Kitty" && clients[1].initial_title.empty(),
+              "client initial title");
         check(clients[0].address == "0x1" && clients[0].window_class == "kitty" &&
                   clients[0].workspace_id == 3 && clients[0].monitor_id == 1,
               "client identity");
@@ -207,6 +209,13 @@ void check_hyprland() {
     check(hypr_parse_rounding(R"({"option":"decoration:rounding","int":10,"set":true})") == 10 &&
               hypr_parse_rounding("x") == 0,
           "rounding parses");
+    check(hypr_lua_border(color("#00feee"), color("#757bcc")) ==
+              "hl.config({general={col={active_border=\"rgba(00feeeee)\","
+              "inactive_border=\"rgba(757bcccc)\"}}})",
+          "border colours become a Lua config table");
+    check(hypr_lua_border({2.0f, -1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f})
+                  .find("rgba(ff00ffee)") != std::string::npos,
+          "border channels are clamped");
 
     auto created = PollReactor::create();
     check(created.has_value(), "reactor");

@@ -13,7 +13,7 @@
 #include "wayland/render/gl_canvas.h"
 #include "wayland/render/renderer.h"
 
-#include "modules/bar/model.h"
+#include "modules/bar/model/model.h"
 #include "modules/bar/wayland/panel_surface.h"
 
 #include "core/animation.h"
@@ -49,7 +49,6 @@ struct PerMonitorState {
 
     std::unique_ptr<Model> model;
     std::unique_ptr<PanelSurface> panels;
-    std::string clock_label;
     int32_t applied_hug_radius_px = 0;
 };
 
@@ -64,7 +63,6 @@ class PerMonitor final : public PerMonitorModule {
     bool owns_surface(wl_surface *surface) const override;
     void request_frame() override;
     void apply_config(WaylandState &app, MonitorOutput &mon, const Config &new_cfg) override;
-    std::vector<astralia::ShellBinding> shell_bindings(WaylandState &app) override;
     void tick(WaylandState &app, MonitorOutput &mon) override;
     void timer_tick(WaylandState &app, MonitorOutput &mon) override;
     bool is_open() const override;

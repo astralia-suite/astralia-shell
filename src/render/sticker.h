@@ -11,7 +11,8 @@ void sticker(ui::Canvas &canvas, const ui::Box &box, float radius, const Color &
              const Color &outline = palette::ink, float border_width = metrics::border_thick,
              float shadow = metrics::shadow_offset,
              std::optional<Color> shadow_color = std::nullopt,
-             std::optional<float> shadow_dx = std::nullopt);
+             std::optional<float> shadow_dx = std::nullopt,
+             std::optional<float> ring = std::nullopt);
 
 void selectable(ui::Canvas &canvas, const ui::Box &box, float radius, bool selected,
                 bool hovered = false, const Color &idle = palette::surface, float alpha = 1.0f);

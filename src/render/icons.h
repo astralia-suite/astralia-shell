@@ -6,7 +6,10 @@ inline constexpr const char *brightness_down = "\ueb7d";
 inline constexpr const char *brightness_up = "\ueb7e";
 
 inline constexpr const char *adjustments = "\uea03";
+inline constexpr const char *app_window = "\uefe6";
 inline constexpr const char *bell = "\uea35";
+inline constexpr const char *bell_ringing = "\ued07";
+inline constexpr const char *calendar = "\uea53";
 inline constexpr const char *device_desktop = "\uea89";
 inline constexpr const char *edit = "\uea98";
 inline constexpr const char *home = "\ueac1";

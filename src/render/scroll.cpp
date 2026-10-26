@@ -11,7 +11,7 @@ constexpr float cap_flare = 2.0f;
 constexpr float highlight_mix = 0.35f;
 
 void paint_roller(ui::Canvas &canvas, const ui::Box &roller, const ScrollMetrics &metrics) {
-    float body_w = std::max(0.0f, roller.w - metrics::shadow_offset);
+    float body_w = roller.w;
     float body_h = std::max(0.0f, roller.h - metrics::shadow_offset);
     sticker(canvas, roller, metrics.roller_w * 0.35f, palette::accent);
     Color highlight = lerp_color(palette::accent, palette::white, highlight_mix);
@@ -101,7 +101,7 @@ void paint_scroll(ui::Canvas &canvas, const ScrollGeometry &geometry,
     if (std::min(p.w, p.h) >= metrics::border_thick * 2.0f) {
         sticker(canvas, p, metrics.rounding, palette::accent_container);
         ui::Box inner{p.x + metrics.band, p.y + metrics.band,
-                      p.w - metrics::shadow_offset - metrics.band * 2.0f,
+                      p.w - metrics.band * 2.0f,
                       p.h - metrics::shadow_offset - metrics.band * 2.0f};
         if (inner.w > 0.0f && inner.h > 0.0f) {
             canvas.rounded(inner, std::max(0.0f, metrics.rounding - 2.0f), palette::paper,
