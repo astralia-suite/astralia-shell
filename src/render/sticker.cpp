@@ -13,10 +13,16 @@ void sticker(ui::Canvas &canvas, const ui::Box &box, float radius, const Color &
     float h = std::max(0.0f, box.h - shadow);
     float r = std::min(radius, std::min(w, h) / 2.0f);
     if (shadow > 0.0f) {
-        canvas.rounded({box.x + dx, box.y + shadow, w, h}, r, shadow_color.value_or(outline));
+        canvas.rounded(
+            {box.x + dx, box.y + shadow, w, h}, r,
+            shadow_color.value_or(with_alpha(palette::shadow, palette::shadow.a * outline.a)));
     }
-    float band = ring.value_or(border_width >= metrics::border_thick ? metrics::ring_width : 0.0f);
-    Color rim = with_alpha(palette::paper, palette::paper.a * outline.a);
+    float band = ring.value_or(border_width >= metrics::border_thick ? metrics::ring_width
+                                                                     : metrics::ring_thin);
+    if (!ring && std::min(w, h) - 2.0f * (border_width + band) < metrics::ring_min_inner) {
+        band = 0.0f;
+    }
+    Color rim = with_alpha(palette::border_inner, palette::border_inner.a * outline.a);
     bool same = fill.r == rim.r && fill.g == rim.g && fill.b == rim.b && fill.a == rim.a;
     if (band <= 0.0f || same) {
         canvas.rounded({box.x, box.y, w, h}, r, fill, border_width, outline);
@@ -24,14 +30,14 @@ void sticker(ui::Canvas &canvas, const ui::Box &box, float radius, const Color &
     }
     canvas.rounded({box.x, box.y, w, h}, r, rim, border_width, outline);
     float in = border_width + band;
-    canvas.rounded({box.x + in, box.y + in, std::max(0.0f, w - 2.0f * in),
-                    std::max(0.0f, h - 2.0f * in)},
-                   std::max(0.0f, r - in), fill);
+    canvas.rounded(
+        {box.x + in, box.y + in, std::max(0.0f, w - 2.0f * in), std::max(0.0f, h - 2.0f * in)},
+        std::max(0.0f, r - in), fill);
 }
 
 void selectable(ui::Canvas &canvas, const ui::Box &box, float radius, bool selected, bool hovered,
                 const Color &idle, float alpha) {
-    Color ink = with_alpha(palette::ink, palette::ink.a * alpha);
+    Color ink = with_alpha(palette::border_outer, palette::border_outer.a * alpha);
     if (selected) {
         float s = metrics::shadow_widget;
         sticker(canvas,

@@ -43,6 +43,10 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 
 ## Shared: structure and refactoring
 
+- Read wall time from `system_clock`, not `std::time`. The latter is tick-coarse and lags the second boundary.
+- Schedule second timers on the wall-clock boundary. A free-running one-second timer drifts away from other clocks.
+- Skip a sticker ring when the box cannot hold it. A thin track is swallowed by border plus ring.
+- Keep border, ring and shadow colours distinct in dark schemes. Adjacent near-black layers merge into one blob.
 - Guard a service-signal slot with the owner's alive flag. `Signal` has no disconnect, so a destroyed owner would be called.
 - Delete a removed UI feature's click kinds, state and handlers in the same change. Leftovers otherwise read as live code.
 - Migrate every call site when a refactor changes a shared function's contract. Stragglers silently skip the new behaviour.

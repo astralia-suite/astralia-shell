@@ -16,6 +16,9 @@ struct ScrollMetrics {
     float rounding = metrics::radius_card;
     float band = 4.0f;
     ScrollAxis axis = ScrollAxis::horizontal;
+    float gap = 6.0f;
+
+    float reach() const { return roller_w + gap; }
 };
 
 struct ScrollGeometry {

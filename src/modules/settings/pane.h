@@ -43,12 +43,17 @@ struct Pane {
                  const Color &border = transparent) {
         canvas.rounded(box, radius, fade(fill), border_width, fade(border));
     }
+    void control(const ui::Box &box, float radius, const Color &fill) {
+        astralia::sticker(canvas, box, radius, fade(fill), fade(palette::border_outer),
+                          metrics::border_thin, 0.0f);
+    }
     void selectable(const ui::Box &box, bool selected, const Color &idle = palette::surface) {
         astralia::selectable(canvas, box, metrics::radius_widget, selected, false, idle, alpha);
     }
     void chip(const ui::Box &box, const Color &fill) {
-        astralia::sticker(canvas, box, metrics::radius_widget, fade(fill), fade(palette::ink),
-                          metrics::border_thin, metrics::shadow_widget);
+        astralia::sticker(canvas, box, metrics::radius_widget, fade(fill),
+                          fade(palette::border_outer), metrics::border_thin,
+                          metrics::shadow_widget);
     }
     ui::TextSize text(std::string_view value, const ui::TextStyle &style, float x, float y,
                       const Color &c) {

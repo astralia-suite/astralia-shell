@@ -19,6 +19,6 @@ struct WallpaperChip {
 std::vector<WallpaperChip> wallpaper_chips(const Model &model, WallpaperSlot slot);
 
 float wallpaper_columns_panel(settings::Pane &pane, WallpaperSlot slot, float x, float y, float w,
-                              float bottom);
+                              float bottom, const ui::Box *display = nullptr);
 
 } // namespace astralia::settings

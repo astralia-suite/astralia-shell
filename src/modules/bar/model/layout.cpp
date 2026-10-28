@@ -3,8 +3,6 @@
 
 #include "config/bar_layout.h"
 
-#include "render/icons.h"
-
 #include "modules/bar/model/model.h"
 #include "modules/bar/model/zones.h"
 #include "modules/bar/paint/chips.h"
@@ -79,7 +77,6 @@ void Model::layout(ui::Canvas &canvas, float width) {
         }
     }
 
-    float overview_w = canvas.measure(icon::overview, icon_style).w;
     float ws_row = 0.0f;
     for (size_t i = 0; i < workspaces_.size(); ++i) {
         ws_row +=
@@ -105,9 +102,7 @@ void Model::layout(ui::Canvas &canvas, float width) {
             if (workspaces_.empty()) {
                 return 0.0f;
             }
-            return style.workspace_badges
-                       ? ws_row + cfg::capsule_gap + overview_w + 2.0f * pad
-                       : ws_row + 2.0f * pad + cfg::workspace_overview_gap + overview_w;
+            return style.workspace_badges ? ws_row : ws_row + 2.0f * pad;
         case SlotKind::status: {
             std::vector<Item> list = members();
             float w = 0.0f;
@@ -139,11 +134,6 @@ void Model::layout(ui::Canvas &canvas, float width) {
                 ws.box = {wx, wy, bw, badges ? height : style.workspace_size};
                 wx += bw + style.workspace_gap;
             }
-            float end = wx - style.workspace_gap;
-            layout_.overview =
-                badges ? ui::Box{end + cfg::capsule_gap, 0.0f, overview_w + 2.0f * pad, height}
-                       : ui::Box{end + cfg::workspace_overview_gap / 2.0f, 0.0f,
-                                 overview_w + cfg::workspace_overview_gap, height};
             break;
         }
         case SlotKind::status: {

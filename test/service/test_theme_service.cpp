@@ -63,6 +63,11 @@ void check_theme_service() {
     std::filesystem::remove(file);
     check(theme_source(cfg, "").modified == 0, "a missing file records no mtime");
     check(!theme_source(cfg, "").fixed, "region capture follows the wallpaper");
+    ThemeSource light = theme_source(cfg, "");
+    cfg.color_scheme = ColorScheme::dark;
+    check(!(light == theme_source(cfg, "")), "the scheme changes the source");
+    check(theme_source(cfg, "").scheme == Scheme::dark, "the dark setting gives a dark source");
+    cfg.color_scheme = ColorScheme::light;
     Extraction keqing = default_palette_extraction();
     check(keqing.found && keqing.seeds.size() == 4 && keqing.seeds[0].hue > 300.0f &&
               keqing.seeds[0].hue < 315.0f,

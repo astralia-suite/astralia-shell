@@ -16,8 +16,8 @@ void slider(ui::Canvas &canvas, const ui::Box &box, float value, bool dimmed, bo
     float track_y = box.y + (box.h - track) / 2.0f;
     float radius = track / 2.0f;
     float border = metrics::border_thin;
-    canvas.rounded({box.x, track_y, box.w, track}, radius, palette::surface_alt, border,
-                   palette::ink);
+    sticker(canvas, {box.x, track_y, box.w, track}, radius, palette::surface_alt,
+            palette::border_outer, border, 0.0f);
     float fill = box.w * std::clamp(value, 0.0f, 1.0f);
     if (fill > border) {
         canvas.rounded({box.x + border, track_y + border, fill - border, track - 2.0f * border},
@@ -41,7 +41,7 @@ void flat_bar(ui::Canvas &canvas, const ui::Box &box, float fraction, float min_
               const Color &track, const Color &fill) {
     float radius = box.h / 2.0f;
     float border = box.h >= 8.0f ? metrics::border_thin : 0.0f;
-    canvas.rounded(box, radius, track, border, palette::ink);
+    sticker(canvas, box, radius, track, palette::border_outer, border, 0.0f);
     float width = std::max(min_fill, box.w * std::clamp(fraction, 0.0f, 1.0f));
     canvas.rounded({box.x + border, box.y + border, std::max(0.0f, std::min(width, box.w) - border),
                     box.h - 2.0f * border},
@@ -88,7 +88,7 @@ void device_row(ui::Canvas &canvas, const ui::Box &box, const DeviceRow &row, Pa
     constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
     Color face = lerp_color(palette::paper, row.background, row.background.a);
     face.a = 1.0f;
-    sticker(canvas, box, metrics::radius_widget, face, palette::ink, metrics::border_thin,
+    sticker(canvas, box, metrics::radius_widget, face, palette::border_outer, metrics::border_thin,
             metrics::shadow_widget);
     ui::TextSize glyph = canvas.measure(row.glyph, icon_style);
     canvas.text(row.glyph, icon_style, box.x + cfg::row_icon_gap, box.y + (box.h - glyph.h) / 2.0f,

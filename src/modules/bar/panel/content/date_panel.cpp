@@ -3,7 +3,10 @@
 #include <ctime>
 #include <string>
 
+#include "core/wall_clock.h"
+
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/bar/panel/content/date_panel.h"
 #include "modules/bar/panel/core/widgets.h"
@@ -20,14 +23,12 @@ constexpr std::array<const char *, 12> month_names = {"Jan", "Feb", "Mar", "Apr"
                                                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 constexpr std::array<const char *, 7> weekday_names = {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"};
 
-constexpr float left_width =
-    (cfg::date_width - 2.0f * cfg::padding - cfg::date_column_gap) / 2.0f;
+constexpr float left_width = (cfg::date_width - 2.0f * cfg::padding - cfg::date_column_gap) / 2.0f;
 constexpr float cell_size =
     (cfg::date_width - 2.0f * cfg::padding - left_width - cfg::date_column_gap) / 7.0f;
 constexpr float left_height = cfg::date_weekday_line + cfg::date_line_gap + cfg::date_line +
                               cfg::date_line_gap + cfg::date_line + cfg::date_big_day_gap +
-                              cfg::date_big_day_row + cfg::date_big_day_gap +
-                              cfg::date_week_line;
+                              cfg::date_big_day_row + cfg::date_big_day_gap + cfg::date_week_line;
 constexpr float grid_height = cfg::date_grid_header + cfg::date_grid_header_gap +
                               cfg::date_weekday_row + cfg::date_grid_top_gap + 6.0f * cell_size;
 constexpr float total_height = left_height > grid_height ? left_height : grid_height;
@@ -47,7 +48,8 @@ void nav_button(ui::Canvas &canvas, PanelPaint &paint, float x, float y, const c
                 int action) {
     float size = cfg::date_nav_button;
     ui::Box box{x, y, size, size};
-    canvas.rounded(box, size / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
+    sticker(canvas, box, size / 2.0f, palette::accent_container, palette::border_outer,
+            metrics::border_thin, 0.0f);
     if (glyph == nullptr) {
         float dot = cfg::date_today_dot;
         canvas.rounded({x + (size - dot) / 2.0f, y + (size - dot) / 2.0f, dot, dot}, dot / 2.0f,
@@ -99,9 +101,7 @@ int date_panel_iso_week(int year, int month, int day) {
 float DatePanel::content_height(ui::Canvas &) { return total_height; }
 
 void DatePanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPaint &paint) {
-    std::time_t now = std::time(nullptr);
-    std::tm local{};
-    localtime_r(&now, &local);
+    std::tm local = wall_local_time();
     int year = local.tm_year + 1900;
     int month = local.tm_mon;
     int day = local.tm_mday;
@@ -146,10 +146,10 @@ void DatePanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPaint
 
     float row_y = view.y + cfg::date_grid_header + cfg::date_grid_header_gap;
     for (size_t col = 0; col < weekday_names.size(); ++col) {
-        widgets::centered_text(canvas, weekday_names[col], text_style,
-                               {grid_x + static_cast<float>(col) * cell_size, row_y, cell_size,
-                                cfg::date_weekday_row},
-                               palette::text);
+        widgets::centered_text(
+            canvas, weekday_names[col], text_style,
+            {grid_x + static_cast<float>(col) * cell_size, row_y, cell_size, cfg::date_weekday_row},
+            palette::text);
     }
     float grid_y = row_y + cfg::date_weekday_row + cfg::date_grid_top_gap;
     std::array<CalendarDay, 42> cells = date_panel_cells(shown.year, shown.month);

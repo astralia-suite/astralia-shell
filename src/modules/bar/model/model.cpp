@@ -3,6 +3,8 @@
 
 #include "config/bar_layout.h"
 
+#include "core/wall_clock.h"
+
 #include "render/glyphs.h"
 #include "render/icons.h"
 
@@ -50,11 +52,6 @@ std::string bluetooth_label(const BluetoothStatus &status) {
     return status.connected && !status.device.empty() ? status.device : "Idle";
 }
 
-std::chrono::milliseconds ms_until_next_second(std::chrono::system_clock::time_point now) {
-    auto next = std::chrono::floor<std::chrono::seconds>(now) + std::chrono::seconds(1);
-    return std::chrono::ceil<std::chrono::milliseconds>(next - now);
-}
-
 const char *battery_glyph(const BatteryStatus &status) {
     if (status.full) {
         return icon::plugged_in;
@@ -83,8 +80,10 @@ Model::Model(Sources sources, Clock::time_point now)
       started_(now) {}
 
 void Model::refresh(Clock::time_point now) {
-    auto set = [&](Item id, const char *glyph, std::string label, bool visible) {
+    auto set = [&](Item id, const char *glyph, std::string label, bool visible,
+                   bool retracts = true) {
         ItemView &view = mut(id);
+        view.retracts = retracts;
         view.glyph = visible ? glyph : nullptr;
         view.label = visible ? std::move(label) : std::string();
         view.detail.clear();
@@ -96,14 +95,12 @@ void Model::refresh(Clock::time_point now) {
     set(Item::tray, icon::tray, "Tray", true);
     set(Item::resource, icon::cpu, "Resource", sources_.resource);
     set(Item::media, icon::music_note, "Media", true);
-    std::time_t wall = std::time(nullptr);
-    std::tm local{};
-    localtime_r(&wall, &local);
+    std::tm local = wall_local_time();
     auto format = [&](const char *pattern) {
         char buf[32];
         return std::string(buf, std::strftime(buf, sizeof(buf), pattern, &local));
     };
-    set(Item::time, icon::clock, format("%I:%M:%S"), true);
+    set(Item::time, icon::clock, format("%H:%M:%S"), true, false);
     set(Item::date, icon::calendar, format("%a %Y-%m-%d"), true);
     set(Item::notifications, icon::bell, "Notifications", sources_.notifications != nullptr);
     if (sources_.notifications != nullptr && !sources_.notifications->list().empty()) {
@@ -253,7 +250,7 @@ bool Model::apply_hover(Clock::time_point now) {
     for (size_t i = 0; i < item_count; ++i) {
         Item id = static_cast<Item>(i);
         const ItemView &view = items_[i];
-        bool want = view.visible && target == id && !view.label.empty();
+        bool want = view.visible && (target == id || !view.retracts) && !view.label.empty();
         changed |= update_expand(id, want, want && open_ == id);
     }
     return changed;
@@ -321,15 +318,15 @@ Action Model::press(double x, double y) const {
     for (size_t i = 0; i < item_count; ++i) {
         const ItemView &view = items_[i];
         Item id = static_cast<Item>(i);
-        if (id == Item::active_window || id == Item::notifications) {
+        if (id == Item::notifications) {
             continue;
         }
         if (view.visible && inside(view.box, x, y)) {
+            if (id == Item::active_window) {
+                return {ActionKind::overview};
+            }
             return {ActionKind::toggle, id, 0};
         }
-    }
-    if (inside(layout_.overview, x, y)) {
-        return {ActionKind::overview};
     }
     for (const BarWorkspace &ws : workspaces_) {
         float gap = style_->workspace_gap;

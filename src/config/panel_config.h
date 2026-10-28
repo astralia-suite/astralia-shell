@@ -94,7 +94,6 @@ inline constexpr float time_zone_line = 18.0f;
 inline constexpr float time_gap = 6.0f;
 inline constexpr int time_big_px = 64;
 inline constexpr int time_seconds_px = 22;
-inline constexpr int time_poll_ms = 1000;
 
 // Date
 inline constexpr float date_width = 504.0f;

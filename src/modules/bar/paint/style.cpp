@@ -7,19 +7,6 @@ namespace astralia::bar {
 namespace {
 
 constexpr int autohide_strip_px = 1;
-StyleSpec islands{.border_width = metrics::border_thick,
-                  .radius = metrics::radius_card,
-                  .pad_ratio = 0.5f,
-                  .top_margin = bar_layout::top_margin,
-                  .side_margin = bar_layout::side_margin,
-                  .rail_height = 0.0f,
-                  .island_radius = 0.0f,
-                  .fillet_radius = 0.0f,
-                  .shadow = metrics::shadow_offset,
-                  .shadow_dx = 0.0f,
-                  .zones = &classic_zones(),
-                  .text_lift = metrics::shadow_offset / 2.0f,
-                  .uniform_fill = true};
 StyleSpec okinami{.border_width = metrics::border_thick,
                   .radius = 0.0f,
                   .pad_ratio = 0.25f,
@@ -28,9 +15,10 @@ StyleSpec okinami{.border_width = metrics::border_thick,
                   .rail_height = 6.0f,
                   .island_radius = metrics::radius_card,
                   .fillet_radius = metrics::radius_card,
-                  .zones = &classic_zones()};
+                  .zones = &bar_zones(),
+                  .icon_gap = bar_layout::pop_icon_gap};
 StyleSpec continuous{.border_width = metrics::border_thick,
-                     .radius = metrics::radius_card,
+                     .radius = bar_layout::pop_radius,
                      .pad_ratio = 0.25f,
                      .top_margin = bar_layout::top_margin,
                      .side_margin = bar_layout::side_margin,
@@ -40,9 +28,10 @@ StyleSpec continuous{.border_width = metrics::border_thick,
                      .shadow = metrics::shadow_offset,
                      .continuous = true,
                      .shadow_dx = 0.0f,
-                     .zones = &classic_zones(),
-                        .text_lift = metrics::shadow_offset / 2.0f,
-                     .uniform_fill = true};
+                     .zones = &bar_zones(),
+                     .text_lift = metrics::shadow_offset / 2.0f,
+                     .uniform_fill = true,
+                     .icon_gap = bar_layout::pop_icon_gap};
 StyleSpec pop{.border_width = metrics::border_thick,
               .radius = bar_layout::pop_radius,
               .pad_ratio = 0.325f,
@@ -53,7 +42,7 @@ StyleSpec pop{.border_width = metrics::border_thick,
               .fillet_radius = 0.0f,
               .shadow = metrics::shadow_offset,
               .shadow_dx = 0.0f,
-              .zones = &pop_zones(),
+              .zones = &bar_zones(),
               .text_lift = metrics::shadow_offset / 2.0f,
               .uniform_fill = true,
               .workspace_badges = true,
@@ -64,7 +53,7 @@ StyleSpec pop{.border_width = metrics::border_thick,
 
 const StyleSpec &live(StyleSpec &spec) {
     spec.bg = palette::accent_container;
-    spec.border = palette::ink;
+    spec.border = palette::border_outer;
     spec.shadow_color = palette::shadow;
     return spec;
 }
@@ -73,14 +62,12 @@ StyleSpec &raw(BarStyle style) {
     switch (style) {
     case BarStyle::okinami:
         return okinami;
-    case BarStyle::continuous:
-        return continuous;
     case BarStyle::pop:
         return pop;
-    case BarStyle::islands:
+    case BarStyle::continuous:
         break;
     }
-    return islands;
+    return continuous;
 }
 
 } // namespace

@@ -56,7 +56,7 @@ std::vector<WallpaperChip> wallpaper_chips(const Model &model, WallpaperSlot slo
 }
 
 float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, float w,
-                              float bottom) {
+                              float bottom, const ui::Box *display) {
     Model &model = pane.model;
     const Caps &caps = model.caps();
     const Config &config = model.config();
@@ -78,16 +78,18 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
             region_entries.push_back({chip.label, chip.monitor, chip.column | (slot_flag << 8)});
         }
         std::string current = active < region_entries.size() ? region_entries[active].label : "";
-        pane.dropdown({x, y, w, cfg::tile_height}, 4, "Display", current, std::move(region_entries),
-                      active, Act::wallpaper_region);
+        ui::Box row = display ? *display : ui::Box{x, y, w, cfg::tile_height};
+        pane.dropdown(row, 4, "Display", current, std::move(region_entries), active,
+                      Act::wallpaper_region);
     }
-    y += cfg::tile_height + cfg::row_gap;
+    if (!display) {
+        y += cfg::tile_height + cfg::row_gap;
+    }
 
     Field dir_field = dir_field_for(slot);
     bool focused = model.focused() == dir_field;
     ui::Box bar{x, y, w, cfg::dir_bar_height};
-    pane.rounded(bar, metrics::radius_widget, focused ? palette::pop_b : palette::field_bg,
-                 metrics::border_thin, palette::ink);
+    pane.control(bar, metrics::radius_widget, focused ? palette::pop_b : palette::field_bg);
     float input_x = x + cfg::dir_bar_label_margin;
     input_x +=
         pane.text("Dir", text_style, input_x,
@@ -190,7 +192,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
         return y + size.h;
     }
     pane.rounded({x, y, w, picker.grid_height}, metrics::radius_widget, transparent,
-                 metrics::border_thin, palette::ink);
+                 metrics::border_thin, palette::border_outer);
     float visible_h = std::min(picker.grid_height - cfg::grid_inset * 2.0f, content_h);
     float row_w = static_cast<float>(columns) * cell - cfg::thumb_gap;
     float grid_x = x + cfg::grid_inset + (inset_w - row_w) / 2.0f;
@@ -242,7 +244,7 @@ float wallpaper_columns_panel(Pane &pane, WallpaperSlot slot, float x, float y, 
                       tile.y + cfg::thumb_size - (label_h + name_size.h) / 2.0f, palette::text);
             pane.rounded(tile, metrics::radius_widget, transparent,
                          active ? metrics::border_thick : 0.0f,
-                         active ? palette::ink : transparent);
+                         active ? palette::border_outer : transparent);
             ui::Box hit{grid_x + tile.x, grid_y + tile.y, tile.w, tile.h};
             float top = std::max(hit.y, grid_y);
             float bottom_edge = std::min(hit.y + hit.h, grid_y + visible_h);

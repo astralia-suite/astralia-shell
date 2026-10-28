@@ -64,7 +64,7 @@ class FakeModule : public ui::ModuleBase {
     using ModuleBase::host;
 
     bool open = false;
-    BarStyle seen_bar = BarStyle::islands;
+    BarStyle seen_bar = BarStyle::pop;
     input::KeyKind last_key = input::KeyKind::Text;
     double scrolled = 0;
 };

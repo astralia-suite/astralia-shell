@@ -52,8 +52,8 @@ float memory_content(ui::Canvas &canvas, const SystemStatsState &stats) {
 }
 
 ui::Box card(ui::Canvas &canvas, const ui::Box &box, const char *title) {
-    sticker(canvas, box, metrics::radius_card, palette::surface, palette::ink, metrics::border_thin,
-            metrics::shadow_widget);
+    sticker(canvas, box, metrics::radius_card, palette::surface, palette::border_outer,
+            metrics::border_thin, metrics::shadow_widget);
     ui::TextSize size = canvas.measure(title, title_style);
     canvas.text(title, title_style, box.x + cfg::card_side,
                 box.y + cfg::card_top + (cfg::card_header - size.h) / 2.0f, palette::text);

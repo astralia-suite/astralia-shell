@@ -45,7 +45,7 @@ void draw_card(ui::Canvas &canvas, const ui::Box &box, float zoom, ui::ImageId i
                float reveal) {
     float radius = metrics::radius_card * zoom;
     float border = metrics::border_thick * zoom;
-    sticker(canvas, box, radius, palette::paper, palette::ink, border,
+    sticker(canvas, box, radius, palette::paper, palette::border_outer, border,
             metrics::shadow_offset * zoom);
     ui::Box inner{box.x + border, box.y + border, std::max(0.0f, box.w - border * 2.0f),
                   std::max(0.0f, box.h - border * 2.0f)};

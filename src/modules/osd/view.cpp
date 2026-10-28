@@ -38,8 +38,8 @@ void paint(ui::Canvas &canvas, const Model &model) {
     float track_y = (height - cfg::track_height) / 2.0f;
     float radius = cfg::track_height / 2.0f;
     float border = metrics::border_thin;
-    canvas.rounded({track_x, track_y, track_w, cfg::track_height}, radius, palette::surface_alt,
-                   border, palette::ink);
+    sticker(canvas, {track_x, track_y, track_w, cfg::track_height}, radius, palette::surface_alt,
+            palette::border_outer, border, 0.0f);
     float fill_w = track_w * std::clamp(model.bar_fill(), 0.0f, 1.0f);
     if (fill_w > border) {
         canvas.rounded({track_x + border, track_y + border, fill_w - border,

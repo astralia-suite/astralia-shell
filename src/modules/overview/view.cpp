@@ -7,6 +7,7 @@
 #include "modules/overview/view.h"
 
 #include "render/scroll.h"
+#include "render/sticker.h"
 #include "render/tokens.h"
 
 namespace astralia::overview {
@@ -20,9 +21,9 @@ constexpr ui::TextStyle number_style{ui::FontFamily::text, cfg::number_px};
 
 void paint_cell(ui::Canvas &canvas, const Model &model, const Cell &cell, float scale) {
     bool hovered = model.dragging() && model.drag_target() == cell.workspace;
-    canvas.rounded(cell.rect, metrics::radius_card * scale,
-                   hovered ? palette::pop_a : palette::surface, cfg::workspace_border_width,
-                   palette::ink);
+    sticker(canvas, cell.rect, metrics::radius_card * scale,
+            hovered ? palette::pop_a : palette::surface, palette::border_outer,
+            cfg::workspace_border_width, 0.0f);
     std::string label = std::to_string(cell.workspace);
     ui::TextSize size = canvas.measure(label, number_style);
     if (size.w <= cell.rect.w && size.h <= cell.rect.h) {
@@ -38,7 +39,8 @@ void paint_tile(ui::Canvas &canvas, Model &model, const Tile &tile, const TileAr
     float radius = metrics::radius_widget * scale;
     bool live = art && art(canvas, tile, rect, radius);
     if (!live) {
-        canvas.rounded(rect, radius, palette::surface_alt, cfg::window_border_width, palette::ink);
+        sticker(canvas, rect, radius, palette::surface_alt, palette::border_outer,
+                cfg::window_border_width, 0.0f);
     }
     const std::string &path = model.icon_path(tile.window_class);
     if (path.empty()) {
@@ -84,8 +86,8 @@ void paint(ui::Canvas &canvas, Model &model, const TileArt &art) {
     if (const ui::Box *indicator = model.indicator()) {
         float offset = metrics::shadow_widget * scale;
         ui::Box shadow{indicator->x, indicator->y + offset, indicator->w, indicator->h};
-        canvas.rounded(shadow, metrics::radius_card * scale, transparent,
-                       cfg::indicator_border_width, palette::ink);
+        sticker(canvas, shadow, metrics::radius_card * scale, transparent, palette::border_outer,
+                cfg::indicator_border_width, 0.0f);
         canvas.rounded(*indicator, metrics::radius_card * scale, transparent,
                        cfg::indicator_border_width, palette::accent);
     }

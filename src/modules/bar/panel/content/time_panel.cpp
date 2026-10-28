@@ -1,5 +1,7 @@
 #include <ctime>
 
+#include "core/wall_clock.h"
+
 #include "modules/bar/panel/content/time_panel.h"
 #include "modules/bar/panel/core/widgets.h"
 
@@ -37,17 +39,14 @@ std::string utc_offset(const std::tm &local) {
 float TimePanel::content_height(ui::Canvas &) { return total_height; }
 
 void TimePanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPaint &) {
-    std::time_t now = std::time(nullptr);
-    std::tm local{};
-    localtime_r(&now, &local);
+    std::tm local = wall_local_time();
     float y = view.y;
     auto line = [&](const std::string &text, const ui::TextStyle &style, float height,
                     const Color &color) {
         widgets::centered_text(canvas, text, style, {view.x, y, view.w, height}, color);
         y += height + cfg::time_gap;
     };
-    line(stamp("%I:%M", local), big_style, cfg::time_big_row, palette::text);
-    line(stamp("%S", local), seconds_style, cfg::time_line, palette::text);
+    line(stamp("%H:%M:%S", local), seconds_style, cfg::time_big_row, palette::text);
     line(utc_offset(local), text_style, cfg::time_zone_line, palette::text_muted);
 }
 

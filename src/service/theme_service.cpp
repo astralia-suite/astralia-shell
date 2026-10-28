@@ -11,6 +11,7 @@
 #include "render/decode.h"
 #include "render/theme.h"
 
+#include "service/palette_export.h"
 #include "service/theme_service.h"
 #include "service/wallpaper_service.h"
 
@@ -112,6 +113,7 @@ Extraction default_palette_extraction() {
 
 ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
     ThemeSource source;
+    source.scheme = cfg.color_scheme == ColorScheme::dark ? Scheme::dark : Scheme::light;
     if (cfg.palette_source == PaletteSource::default_palette) {
         source.fixed = true;
         return source;
@@ -154,34 +156,38 @@ void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
     source_ = source;
     uint64_t gen = ++generation_;
     if (source.fixed) {
-        apply(default_palette_extraction());
+        apply(default_palette_extraction(), source.scheme);
         return;
     }
     if (first) {
         if (std::optional<Extraction> extraction = resolve_theme(source.path, decode_video_frame)) {
-            apply(*extraction);
+            apply(*extraction, source.scheme);
         }
         return;
     }
     std::weak_ptr<int> life = life_;
-    std::thread([this, path = source.path, decoder = decode_video_frame, gen, life] {
+    std::thread([this, path = source.path, scheme = source.scheme, decoder = decode_video_frame,
+                 gen, life] {
         std::optional<Extraction> extraction = resolve_theme(path, decoder);
-        DeferredCall::call_later([this, extraction, gen, life] {
+        DeferredCall::call_later([this, extraction, scheme, gen, life] {
             auto keep = life.lock();
             if (!keep || gen != generation_ || !extraction) {
                 return;
             }
-            apply(*extraction);
+            apply(*extraction, scheme);
         });
     }).detach();
 }
 
-void ThemeService::apply(const Extraction &extraction) {
-    if (!extraction_differs(applied_, extraction)) {
+void ThemeService::apply(const Extraction &extraction, Scheme scheme) {
+    if (!extraction_differs(applied_, extraction) && applied_scheme_ == scheme) {
         return;
     }
     applied_ = extraction;
-    theme_apply(theme_from_seed(extraction));
+    applied_scheme_ = scheme;
+    Theme theme = theme_from_seed(extraction, scheme);
+    theme_apply(theme);
+    export_palette(theme);
     changed.emit();
 }
 

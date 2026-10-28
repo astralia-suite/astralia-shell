@@ -47,6 +47,7 @@ struct ItemView {
     std::optional<Color> tint;
     bool alert = false;
     bool visible = false;
+    bool retracts = true;
     float expand = 0.0f;
     bool hovered = false;
     float icon_w = 0.0f;
@@ -85,7 +86,6 @@ struct Layout {
     std::optional<IslandSpan> center;
     std::optional<float> right_start;
     ui::Box workspaces;
-    ui::Box overview;
     ui::Box status;
     ui::Box dock;
     float height = 0.0f;
@@ -95,7 +95,6 @@ struct Layout {
 const char *wifi_glyph(int strength);
 const char *bluetooth_glyph(const BluetoothStatus &status);
 std::string bluetooth_label(const BluetoothStatus &status);
-std::chrono::milliseconds ms_until_next_second(std::chrono::system_clock::time_point now);
 const char *battery_glyph(const BatteryStatus &status);
 std::string battery_label(const BatteryStatus &status);
 

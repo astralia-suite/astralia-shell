@@ -27,6 +27,7 @@
 #include "core/ipc.h"
 #include "core/poll_reactor.h"
 #include "core/runtime_paths.h"
+#include "core/wall_clock.h"
 
 #include "app/backend.h"
 #include "app/session.h"
@@ -192,7 +193,7 @@ int WaylandBackend::run() {
     std::vector<FnPollSource> fn_sources;
     std::vector<PollSource *> raw_sources;
     std::vector<SourceRange> ranges;
-    reactor->add_timer([] { return std::chrono::seconds(1); },
+    reactor->add_timer([] { return astralia::ms_until_next_second(); },
                        [&] {
                            for (auto &mon : app.outputs)
                                for (auto &m : mon->modules)

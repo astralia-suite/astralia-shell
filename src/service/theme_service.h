@@ -9,6 +9,7 @@
 #include "core/signal.h"
 
 #include "render/palette_extract.h"
+#include "render/theme.h"
 
 #include "service/settings_service.h"
 
@@ -18,6 +19,7 @@ struct ThemeSource {
     std::string path;
     int64_t modified = 0;
     bool fixed = false;
+    Scheme scheme = Scheme::light;
 
     bool operator==(const ThemeSource &) const = default;
 };
@@ -42,11 +44,12 @@ class ThemeService {
     Signal<> changed;
 
   private:
-    void apply(const Extraction &extraction);
+    void apply(const Extraction &extraction, Scheme scheme);
 
     ThemeSource source_;
     bool has_source_ = false;
     std::optional<Extraction> applied_;
+    std::optional<Scheme> applied_scheme_;
     uint64_t generation_ = 0;
     std::shared_ptr<int> life_;
 };

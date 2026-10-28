@@ -11,6 +11,7 @@
 #include "config/bar_layout.h"
 
 #include "core/pointer.h"
+#include "core/wall_clock.h"
 
 #include "modules/bar/model/items.h"
 #include "modules/bar/paint/frame.h"
@@ -325,9 +326,9 @@ void Bar::scroll(const xcb_button_press_event_t &event) {
     } else if (hit.item == Item::brightness) {
         BrightnessService &brightness = services_.brightness;
         if (brightness.available(output_name_)) {
-            brightness.set(output_name_,
-                           std::clamp(brightness.percent(output_name_) + (wheel->dy < 0 ? 1 : -1),
-                                      0, 100));
+            brightness.set(
+                output_name_,
+                std::clamp(brightness.percent(output_name_) + (wheel->dy < 0 ? 1 : -1), 0, 100));
         }
     }
 }

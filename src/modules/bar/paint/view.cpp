@@ -5,7 +5,6 @@
 
 #include "config/bar_layout.h"
 
-#include "render/icons.h"
 #include "render/sticker.h"
 
 #include "modules/bar/model/zones.h"
@@ -19,8 +18,6 @@ namespace astralia::bar {
 namespace {
 
 namespace cfg = bar_layout;
-
-constexpr ui::TextStyle icon_style{ui::FontFamily::icon, static_cast<int>(cfg::icon_px)};
 
 Color function_fill(Item id, const StyleSpec &style) {
     if (style.uniform_fill) {
@@ -45,6 +42,11 @@ Color function_fill(Item id, const StyleSpec &style) {
     default:
         return style.bg;
     }
+}
+
+const Color &workspace_fill(const BarWorkspace &ws, const Color &active, const Color &occupied,
+                            const Color &empty) {
+    return ws.active ? active : ws.occupied ? occupied : empty;
 }
 
 void paint_item(ui::Canvas &canvas, const StyleSpec &style, const ItemView &view, Item id) {
@@ -86,22 +88,16 @@ void paint_workspaces(ui::Canvas &canvas, const Model &model) {
     if (style.workspace_badges) {
         for (const BarWorkspace &ws : model.workspaces()) {
             paint_badge(canvas, style, ws.box, std::to_string(ws.id),
-                        ws.active ? palette::pop_a : palette::accent);
+                        workspace_fill(ws, palette::pop_a, palette::pop_b, palette::accent));
         }
-        paint_pill(canvas, style, layout.overview, chip_fill());
-        paint_icon_label(canvas, style, layout.overview, icon::overview, "", 0.0f);
         return;
     }
     paint_pill(canvas, style, layout.workspaces, style.bg);
     for (const BarWorkspace &ws : model.workspaces()) {
-        const Color &fill = ws.active     ? palette::accent
-                            : ws.occupied ? palette::pop_b
-                                          : palette::paper;
-        canvas.rounded(ws.box, ws.box.h / 2.0f, fill, metrics::border_thin, palette::ink);
+        sticker(canvas, ws.box, ws.box.h / 2.0f,
+                workspace_fill(ws, palette::accent, palette::pop_b, palette::paper),
+                palette::border_outer, metrics::border_thin, 0.0f);
     }
-    ui::TextSize glyph = canvas.measure(icon::overview, icon_style);
-    float x = layout.overview.x + cfg::workspace_overview_gap / 2.0f;
-    canvas.text(icon::overview, icon_style, x, (layout.height - glyph.h) / 2.0f, palette::text);
 }
 
 void paint_dock(ui::Canvas &canvas, const Model &model) {
@@ -112,7 +108,7 @@ void paint_dock(ui::Canvas &canvas, const Model &model) {
     const StyleSpec &style = model.style();
     paint_pill(canvas, style, layout.dock, style.bg);
     float pad = layout.height * style.pad_ratio;
-    float y = std::round((layout.height - cfg::dock_icon) / 2.0f);
+    float y = std::round((layout.height - cfg::dock_icon) / 2.0f - style.text_lift);
     for (const DockSlot &slot : model.dock()) {
         std::string path = window_icon_path(slot.entry.window_class);
         if (path.empty()) {

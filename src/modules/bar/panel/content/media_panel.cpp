@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "render/icons.h"
+#include "render/sticker.h"
 
 #include "modules/bar/panel/content/media_panel.h"
 #include "modules/bar/panel/core/widgets.h"
@@ -19,7 +20,8 @@ constexpr ui::TextStyle icon_style{ui::FontFamily::icon, cfg::icon_px};
 void button(ui::Canvas &canvas, PanelPaint &paint, float x, float y, float size, const char *glyph,
             int action) {
     ui::Box box{x, y, size, size};
-    canvas.rounded(box, size / 2.0f, palette::accent_container, metrics::border_thin, palette::ink);
+    sticker(canvas, box, size / 2.0f, palette::accent_container, palette::border_outer,
+            metrics::border_thin, 0.0f);
     ui::TextSize extent = canvas.measure(glyph, icon_style);
     canvas.text(glyph, icon_style, x + (size - extent.w) / 2.0f, y + (size - extent.h) / 2.0f,
                 palette::text);
@@ -39,8 +41,8 @@ void MediaPanel::paint(ui::Canvas &canvas, const ui::Box &view, float, PanelPain
     const MediaStatus &status = media_.status();
     float thumb = cfg::media_thumb;
     ui::Box art{view.x, view.y, thumb, thumb};
-    canvas.rounded(art, metrics::radius_widget, palette::surface, metrics::border_thin,
-                   palette::ink);
+    sticker(canvas, art, metrics::radius_widget, palette::surface, palette::border_outer,
+            metrics::border_thin, 0.0f);
     ui::ImageId image = status.has_player && media_is_local_art(status.track.art_url)
                             ? canvas.image(status.track.art_url.substr(7), static_cast<int>(thumb))
                             : ui::no_image;

@@ -39,6 +39,8 @@ inline Color ink{};
 inline Color paper{};
 inline Color surface{};
 inline Color shadow{};
+inline Color border_outer{};
+inline Color border_inner{};
 
 inline Color accent{};
 inline Color accent_alpha12{};
@@ -93,6 +95,8 @@ inline constexpr float border_thin = 2.0f;
 inline constexpr float border_thick = 3.0f;
 inline constexpr float shadow_offset = 4.0f;
 inline constexpr float ring_width = 3.0f;
+inline constexpr float ring_thin = 1.0f;
+inline constexpr float ring_min_inner = 4.0f;
 inline constexpr float shadow_widget = 2.0f;
 
 } // namespace metrics

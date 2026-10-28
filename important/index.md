@@ -250,18 +250,19 @@
 - `deferred_call.{h,cpp}`: Runs closures posted from any thread on the reactor thread.
 - `path_home.{h,cpp}`: Collapses and expands `~` in paths.
 - `allocator.{h,cpp}`: Caps `malloc` arenas and pins the `mmap` threshold.
+- `wall_clock.{h,cpp}`: Local wall time from the precise system clock, and the wait until the next second boundary.
 - `signal.h`: Typed signal and slot publisher.
 - `unique_fd.h`: Owning file descriptor.
 
 ## `src/render/`
 
 - `canvas.h`: The `Canvas` interface every view draws through: shapes, fillets, erase mode, text, images, groups, opacity and gauges.
-- `tokens.h`: `Color`, the mutable palette, metrics and colour helpers shared by every backend.
+- `tokens.h`: `Color`, the mutable palette (with the sticker roles `border_outer`, `border_inner` and `shadow`), metrics and colour helpers shared by every backend.
 - `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
 - `palette_extract.{h,cpp}`: Downsamples an image, clusters it with k-means in OKLab and ranks up to four seeds.
-- `theme.{h,cpp}`: `Theme` roles derived from the seeds in OKLCH, and `theme_apply` onto the palette.
-- `sticker.{h,cpp}`: `sticker()`, an outlined fill with a hard offset shadow, and `selectable()`, the shared control look.
-- `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical.
+- `theme.{h,cpp}`: `Theme` roles derived from the seeds in OKLCH for the light and dark schemes, and `theme_apply` onto the palette; `ink` is the deep line colour and `text` the reading colour.
+- `sticker.{h,cpp}`: `sticker()`, the five-role look every component shares (text, fill, inner ring, outer border, hard offset shadow), and `selectable()`, the shared control look.
+- `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical; the rollers touch when closed and float a gap off the paper when open.
 - `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade of every scroll.
 - `icons.h`: The Tabler icon glyph codepoints used by every backend.
 - `glyphs.h`: Volume and brightness glyph thresholds over the icon table.
@@ -328,16 +329,16 @@
 
 ## `src/modules/bar/model/`
 
-- `model.{h,cpp}`: `bar::Model` state: items, refresh, hover, pinning, linger, volume peek, press and hit tests.
+- `model.{h,cpp}`: `bar::Model` state: items (each with its own `retracts` flag), refresh, hover, pinning, linger, volume peek, press and hit tests.
 - `layout.cpp`: `Model::layout`, one zone-driven layout for every style; the style only supplies data (zones, dividers, workspace badge size, icon gap).
 - `motion.cpp`: Workspace pill growth and the animated dock row.
 - `items.{h,cpp}`: The one `Item` to `PanelId` mapping and back, shared by both backends.
-- `zones.{h,cpp}`: Left, centre and right slot lists a style points at (`classic_zones`, `pop_zones`).
+- `zones.{h,cpp}`: Left, centre and right slot lists a style points at (`bar_zones`, shared by every style).
 - `item.h`: The `Item` enum.
 
 ## `src/modules/bar/paint/`
 
-- `style.{h,cpp}`: `bar::StyleSpec` for the four styles (`islands`, `okinami`, `continuous`, `pop`), the `islands` and `pop` fallback, island, fillet and autohide geometry.
+- `style.{h,cpp}`: `bar::StyleSpec` for the three styles (`continuous`, `okinami`, `pop`), the `pop` fallback, island, fillet and autohide geometry.
 - `frame.{h,cpp}`: The bar background over the canvas for both backends: pill or rail and islands, then fillets.
 - `view.{h,cpp}`: Paints items, workspaces, dock icons and dividers over the canvas.
 - `chips.{h,cpp}`: Shared painters: pill with ring, icon and label chip, two-line chip, numbered badge, icon row.

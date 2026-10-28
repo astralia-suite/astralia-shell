@@ -70,6 +70,7 @@ inline constexpr float warning_pad = 10.0f;
 inline constexpr float dropdown_pad = 10.0f;
 inline constexpr float dropdown_gap = 4.0f;
 inline constexpr float dropdown_max_width = 260.0f;
+inline constexpr float display_tile_min_width = 220.0f;
 inline constexpr float region_chip_height = 35.0f;
 inline constexpr float region_chip_gap = 6.0f;
 inline constexpr float stepper_button = 28.0f;

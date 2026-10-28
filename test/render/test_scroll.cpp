@@ -32,19 +32,21 @@ void check_horizontal() {
 
     ScrollGeometry open = astralia::scroll_geometry(panel, 1.0f, metrics);
     test::check(open.paper == panel, "a fully opened scroll has the panel as its paper");
-    test::check(near(open.first_roller.x + metrics.roller_w, panel.x) &&
-                    near(open.second_roller.x, panel.x + panel.w),
-                "rollers sit on the paper edges");
+    test::check(near(open.first_roller.x + metrics.roller_w + metrics.gap, panel.x) &&
+                    near(open.second_roller.x, panel.x + panel.w + metrics.gap),
+                "rollers float a gap away from the paper edges");
 
     float last = -1.0f;
     bool grows = true;
     bool symmetric = true;
     for (int i = 0; i <= 10; ++i) {
-        ScrollGeometry g = astralia::scroll_geometry(panel, static_cast<float>(i) / 10.0f, metrics);
+        float t = static_cast<float>(i) / 10.0f;
+        ScrollGeometry g = astralia::scroll_geometry(panel, t, metrics);
         grows = grows && g.paper.w >= last;
         last = g.paper.w;
         symmetric = symmetric && near(g.paper.x + g.paper.w / 2.0f, panel.x + panel.w / 2.0f) &&
-                    near(g.first_roller.x + metrics.roller_w + g.paper.w, g.second_roller.x);
+                    near(g.first_roller.x + metrics.roller_w + g.paper.w + 2.0f * metrics.gap * t,
+                         g.second_roller.x);
     }
     test::check(grows, "the paper widens as the scroll opens");
     test::check(symmetric, "the scroll opens evenly about the centre");
@@ -78,21 +80,25 @@ void check_vertical() {
                 "the rod spans the card and overhangs it");
 
     ScrollGeometry open = astralia::scroll_geometry(panel, 1.0f, metrics);
-    test::check(open.paper == panel && near(open.second_roller.y, panel.y + panel.h),
-                "an open vertical scroll has the bottom roller under the paper");
+    test::check(open.paper == panel && near(open.second_roller.y, panel.y + panel.h + metrics.gap),
+                "an open vertical scroll has the bottom roller a gap under the paper");
 
     float last = -1.0f;
     bool grows = true;
     bool top_fixed = true;
     for (int i = 0; i <= 10; ++i) {
-        ScrollGeometry g = astralia::scroll_geometry(panel, static_cast<float>(i) / 10.0f, metrics);
+        float t = static_cast<float>(i) / 10.0f;
+        ScrollGeometry g = astralia::scroll_geometry(panel, t, metrics);
         grows = grows && g.paper.h >= last;
         last = g.paper.h;
-        top_fixed =
-            top_fixed && near(g.first_roller.y, closed.first_roller.y) && near(g.paper.y, panel.y);
+        top_fixed = top_fixed &&
+                    near(g.first_roller.y, panel.y - metrics.roller_w - metrics.gap * t) &&
+                    near(g.paper.y, panel.y);
     }
     test::check(grows, "the paper grows downward as the scroll opens");
-    test::check(top_fixed, "the top roller never moves");
+    test::check(
+        top_fixed,
+        "the top roller drifts up by the gap as the scroll opens while the paper stays put");
 
     test::RecordingCanvas shut;
     astralia::paint_scroll(shut, closed, metrics);

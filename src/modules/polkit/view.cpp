@@ -77,10 +77,9 @@ void paint(ui::Canvas &canvas, Model &model, float surface_width, float surface_
     ui::TextSize title_size = canvas.measure(cfg::title_text, title);
     float tag_pad = static_cast<float>(cfg::title_tag_pad);
     sticker(canvas,
-            {pad - tag_pad, y - tag_pad / 2.0f,
-             title_size.w + 2.0f * tag_pad,
+            {pad - tag_pad, y - tag_pad / 2.0f, title_size.w + 2.0f * tag_pad,
              static_cast<float>(cfg::title_line_height) + tag_pad + metrics::shadow_widget},
-            metrics::radius_widget, palette::accent, palette::ink, metrics::border_thin,
+            metrics::radius_widget, palette::accent, palette::border_outer, metrics::border_thin,
             metrics::shadow_widget);
     line_text(canvas, cfg::title_text, title, pad, y, cfg::title_line_height, palette::text);
     y += cfg::title_line_height + cfg::spacing;
@@ -89,9 +88,9 @@ void paint(ui::Canvas &canvas, Model &model, float surface_width, float surface_
                       pad, y, content_w, palette::text_muted);
     y += cfg::message_line_height + cfg::spacing;
 
-    canvas.rounded({pad, y, content_w, cfg::field_height}, metrics::radius_widget,
-                   prompt.needs_input ? palette::pop_b : palette::surface, metrics::border_thick,
-                   palette::ink);
+    sticker(canvas, {pad, y, content_w, cfg::field_height}, metrics::radius_widget,
+            prompt.needs_input ? palette::pop_b : palette::surface, palette::border_outer,
+            metrics::border_thick, 0.0f);
     float field_cy = y + cfg::field_height / 2.0f;
     float dots_w = content_w - cfg::dot_margin * 2.0f;
     if (prompt.needs_input) {

@@ -129,7 +129,7 @@ void check_polkit_view() {
     test::check(group.box.x == (1920 - cfg::card_width) / 2 &&
                     group.box.y == static_cast<float>((1080 - card_h) / 2),
                 "card is centered");
-    test::check(canvas.count(Kind::rounded) == 5 && canvas.count(Kind::image) == 0,
+    test::check(canvas.count(Kind::rounded) == 7 && canvas.count(Kind::image) == 0,
                 "card, title tag, their shadows and field, no dots yet");
     bool placeholder = false;
     for (const test::Op &op : canvas.ops) {
@@ -157,7 +157,7 @@ void check_polkit_view() {
     test::RecordingCanvas fallback;
     fallback.image_id = astralia::ui::no_image;
     astralia::polkit::paint(fallback, model, 1920, 1080);
-    test::check(fallback.count(Kind::image) == 0 && fallback.count(Kind::rounded) == 30,
+    test::check(fallback.count(Kind::image) == 0 && fallback.count(Kind::rounded) == 32,
                 "missing echo art falls back to round dots");
 
     model.set_prompt(prompt(false, "Touch the sensor"));

@@ -6,6 +6,8 @@
 
 #include "core/animation.h"
 
+#include "render/oklab.h"
+
 #include "service/wayland/settings_service.h"
 
 void monitor_output_destroy(MonitorOutput &mon) {
@@ -107,8 +109,11 @@ void theme_sync(WaylandState &app) {
 void sync_compositor_borders(WaylandState &app) {
     if (!app.desktop || !app.cfg.sync_compositor_borders)
         return;
+    constexpr float border_min_lightness = 0.85f;
+    astralia::Oklch lch = astralia::oklch_from_color(astralia::palette::accent);
+    lch.L = std::max(lch.L, border_min_lightness);
     app.desktop->apply_border_colors(
-        astralia::palette::accent,
+        astralia::color_from_oklch(lch),
         astralia::lerp_color(astralia::palette::accent, astralia::palette::base, 0.6f));
 }
 

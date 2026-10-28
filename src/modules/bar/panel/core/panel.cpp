@@ -237,7 +237,7 @@ float Panel::card_x(float surface_width) const {
     return surface_width - width - cfg::side_margin;
 }
 
-Panel::Inset Panel::inset() { return {scroll_style.overhang, scroll_style.roller_w}; }
+Panel::Inset Panel::inset() { return {scroll_style.overhang, scroll_style.reach()}; }
 
 ui::Box Panel::extent() const {
     Inset room = inset();
@@ -334,7 +334,7 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
     float full = closing() ? std::max(target_, height) : height;
     float visible = reveal_ < 0.0f ? full : std::min(reveal_, full);
 
-    float rod = scroll_style.roller_w;
+    float rod = scroll_style.reach();
     card_ = {x, top + rod, width, full};
     ScrollOffset slide = scroll_slide_offset(
         entry_of(anchor()), sequence_.slide(),
@@ -366,10 +366,9 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
         sticker(canvas,
                 {cfg::padding - tag_pad,
                  cfg::padding + (cfg::header_height - title.h) / 2.0f - tag_pad / 2.0f,
-                 title.w + 2.0f * tag_pad,
-                 title.h + tag_pad + metrics::shadow_widget},
-                metrics::radius_widget, content_->tint(), palette::ink, metrics::border_thin,
-                metrics::shadow_widget);
+                 title.w + 2.0f * tag_pad, title.h + tag_pad + metrics::shadow_widget},
+                metrics::radius_widget, content_->tint(), palette::border_outer,
+                metrics::border_thin, metrics::shadow_widget);
         canvas.text(content_->title(), title_style, cfg::padding,
                     cfg::padding + (cfg::header_height - title.h) / 2.0f, palette::text);
         ui::Box close{width - cfg::padding - cfg::close_button,
@@ -385,7 +384,8 @@ ui::Box Panel::paint_at(ui::Canvas &canvas, float x, float top, float surface_wi
             {cfg::padding, cfg::padding, close.x - cfg::row_gap - cfg::padding, cfg::header_height},
             chrome_paint);
         float divider_y = cfg::padding + cfg::header_height + cfg::header_divider_gap;
-        canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f}, palette::ink);
+        canvas.rect({cfg::padding, divider_y, width - 2.0f * cfg::padding, 1.0f},
+                    palette::border_outer);
         view_top = divider_y + 1.0f + cfg::content_gap;
     }
     view_h_ = std::max(0.0f, full - cfg::padding - view_top);

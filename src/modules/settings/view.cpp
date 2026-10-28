@@ -95,8 +95,7 @@ void monitor_row(Pane &pane, float x, float y, float w, const std::string &selec
 
 void number_field(Pane &pane, const ui::Box &box, Field field, const std::string &value) {
     bool focused = pane.model.focused() == field;
-    pane.rounded(box, metrics::radius_widget, focused ? palette::pop_b : palette::field_bg,
-                 metrics::border_thin, palette::ink);
+    pane.control(box, metrics::radius_widget, focused ? palette::pop_b : palette::field_bg);
     float cy = box.y + box.h / 2.0f;
     if (focused) {
         ui::FieldDraw draw;
@@ -315,18 +314,54 @@ void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
     WallpaperSlot slot = animated ? WallpaperSlot::animated : WallpaperSlot::still;
     WallpaperPicker &picker = model.picker(slot);
 
+    struct Toggle {
+        const char *label;
+        bool value;
+        Act act;
+    };
+    std::vector<Toggle> toggles;
     if (caps.default_wallpaper) {
-        y += toggle_row(pane, x, y, w, "Use Default Wallpaper", config.default_wallpaper,
-                        Act::wallpaper_default, 0, 0, true) +
-             cfg::row_gap;
+        toggles.push_back(
+            {"Use Default Wallpaper", config.default_wallpaper, Act::wallpaper_default});
     }
     if (caps.animated_wallpaper) {
-        y += toggle_row(pane, x, y, w, "Enable animated wallpaper",
-                        config.wallpaper_animated_enabled, Act::wallpaper_animated, 0, 0, true) +
-             cfg::row_gap;
+        toggles.push_back({"Enable animated wallpaper", config.wallpaper_animated_enabled,
+                           Act::wallpaper_animated});
     }
 
-    y = wallpaper_columns_panel(pane, slot, x, y, w, bottom);
+    std::vector<float> needs;
+    float count = static_cast<float>(toggles.size() + 1);
+    float share = (w - cfg::tile_spacing * (count - 1.0f)) / count;
+    bool equal = true;
+    float natural = 0.0f;
+    for (const Toggle &toggle : toggles) {
+        float need = pane.canvas.measure(toggle.label, text_style).w + 2.0f * cfg::tile_margin +
+                     cfg::tile_spacing + cfg::toggle_width;
+        needs.push_back(need);
+        natural += need + cfg::tile_spacing;
+        equal = equal && need <= share;
+    }
+    bool inline_row =
+        !toggles.empty() && (equal ? share : w - natural) >= cfg::display_tile_min_width;
+
+    if (!inline_row) {
+        for (const Toggle &toggle : toggles) {
+            y += toggle_row(pane, x, y, w, toggle.label, toggle.value, toggle.act, 0, 0, true) +
+                 cfg::row_gap;
+        }
+        y = wallpaper_columns_panel(pane, slot, x, y, w, bottom);
+    } else {
+        float cx = x;
+        for (size_t i = 0; i < toggles.size(); ++i) {
+            float tile_w = equal ? share : needs[i];
+            toggle_row(pane, cx, y, tile_w, toggles[i].label, toggles[i].value, toggles[i].act, 0,
+                       0, true);
+            cx += tile_w + cfg::tile_spacing;
+        }
+        ui::Box display{cx, y, x + w - cx, cfg::tile_height};
+        y = wallpaper_columns_panel(pane, slot, x, y + cfg::tile_height + cfg::row_gap, w, bottom,
+                                    &display);
+    }
     if (animated && model.cpu_fallback(picker.region, picker.column) && !picker.files.empty()) {
         y += cfg::row_gap;
         std::string warning = "Warning: Animated wallpaper is running on CPU.";
@@ -347,6 +382,13 @@ void palette_tab(Pane &pane, float x, float y, float w) {
     std::string current = sources[selected].label;
     pane.dropdown({x, y, w, cfg::tile_height}, 2, "Palette", current, std::move(sources), selected,
                   Act::palette_source);
+    y += cfg::tile_height + cfg::row_gap;
+    bool dark = config.color_scheme == ColorScheme::dark;
+    std::vector<DropEntry> schemes{{"Light", 0, 0}, {"Dark", 1, 0}};
+    size_t scheme_selected = dark ? 1 : 0;
+    std::string scheme_current = schemes[scheme_selected].label;
+    pane.dropdown({x, y, w, cfg::tile_height}, 3, "Scheme", scheme_current, std::move(schemes),
+                  scheme_selected, Act::color_scheme);
     if (!region) {
         return;
     }
@@ -439,8 +481,9 @@ std::string tab_summary(const Model &model, Tab tab) {
     case Tab::wallpaper:
         return config.wallpaper_animated_enabled ? "Animated" : "Static";
     case Tab::palette:
-        return config.palette_source == PaletteSource::region_capture ? "Region capture"
-                                                                      : "Default";
+        return std::string(config.palette_source == PaletteSource::region_capture ? "Region capture"
+                                                                                  : "Default") +
+               (config.color_scheme == ColorScheme::dark ? ", dark" : "");
     }
     return {};
 }
@@ -456,11 +499,11 @@ void profile_strip(Pane &pane, const Art &art, float x, float y) {
         canvas.begin_group(avatar, {1.0f, true, cfg::avatar_size / 2.0f});
         canvas.draw_image(face, {0.0f, 0.0f, avatar.w, avatar.h}, palette::white);
         canvas.end_group();
-        canvas.rounded(avatar, cfg::avatar_size / 2.0f, transparent, cfg::avatar_border,
-                       palette::ink);
+        sticker(canvas, avatar, cfg::avatar_size / 2.0f, transparent, palette::border_outer,
+                cfg::avatar_border, 0.0f);
     } else {
-        canvas.rounded(avatar, cfg::avatar_size / 2.0f, palette::text_alpha04, cfg::avatar_border,
-                       palette::ink);
+        sticker(canvas, avatar, cfg::avatar_size / 2.0f, palette::text_alpha04,
+                palette::border_outer, cfg::avatar_border, 0.0f);
         ui::TextSize glyph = canvas.measure(icon::user, icon_style);
         canvas.text(icon::user, icon_style, avatar.x + (avatar.w - glyph.w) / 2.0f,
                     avatar.y + (avatar.h - glyph.h) / 2.0f, palette::text);

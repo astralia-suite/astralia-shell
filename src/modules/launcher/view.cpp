@@ -71,7 +71,7 @@ Frame paint(ui::Canvas &canvas, Model &model, float width, float height,
         canvas.set_opacity(frame.entrance.opacity);
     }
     frame.box = {box_x, box_y, cfg::width, box_h};
-    sticker(canvas, frame.box, metrics::radius_card, palette::paper, palette::ink,
+    sticker(canvas, frame.box, metrics::radius_card, palette::paper, palette::border_outer,
             cfg::menu_border_width);
 
     float ox = box_x + inset;
@@ -80,8 +80,9 @@ Frame paint(ui::Canvas &canvas, Model &model, float width, float height,
 
     float mode_x = box_x + cfg::menu_pad;
     float field_top = box_y + cfg::menu_pad;
-    canvas.rounded({mode_x - ox, field_top - oy, cfg::search_height, cfg::search_height},
-                   metrics::radius_widget, palette::surface, cfg::border_width, palette::ink);
+    sticker(canvas, {mode_x - ox, field_top - oy, cfg::search_height, cfg::search_height},
+            metrics::radius_widget, palette::surface, palette::border_outer, cfg::border_width,
+            0.0f);
     const char *mode_glyph = mode_icon(model.mode());
     ui::TextSize mode_size = canvas.measure(mode_glyph, icon_style);
     canvas.text(mode_glyph, icon_style, mode_x - ox + (cfg::search_height - mode_size.w) / 2.0f,
@@ -89,8 +90,9 @@ Frame paint(ui::Canvas &canvas, Model &model, float width, float height,
 
     float field_x = mode_x + cfg::search_height + cfg::pad;
     float field_w = box_x + cfg::width - cfg::menu_pad - field_x;
-    canvas.rounded({field_x - ox, field_top - oy, field_w, cfg::search_height},
-                   metrics::radius_widget, palette::surface, cfg::border_width, palette::ink);
+    sticker(canvas, {field_x - ox, field_top - oy, field_w, cfg::search_height},
+            metrics::radius_widget, palette::surface, palette::border_outer, cfg::border_width,
+            0.0f);
     float text_x = field_x + cfg::pad;
     float center_y = field_top + cfg::search_height / 2.0f;
 

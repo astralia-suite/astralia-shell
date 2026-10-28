@@ -19,10 +19,10 @@ void paint_roller(ui::Canvas &canvas, const ui::Box &roller, const ScrollMetrics
         float cap_h = std::min(metrics.cap_h, body_h / 2.0f);
         float cap_w = body_w + cap_flare * 2.0f;
         float cap_x = roller.x - cap_flare;
-        canvas.rounded({cap_x, roller.y, cap_w, cap_h}, cap_h / 2.0f, palette::accent_alt,
-                       metrics::border_thin, palette::ink);
-        canvas.rounded({cap_x, roller.y + body_h - cap_h, cap_w, cap_h}, cap_h / 2.0f,
-                       palette::accent_alt, metrics::border_thin, palette::ink);
+        sticker(canvas, {cap_x, roller.y, cap_w, cap_h}, cap_h / 2.0f, palette::accent_alt,
+                palette::border_outer, metrics::border_thin, 0.0f);
+        sticker(canvas, {cap_x, roller.y + body_h - cap_h, cap_w, cap_h}, cap_h / 2.0f,
+                palette::accent_alt, palette::border_outer, metrics::border_thin, 0.0f);
         float strip_h = body_h - cap_h * 2.0f - 4.0f;
         if (strip_h > 0.0f) {
             canvas.rounded(
@@ -34,10 +34,10 @@ void paint_roller(ui::Canvas &canvas, const ui::Box &roller, const ScrollMetrics
     float cap_w = std::min(metrics.cap_h, body_w / 2.0f);
     float cap_h = body_h + cap_flare * 2.0f;
     float cap_y = roller.y - cap_flare;
-    canvas.rounded({roller.x, cap_y, cap_w, cap_h}, cap_w / 2.0f, palette::accent_alt,
-                   metrics::border_thin, palette::ink);
-    canvas.rounded({roller.x + body_w - cap_w, cap_y, cap_w, cap_h}, cap_w / 2.0f,
-                   palette::accent_alt, metrics::border_thin, palette::ink);
+    sticker(canvas, {roller.x, cap_y, cap_w, cap_h}, cap_w / 2.0f, palette::accent_alt,
+            palette::border_outer, metrics::border_thin, 0.0f);
+    sticker(canvas, {roller.x + body_w - cap_w, cap_y, cap_w, cap_h}, cap_w / 2.0f,
+            palette::accent_alt, palette::border_outer, metrics::border_thin, 0.0f);
     float strip_w = body_w - cap_w * 2.0f - 4.0f;
     if (strip_w > 0.0f) {
         canvas.rounded(
@@ -50,14 +50,15 @@ void paint_roller(ui::Canvas &canvas, const ui::Box &roller, const ScrollMetrics
 
 ScrollGeometry scroll_geometry(const ui::Box &panel, float open, const ScrollMetrics &metrics) {
     float t = std::clamp(open, 0.0f, 1.0f);
+    float gap = metrics.gap * t;
     ScrollGeometry g;
     if (metrics.axis == ScrollAxis::vertical) {
         float paper_h = panel.h * t;
         float left = panel.x - metrics.overhang;
         float width = panel.w + metrics.overhang * 2.0f;
         g.paper = {panel.x, panel.y, panel.w, paper_h};
-        g.first_roller = {left, panel.y - metrics.roller_w, width, metrics.roller_w};
-        g.second_roller = {left, panel.y + paper_h, width, metrics.roller_w};
+        g.first_roller = {left, panel.y - metrics.roller_w - gap, width, metrics.roller_w};
+        g.second_roller = {left, panel.y + paper_h + gap, width, metrics.roller_w};
         return g;
     }
     float cx = panel.x + panel.w / 2.0f;
@@ -65,8 +66,8 @@ ScrollGeometry scroll_geometry(const ui::Box &panel, float open, const ScrollMet
     float top = panel.y - metrics.overhang;
     float height = panel.h + metrics.overhang * 2.0f;
     g.paper = {cx - paper_w / 2.0f, panel.y, paper_w, panel.h};
-    g.first_roller = {g.paper.x - metrics.roller_w, top, metrics.roller_w, height};
-    g.second_roller = {g.paper.x + g.paper.w, top, metrics.roller_w, height};
+    g.first_roller = {g.paper.x - metrics.roller_w - gap, top, metrics.roller_w, height};
+    g.second_roller = {g.paper.x + g.paper.w + gap, top, metrics.roller_w, height};
     return g;
 }
 
@@ -100,12 +101,12 @@ void paint_scroll(ui::Canvas &canvas, const ScrollGeometry &geometry,
     const ui::Box &p = geometry.paper;
     if (std::min(p.w, p.h) >= metrics::border_thick * 2.0f) {
         sticker(canvas, p, metrics.rounding, palette::accent_container);
-        ui::Box inner{p.x + metrics.band, p.y + metrics.band,
-                      p.w - metrics.band * 2.0f,
+        ui::Box inner{p.x + metrics.band, p.y + metrics.band, p.w - metrics.band * 2.0f,
                       p.h - metrics::shadow_offset - metrics.band * 2.0f};
         if (inner.w > 0.0f && inner.h > 0.0f) {
-            canvas.rounded(inner, std::max(0.0f, metrics.rounding - 2.0f), palette::paper,
-                           metrics::border_thin, palette::ink);
+            sticker(canvas, inner, std::max(0.0f, metrics.rounding - 2.0f), palette::paper,
+                    palette::border_outer, metrics::border_thin, 0.0f, std::nullopt, std::nullopt,
+                    0.0f);
         }
     }
     paint_roller(canvas, geometry.first_roller, metrics);

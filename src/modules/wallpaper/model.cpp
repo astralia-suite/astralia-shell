@@ -53,8 +53,7 @@ bool DesktopMenuModel::toggle(float x, float y, float bounds_width, float bounds
 ui::Box DesktopMenuModel::row(int index) const {
     float top =
         cfg::menu_padding + static_cast<float>(index) * (cfg::menu_row_height + cfg::menu_row_gap);
-    return {cfg::menu_padding, top,
-            cfg::menu_width - cfg::menu_padding * 2.0f,
+    return {cfg::menu_padding, top, cfg::menu_width - cfg::menu_padding * 2.0f,
             cfg::menu_row_height};
 }
 

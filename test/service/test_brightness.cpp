@@ -24,18 +24,18 @@ void check_brightness() {
           "connector names keep their dashes");
     check(parse_ddc_detect("").empty(), "no ddcutil output means no displays");
 
-    std::vector<DdcBus> real = parse_ddc_detect(
-        "Display 1\n"
-        "   I2C bus:          /dev/i2c-7\n"
-        "   DRM connector:    card1-DP-2\n"
-        "   drm_connector_id: 837\n"
-        "   Monitor:          SAM:LC34G55T:HNTXA00054\n"
-        "\n"
-        "Display 2\n"
-        "   I2C bus:          /dev/i2c-8\n"
-        "   DRM connector:    card1-DP-3\n"
-        "   drm_connector_id: 841\n"
-        "   Monitor:          SAM:Odyssey G91F:HNTY700002\n");
+    std::vector<DdcBus> real =
+        parse_ddc_detect("Display 1\n"
+                         "   I2C bus:          /dev/i2c-7\n"
+                         "   DRM connector:    card1-DP-2\n"
+                         "   drm_connector_id: 837\n"
+                         "   Monitor:          SAM:LC34G55T:HNTXA00054\n"
+                         "\n"
+                         "Display 2\n"
+                         "   I2C bus:          /dev/i2c-8\n"
+                         "   DRM connector:    card1-DP-3\n"
+                         "   drm_connector_id: 841\n"
+                         "   Monitor:          SAM:Odyssey G91F:HNTY700002\n");
     check(real.size() == 2 && real[0].output == "DP-2" && real[0].bus == "7" &&
               real[1].output == "DP-3" && real[1].bus == "8",
           "ddcutil's real two-monitor output parses");

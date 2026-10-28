@@ -95,7 +95,11 @@ void check_config_parse() {
     cfg.palette_source = PaletteSource::region_capture;
     cfg.capture_monitor = "eDP-1";
     cfg.capture_column = 1;
+    cfg.color_scheme = ColorScheme::dark;
     Config round = parse_config(serialize_config(cfg));
+    check(round.color_scheme == ColorScheme::dark, "the color scheme round-trips");
+    check(parse_config("{}").color_scheme == ColorScheme::light,
+          "the color scheme defaults to light");
     check(round.palette_source == PaletteSource::region_capture, "the palette source round-trips");
     check(round.capture_monitor == "eDP-1" && round.capture_column == 1,
           "region capture round-trips");
@@ -112,7 +116,7 @@ void check_config_parse() {
 
     check(parse_config(R"({"bar": {"style": "pop"}})").bar_style == BarStyle::pop,
           "the pop style parses");
-    check(parse_config(R"({"bar": {"style": "classic"}})").bar_style == BarStyle::islands,
+    check(parse_config(R"({"bar": {"style": "classic"}})").bar_style == BarStyle::continuous,
           "an unknown style falls back");
     check(parse_config(R"({"launcher": {"lightning": "yes"}})").launcher_lightning,
           "a wrongly typed lightning value keeps the default");

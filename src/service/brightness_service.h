@@ -22,8 +22,6 @@ struct DdcBus {
 std::vector<DdcBus> parse_ddc_detect(std::string_view text);
 std::optional<std::pair<int, int>> parse_ddc_brightness(std::string_view text);
 
-// Brightness for the laptop panel (sysfs backlight) and for external monitors (ddcutil, DDC/CI).
-// An output with a DDC display uses it; any other output falls back to the laptop panel.
 class BrightnessService {
   public:
     explicit BrightnessService(Reactor &loop);

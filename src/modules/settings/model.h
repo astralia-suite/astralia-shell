@@ -42,8 +42,7 @@ struct Caps {
     bool wallpaper_columns = false;
     bool default_wallpaper = false;
     bool autohide = false;
-    std::vector<BarStyle> bar_styles{BarStyle::islands, BarStyle::okinami, BarStyle::continuous,
-                                     BarStyle::pop};
+    std::vector<BarStyle> bar_styles{BarStyle::continuous, BarStyle::okinami, BarStyle::pop};
 };
 
 Caps settings_caps(const Capabilities &capabilities);
@@ -97,6 +96,7 @@ enum class Act : uint8_t {
     dropdown_dismiss,
     capture_pick,
     palette_source,
+    color_scheme,
     field_focus,
 };
 

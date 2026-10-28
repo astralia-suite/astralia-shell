@@ -98,6 +98,43 @@ void check_theme() {
     check(oklch_from_color(full.paper).L > 0.96f,
           "paper stays near white so the colour blocks stand out");
 
+    Theme night = theme_from_seed(test::base_extraction(), Scheme::dark);
+    check(night.scheme == Scheme::dark && base.scheme == Scheme::light,
+          "the scheme is recorded on the theme");
+    check(oklch_from_color(night.paper).L < 0.3f && oklch_from_color(night.text).L > 0.85f,
+          "the dark scheme has a dark paper and a light text");
+    check(oklch_from_color(night.ink).L < oklch_from_color(night.paper).L,
+          "the dark scheme keeps ink as a dark outline color");
+    check(oklch_from_color(night.border_outer).L > oklch_from_color(night.shadow).L + 0.4f &&
+              near(base.border_outer, base.ink),
+          "the dark outline stands apart from the shadow and the light outline is the ink");
+    for (const Theme *scheme : {&base, &night}) {
+        float inner = oklch_from_color(scheme->border_inner).L;
+        float outer = oklch_from_color(scheme->border_outer).L;
+        float drop = oklch_from_color(scheme->shadow).L;
+        check(std::fabs(inner - outer) > 0.3f && std::fabs(outer - drop) > 0.04f &&
+                  std::fabs(inner - drop) > 0.04f,
+              "the inner border, outer border and shadow are three distinct colours");
+    }
+    bool night_ok = true;
+    for (int hue = 0; hue < 360; hue += 15) {
+        Theme t = theme_from_seed({{{static_cast<float>(hue), 0.12f, 0.7f}}, true}, Scheme::dark);
+        for (const Color &fill : {t.accent, t.accent_alt, t.pop_a, t.pop_b, t.pop_c,
+                                  t.accent_container, t.critical_container}) {
+            night_ok = night_ok && contrast_ratio(t.text, fill) >= 4.5f;
+        }
+        night_ok = night_ok && contrast_ratio(t.text, t.paper) >= 4.5f &&
+                   contrast_ratio(t.text, t.surface) >= 4.5f &&
+                   contrast_ratio(t.text, t.surface_alt) >= 4.5f &&
+                   contrast_ratio(t.text_muted, t.paper) >= 4.5f &&
+                   contrast_ratio(t.text_muted, t.surface_alt) >= 4.5f;
+    }
+    check(night_ok, "dark text reaches 4.5 on paper, surfaces and fills for every seed hue");
+    check(oklch_from_color(night.text_muted).L > oklch_from_color(night.paper).L + 0.3f,
+          "dark muted text stays readable on the dark paper");
+    check(hue_distance(oklch_from_color(night.accent).h, oklch_from_color(base.accent).h) < 1.0f,
+          "the dark scheme keeps the seed hue");
+
     Theme other = theme_from_seed({{{20.0f, 0.12f, 0.7f}}, true});
     check(!near(other.accent, palette::accent), "a different seed gives a different accent");
     theme_apply(other);
@@ -106,9 +143,9 @@ void check_theme() {
               near(other.overlay, palette::overlay),
           "theme_apply sets the palette to the derived values");
     check(
-        near(astralia::bar::style_spec(BarStyle::islands, true).border, other.ink) &&
-            near(astralia::bar::style_spec(BarStyle::islands, true).shadow_color, other.shadow) &&
-            near(astralia::bar::style_spec(BarStyle::okinami, true).border, other.ink) &&
+        near(astralia::bar::style_spec(BarStyle::pop, true).border, other.border_outer) &&
+            near(astralia::bar::style_spec(BarStyle::pop, true).shadow_color, other.shadow) &&
+            near(astralia::bar::style_spec(BarStyle::okinami, true).border, other.border_outer) &&
             near(astralia::bar::style_spec(BarStyle::okinami, true).bg, other.accent_container) &&
             near(astralia::bar::style_spec(BarStyle::continuous, true).bg, other.accent_container),
         "bar styles follow the live palette");

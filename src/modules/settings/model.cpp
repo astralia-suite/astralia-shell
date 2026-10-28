@@ -759,6 +759,11 @@ void Model::dispatch_wallpaper(const Region &region) {
                 region.a == 1 ? PaletteSource::region_capture : PaletteSource::default_palette;
         });
         return;
+    case Act::color_scheme:
+        edit([&](Config &config) {
+            config.color_scheme = region.a == 1 ? ColorScheme::dark : ColorScheme::light;
+        });
+        return;
     default:
         return;
     }

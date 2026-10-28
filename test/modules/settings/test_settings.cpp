@@ -172,7 +172,8 @@ void check_tabs() {
     keeper.model.open();
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.in_menu(), "arrows do nothing on the menu");
-    keeper.click(astralia::settings::Act::tab, static_cast<int>(astralia::settings::Tab::wallpaper));
+    keeper.click(astralia::settings::Act::tab,
+                 static_cast<int>(astralia::settings::Tab::wallpaper));
     keeper.model.key(key(KeyKind::Down));
     test::check(keeper.model.active_tab() == astralia::settings::Tab::wallpaper,
                 "down stops at the last tab");
@@ -189,6 +190,12 @@ void check_tabs() {
     keeper.click(astralia::settings::Act::palette_source, 0);
     test::check(keeper.config.palette_source == astralia::PaletteSource::default_palette,
                 "the palette source switches back to the default");
+    keeper.click(astralia::settings::Act::color_scheme, 1);
+    test::check(keeper.config.color_scheme == astralia::ColorScheme::dark,
+                "the color scheme switches to dark");
+    keeper.click(astralia::settings::Act::color_scheme, 0);
+    test::check(keeper.config.color_scheme == astralia::ColorScheme::light,
+                "the color scheme switches back to light");
     auto palette_texts = [&] {
         test::RecordingCanvas canvas;
         astralia::settings::Art art{"someone", "up 3 hours", {}};
@@ -309,7 +316,7 @@ void check_actions() {
     astralia::settings::Caps limited;
     limited.bar_styles = {astralia::BarStyle::continuous, astralia::BarStyle::okinami};
     Env x11(limited);
-    x11.config.bar_style = astralia::BarStyle::islands;
+    x11.config.bar_style = astralia::BarStyle::pop;
     test::check(x11.model.effective_bar_style() == astralia::BarStyle::continuous,
                 "an unsupported style shows as continuous");
 

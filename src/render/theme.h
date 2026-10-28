@@ -5,7 +5,7 @@
 
 namespace astralia {
 
-enum class Scheme { light };
+enum class Scheme { light, dark };
 
 struct Theme {
     Scheme scheme;
@@ -15,6 +15,8 @@ struct Theme {
     Color surface;
     Color surface_alt;
     Color shadow;
+    Color border_outer;
+    Color border_inner;
 
     Color accent;
     Color accent_alpha12;
@@ -59,7 +61,7 @@ struct Theme {
     Color window_backdrop;
 };
 
-Theme theme_from_seed(const Extraction &extraction);
+Theme theme_from_seed(const Extraction &extraction, Scheme scheme = Scheme::light);
 void theme_apply(const Theme &theme);
 
 } // namespace astralia

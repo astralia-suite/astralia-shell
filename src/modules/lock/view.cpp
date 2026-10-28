@@ -80,7 +80,7 @@ CardBody draw_card(ui::Canvas &canvas, const Rect &col, const std::string &title
             {x - lock_config::card_tag_pad, y - lock_config::card_tag_pad / 2.0f,
              measured.w + 2.0f * lock_config::card_tag_pad,
              measured.h + lock_config::card_tag_pad + metrics::shadow_widget},
-            metrics::radius_widget, palette::pop_a, palette::ink, metrics::border_thin,
+            metrics::radius_widget, palette::pop_a, palette::border_outer, metrics::border_thin,
             metrics::shadow_widget);
     ui::TextSize size = put(canvas, title, style, x, y, palette::text);
     return {x, y + size.h + lock_config::card_header_gap + lock_config::card_tag_pad, w};
@@ -91,8 +91,8 @@ void draw_pill(Pane &pane, float x, float y, float w) {
     const Model &model = pane.model;
     float h = lock_config::input_height;
     float r = h * 0.5f;
-    canvas.rounded({x, y, w, h}, metrics::radius_card, palette::pop_b, lock_config::bg_border_width,
-                   palette::ink);
+    sticker(canvas, {x, y, w, h}, metrics::radius_card, palette::pop_b, palette::border_outer,
+            lock_config::bg_border_width, 0.0f);
 
     float cy = y + h * 0.5f;
     ui::TextStyle icon = icon_style(static_cast<int>(lock_config::pill_icon_size));
@@ -538,8 +538,8 @@ void draw_center(Pane &pane, const Rect &col, float output_h) {
         canvas.text(icon::user, glyph_style, std::round(avatar.x + (avatar.w - glyph.w) * 0.5f),
                     std::round(avatar.y + (avatar.h - glyph.h) * 0.5f), palette::text);
     }
-    canvas.rounded(avatar, lock_config::profile_size * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f},
-                   lock_config::profile_border_width, palette::ink);
+    sticker(canvas, avatar, lock_config::profile_size * 0.5f, {0.0f, 0.0f, 0.0f, 0.0f},
+            palette::border_outer, lock_config::profile_border_width, 0.0f);
     y += lock_config::profile_size + lock_config::gap_avatar_input;
 
     float pill_w = col.w * lock_config::input_width_frac;

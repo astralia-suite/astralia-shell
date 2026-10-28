@@ -60,7 +60,7 @@ void paint(ui::Canvas &canvas, const ViewState &view, const Layout &layout) {
                                 ? palette::critical_container
                                 : palette::paper;
         sticker(canvas, {0, y, cfg::card_width, card.height}, metrics::radius_card,
-                with_alpha(face, opacity), with_alpha(palette::ink, opacity));
+                with_alpha(face, opacity), with_alpha(palette::border_outer, opacity));
         if (entry.timed) {
             progress_bar(canvas, y, entry.progress, accent, opacity);
         }
@@ -74,12 +74,14 @@ void paint(ui::Canvas &canvas, const ViewState &view, const Layout &layout) {
         float tag_w = cfg::urgency_dot + cfg::header_spacing + app_size.w + 2.0f * tag_pad;
         float tag_h = app_size.h + tag_pad;
         sticker(canvas,
-                {x - tag_pad, top + (card.header - tag_h) / 2.0f, tag_w, tag_h + metrics::shadow_widget},
+                {x - tag_pad, top + (card.header - tag_h) / 2.0f, tag_w,
+                 tag_h + metrics::shadow_widget},
                 metrics::radius_widget, with_alpha(accent, opacity),
-                with_alpha(palette::ink, opacity), metrics::border_thin, metrics::shadow_widget);
+                with_alpha(palette::border_outer, opacity), metrics::border_thin,
+                metrics::shadow_widget);
         canvas.rounded(
             {x, top + (card.header - cfg::urgency_dot) / 2.0f, cfg::urgency_dot, cfg::urgency_dot},
-            cfg::urgency_dot / 2.0f, with_alpha(palette::ink, opacity));
+            cfg::urgency_dot / 2.0f, with_alpha(palette::border_outer, opacity));
         canvas.text(app, app_style, x + cfg::urgency_dot + cfg::header_spacing,
                     top + (card.header - app_size.h) / 2.0f, with_alpha(palette::text, opacity));
 

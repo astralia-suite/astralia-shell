@@ -147,10 +147,10 @@ void Model::compute_layout(float width, float height) {
 
     if (global_mode_ && !state.monitors.empty()) {
         float gap_x = spacing * (cfg::columns - 1) + pad * 2.0f + cfg::global_block_spacing +
-                      scroll_style.roller_w * 2.0f;
+                      scroll_style.reach() * 2.0f;
         float gap_y = spacing * (cfg::rows - 1) + pad * 2.0f + cfg::global_block_spacing +
                       scroll_style.overhang * 2.0f;
-        float frame_x = 2.0f * (pad + cfg::margin + scroll_style.roller_w);
+        float frame_x = 2.0f * (pad + cfg::margin + scroll_style.reach());
         float frame_y = 2.0f * (pad + cfg::margin);
         const std::vector<CompositorMonitor> &ms = state.monitors;
         std::vector<float> steps_x = separation_steps(ms, &CompositorMonitor::x, 0);
@@ -195,7 +195,7 @@ void Model::compute_layout(float width, float height) {
         }
         work_w = std::max(1.0, work_w);
         work_h = std::max(1.0, work_h);
-        float frame_x = 2.0f * (pad + cfg::margin + scroll_style.roller_w);
+        float frame_x = 2.0f * (pad + cfg::margin + scroll_style.reach());
         float frame_y = 2.0f * (pad + cfg::margin);
         float fit_x = (width - frame_x - spacing * (cfg::columns - 1)) /
                       (static_cast<float>(work_w) * cfg::columns);

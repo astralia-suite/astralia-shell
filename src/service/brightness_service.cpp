@@ -177,7 +177,6 @@ void BrightnessService::refresh(const std::string &output) {
 }
 
 void BrightnessService::queue(Job job) {
-    // ponytail: latest write wins per output; ddcutil is slow, so a drag sends few commands
     std::erase_if(jobs_, [&](const Job &queued) {
         return queued.output == job.output && queued.write == job.write;
     });
@@ -221,7 +220,6 @@ void BrightnessService::next() {
 
 void BrightnessService::detected(const std::string &text) {
     for (const DdcBus &ddc : parse_ddc_detect(text)) {
-        // max stays 0 until the first read says what the monitor reports
         displays_.push_back({ddc, 0, 0});
         log::info("brightness: ddc display {} on i2c-{}", ddc.output, ddc.bus);
     }

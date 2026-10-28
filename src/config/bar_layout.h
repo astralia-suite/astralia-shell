@@ -27,9 +27,8 @@ inline constexpr float workspace_pill_height = 12.0f;
 inline constexpr float workspace_pill_spacing = 5.0f;
 inline constexpr float workspace_active_scale = 2.0f;
 inline constexpr float workspace_anim_ms = 100.0f;
-inline constexpr float workspace_overview_gap = 8.0f;
 
-inline constexpr float dock_icon = 22.0f;
+inline constexpr float dock_icon = icon_px;
 inline constexpr float dock_spacing = 10.0f;
 inline constexpr float dock_focused_alpha = 1.0f;
 inline constexpr float dock_unfocused_alpha = 0.5f;
@@ -60,15 +59,13 @@ inline constexpr uint64_t owner_dock = 1000;
 
 namespace astralia {
 
-enum class BarStyle : std::size_t { islands, okinami, continuous, pop };
+enum class BarStyle : std::size_t { continuous, okinami, pop };
 
 namespace bar_style {
 
-inline constexpr std::size_t count = 4;
-inline constexpr std::array<std::string_view, count> names{"islands", "okinami", "continuous",
-                                                           "pop"};
-inline constexpr std::array<std::string_view, count> labels{"Islands", "Okinami", "Continuous",
-                                                            "Pop!"};
+inline constexpr std::size_t count = 3;
+inline constexpr std::array<std::string_view, count> names{"continuous", "okinami", "pop"};
+inline constexpr std::array<std::string_view, count> labels{"Continuous", "Okinami", "Pop!"};
 
 } // namespace bar_style
 

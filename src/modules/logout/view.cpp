@@ -54,7 +54,7 @@ void paint(ui::Canvas &canvas, const Model &model, float width, float height,
             lerp_color(palette::paper, palette::accent_alt, model.highlight_border()[idx]),
             visible);
         sticker(canvas, {bx - w / 2.0f, by - w / 2.0f, w, w}, metrics::radius_card * scale, fill,
-                with_alpha(palette::ink, visible), metrics::border_thick,
+                with_alpha(palette::border_outer, visible), metrics::border_thick,
                 metrics::shadow_offset * scale);
 
         const char *glyph = cfg::actions[idx].glyph;

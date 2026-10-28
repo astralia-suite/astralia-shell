@@ -36,6 +36,8 @@ struct MonitorOverride {
 
 enum class PaletteSource : uint8_t { default_palette, region_capture };
 
+enum class ColorScheme : uint8_t { light, dark };
+
 struct Config {
     std::string wallpaper_path;
     std::string wallpaper_dir;
@@ -57,11 +59,12 @@ struct Config {
     std::map<std::string, std::vector<std::string>> lock_wallpaper_fill_modes;
 
     PaletteSource palette_source = PaletteSource::default_palette;
+    ColorScheme color_scheme = ColorScheme::light;
     std::string capture_monitor;
     int capture_column = 0;
 
     bool autohide = false;
-    BarStyle bar_style = BarStyle::islands;
+    BarStyle bar_style = BarStyle::continuous;
     bool default_osd = true;
     bool default_notifications = true;
     bool default_wallpaper = true;
