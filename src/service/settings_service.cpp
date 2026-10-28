@@ -310,9 +310,6 @@ Config parse_config(std::string_view source) {
     }
 
     const Json *general = object_in(&root, "general");
-    cfg.launcher_lightning =
-        flag(general, "launcherLightning",
-             flag(section(root, "launcher", "launcher"), "lightning", cfg.launcher_lightning));
     cfg.animations_disabled =
         flag(general, "animationsDisabled",
              flag(section(root, "animation", "animation"), "disabled", cfg.animations_disabled));
@@ -444,7 +441,6 @@ std::string serialize_config(const Config &cfg) {
 
     Json general = Json::make_object();
     general.set("animationsDisabled", Json::from_bool(cfg.animations_disabled));
-    general.set("launcherLightning", Json::from_bool(cfg.launcher_lightning));
     general.set("logoutLogoPath", Json::from_string(path_collapse_home(cfg.logout_logo_path)));
     general.set("syncCompositorBorders", Json::from_bool(cfg.sync_compositor_borders));
 

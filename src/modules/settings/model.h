@@ -34,7 +34,6 @@ struct TabInfo {
 struct Caps {
     bool animation = false;
     bool idle = false;
-    bool launcher = false;
     bool rain = false;
     bool visualizer = false;
     bool animated_wallpaper = false;
@@ -82,7 +81,6 @@ enum class Act : uint8_t {
     visualizer_shape,
     visualizer_reset,
     animation_disable,
-    launcher_lightning,
     wallpaper_default,
     wallpaper_animated,
     lock_wallpaper_mode,

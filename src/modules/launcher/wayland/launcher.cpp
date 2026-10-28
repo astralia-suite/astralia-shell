@@ -473,7 +473,7 @@ class Adapter final : public Module, public TextInputClient {
                              app.egl_display, app.egl_config, app.egl_context, target->output.wl,
                              target->output.name.c_str());
             }
-            state_.lightning = app.cfg.launcher_lightning;
+            state_.lightning = !app.cfg.animations_disabled;
             toggle(state_, global);
         };
         return {

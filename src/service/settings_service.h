@@ -71,8 +71,6 @@ struct Config {
     bool default_lock = true;
     std::map<std::string, MonitorOverride> monitor_overrides;
 
-    bool launcher_lightning = true;
-
     bool animations_disabled = false;
 
     std::string logout_logo_path;

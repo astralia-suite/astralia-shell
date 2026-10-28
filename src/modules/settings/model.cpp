@@ -24,7 +24,6 @@ Caps settings_caps(const Capabilities &capabilities) {
     Caps caps;
     caps.animation = capabilities.animations;
     caps.idle = capabilities.idle;
-    caps.launcher = capabilities.animations;
     caps.rain = capabilities.rain;
     caps.visualizer = capabilities.visualizer;
     caps.animated_wallpaper = capabilities.animated_wallpaper;
@@ -187,7 +186,7 @@ Model::Model(Caps caps, Hooks hooks) : caps_(std::move(caps)), hooks_(std::move(
             present = caps_.rain || caps_.visualizer;
             break;
         case Tab::general:
-            present = caps_.animation || caps_.launcher;
+            present = caps_.animation;
             break;
         case Tab::lock:
             present = caps_.lock_wallpaper;
@@ -669,9 +668,6 @@ void Model::dispatch(const Region &region) {
         return;
     case Act::animation_disable:
         edit([](Config &config) { config.animations_disabled = !config.animations_disabled; });
-        return;
-    case Act::launcher_lightning:
-        edit([](Config &config) { config.launcher_lightning = !config.launcher_lightning; });
         return;
     default:
         dispatch_wallpaper(region);

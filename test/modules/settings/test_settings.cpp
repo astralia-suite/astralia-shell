@@ -121,7 +121,7 @@ void check_tabs() {
                 "a minimal backend has four tabs");
 
     astralia::settings::Caps full;
-    full.animation = full.idle = full.launcher = full.rain = full.visualizer = true;
+    full.animation = full.idle = full.rain = full.visualizer = true;
     Env rich(full);
     test::check(rich.model.tabs().size() == 6 &&
                     rich.model.tabs().front().tab == astralia::settings::Tab::general,
@@ -307,7 +307,7 @@ void check_scroll_stages() {
 void check_actions() {
     Instant instant;
     astralia::settings::Caps caps;
-    caps.rain = caps.visualizer = caps.animation = caps.idle = caps.launcher = true;
+    caps.rain = caps.visualizer = caps.animation = caps.idle = true;
     Env env(caps);
     env.model.open();
 
@@ -356,8 +356,6 @@ void check_actions() {
     env.click(astralia::settings::Act::rain_async);
     test::check(env.config.rain.mode == astralia::RainMode::Stiletto && env.config.rain.async_speed,
                 "rain settings apply");
-    env.click(astralia::settings::Act::launcher_lightning);
-    test::check(!env.config.launcher_lightning, "the lightning toggle flips");
     env.click(astralia::settings::Act::visualizer_shape, 1);
     env.config.visualizer.fps = 30;
     env.click(astralia::settings::Act::visualizer_reset,

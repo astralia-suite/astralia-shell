@@ -25,7 +25,6 @@ std::string sample_config() {
     "eDP-1": {"_enabled": true, "osd": true, "lock": false, "ambientTimeoutSeconds": 90}
   },
   "idle": {"ambientEnabled": true, "ambientTimeoutSeconds": 150, "enabled": false, "screensaverEnabled": true, "screensaverTimeoutSeconds": 300},
-  "launcher": {"lightning": false},
   "rain": {"asyncSpeed": true, "mode": "stiletto"},
   "visualizer": {"fps": 30, "fractalComplexity": 3, "glowDirections": 16.0, "glowQuality": 6.0, "particleSize": 8, "particleThin": 0.11999999731779099, "visualizerShape": "sphere"},
   "wallpaper": {
@@ -68,7 +67,6 @@ void check_config_parse() {
               cfg.monitor_overrides["eDP-1"].screensaver_timeout == 300,
           "override seconds keep defaults when absent");
     check(!cfg.idle_enabled, "idle disabled");
-    check(!cfg.launcher_lightning && Config().launcher_lightning, "launcher lightning");
     check(cfg.rain.mode == RainMode::Stiletto && cfg.rain.async_speed, "rain");
     check(cfg.visualizer.visualizer_shape == VisualizerShape::Sphere && cfg.visualizer.fps == 30,
           "visualizer");
@@ -118,17 +116,15 @@ void check_config_parse() {
           "the pop style parses");
     check(parse_config(R"({"bar": {"style": "classic"}})").bar_style == BarStyle::continuous,
           "an unknown style falls back");
-    check(parse_config(R"({"launcher": {"lightning": "yes"}})").launcher_lightning,
-          "a wrongly typed lightning value keeps the default");
     check(parse_config(R"({"qixing": {"autohideEnabled": true}})").autohide,
           "legacy section names still load");
     check(parse_config(R"({"displays": {"defaultSpark": false}})").default_osd == false,
           "legacy display keys still load");
     Config grouped = parse_config(R"({
-        "general": {"animationsDisabled": true, "launcherLightning": false},
+        "general": {"animationsDisabled": true},
         "displays": {"idle": {"enabled": false, "ambientTimeoutSeconds": 20}},
         "ambient": {"rain": {"mode": "stiletto"}, "visualizer": {"fps": 30}}})");
-    check(grouped.animations_disabled && !grouped.launcher_lightning, "the general section loads");
+    check(grouped.animations_disabled, "the general section loads");
     check(!grouped.idle_enabled && grouped.ambient_timeout == 20,
           "idle loads from the displays section");
     check(grouped.rain.mode == RainMode::Stiletto && grouped.visualizer.fps == 30,

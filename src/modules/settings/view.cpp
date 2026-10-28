@@ -300,10 +300,6 @@ void general_tab(Pane &pane, float x, float y, float w) {
                         Act::animation_disable, 0, 0, true) +
              cfg::row_gap;
     }
-    if (caps.launcher) {
-        toggle_row(pane, x, y, w, "Launcher lightning entrance", config.launcher_lightning,
-                   Act::launcher_lightning, 0, 0, true);
-    }
 }
 
 void wallpaper_tab(Pane &pane, float x, float y, float w, float bottom) {
