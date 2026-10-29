@@ -3,7 +3,13 @@ project(
   'cpp',
   version: '0.1.0',
   meson_version: '>=1.1',
-  default_options: ['cpp_std=c++23', 'warning_level=3', 'optimization=2', 'debug=false'],
+  default_options: [
+    'prefix=/usr',
+    'cpp_std=c++23',
+    'warning_level=3',
+    'optimization=2',
+    'debug=false',
+  ],
 )
 
 sdbus_cpp_dep = dependency('sdbus-c++', include_type: 'system')
@@ -13,8 +19,9 @@ polkit_agent_dep = dependency('polkit-agent-1', include_type: 'system')
 pam_dep = meson.get_compiler('cpp').find_library('pam')
 
 deps = [sdbus_cpp_dep, threads_dep, libpipewire_dep, polkit_agent_dep, pam_dep]
+resvg_dep = dependency('resvg', include_type: 'system')
 render_deps = [
-  dependency('resvg', include_type: 'system'),
+  resvg_dep,
   dependency('libjpeg', include_type: 'system'),
   dependency('cairo', include_type: 'system'),
   dependency('fontconfig', include_type: 'system'),
@@ -36,7 +43,7 @@ add_project_arguments(
 
 core_base = static_library(
   'astralia-core-base',
-  files(
+  [
     'src/app/session.cpp',
     'src/app/shell.cpp',
     'src/core/allocator.cpp',
@@ -56,7 +63,7 @@ core_base = static_library(
     'src/core/single_instance.cpp',
     'src/core/spawn.cpp',
     'src/core/wall_clock.cpp',
-  ),
+  ],
   include_directories: inc,
   dependencies: deps,
   pic: true,
@@ -64,7 +71,7 @@ core_base = static_library(
 
 core_shared = static_library(
   'astralia-core-shared',
-  files(
+  [
     'src/modules/bar/paint/frame.cpp',
     'src/modules/bar/model/items.cpp',
     'src/modules/bar/model/layout.cpp',
@@ -165,7 +172,7 @@ core_shared = static_library(
     'src/render/sticker.cpp',
     'src/render/theme.cpp',
     'src/render/text_field.cpp',
-  ),
+  ],
   include_directories: inc,
   dependencies: deps + render_deps,
   cpp_args: hidden,
@@ -221,7 +228,145 @@ install_data(
 wayland_enabled = 'wayland' in get_option('backends')
 
 if wayland_enabled
-  subdir('src/backend/wayland')
+  add_languages('c', native: false, required: true)
+
+  wayland_backend_source = 'src/backend/wayland/backend.cpp'
+
+  wayland_sources = [
+    'src/backend/wayland/app/config.cpp',
+    'src/backend/wayland/app/ipc.cpp',
+    'src/backend/wayland/app/key_dispatch.cpp',
+    'src/backend/wayland/app/module_registry.cpp',
+    'src/backend/wayland/app/monitor_output.cpp',
+    'src/backend/wayland/app/service_registry.cpp',
+    'src/backend/wayland/app/user_info.cpp',
+    'src/backend/wayland/app/wayland_registry.cpp',
+    'src/backend/wayland/core/log.cpp',
+    'src/backend/wayland/core/poll_source.cpp',
+    'src/modules/bamboo/wayland/bamboo.cpp',
+    'src/modules/bar/wayland/bar.cpp',
+    'src/modules/bar/wayland/panel_surface.cpp',
+    'src/modules/dashboard/wayland/dashboard.cpp',
+    'src/modules/idle/wayland/idle.cpp',
+    'src/modules/launcher/wayland/launcher.cpp',
+    'src/modules/lock/wayland/lock.cpp',
+    'src/modules/lock/wayland/wallpaper.cpp',
+    'src/modules/logout/wayland/logout.cpp',
+    'src/modules/notification/wayland/notification.cpp',
+    'src/modules/osd/wayland/osd.cpp',
+    'src/modules/overview/wayland/overview.cpp',
+    'src/modules/polkit/wayland/polkit.cpp',
+    'src/modules/rain/wayland/rain.cpp',
+    'src/modules/settings/wayland/settings.cpp',
+    'src/modules/visualizer/wayland/visualizer.cpp',
+    'src/modules/visualizer/wayland/audio_stages.cpp',
+    'src/modules/visualizer/wayland/bars.cpp',
+    'src/modules/visualizer/wayland/sphere.cpp',
+    'src/modules/visualizer/wayland/shaders.cpp',
+    'src/modules/wallpaper/wayland/wallpaper.cpp',
+    'src/modules/wallpaper_select/wayland/wallpaper_select.cpp',
+    'src/backend/wayland/render/arc_gauge.cpp',
+    'src/backend/wayland/render/gl.cpp',
+    'src/backend/wayland/render/gl_canvas.cpp',
+    'src/backend/wayland/render/icon.cpp',
+    'src/backend/wayland/render/image.cpp',
+    'src/backend/wayland/render/layer_surface.cpp',
+    'src/backend/wayland/render/overlay_panel.cpp',
+    'src/backend/wayland/render/popup_window.cpp',
+    'src/backend/wayland/render/renderer.cpp',
+    'src/backend/wayland/render/text.cpp',
+    'src/backend/wayland/render/texture.cpp',
+    'src/backend/wayland/render/texture_cache.cpp',
+    'src/backend/wayland/render/thunder.cpp',
+    'src/backend/wayland/render/toplevel_window.cpp',
+    'src/backend/wayland/render/video_texture.cpp',
+    'src/backend/wayland/render/wallpaper_column.cpp',
+    'src/service/wayland/capture_service.cpp',
+    'src/service/wayland/clipboard_service.cpp',
+    'src/service/wayland/frame_service.cpp',
+    'src/service/wayland/idle_service.cpp',
+    'src/service/wayland/input_service.cpp',
+    'src/service/wayland/media_service.cpp',
+    'src/service/wayland/output_service.cpp',
+    'src/service/wayland/settings_service.cpp',
+    'src/service/wayland/text_input_service.cpp',
+    'src/modules/lock/wayland/transition.cpp',
+  ]
+
+  libdrm_dep = dependency('libdrm')
+
+  wayland_deps = [
+    dependency('wayland-client'),
+    dependency('wayland-egl'),
+    dependency('egl'),
+    dependency('glesv2'),
+    dependency('cairo'),
+    dependency('pangocairo'),
+    dependency('xkbcommon'),
+    dependency('libjpeg'),
+    resvg_dep,
+    libdrm_dep,
+    dependency('glib-2.0'),
+    dependency('gio-2.0'),
+    dependency('gobject-2.0'),
+    dependency('polkit-gobject-1'),
+    meson.get_compiler('cpp').find_library('pam'),
+  ]
+
+  wayland_args = [
+    '-DASTRALIA_SHELL_SHADER_DIR="@0@"'.format(data_dir / 'shaders'),
+    '-DASTRALIA_SHELL_DEFAULT_WALLPAPER="@0@"'.format(meson.project_source_root() / 'assets' / 'wallpaper' / 'default.jpg'),
+    '-DASTRALIA_SHELL_PAM_DIR="@0@"'.format(data_dir / 'pam'),
+    '-DASTRALIA_SHELL_MEDIA_PLUGIN="@0@"'.format(data_dir / 'plugins' / 'libastralia-shell-media.so'),
+  ]
+
+  wayland_scanner = find_program('wayland-scanner')
+  wl_proto_dir = dependency('wayland-protocols').get_variable(pkgconfig: 'pkgdatadir')
+
+  wayland_protocol_defs = [
+    ['xdg-shell', wl_proto_dir / 'stable/xdg-shell/xdg-shell.xml', false],
+    ['wlr-layer-shell-unstable-v1', 'src/backend/wayland/protocols/wlr-layer-shell-unstable-v1.xml', true],
+    ['ext-idle-notify-v1', wl_proto_dir / 'staging/ext-idle-notify/ext-idle-notify-v1.xml', false],
+    ['cursor-shape-v1', wl_proto_dir / 'staging/cursor-shape/cursor-shape-v1.xml', false],
+    ['tablet-unstable-v2', wl_proto_dir / 'unstable/tablet/tablet-unstable-v2.xml', false],
+    ['hyprland-toplevel-export-v1', 'src/backend/wayland/protocols/hyprland-toplevel-export-v1.xml', false],
+    ['wlr-foreign-toplevel-management-unstable-v1', 'src/backend/wayland/protocols/wlr-foreign-toplevel-management-unstable-v1.xml', false],
+    ['text-input-unstable-v3', 'src/backend/wayland/protocols/text-input-unstable-v3.xml', false],
+    ['ext-session-lock-v1', wl_proto_dir / 'staging/ext-session-lock/ext-session-lock-v1.xml', false],
+  ]
+
+  wayland_protocol_sources = []
+  wayland_protocol_headers = []
+  foreach p : wayland_protocol_defs
+    fixup = p[2] ? ' && sed -i s/namespace/name_space/g "$3"' : ''
+    wayland_protocol_headers += custom_target(
+      p[0] + '-client-header',
+      input: p[1],
+      output: p[0] + '-client-protocol.h',
+      command: ['sh', '-c', '"$1" client-header "$2" "$3"' + fixup, '_', wayland_scanner.full_path(), '@INPUT@', '@OUTPUT@'],
+    )
+    wayland_protocol_sources += custom_target(
+      p[0] + '-client-source',
+      input: p[1],
+      output: p[0] + '-client-protocol.c',
+      command: ['sh', '-c', '"$1" private-code "$2" "$3"' + fixup, '_', wayland_scanner.full_path(), '@INPUT@', '@OUTPUT@'],
+    )
+  endforeach
+
+  wayland_media_plugin_sources = [
+    'src/backend/wayland/plugin/media_plugin.cpp',
+    'src/backend/wayland/core/log.cpp',
+  ]
+  wayland_media_deps = [
+    dependency('libavformat'),
+    dependency('libavcodec'),
+    dependency('libavfilter'),
+    dependency('libavutil'),
+    libdrm_dep,
+  ]
+
+  install_subdir('assets/shaders', install_dir: data_dir)
+
   wayland_include = [inc, include_directories('src/backend')]
   wayland_lib = static_library(
     'astralia-wayland-lib',
@@ -259,7 +404,69 @@ endif
 x11_enabled = 'x11' in get_option('backends')
 
 if x11_enabled
-  subdir('src/backend/x11')
+  x11_backend_source = 'src/backend/x11/backend.cpp'
+
+  x11_sources = [
+    'src/backend/x11/app/active_target.cpp',
+    'src/backend/x11/app/services.cpp',
+    'src/backend/x11/core/event_loop.cpp',
+    'src/backend/x11/core/keyboard.cpp',
+    'src/backend/x11/core/pointer.cpp',
+    'src/backend/x11/core/x_clipboard.cpp',
+    'src/backend/x11/core/x_connection.cpp',
+    'src/modules/bamboo/x11/bamboo.cpp',
+    'src/modules/bar/x11/bar.cpp',
+    'src/modules/bar/x11/panel_host.cpp',
+    'src/modules/bar/x11/bar_set.cpp',
+    'src/modules/dashboard/x11/dashboard.cpp',
+    'src/modules/idle/x11/idle.cpp',
+    'src/modules/launcher/x11/launcher.cpp',
+    'src/modules/lock/x11/lock.cpp',
+    'src/modules/logout/x11/logout.cpp',
+    'src/modules/notification/x11/notification.cpp',
+    'src/modules/osd/x11/osd.cpp',
+    'src/modules/overview/x11/overview.cpp',
+    'src/modules/polkit/x11/polkit.cpp',
+    'src/modules/rain/x11/rain.cpp',
+    'src/modules/settings/x11/settings.cpp',
+    'src/modules/visualizer/x11/visualizer.cpp',
+    'src/modules/wallpaper/x11/wallpaper.cpp',
+    'src/modules/wallpaper_select/x11/wallpaper_select.cpp',
+    'src/backend/x11/render/cairo_canvas.cpp',
+    'src/backend/x11/render/app_icon.cpp',
+    'src/backend/x11/render/cover_cache.cpp',
+    'src/backend/x11/render/draw.cpp',
+    'src/backend/x11/render/image_decode.cpp',
+    'src/backend/x11/render/text.cpp',
+    'src/backend/x11/render/wallpaper_paint.cpp',
+    'src/backend/x11/render/x_window.cpp',
+    'src/service/x11/output_service.cpp',
+  ]
+
+  x11_deps = [
+    dependency('xcb', include_type: 'system'),
+    dependency('xcb-ewmh', include_type: 'system'),
+    dependency('xcb-icccm', include_type: 'system'),
+    dependency('xcb-randr', include_type: 'system'),
+    dependency('xcb-shape', include_type: 'system'),
+    dependency('xcb-cursor', include_type: 'system'),
+    dependency('xcb-screensaver', include_type: 'system'),
+    dependency('xcb-keysyms', include_type: 'system'),
+    dependency('cairo', include_type: 'system'),
+    dependency('cairo-xcb', include_type: 'system'),
+    dependency('pangocairo', include_type: 'system'),
+    dependency('fontconfig', include_type: 'system'),
+    resvg_dep,
+    dependency('libjpeg', include_type: 'system'),
+    dependency('xkbcommon', include_type: 'system'),
+    dependency('xkbcommon-x11', include_type: 'system'),
+  ]
+
+  x11_args = ['-DASTRALIA_PAM_DIR="@0@"'.format(data_dir / 'pam')]
+  if get_option('native_cpu')
+    x11_args += ['-march=westmere']
+  endif
+
   x11_include = [inc, include_directories('src/backend/x11')]
   x11_lib = static_library(
     'astralia-x11-lib',
@@ -285,7 +492,7 @@ endif
 
 unit = executable(
   'astralia-test',
-  files(
+  [
     'test/main.cpp',
     'test/core/test_animation.cpp',
     'test/core/test_async_process.cpp',
@@ -339,7 +546,7 @@ unit = executable(
     'test/service/test_brightness.cpp',
     'test/service/test_theme_service.cpp',
     'test/service/test_palette_export.cpp',
-  ),
+  ],
   include_directories: [inc, include_directories('test')],
   link_with: [core_base, core_shared],
   dependencies: deps + render_deps + [dl_dep],
@@ -350,7 +557,7 @@ test('unit', unit)
 if wayland_enabled
   wayland_unit = executable(
     'astralia-wayland-test',
-    files(
+    [
       'test/backend/wayland/test_wayland.cpp',
       'test/backend/wayland/app/test_config.cpp',
       'test/backend/wayland/core/test_poll_source.cpp',
@@ -362,7 +569,7 @@ if wayland_enabled
       'test/backend/wayland/service/test_dock.cpp',
       'test/backend/wayland/service/test_input_convert.cpp',
       'test/backend/wayland/service/test_keyboard.cpp',
-    ),
+    ],
     wayland_protocol_headers,
     include_directories: [wayland_include, include_directories('test')],
     link_with: [wayland_lib, core_shared, core_base],
@@ -375,7 +582,7 @@ endif
 if x11_enabled
   x11_unit = executable(
     'astralia-x11-test',
-    files('test/backend/x11/test_x11.cpp'),
+    'test/backend/x11/test_x11.cpp',
     include_directories: [x11_include, include_directories('test')],
     link_with: [x11_lib, core_shared, core_base],
     dependencies: deps + x11_deps + [dl_dep],
