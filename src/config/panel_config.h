@@ -35,6 +35,11 @@ inline constexpr float dialog_button_pad = 16.0f;
 inline constexpr float dialog_label_chars = 32.0f;
 inline constexpr float confirm_dialog_height =
     dialog_spacer + dialog_label + row_gap + dialog_button + row_gap + 2.0f * padding;
+inline constexpr float pairing_code_height = 40.0f;
+inline constexpr int pairing_code_px = 32;
+inline constexpr float pairing_dialog_height = dialog_spacer + pairing_code_height + row_gap +
+                                               dialog_label + row_gap + dialog_button + row_gap +
+                                               2.0f * padding;
 inline constexpr float field_dialog_height =
     dialog_spacer + dialog_button + row_gap + dialog_button + row_gap + 2.0f * padding;
 

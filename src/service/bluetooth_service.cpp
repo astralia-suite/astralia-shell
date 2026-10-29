@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -6,8 +7,10 @@
 #include <fcntl.h>
 #include <linux/rfkill.h>
 #include <map>
+#include <memory>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 #include "core/log.h"
@@ -25,6 +28,22 @@ const std::string adapter_interface = "org.bluez.Adapter1";
 const std::string device_interface = "org.bluez.Device1";
 const std::string battery_interface = "org.bluez.Battery1";
 const std::string object_manager_interface = "org.freedesktop.DBus.ObjectManager";
+const std::string agent_manager_interface = "org.bluez.AgentManager1";
+const std::string agent_interface = "org.bluez.Agent1";
+
+constexpr const char *agent_path = "/org/astralia_shell/BluetoothAgent";
+constexpr const char *agent_capability = "KeyboardDisplay";
+constexpr const char *rejected_error = "org.bluez.Error.Rejected";
+constexpr const char *already_exists_error = "org.bluez.Error.AlreadyExists";
+constexpr const char *owner_changed_rule =
+    "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',"
+    "member='NameOwnerChanged',arg0='org.bluez'";
+constexpr size_t passkey_digits = 6;
+constexpr size_t pin_max_chars = 16;
+
+sdbus::Error rejection(const char *why = "Rejected") {
+    return sdbus::Error(sdbus::Error::Name(rejected_error), why);
+}
 
 template <typename T>
 std::optional<T> property(const Properties &properties, const std::string &name) {
@@ -154,6 +173,17 @@ bool set_bluetooth_soft_blocked(bool blocked) {
 }
 
 } // namespace rfkill
+
+bool bluetooth_agent_allows(const std::string &request_path, const std::string &pairing_path,
+                            bool known) {
+    return known || (!pairing_path.empty() && request_path == pairing_path);
+}
+
+std::string bluetooth_passkey_text(uint32_t passkey) {
+    char buffer[16];
+    std::snprintf(buffer, sizeof buffer, "%06u", passkey % 1000000u);
+    return buffer;
+}
 
 BluetoothDeviceKind bluetooth_classify_icon(const std::string &name) {
     if (name == "audio-headset") {
@@ -296,6 +326,11 @@ BluetoothService::BluetoothService(Bus &bus) : bus_(bus), root_(bus_.proxy(bluez
         return;
     }
     match_ = bus_.add_match("type='signal',sender='org.bluez'", [this] { request_refresh(); });
+    owner_match_ = bus_.add_match(owner_changed_rule, [this] {
+        agent_registered_ = false;
+        request_refresh();
+    });
+    export_agent();
     request_refresh();
 }
 
@@ -336,6 +371,9 @@ void BluetoothService::request_refresh() {
 void BluetoothService::apply(const BluetoothObjects &objects) {
     BluetoothSnapshot next = bluetooth_parse(objects, busy_);
     adapter_path_ = next.adapter_path;
+    if (next.status.present) {
+        register_agent();
+    }
     std::erase_if(proxies_, [&](const auto &entry) {
         return entry.first != adapter_path_ &&
                std::ranges::none_of(
@@ -368,7 +406,8 @@ sdbus::IProxy *BluetoothService::proxy(const std::string &path) {
     return slot.get();
 }
 
-void BluetoothService::call_device(const std::string &path, const char *method, bool busy) {
+void BluetoothService::call_device(const std::string &path, const char *method, bool busy,
+                                   std::function<void(bool)> done) {
     sdbus::IProxy *device = proxy(path);
     if (device == nullptr) {
         return;
@@ -385,9 +424,12 @@ void BluetoothService::call_device(const std::string &path, const char *method, 
     try {
         device->callMethodAsync(method)
             .onInterface(device_interface)
-            .uponReplyInvoke([this, path, method](std::optional<sdbus::Error> error) {
+            .uponReplyInvoke([this, path, method, done](std::optional<sdbus::Error> error) {
                 if (error) {
                     log::error("bluetooth: {} failed: {}", method, error->getMessage());
+                }
+                if (done) {
+                    done(!error);
                 }
                 busy_.erase(path);
                 request_refresh();
@@ -395,6 +437,9 @@ void BluetoothService::call_device(const std::string &path, const char *method, 
     } catch (const sdbus::Error &error) {
         busy_.erase(path);
         log::error("bluetooth: {} dispatch failed: {}", method, error.getMessage());
+        if (done) {
+            done(false);
+        }
         request_refresh();
     }
 }
@@ -464,7 +509,263 @@ void BluetoothService::disconnect(const std::string &path) {
     call_device(path, "Disconnect", false);
 }
 
-void BluetoothService::pair(const std::string &path) { call_device(path, "Pair", true); }
+void BluetoothService::pair(const std::string &path) {
+    if (path.empty() || !pairing_path_.empty()) {
+        return;
+    }
+    pairing_path_ = path;
+    call_device(path, "Pair", true, [this, path](bool ok) {
+        pairing_path_.clear();
+        agent_reply_ = nullptr;
+        bool had_request = std::exchange(agent_request_, std::nullopt).has_value();
+        if (ok) {
+            trust(path);
+        }
+        if (had_request) {
+            changed.emit();
+        }
+    });
+}
+
+void BluetoothService::trust(const std::string &path) {
+    sdbus::IProxy *device = proxy(path);
+    if (device == nullptr) {
+        return;
+    }
+    try {
+        device->setPropertyAsync("Trusted")
+            .onInterface(device_interface)
+            .toValue(true)
+            .uponReplyInvoke([this](std::optional<sdbus::Error> error) {
+                if (error) {
+                    log::error("bluetooth: cannot set Trusted: {}", error->getMessage());
+                }
+                request_refresh();
+            });
+    } catch (const sdbus::Error &error) {
+        log::error("bluetooth: cannot set Trusted: {}", error.getMessage());
+    }
+}
+
+void BluetoothService::cancel_pairing() {
+    if (agent_request_) {
+        finish_agent(false);
+    }
+    if (!pairing_path_.empty()) {
+        call_device(pairing_path_, "CancelPairing", false);
+    }
+}
+
+void BluetoothService::agent_answer(bool accept) {
+    if (!agent_request_) {
+        return;
+    }
+    if (!accept) {
+        cancel_pairing();
+    } else if (agent_request_->kind == BluetoothAgentRequest::Kind::confirm) {
+        finish_agent(true);
+    }
+}
+
+void BluetoothService::agent_input(const std::string &text) {
+    if (!agent_request_) {
+        return;
+    }
+    using Kind = BluetoothAgentRequest::Kind;
+    bool digits = !text.empty() && text.size() <= passkey_digits &&
+                  std::ranges::all_of(text, [](unsigned char c) { return std::isdigit(c) != 0; });
+    if (agent_request_->kind == Kind::input_passkey && digits) {
+        finish_agent(true, text);
+    } else if (agent_request_->kind == Kind::input_pin && !text.empty() &&
+               text.size() <= pin_max_chars) {
+        finish_agent(true, text);
+    }
+}
+
+void BluetoothService::hold(BluetoothAgentRequest request,
+                            std::function<void(bool, const std::string &)> reply) {
+    if (agent_reply_) {
+        finish_agent(false);
+    }
+    agent_request_ = std::move(request);
+    agent_reply_ = std::move(reply);
+    changed.emit();
+}
+
+void BluetoothService::finish_agent(bool accept, const std::string &text) {
+    auto reply = std::exchange(agent_reply_, nullptr);
+    agent_request_.reset();
+    if (reply) {
+        try {
+            reply(accept, text);
+        } catch (const sdbus::Error &error) {
+            log::error("bluetooth: agent reply failed: {}", error.getMessage());
+        }
+    }
+    changed.emit();
+}
+
+std::string BluetoothService::device_name(const std::string &path) const {
+    auto it = std::ranges::find(devices_, path, &BluetoothDevice::path);
+    return it == devices_.end() ? path : it->name;
+}
+
+bool BluetoothService::device_known(const std::string &path) const {
+    auto it = std::ranges::find(devices_, path, &BluetoothDevice::path);
+    return it != devices_.end() && (it->paired || it->trusted);
+}
+
+void BluetoothService::register_agent() {
+    if (!agent_ || agent_registered_) {
+        return;
+    }
+    if (!manager_) {
+        manager_ = bus_.proxy(bluez, "/org/bluez");
+    }
+    if (!manager_) {
+        return;
+    }
+    // ponytail: a failed registration is not retried until bluetoothd restarts
+    agent_registered_ = true;
+    try {
+        manager_->callMethodAsync("RegisterAgent")
+            .onInterface(agent_manager_interface)
+            .withArguments(sdbus::ObjectPath(agent_path), std::string(agent_capability))
+            .uponReplyInvoke([this](std::optional<sdbus::Error> error) {
+                if (error && error->getName() != already_exists_error) {
+                    log::error("bluetooth: RegisterAgent failed: {}", error->getMessage());
+                    return;
+                }
+                try {
+                    manager_->callMethodAsync("RequestDefaultAgent")
+                        .onInterface(agent_manager_interface)
+                        .withArguments(sdbus::ObjectPath(agent_path))
+                        .uponReplyInvoke([](std::optional<sdbus::Error> default_error) {
+                            if (default_error) {
+                                log::error("bluetooth: RequestDefaultAgent failed: {}",
+                                           default_error->getMessage());
+                            }
+                        });
+                } catch (const sdbus::Error &dispatch_error) {
+                    log::error("bluetooth: RequestDefaultAgent dispatch failed: {}",
+                               dispatch_error.getMessage());
+                }
+            });
+    } catch (const sdbus::Error &error) {
+        log::error("bluetooth: RegisterAgent dispatch failed: {}", error.getMessage());
+    }
+}
+
+void BluetoothService::export_agent() {
+    sdbus::IConnection *conn = bus_.conn();
+    if (conn == nullptr) {
+        return;
+    }
+    using Kind = BluetoothAgentRequest::Kind;
+    auto drop = [this] {
+        agent_reply_ = nullptr;
+        if (std::exchange(agent_request_, std::nullopt)) {
+            changed.emit();
+        }
+    };
+    auto allowed = [this](const std::string &device) {
+        return bluetooth_agent_allows(device, pairing_path_, false);
+    };
+    auto display = [this, allowed](const std::string &device, Kind kind, std::string code,
+                                   unsigned entered) {
+        if (!allowed(device)) {
+            throw rejection("Not pairing this device");
+        }
+        hold({kind, device, device_name(device), std::move(code), entered}, nullptr);
+    };
+    try {
+        agent_ = sdbus::createObject(*conn, sdbus::ObjectPath(agent_path));
+        agent_
+            ->addVTable(
+                sdbus::registerMethod("Release").implementedAs(drop),
+                sdbus::registerMethod("Cancel").implementedAs(drop),
+                sdbus::registerMethod("RequestAuthorization")
+                    .implementedAs([allowed](sdbus::ObjectPath device) {
+                        if (!allowed(device)) {
+                            throw rejection("Not pairing this device");
+                        }
+                    }),
+                sdbus::registerMethod("AuthorizeService")
+                    .implementedAs([this](sdbus::ObjectPath device, std::string) {
+                        if (!bluetooth_agent_allows(device, pairing_path_, device_known(device))) {
+                            throw rejection("Unknown device");
+                        }
+                    }),
+                sdbus::registerMethod("DisplayPasskey")
+                    .implementedAs(
+                        [display](sdbus::ObjectPath device, uint32_t passkey, uint16_t entered) {
+                            display(device, Kind::display_passkey, bluetooth_passkey_text(passkey),
+                                    entered);
+                        }),
+                sdbus::registerMethod("DisplayPinCode")
+                    .implementedAs([display](sdbus::ObjectPath device, std::string pin) {
+                        display(device, Kind::display_pin, std::move(pin), 0);
+                    }),
+                sdbus::registerMethod("RequestConfirmation")
+                    .implementedAs([this, allowed](sdbus::Result<> &&result,
+                                                   sdbus::ObjectPath device, uint32_t passkey) {
+                        if (!allowed(device)) {
+                            result.returnError(rejection("Not pairing this device"));
+                            return;
+                        }
+                        auto reply = std::make_shared<sdbus::Result<>>(std::move(result));
+                        hold({Kind::confirm, device, device_name(device),
+                              bluetooth_passkey_text(passkey), 0},
+                             [reply](bool accept, const std::string &) {
+                                 if (accept) {
+                                     reply->returnResults();
+                                 } else {
+                                     reply->returnError(rejection());
+                                 }
+                             });
+                    }),
+                sdbus::registerMethod("RequestPasskey")
+                    .implementedAs([this, allowed](sdbus::Result<uint32_t> &&result,
+                                                   sdbus::ObjectPath device) {
+                        if (!allowed(device)) {
+                            result.returnError(rejection("Not pairing this device"));
+                            return;
+                        }
+                        auto reply = std::make_shared<sdbus::Result<uint32_t>>(std::move(result));
+                        hold({Kind::input_passkey, device, device_name(device), {}, 0},
+                             [reply](bool accept, const std::string &text) {
+                                 if (accept) {
+                                     reply->returnResults(
+                                         static_cast<uint32_t>(std::stoul(text)));
+                                 } else {
+                                     reply->returnError(rejection());
+                                 }
+                             });
+                    }),
+                sdbus::registerMethod("RequestPinCode")
+                    .implementedAs([this, allowed](sdbus::Result<std::string> &&result,
+                                                   sdbus::ObjectPath device) {
+                        if (!allowed(device)) {
+                            result.returnError(rejection("Not pairing this device"));
+                            return;
+                        }
+                        auto reply =
+                            std::make_shared<sdbus::Result<std::string>>(std::move(result));
+                        hold({Kind::input_pin, device, device_name(device), {}, 0},
+                             [reply](bool accept, const std::string &text) {
+                                 if (accept) {
+                                     reply->returnResults(text);
+                                 } else {
+                                     reply->returnError(rejection());
+                                 }
+                             });
+                    }))
+            .forInterface(agent_interface);
+    } catch (const sdbus::Error &error) {
+        log::error("bluetooth: cannot export agent: {}", error.what());
+        agent_.reset();
+    }
+}
 
 void BluetoothService::forget(const std::string &path) {
     sdbus::IProxy *adapter = proxy(adapter_path_);

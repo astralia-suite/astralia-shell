@@ -242,6 +242,8 @@ void check_dialog_heights() {
                 "the confirm dialog is 114 high");
     test::check(astralia::panel_config::field_dialog_height == 122.0f,
                 "the password dialog is 122 high");
+    test::check(astralia::panel_config::pairing_dialog_height == 160.0f,
+                "the pairing dialog is 160 high");
 }
 
 void check_panel_scroll() {

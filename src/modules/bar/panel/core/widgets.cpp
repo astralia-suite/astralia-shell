@@ -181,4 +181,35 @@ void confirm_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view lab
     paint.region(cancel, cancel_id);
 }
 
+void pairing_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view title,
+                    std::string_view code, std::string_view hint, PanelPaint &paint, int cancel_id,
+                    int yes_id) {
+    constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
+    constexpr ui::TextStyle code_style{ui::FontFamily::text, cfg::pairing_code_px};
+    dialog_top(canvas, box, title, paint, cancel_id);
+    float x = box.x + cfg::padding;
+    float width = box.w - 2.0f * cfg::padding;
+    float y = box.y + cfg::padding + cfg::dialog_spacer;
+    centered_text(canvas, code, code_style, {x, y, width, cfg::pairing_code_height},
+                  palette::accent);
+    y += cfg::pairing_code_height + cfg::row_gap;
+    centered_text(canvas, hint, text_style, {x, y, width, cfg::dialog_label}, palette::text_dim);
+    y += cfg::dialog_label + cfg::row_gap;
+    float cancel_w = canvas.measure("Cancel", text_style).w + cfg::dialog_button_pad;
+    float yes_w = yes_id != 0 ? canvas.measure("Yes", text_style).w + cfg::dialog_button_pad : 0.0f;
+    float total = cancel_w + (yes_id != 0 ? cfg::row_gap + yes_w : 0.0f);
+    float bx = x + (width - total) / 2.0f;
+    if (yes_id != 0) {
+        ui::Box yes{bx, y, yes_w, cfg::dialog_button};
+        selectable(canvas, yes, metrics::radius_widget, false, false, palette::accent_container);
+        centered_text(canvas, "Yes", text_style, yes, palette::text);
+        paint.region(yes, yes_id);
+        bx += yes_w + cfg::row_gap;
+    }
+    ui::Box cancel{bx, y, cancel_w, cfg::dialog_button};
+    selectable(canvas, cancel, metrics::radius_widget, false, false, palette::critical_container);
+    centered_text(canvas, "Cancel", text_style, cancel, palette::text);
+    paint.region(cancel, cancel_id);
+}
+
 } // namespace astralia::bar::widgets

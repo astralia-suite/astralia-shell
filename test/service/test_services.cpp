@@ -269,6 +269,20 @@ void check_bluetooth() {
     check(astralia::bluetooth_parse({}, {}).status == astralia::BluetoothStatus{},
           "no adapter gives the default status");
 
+    check(astralia::bluetooth_passkey_text(0) == "000000" &&
+              astralia::bluetooth_passkey_text(42) == "000042" &&
+              astralia::bluetooth_passkey_text(999999) == "999999",
+          "passkey text is six zero-padded digits");
+    check(astralia::bluetooth_agent_allows("/dev_A", "/dev_A", false),
+          "the pairing device is accepted");
+    check(!astralia::bluetooth_agent_allows("/dev_B", "/dev_A", false),
+          "another device is rejected");
+    check(astralia::bluetooth_agent_allows("/dev_B", "/dev_A", true),
+          "a known device is accepted for services");
+    check(!astralia::bluetooth_agent_allows("/dev_A", "", false) &&
+              !astralia::bluetooth_agent_allows("", "", false),
+          "no pairing device rejects pairing requests");
+
     std::string path = "/tmp/astralia_test_rfkill_" + std::to_string(getpid());
     check(!astralia::rfkill::read_sysfs_uint(path).has_value() &&
               !astralia::rfkill::read_sysfs_string(path).has_value(),

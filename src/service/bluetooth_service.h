@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -61,6 +62,18 @@ struct BluetoothSnapshot {
     std::string adapter_path;
 };
 
+struct BluetoothAgentRequest {
+    enum class Kind { confirm, display_passkey, display_pin, input_passkey, input_pin } kind;
+    std::string path;
+    std::string name;
+    std::string code;
+    unsigned entered = 0;
+};
+
+bool bluetooth_agent_allows(const std::string &request_path, const std::string &pairing_path,
+                            bool known);
+std::string bluetooth_passkey_text(uint32_t passkey);
+
 BluetoothDeviceKind bluetooth_classify_icon(const std::string &bluez_icon_name);
 BluetoothDeviceKind bluetooth_classify_class(uint32_t class_of_device);
 BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects,
@@ -100,6 +113,11 @@ class BluetoothService {
     void pair(const std::string &path);
     void forget(const std::string &path);
 
+    const std::optional<BluetoothAgentRequest> &agent_request() const { return agent_request_; }
+    void agent_answer(bool accept);
+    void agent_input(const std::string &text);
+    void cancel_pairing();
+
     Signal<> changed;
     Signal<const StatusMessage &> messages;
 
@@ -107,8 +125,16 @@ class BluetoothService {
     void request_refresh();
     void apply(const BluetoothObjects &objects);
     sdbus::IProxy *proxy(const std::string &path);
-    void call_device(const std::string &path, const char *method, bool busy);
+    void call_device(const std::string &path, const char *method, bool busy,
+                     std::function<void(bool)> done = {});
     void call_adapter(const char *method);
+    void export_agent();
+    void register_agent();
+    void trust(const std::string &path);
+    void hold(BluetoothAgentRequest request, std::function<void(bool, const std::string &)> reply);
+    void finish_agent(bool accept, const std::string &text = {});
+    std::string device_name(const std::string &path) const;
+    bool device_known(const std::string &path) const;
 
     Bus &bus_;
     BluetoothStatus status_;
@@ -119,8 +145,15 @@ class BluetoothService {
     bool refresh_in_flight_ = false;
     bool refresh_again_ = false;
     std::unique_ptr<sdbus::IProxy> root_;
+    std::unique_ptr<sdbus::IProxy> manager_;
+    std::unique_ptr<sdbus::IObject> agent_;
     std::map<std::string, std::unique_ptr<sdbus::IProxy>> proxies_;
+    std::string pairing_path_;
+    std::optional<BluetoothAgentRequest> agent_request_;
+    std::function<void(bool, const std::string &)> agent_reply_;
+    bool agent_registered_ = false;
     sdbus::Slot match_;
+    sdbus::Slot owner_match_;
     sdbus::Slot refresh_reply_;
 };
 

@@ -5,6 +5,8 @@
 
 #include "modules/bar/panel/core/panel.h"
 
+#include "render/text_field.h"
+
 #include "service/bluetooth_service.h"
 
 namespace astralia::bar {
@@ -35,11 +37,15 @@ class BluetoothPanel final : public PanelContent {
     bool dismiss_dialog() override;
     bool activate(const PanelRegion &region, double x, double y) override;
     bool key(const input::KeyEvent &event) override;
+    bool wants_text() const override;
+    ui::Box cursor() const override;
 
   private:
     const BluetoothDevice *dialog_device() const;
+    void submit_code();
 
     BluetoothService &bluetooth_;
+    TextFieldState code_;
     std::string dialog_path_;
     int dialog_action_ = 0;
 };

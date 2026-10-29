@@ -50,5 +50,8 @@ void dialog_top(ui::Canvas &canvas, const ui::Box &box, std::string_view label, 
 void confirm_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view label,
                     std::string_view prompt, std::string_view confirm_label, PanelPaint &paint,
                     int cancel_id, int confirm_id);
+void pairing_dialog(ui::Canvas &canvas, const ui::Box &box, std::string_view title,
+                    std::string_view code, std::string_view hint, PanelPaint &paint, int cancel_id,
+                    int yes_id = 0);
 
 } // namespace astralia::bar::widgets

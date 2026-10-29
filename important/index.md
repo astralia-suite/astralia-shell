@@ -281,7 +281,7 @@
 - `wallpaper_service.{h,cpp}`: Resolves and edits wallpaper image, column count and fill mode per output, and lists folders.
 - `theme_service.{h,cpp}`: Themes from the fixed Keqing default palette, or from the wallpaper or the first animated frame, off-thread after the first sync.
 - `battery_service.{h,cpp}`: UPower display-device status, device list and `on_battery`, read asynchronously.
-- `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds and `rfkill` control.
+- `bluetooth_service.{h,cpp}`: BlueZ adapter and device state with coalesced async refresh, device kinds, `rfkill` control and the `org.bluez.Agent1` pairing agent with held replies.
 - `network_service.{h,cpp}`: NetworkManager status, `nmcli` scans while watched, ethernet state and connectivity checks.
 - `notification_service.{h,cpp}`: Owns the notification D-Bus name; urgency, per-notification timeouts and close reasons.
 - `polkit_service.{h,cpp}`: Authentication agent with request details, prompt, echo flag and a ready signal.
@@ -347,12 +347,12 @@
 
 - `panel.{h,cpp}`: `Panel` scroll card with staged open, content scrolling, drag, dialogs and a refresh timer.
 - `panel_set.{h,cpp}`: Owns the panels, keeps one open at a time and routes changes to the host.
-- `widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm dialog the panels share.
+- `widgets.{h,cpp}`: Sliders, toggles, device rows, flat bars and the confirm and pairing dialogs the panels share.
 
 ## `src/modules/bar/panel/content/`
 
 - `battery_panel.{h,cpp}`: Battery panel content.
-- `bluetooth_panel.{h,cpp}`: Bluetooth panel content.
+- `bluetooth_panel.{h,cpp}`: Bluetooth panel content and the pairing dialog for agent requests.
 - `brightness_panel.{h,cpp}`: Brightness panel content.
 - `date_panel.{h,cpp}`: Date and calendar panel content.
 - `time_panel.{h,cpp}`: Time panel content: big time, seconds, AM/PM and timezone, repainted every second.

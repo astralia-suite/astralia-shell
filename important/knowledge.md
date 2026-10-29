@@ -60,6 +60,7 @@ Entries without a tag apply to every backend. Tags `[wayland]` and `[x11]` mark 
 
 - Never read D-Bus properties synchronously on the reactor thread. Use `dbus_get_all_async`; a stalled BlueZ once froze the whole shell.
 - No reactor-thread callback may make a blocking D-Bus call. A synchronous Bluetooth read froze the shell for 18 seconds.
+- BlueZ refuses confirmation and passkey pairing when no agent is registered (`No agent available for request type 2`). `BluetoothService` registers one, and its replies must stay open until the user answers, cancels or BlueZ sends `Cancel`.
 - Do not build textures or rasterize text from a D-Bus callback. Build lazily in the paint path instead.
 - Hold an async reply as an `sdbus::Slot` member. Destroying the owner then cancels the reply instead of calling a dead `this`.
 - Coalesce D-Bus-signal refreshes to one call in flight plus a repeat flag. A signal burst otherwise queues one full refresh each.
