@@ -298,8 +298,17 @@ void check_view() {
 
     test::RecordingCanvas canvas;
     astralia::overview::paint(canvas, model, {});
-    test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 2 + 3,
+    test::check(canvas.count(Kind::rounded) == scroll_ops + 10 + 2 + 2,
                 "the scroll, cells, one tile and the indicator with its shadow");
+    std::vector<const test::Op *> frames;
+    for (const test::Op &op : canvas.ops) {
+        if (op.kind == Kind::rounded) {
+            frames.push_back(&op);
+        }
+    }
+    test::check(frames.size() >= 2 && frames[frames.size() - 1]->color.a == 0.0f &&
+                    frames[frames.size() - 2]->color.a == 0.0f,
+                "the indicator and its shadow leave the tiles visible");
     test::check(canvas.count(Kind::text) == 5 && canvas.count(Kind::image) <= 1,
                 "a number per cell");
 
@@ -311,7 +320,7 @@ void check_view() {
                                   ++art_calls;
                                   return true;
                               });
-    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 3,
+    test::check(art_calls == 1 && live.count(Kind::rounded) == scroll_ops + 10 + 2,
                 "live art replaces the placeholder tile");
 }
 

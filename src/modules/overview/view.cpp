@@ -86,8 +86,8 @@ void paint(ui::Canvas &canvas, Model &model, const TileArt &art) {
     if (const ui::Box *indicator = model.indicator()) {
         float offset = metrics::shadow_widget * scale;
         ui::Box shadow{indicator->x, indicator->y + offset, indicator->w, indicator->h};
-        sticker(canvas, shadow, metrics::radius_card * scale, transparent, palette::border_outer,
-                cfg::indicator_border_width, 0.0f);
+        canvas.rounded(shadow, metrics::radius_card * scale, transparent,
+                       cfg::indicator_border_width, palette::border_outer);
         canvas.rounded(*indicator, metrics::radius_card * scale, transparent,
                        cfg::indicator_border_width, palette::accent);
     }
