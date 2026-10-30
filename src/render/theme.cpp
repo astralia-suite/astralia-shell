@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "render/oklab.h"
 #include "render/theme.h"
@@ -28,9 +29,35 @@ float wrap_hue(float hue) {
     return h < 0.0f ? h + 360.0f : h;
 }
 
+constexpr float tone_bright = 0.75f;
+constexpr float tone_dark = 0.35f;
+constexpr float text_contrast = 4.5f;
+constexpr float fill_contrast = 5.5f;
+constexpr float outline_gap = 0.3f;
+constexpr float shadow_gap = 0.06f;
+constexpr int settle_steps = 16;
+
+float depth_from_tone(float tone) {
+    float t = std::clamp((tone_bright - tone) / (tone_bright - tone_dark), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+template <typename Ok> float settle(float start, float pole, Ok ok) {
+    if (ok(start)) {
+        return start;
+    }
+    float low = start;
+    float high = pole;
+    for (int i = 0; i < settle_steps; ++i) {
+        float mid = 0.5f * (low + high);
+        (ok(mid) ? high : low) = mid;
+    }
+    return high;
+}
+
 } // namespace
 
-Theme theme_from_seed(const Extraction &extraction, Scheme scheme) {
+Theme theme_from_seed(const Extraction &extraction) {
     const std::vector<Seed> &seeds = extraction.seeds;
     float hue = seeds.empty() ? fallback_hue : seeds[0].hue;
     float chroma = seeds.empty() ? dusty_chroma : seeds[0].chroma;
@@ -42,44 +69,122 @@ Theme theme_from_seed(const Extraction &extraction, Scheme scheme) {
     float vivid = std::clamp((chroma - dusty_chroma) / (candy_chroma - dusty_chroma), 0.0f, 1.0f);
     auto c = [vivid](float dusty, float candy) { return lerp(dusty, candy, vivid); };
 
-    bool dark = scheme == Scheme::dark;
-    auto l = [dark](float light, float night) { return dark ? night : light; };
+    float depth = depth_from_tone(extraction.tone);
+    auto l = [depth](float light, float night) { return lerp(light, night, depth); };
+    float tint = lerp(1.0f, 1.4f, depth);
+
+    Oklch paper{l(0.975f, 0.27f), c(0.010f, 0.020f) * tint, hue};
+    Oklch surface{l(0.945f, 0.32f), c(0.020f, 0.040f) * tint, hue};
+    Oklch surface_alt{l(0.890f, 0.38f), c(0.040f, 0.070f) * tint, hue};
+    Oklch accent{l(0.74f, 0.50f), c(0.090f, 0.190f), hue};
+    Oklch accent_container{l(0.90f, 0.36f), c(0.060f, 0.080f), hue};
+    Oklch accent_alt{l(0.80f, 0.48f), c(0.080f, 0.170f), alt_hue};
+    Oklch accent_alt_container{l(0.92f, 0.35f), c(0.050f, 0.070f), alt_hue};
+    Oklch pop_a{l(0.76f, 0.48f), c(0.110f, 0.200f), seed_hue(1, pop_a_offset)};
+    Oklch pop_b{l(0.86f, 0.46f), c(0.100f, 0.180f), seed_hue(2, pop_b_offset)};
+    Oklch pop_c{l(0.80f, 0.47f), c(0.100f, 0.170f), seed_hue(3, pop_c_offset)};
+    Oklch critical_container{l(0.86f, 0.36f), 0.070f, critical_hue};
+    Oklch *grounds[] = {&paper,
+                        &surface,
+                        &surface_alt,
+                        &accent,
+                        &accent_container,
+                        &accent_alt,
+                        &accent_alt_container,
+                        &pop_a,
+                        &pop_b,
+                        &pop_c,
+                        &critical_container};
+
+    constexpr Color white{1.0f, 1.0f, 1.0f, 1.0f};
+    constexpr Color black{0.0f, 0.0f, 0.0f, 1.0f};
+    float worst_white = std::numeric_limits<float>::max();
+    float worst_black = std::numeric_limits<float>::max();
+    for (const Oklch *ground : grounds) {
+        Color color = color_from_oklch(*ground);
+        worst_white = std::min(worst_white, contrast_ratio(color, white));
+        worst_black = std::min(worst_black, contrast_ratio(color, black));
+    }
+    bool light_text = worst_white >= worst_black;
+    float text_pole = light_text ? 1.0f : 0.0f;
+    for (Oklch *ground : grounds) {
+        ground->L = settle(ground->L, 1.0f - text_pole, [&](float lightness) {
+            Color color = color_from_oklch({lightness, ground->C, ground->h});
+            return contrast_ratio(color, light_text ? white : black) >= fill_contrast;
+        });
+    }
 
     Theme t{};
-    t.scheme = scheme;
+    t.paper = color_from_oklch(paper);
+    t.surface = color_from_oklch(surface);
+    t.surface_alt = color_from_oklch(surface_alt);
+    t.accent = color_from_oklch(accent);
+    t.accent_container = color_from_oklch(accent_container);
+    t.accent_alt = color_from_oklch(accent_alt);
+    t.accent_alt_container = color_from_oklch(accent_alt_container);
+    t.pop_a = color_from_oklch(pop_a);
+    t.pop_b = color_from_oklch(pop_b);
+    t.pop_c = color_from_oklch(pop_c);
+    t.critical_container = color_from_oklch(critical_container);
 
-    float tint = dark ? 1.4f : 1.0f;
+    const Color all_grounds[] = {t.paper,
+                                 t.surface,
+                                 t.surface_alt,
+                                 t.accent,
+                                 t.accent_container,
+                                 t.accent_alt,
+                                 t.accent_alt_container,
+                                 t.pop_a,
+                                 t.pop_b,
+                                 t.pop_c,
+                                 t.critical_container};
+    const Color plain_grounds[] = {t.paper, t.surface, t.surface_alt};
+    const Color paper_ground[] = {t.paper};
+    auto readable = [&](float start, float chroma, const auto &backdrops) {
+        return settle(start, text_pole, [&](float lightness) {
+            Color color = color_from_oklch({lightness, chroma, hue});
+            for (const Color &backdrop : backdrops) {
+                if (contrast_ratio(color, backdrop) < text_contrast) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    };
 
-    t.ink = color_from_oklch({l(0.20f, 0.15f), c(0.060f, 0.100f), hue});
-    t.paper = color_from_oklch({l(0.975f, 0.27f), c(0.010f, 0.020f) * tint, hue});
-    t.surface = color_from_oklch({l(0.945f, 0.32f), c(0.020f, 0.040f) * tint, hue});
-    t.surface_alt = color_from_oklch({l(0.890f, 0.38f), c(0.040f, 0.070f) * tint, hue});
-    t.shadow = color_from_oklch({l(0.14f, 0.07f), 0.050f, hue});
-    t.border_outer = color_from_oklch({l(0.20f, 0.66f), c(0.060f, 0.100f), hue});
+    float shadow_lightness = l(0.14f, 0.07f);
+    float ink_lightness = l(0.20f, 0.15f);
+    if (!light_text) {
+        ink_lightness = readable(ink_lightness, c(0.060f, 0.100f), plain_grounds);
+    }
+    float outline_lightness = settle(l(0.20f, 0.66f), text_pole, [&](float lightness) {
+        return std::fabs(lightness - paper.L) >= outline_gap;
+    });
+    if (!light_text) {
+        outline_lightness = std::max(outline_lightness, shadow_lightness + shadow_gap);
+    }
+
+    t.ink = color_from_oklch({ink_lightness, c(0.060f, 0.100f), hue});
+    t.shadow = color_from_oklch({shadow_lightness, 0.050f, hue});
+    t.border_outer = color_from_oklch({outline_lightness, c(0.060f, 0.100f), hue});
     t.border_inner = t.paper;
 
-    t.accent = color_from_oklch({l(0.74f, 0.50f), c(0.090f, 0.190f), hue});
     t.accent_alpha12 = with_alpha(t.accent, byte_alpha(0x1F));
     t.accent_alpha19 = with_alpha(t.accent, byte_alpha(0x30));
     t.accent_alpha25 = with_alpha(t.accent, byte_alpha(0x40));
-    t.accent_container = color_from_oklch({l(0.90f, 0.36f), c(0.060f, 0.080f), hue});
 
-    t.accent_alt = color_from_oklch({l(0.80f, 0.48f), c(0.080f, 0.170f), alt_hue});
     t.accent_alt_alpha50 = with_alpha(t.accent_alt, byte_alpha(0x80));
-    t.accent_alt_container = color_from_oklch({l(0.92f, 0.35f), c(0.050f, 0.070f), alt_hue});
-
-    t.pop_a = color_from_oklch({l(0.76f, 0.48f), c(0.110f, 0.200f), seed_hue(1, pop_a_offset)});
-    t.pop_b = color_from_oklch({l(0.86f, 0.46f), c(0.100f, 0.180f), seed_hue(2, pop_b_offset)});
-    t.pop_c = color_from_oklch({l(0.80f, 0.47f), c(0.100f, 0.170f), seed_hue(3, pop_c_offset)});
 
     t.base = t.paper;
     t.overlay = with_alpha(t.paper, byte_alpha(0xEB));
 
-    t.lavender = color_from_oklch({l(0.48f, 0.72f), c(0.090f, 0.150f), hue});
+    t.lavender = color_from_oklch(
+        {readable(l(0.48f, 0.72f), c(0.090f, 0.150f), paper_ground), c(0.090f, 0.150f), hue});
 
     t.field_bg = t.surface;
 
-    t.text = color_from_oklch({l(0.20f, 0.93f), c(0.060f, 0.100f), hue});
+    t.text = color_from_oklch(
+        {readable(l(0.20f, 0.93f), c(0.060f, 0.100f), all_grounds), c(0.060f, 0.100f), hue});
     t.text_alpha04 = with_alpha(t.text, byte_alpha(0x0A));
     t.text_alpha06 = with_alpha(t.text, byte_alpha(0x0F));
     t.text_alpha08 = with_alpha(t.text, byte_alpha(0x14));
@@ -87,14 +192,14 @@ Theme theme_from_seed(const Extraction &extraction, Scheme scheme) {
     t.text_alpha15 = with_alpha(t.text, byte_alpha(0x26));
     t.text_alpha20 = with_alpha(t.text, byte_alpha(0x33));
     t.text_alpha65 = with_alpha(t.text, byte_alpha(0xA6));
-    t.text_muted = color_from_oklch({l(0.42f, 0.78f), c(0.060f, 0.100f), hue});
+    t.text_muted = color_from_oklch(
+        {readable(l(0.42f, 0.78f), c(0.060f, 0.100f), plain_grounds), c(0.060f, 0.100f), hue});
     t.text_dim = with_alpha(t.text_muted, byte_alpha(0xD0));
 
     t.electro = color_from_oklch({l(0.70f, 0.74f), 0.150f, hue});
 
     t.critical = color_from_oklch({l(0.58f, 0.66f), 0.190f, critical_hue});
     t.critical_alpha15 = with_alpha(t.critical, byte_alpha(0x26));
-    t.critical_container = color_from_oklch({l(0.86f, 0.36f), 0.070f, critical_hue});
 
     t.warn = color_from_oklch({l(0.68f, 0.78f), 0.140f, warn_hue});
 

@@ -93,11 +93,12 @@ void check_config_parse() {
     cfg.palette_source = PaletteSource::region_capture;
     cfg.capture_monitor = "eDP-1";
     cfg.capture_column = 1;
-    cfg.color_scheme = ColorScheme::dark;
     Config round = parse_config(serialize_config(cfg));
-    check(round.color_scheme == ColorScheme::dark, "the color scheme round-trips");
-    check(parse_config("{}").color_scheme == ColorScheme::light,
-          "the color scheme defaults to light");
+    Config legacy = parse_config(R"({"palette": {"source": "region", "scheme": "dark"}})");
+    check(legacy.palette_source == PaletteSource::region_capture,
+          "a config with the retired scheme key still loads");
+    check(serialize_config(legacy).find("scheme") == std::string::npos,
+          "the retired scheme key is not written back");
     check(round.palette_source == PaletteSource::region_capture, "the palette source round-trips");
     check(round.capture_monitor == "eDP-1" && round.capture_column == 1,
           "region capture round-trips");

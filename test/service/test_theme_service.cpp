@@ -63,15 +63,11 @@ void check_theme_service() {
     std::filesystem::remove(file);
     check(theme_source(cfg, "").modified == 0, "a missing file records no mtime");
     check(!theme_source(cfg, "").fixed, "region capture follows the wallpaper");
-    ThemeSource light = theme_source(cfg, "");
-    cfg.color_scheme = ColorScheme::dark;
-    check(!(light == theme_source(cfg, "")), "the scheme changes the source");
-    check(theme_source(cfg, "").scheme == Scheme::dark, "the dark setting gives a dark source");
-    cfg.color_scheme = ColorScheme::light;
     Extraction keqing = default_palette_extraction();
     check(keqing.found && keqing.seeds.size() == 4 && keqing.seeds[0].hue > 300.0f &&
               keqing.seeds[0].hue < 315.0f,
           "the default palette is Keqing's lavender");
+    check(keqing.tone > 0.75f, "the default palette has a bright tone");
 
     Extraction a{{{200.0f, 0.1f, 0.7f}}, true};
     Extraction b{{{200.2f, 0.1f, 0.7f}}, true};
@@ -79,6 +75,10 @@ void check_theme_service() {
     Extraction d{{{200.0f, 0.1f, 0.7f}, {300.0f, 0.1f, 0.7f}}, true};
     Extraction e{{{200.0f, 0.1f, 0.7f}, {300.0f, 0.1f, 0.7f}, {20.0f, 0.1f, 0.7f}}, true};
     Extraction f{{{200.0f, 0.1f, 0.7f}, {300.0f, 0.1f, 0.7f}, {60.0f, 0.1f, 0.7f}}, true};
+    Extraction darker{a.seeds, true, 0.2f};
+    Extraction nudged{a.seeds, true, a.tone + 0.001f};
+    check(extraction_differs(a, darker), "a darker wallpaper is a new theme");
+    check(!extraction_differs(a, nudged), "a negligible tone shift is the same theme");
     check(!extraction_differs(a, b), "a negligible hue shift is the same theme");
     check(extraction_differs(a, c), "a different hue is a new theme");
     check(extraction_differs(a, d), "a new secondary hue is a new theme");

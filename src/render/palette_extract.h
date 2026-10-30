@@ -17,6 +17,7 @@ struct Seed {
 struct Extraction {
     std::vector<Seed> seeds;
     bool found;
+    float tone = 0.5f;
 };
 
 Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premultiplied);

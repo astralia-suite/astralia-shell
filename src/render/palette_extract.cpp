@@ -154,6 +154,12 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
     if (samples.empty()) {
         return none;
     }
+    float tone = 0.0f;
+    for (const Oklab &s : samples) {
+        tone += s.L;
+    }
+    tone /= static_cast<float>(samples.size());
+    none.tone = tone;
 
     struct Scored {
         Seed seed;
@@ -174,7 +180,7 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
     std::stable_sort(ranked.begin(), ranked.end(),
                      [](const Scored &a, const Scored &b) { return a.score > b.score; });
 
-    Extraction result{{ranked[0].seed}, true};
+    Extraction result{{ranked[0].seed}, true, tone};
     std::vector<bool> used(ranked.size(), false);
     used[0] = true;
     bool has_secondary = false;

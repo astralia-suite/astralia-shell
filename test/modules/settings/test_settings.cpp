@@ -190,12 +190,6 @@ void check_tabs() {
     keeper.click(astralia::settings::Act::palette_source, 0);
     test::check(keeper.config.palette_source == astralia::PaletteSource::default_palette,
                 "the palette source switches back to the default");
-    keeper.click(astralia::settings::Act::color_scheme, 1);
-    test::check(keeper.config.color_scheme == astralia::ColorScheme::dark,
-                "the color scheme switches to dark");
-    keeper.click(astralia::settings::Act::color_scheme, 0);
-    test::check(keeper.config.color_scheme == astralia::ColorScheme::light,
-                "the color scheme switches back to light");
     auto palette_texts = [&] {
         test::RecordingCanvas canvas;
         astralia::settings::Art art{"someone", "up 3 hours", {}};

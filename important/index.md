@@ -260,7 +260,7 @@
 - `tokens.h`: `Color`, the mutable palette (with the sticker roles `border_outer`, `border_inner` and `shadow`), metrics and colour helpers shared by every backend.
 - `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
 - `palette_extract.{h,cpp}`: Downsamples an image, clusters it with k-means in OKLab and ranks up to four seeds.
-- `theme.{h,cpp}`: `Theme` roles derived from the seeds in OKLCH for the light and dark schemes, and `theme_apply` onto the palette; `ink` is the deep line colour and `text` the reading colour.
+- `theme.{h,cpp}`: `Theme` roles derived from the seeds and the wallpaper `tone` in OKLCH, with no scheme setting: `depth` runs from a pale palette to a deep one and a contrast solver keeps `text` and `text_muted` readable at every tone, and `theme_apply` onto the palette; `ink` is the deep line colour and `text` the reading colour.
 - `sticker.{h,cpp}`: `sticker()`, the five-role look every component shares (text, fill, inner ring, outer border, hard offset shadow), and `selectable()`, the shared control look.
 - `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical; the rollers touch when closed and float a gap off the paper when open.
 - `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade of every scroll.

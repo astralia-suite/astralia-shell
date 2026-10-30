@@ -94,7 +94,6 @@ enum class Act : uint8_t {
     dropdown_dismiss,
     capture_pick,
     palette_source,
-    color_scheme,
     field_focus,
 };
 

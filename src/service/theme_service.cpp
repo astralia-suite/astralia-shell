@@ -21,6 +21,8 @@ namespace {
 
 constexpr int sample_side = 256;
 constexpr float same_hue_epsilon = 0.5f;
+constexpr float same_tone_epsilon = 0.005f;
+constexpr float default_palette_tone = 0.9f;
 
 bool seed_differs(const Seed &a, const Seed &b) {
     return std::fabs(a.hue - b.hue) > same_hue_epsilon;
@@ -108,12 +110,12 @@ Extraction default_palette_extraction() {
              {355.3f, 0.095f, 0.808f},
              {297.5f, 0.127f, 0.495f},
              {306.7f, 0.060f, 0.902f}},
-            true};
+            true,
+            default_palette_tone};
 }
 
 ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
     ThemeSource source;
-    source.scheme = cfg.color_scheme == ColorScheme::dark ? Scheme::dark : Scheme::light;
     if (cfg.palette_source == PaletteSource::default_palette) {
         source.fixed = true;
         return source;
@@ -133,7 +135,8 @@ ThemeSource theme_source(const Config &cfg, const std::string &monitor_name) {
 }
 
 bool extraction_differs(const std::optional<Extraction> &a, const Extraction &b) {
-    if (!a || a->seeds.size() != b.seeds.size()) {
+    if (!a || a->seeds.size() != b.seeds.size() ||
+        std::fabs(a->tone - b.tone) > same_tone_epsilon) {
         return true;
     }
     for (size_t i = 0; i < b.seeds.size(); ++i) {
@@ -156,36 +159,34 @@ void ThemeService::sync(const Config &cfg, const std::string &monitor_name) {
     source_ = source;
     uint64_t gen = ++generation_;
     if (source.fixed) {
-        apply(default_palette_extraction(), source.scheme);
+        apply(default_palette_extraction());
         return;
     }
     if (first) {
         if (std::optional<Extraction> extraction = resolve_theme(source.path, decode_video_frame)) {
-            apply(*extraction, source.scheme);
+            apply(*extraction);
         }
         return;
     }
     std::weak_ptr<int> life = life_;
-    std::thread([this, path = source.path, scheme = source.scheme, decoder = decode_video_frame,
-                 gen, life] {
+    std::thread([this, path = source.path, decoder = decode_video_frame, gen, life] {
         std::optional<Extraction> extraction = resolve_theme(path, decoder);
-        DeferredCall::call_later([this, extraction, scheme, gen, life] {
+        DeferredCall::call_later([this, extraction, gen, life] {
             auto keep = life.lock();
             if (!keep || gen != generation_ || !extraction) {
                 return;
             }
-            apply(*extraction, scheme);
+            apply(*extraction);
         });
     }).detach();
 }
 
-void ThemeService::apply(const Extraction &extraction, Scheme scheme) {
-    if (!extraction_differs(applied_, extraction) && applied_scheme_ == scheme) {
+void ThemeService::apply(const Extraction &extraction) {
+    if (!extraction_differs(applied_, extraction)) {
         return;
     }
     applied_ = extraction;
-    applied_scheme_ = scheme;
-    Theme theme = theme_from_seed(extraction, scheme);
+    Theme theme = theme_from_seed(extraction);
     theme_apply(theme);
     export_palette(theme);
     changed.emit();

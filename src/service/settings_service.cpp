@@ -272,9 +272,6 @@ Config parse_config(std::string_view source) {
     cfg.palette_source = text(object_in(&root, "palette"), "source", "") == "region"
                              ? PaletteSource::region_capture
                              : PaletteSource::default_palette;
-    cfg.color_scheme = text(object_in(&root, "palette"), "scheme", "") == "dark"
-                           ? ColorScheme::dark
-                           : ColorScheme::light;
     cfg.capture_monitor = text(wallpaper, "captureMonitor", cfg.capture_monitor);
     cfg.capture_column = integer(wallpaper, "captureColumn", cfg.capture_column);
 
@@ -386,8 +383,6 @@ std::string serialize_config(const Config &cfg) {
     palette.set("source",
                 Json::from_string(cfg.palette_source == PaletteSource::region_capture ? "region"
                                                                                       : "default"));
-    palette.set("scheme",
-                Json::from_string(cfg.color_scheme == ColorScheme::dark ? "dark" : "light"));
 
     Json idle = Json::make_object();
     idle.set("enabled", Json::from_bool(cfg.idle_enabled));

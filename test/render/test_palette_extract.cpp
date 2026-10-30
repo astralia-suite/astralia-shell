@@ -124,6 +124,17 @@ void check_palette_extract() {
 
     Extraction f = extract_seeds(nullptr, 0, 0, false);
     check(!f.found, "no pixels have no usable colour");
+    check(f.tone == 0.5f && e.tone == 0.5f,
+          "an image without usable pixels keeps the default tone");
+
+    Image black(50, 50, color("#000000"));
+    Image white(50, 50, color("#FFFFFF"));
+    Extraction dark_tone = extract_seeds(black.data.data(), black.width, black.height, false);
+    Extraction bright_tone = extract_seeds(white.data.data(), white.width, white.height, false);
+    check(dark_tone.tone < 0.05f && bright_tone.tone > 0.95f,
+          "a black image has a low tone and a white image a high tone");
+    check(!dark_tone.found && !bright_tone.found, "black and white carry a tone but no seed");
+    check(a.tone > 0.4f && a.tone < 0.8f, "a solid mid-tone colour has a middle tone");
 
     Image half(40, 40, color("#E0405A"));
     for (int i = 0; i < 40 * 40; ++i) {

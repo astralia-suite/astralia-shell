@@ -30,8 +30,9 @@ uint32_t hex_of(const Color &c) {
 
 Color readable(const Color &c, const Theme &theme) {
     Oklch lch = oklch_from_color(c);
-    float step =
-        oklch_from_color(theme.accent_container).L > 0.5f ? -lightness_step : lightness_step;
+    float step = oklch_from_color(theme.text).L > oklch_from_color(theme.accent_container).L
+                     ? lightness_step
+                     : -lightness_step;
     Color out = c;
     for (int i = 0; i < max_steps && contrast_ratio(out, theme.accent_container) < min_contrast;
          ++i) {

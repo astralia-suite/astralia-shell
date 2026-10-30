@@ -378,13 +378,6 @@ void palette_tab(Pane &pane, float x, float y, float w) {
     std::string current = sources[selected].label;
     pane.dropdown({x, y, w, cfg::tile_height}, 2, "Palette", current, std::move(sources), selected,
                   Act::palette_source);
-    y += cfg::tile_height + cfg::row_gap;
-    bool dark = config.color_scheme == ColorScheme::dark;
-    std::vector<DropEntry> schemes{{"Light", 0, 0}, {"Dark", 1, 0}};
-    size_t scheme_selected = dark ? 1 : 0;
-    std::string scheme_current = schemes[scheme_selected].label;
-    pane.dropdown({x, y, w, cfg::tile_height}, 3, "Scheme", scheme_current, std::move(schemes),
-                  scheme_selected, Act::color_scheme);
     if (!region) {
         return;
     }
@@ -477,9 +470,8 @@ std::string tab_summary(const Model &model, Tab tab) {
     case Tab::wallpaper:
         return config.wallpaper_animated_enabled ? "Animated" : "Static";
     case Tab::palette:
-        return std::string(config.palette_source == PaletteSource::region_capture ? "Region capture"
-                                                                                  : "Default") +
-               (config.color_scheme == ColorScheme::dark ? ", dark" : "");
+        return config.palette_source == PaletteSource::region_capture ? "Region capture"
+                                                                      : "Default";
     }
     return {};
 }

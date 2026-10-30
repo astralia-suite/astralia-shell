@@ -36,8 +36,10 @@ void check_palette_export() {
     check(text.find("fg=" + hex(theme.text) + "\n") != std::string::npos,
           "the foreground is the text color");
 
-    for (Scheme scheme : {Scheme::light, Scheme::dark}) {
-        Theme themed = theme_from_seed(test::base_extraction(), scheme);
+    for (float tone : {0.9f, 0.5f, 0.2f}) {
+        Extraction wallpaper = test::base_extraction();
+        wallpaper.tone = tone;
+        Theme themed = theme_from_seed(wallpaper);
         std::string themed_text = palette_export_text(themed);
         bool readable = true;
         for (int i = 1; i <= 14; ++i) {
@@ -55,7 +57,7 @@ void check_palette_export() {
               "bright white is never the background color");
         check(contrast_ratio(themed.text, themed.accent_container) >= 4.5f &&
                   themed_text.find("fg=" + hex(themed.text) + "\n") != std::string::npos,
-              "the foreground reads on the background in both schemes");
+              "the foreground reads on the background for every wallpaper tone");
     }
 
     std::filesystem::path dir = std::filesystem::temp_directory_path() / "astralia-palette-test";
