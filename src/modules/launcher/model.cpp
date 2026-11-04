@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cstdlib>
+#include <thread>
 
+#include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/path_home.h"
 
@@ -77,6 +79,9 @@ Model::Model(Reactor &reactor) : reactor_(reactor), dirs_proc_(reactor), files_p
 
 Model::~Model() {
     *alive_ = false;
+    if (index_cancel_) {
+        *index_cancel_ = true;
+    }
     stop_search();
 }
 
@@ -89,11 +94,56 @@ void Model::changed() {
 void Model::open(bool global) {
     const char *home = std::getenv("HOME");
     search_root_ = global || home == nullptr ? "/" : home;
-    apps_ = scan_desktop_entries();
+    std::vector<int64_t> stamp = desktop_entry_stamp();
+    if (!apps_loaded_ || stamp != apps_stamp_) {
+        apps_ = scan_desktop_entries();
+        apps_stamp_ = std::move(stamp);
+        apps_loaded_ = true;
+    }
     visits_ = visit_store_load(visit_store_path(std::getenv("XDG_STATE_HOME"), home));
     open_ = true;
     field_.cursor_idle_visible = true;
+    start_index();
     log::info("launcher: open, searching from {}", search_root_);
+}
+
+void Model::set_search_root(std::string root) {
+    search_root_ = std::move(root);
+    start_index();
+}
+
+void Model::start_index() {
+    if (search_root_ == "/" || (indexing_ && index_root_ == search_root_)) {
+        return;
+    }
+    if (!indexing_ && index_ && index_->root == search_root_ &&
+        Clock::now() - index_built_ < std::chrono::seconds(cfg::index_refresh_s)) {
+        return;
+    }
+    if (index_cancel_) {
+        *index_cancel_ = true;
+    }
+    auto cancel = std::make_shared<std::atomic<bool>>(false);
+    index_cancel_ = cancel;
+    index_root_ = search_root_;
+    indexing_ = true;
+    uint64_t generation = ++index_generation_;
+    std::weak_ptr<bool> alive = alive_;
+    std::thread([this, alive, generation, cancel, root = index_root_] {
+        auto started = Clock::now();
+        std::shared_ptr<FileIndex> built = file_index_build(root, *cancel);
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - started);
+        DeferredCall::call_later([this, alive, generation, cancel, built, ms] {
+            if (!alive.lock() || generation != index_generation_ || *cancel) {
+                return;
+            }
+            indexing_ = false;
+            index_ = built;
+            index_built_ = Clock::now();
+            log::info("launcher: indexed {} entries under {} in {}ms", built->nodes.size(),
+                      built->root, ms.count());
+        });
+    }).detach();
 }
 
 void Model::close() {
@@ -310,6 +360,24 @@ void Model::debounce_fired() {
 void Model::start_search() {
     stop_search();
     search_query_ = effective_query_;
+    if (index_ && index_->root == search_root_) {
+        searching_ = true;
+        uint64_t generation = search_generation_;
+        std::weak_ptr<bool> alive = alive_;
+        std::thread([this, alive, generation, index = index_, query = search_query_,
+                     visits = visits_] {
+            std::vector<FileEntry> files =
+                file_index_search(*index, query, visits, cfg::max_results);
+            DeferredCall::call_later([this, alive, generation, files = std::move(files)] {
+                if (!alive.lock() || generation != search_generation_ || !searching_) {
+                    return;
+                }
+                searching_ = false;
+                publish(files);
+            });
+        }).detach();
+        return;
+    }
     std::string pattern = to_glob_pattern(search_query_);
     searching_ = true;
     pending_searches_ = 2;
@@ -338,11 +406,11 @@ void Model::stop_search() {
     files_output_.clear();
     pending_searches_ = 0;
     searching_ = false;
+    ++search_generation_;
 }
 
 void Model::finish_search() {
     searching_ = false;
-    std::vector<ScoredApp> apps = search_apps(apps_, search_query_);
     std::vector<FileEntry> files;
     for (bool dirs : {true, false}) {
         for (FileEntry &file : fd_search_parse_output(dirs ? dirs_output_ : files_output_, dirs)) {
@@ -352,7 +420,12 @@ void Model::finish_search() {
             }
         }
     }
-    results_ = combined_drun_results(apps, files, visits_, cfg::max_results);
+    publish(files);
+}
+
+void Model::publish(const std::vector<FileEntry> &files) {
+    results_ =
+        combined_drun_results(search_apps(apps_, search_query_), files, visits_, cfg::max_results);
     if (submenu_.screen == SubmenuScreen::search) {
         selected_ = results_.empty() ? -1 : 0;
     }

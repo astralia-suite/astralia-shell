@@ -1,7 +1,10 @@
 #include <cstdlib>
 #include <dirent.h>
+#include <fcntl.h>
 #include <fstream>
 #include <sstream>
+#include <string_view>
+#include <sys/stat.h>
 #include <unordered_set>
 
 #include "modules/launcher/desktop_entry.h"
@@ -123,6 +126,31 @@ std::vector<DesktopEntry> scan_desktop_entries() {
         closedir(handle);
     }
     return result;
+}
+
+std::vector<int64_t> desktop_entry_stamp() {
+    std::vector<int64_t> stamp;
+    auto mtime = [&stamp](int dir_fd, const char *path) {
+        struct stat st{};
+        stamp.push_back(fstatat(dir_fd, path, &st, 0) == 0
+                            ? st.st_mtim.tv_sec * 1'000'000'000LL + st.st_mtim.tv_nsec
+                            : -1);
+    };
+    for (const std::string &dir :
+         desktop_entry_dirs(getenv("XDG_DATA_HOME"), getenv("XDG_DATA_DIRS"), getenv("HOME"))) {
+        mtime(AT_FDCWD, dir.c_str());
+        DIR *handle = opendir(dir.c_str());
+        if (handle == nullptr) {
+            continue;
+        }
+        while (dirent *ent = readdir(handle)) {
+            if (std::string_view(ent->d_name).ends_with(".desktop")) {
+                mtime(dirfd(handle), ent->d_name);
+            }
+        }
+        closedir(handle);
+    }
+    return stamp;
 }
 
 } // namespace astralia::launcher

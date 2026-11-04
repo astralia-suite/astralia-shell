@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "config/launcher_config.h"
@@ -16,6 +17,7 @@ std::string elide_middle(const std::string &s, std::size_t max_chars);
 std::string to_glob_pattern(const std::string &query);
 std::vector<std::string> split_query_parts(const std::string &query);
 float score_path(const std::string &name, const std::string &query);
+float score_parts(std::string_view name_lower, const std::vector<std::string> &parts);
 std::vector<std::string> fd_search_argv(const std::string &pattern, const std::string &root,
                                         bool is_dir, int max_results, int depth = -1,
                                         bool full_path = true);

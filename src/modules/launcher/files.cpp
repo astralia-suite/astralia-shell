@@ -139,8 +139,10 @@ std::vector<std::string> split_query_parts(const std::string &query) {
 }
 
 float score_path(const std::string &name, const std::string &query) {
-    std::string n = to_lower(name);
-    std::vector<std::string> parts = split_query_parts(query);
+    return score_parts(to_lower(name), split_query_parts(query));
+}
+
+float score_parts(std::string_view n, const std::vector<std::string> &parts) {
     if (n.empty() || parts.empty()) {
         return -1.0f;
     }

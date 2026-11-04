@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -15,6 +16,8 @@
 #include "core/clipboard.h"
 #include "core/input.h"
 #include "core/reactor.h"
+
+#include "modules/launcher/index.h"
 
 #include "render/text_field.h"
 
@@ -39,7 +42,7 @@ class Model {
     void open(bool global);
     void close();
     void set_apps(std::vector<DesktopEntry> apps) { apps_ = std::move(apps); }
-    void set_search_root(std::string root) { search_root_ = std::move(root); }
+    void set_search_root(std::string root);
 
     void key(const input::KeyEvent &event);
     void commit_text(const std::string &text);
@@ -59,6 +62,7 @@ class Model {
 
     bool is_open() const { return open_; }
     bool searching() const { return searching_; }
+    bool indexing() const { return indexing_; }
     bool animating() const { return animations_.has_active(); }
     LauncherMode mode() const { return mode_; }
     const TextFieldState &field() const { return field_; }
@@ -91,6 +95,8 @@ class Model {
     void start_search();
     void stop_search();
     void finish_search();
+    void publish(const std::vector<FileEntry> &files);
+    void start_index();
     void launch_selected();
     void reset_selection();
     const std::string &icon_path_for(const DesktopEntry &entry);
@@ -103,6 +109,8 @@ class Model {
     bool open_ = false;
     std::string search_root_;
     std::vector<DesktopEntry> apps_;
+    std::vector<int64_t> apps_stamp_;
+    bool apps_loaded_ = false;
     TextFieldState field_;
     TextCursor cursor_;
     Clipboard *clipboard_ = nullptr;
@@ -130,6 +138,14 @@ class Model {
     std::string files_output_;
     int pending_searches_ = 0;
     bool searching_ = false;
+    uint64_t search_generation_ = 0;
+
+    std::shared_ptr<const FileIndex> index_;
+    std::shared_ptr<std::atomic<bool>> index_cancel_;
+    std::string index_root_;
+    Clock::time_point index_built_{};
+    uint64_t index_generation_ = 0;
+    bool indexing_ = false;
 
     float height_ = 0.0f;
     float height_target_ = -1.0f;

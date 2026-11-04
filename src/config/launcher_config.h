@@ -23,10 +23,11 @@ inline constexpr const char *duckduckgo_url = "https://duckduckgo.com/?q=";
 inline constexpr const char *youtube_url = "https://www.youtube.com/results?search_query=";
 
 // Search
-inline constexpr int debounce_ms = 120;
+inline constexpr int debounce_ms = 30;
 inline constexpr int double_click_ms = 400;
 inline constexpr int max_results = 20;
 inline constexpr int listing_max_results = 50;
+inline constexpr int index_refresh_s = 60;
 
 // Visit store
 inline constexpr const char *visits_file = "astralia-shell/launcher_visits";

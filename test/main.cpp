@@ -61,6 +61,7 @@ void check_launcher_text();
 void check_launcher_modes();
 void check_launcher_scoring();
 void check_launcher_listing();
+void check_launcher_index();
 void check_desktop_entry();
 void check_launch_urls();
 void check_drun_results();
@@ -150,6 +151,7 @@ int main() {
     check_launcher_modes();
     check_launcher_scoring();
     check_launcher_listing();
+    check_launcher_index();
     check_desktop_entry();
     check_launch_urls();
     check_drun_results();

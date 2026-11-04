@@ -10,6 +10,7 @@
 #include "config/launcher_config.h"
 
 #include "core/animation.h"
+#include "core/deferred_call.h"
 #include "core/poll_reactor.h"
 
 #include "modules/launcher/model.h"
@@ -174,6 +175,45 @@ void check_search_flow() {
     test::check(!model.is_open() && model.field().text.empty() && model.results().empty() &&
                     model.submenu().screen == astralia::SubmenuScreen::search,
                 "closing resets everything");
+    std::filesystem::remove_all(root);
+}
+
+void check_index_search_flow() {
+    Instant instant;
+    std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                 ("astralia_test_model_index_" + std::to_string(getpid()));
+    std::filesystem::create_directories(root / "firefoxdir");
+    std::ofstream(root / "firefox_notes.txt").put('x');
+
+    astralia::PollReactor reactor = make_reactor();
+    astralia::DeferredCall::attach(reactor);
+    astralia::launcher::Model model(reactor);
+    model.open(false);
+    model.set_search_root(root.string());
+    model.set_apps({{"firefox.desktop", "Firefox", "firefox", "", false, false, false}});
+    test::check(test::pump_until(reactor, [&] { return !model.indexing(); }), "the index finishes");
+
+    int changes = 0;
+    model.on_changed = [&] { ++changes; };
+    type(model, "firefox");
+    test::check(test::pump_until(reactor, [&] { return model.results().size() == 3; }),
+                "the indexed search answers");
+    test::check(!model.searching(), "the search is done");
+    const auto &results = model.results();
+    test::check(results[0].kind == astralia::DrunResult::Kind::app &&
+                    results[1].kind == astralia::DrunResult::Kind::dir &&
+                    results[1].file.name == "firefoxdir" &&
+                    results[1].file.path == (root / "firefoxdir").string() + "/" &&
+                    results[2].kind == astralia::DrunResult::Kind::file &&
+                    results[2].file.name == "firefox_notes.txt",
+                "apps, then folders, then files");
+
+    for (int i = 0; i < 7; ++i) {
+        model.key(key(KeyKind::Backspace));
+    }
+    test::check(test::pump_until(reactor, [&] { return model.results().empty(); }),
+                "an empty query shows no list");
+    model.close();
     std::filesystem::remove_all(root);
 }
 
@@ -524,6 +564,7 @@ void check_field_paint() {
 void check_launcher_model() {
     check_modes_and_layout();
     check_search_flow();
+    check_index_search_flow();
     check_layout_animation();
     check_view();
     check_caret_editing();
