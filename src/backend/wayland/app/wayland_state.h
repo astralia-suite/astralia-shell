@@ -35,6 +35,7 @@
 #include "service/wayland/idle_service.h"
 #include "service/wayland/input_service.h"
 #include "service/wayland/text_input_service.h"
+#include "service/wayland/toplevel_service.h"
 
 #include "ext-session-lock-v1-client-protocol.h"
 #include "hyprland-toplevel-export-v1-client-protocol.h"
@@ -53,6 +54,7 @@ struct WaylandState {
     wl_seat *seat = nullptr;
     wl_shm *shm = nullptr;
     hyprland_toplevel_export_manager_v1 *toplevel_export_manager = nullptr;
+    ToplevelList toplevels;
     zwp_text_input_manager_v3 *text_input_manager = nullptr;
     ext_session_lock_manager_v1 *session_lock_manager = nullptr;
     wl_data_device_manager *data_device_manager = nullptr;

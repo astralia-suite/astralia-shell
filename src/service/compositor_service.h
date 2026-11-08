@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -70,6 +71,7 @@ struct CompositorState {
     std::vector<CompositorClient> clients;
     int32_t hug_radius_px = 0;
     std::optional<int32_t> gaps_out_px;
+    int workspaces_per_monitor = 0;
 
     bool operator==(const CompositorState &) const = default;
 };
@@ -85,6 +87,15 @@ WorkArea compositor_work_area(const CompositorMonitor &monitor);
 std::array<double, 2> compositor_logical_size(const CompositorMonitor &monitor);
 const CompositorMonitor *compositor_monitor(const CompositorState &state, const std::string &name);
 const CompositorMonitor *compositor_monitor(const CompositorState &state, int id);
+
+struct ToplevelIdentity {
+    std::string app_id;
+    std::string title;
+};
+
+std::unordered_map<std::string, std::size_t>
+pair_toplevels(const std::vector<CompositorClient> &clients,
+               const std::vector<ToplevelIdentity> &toplevels);
 
 enum class CloseScope { workspace, monitor, all };
 
@@ -106,6 +117,8 @@ class Compositor {
     virtual void move_workspace_in(int id, bool global = false) = 0;
     virtual void swap_workspace(int id, bool global = false) = 0;
     virtual void apply_border_colors(Color, Color) {}
+    virtual int workspaces_per_monitor() const { return 5; }
+    virtual bool capture_by_toplevel_handle() const { return false; }
 
     Signal<> active_changed;
     Signal<> structure_changed;

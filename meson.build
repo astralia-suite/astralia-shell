@@ -150,6 +150,7 @@ core_shared = static_library(
     'src/service/dock_service.cpp',
     'src/service/hyprland_service.cpp',
     'src/service/i3_service.cpp',
+    'src/service/shojiwm_service.cpp',
     'src/service/icon_service.cpp',
     'src/service/media_service.cpp',
     'src/service/network_service.cpp',
@@ -291,6 +292,7 @@ if wayland_enabled
     'src/service/wayland/output_service.cpp',
     'src/service/wayland/settings_service.cpp',
     'src/service/wayland/text_input_service.cpp',
+    'src/service/wayland/toplevel_service.cpp',
     'src/modules/lock/wayland/transition.cpp',
   ]
 
@@ -541,6 +543,7 @@ unit = executable(
     'test/app/test_session.cpp',
     'test/app/test_shell.cpp',
     'test/service/test_compositor.cpp',
+    'test/service/test_shojiwm.cpp',
     'test/service/test_services.cpp',
     'test/service/test_settings.cpp',
     'test/service/test_wallpaper.cpp',

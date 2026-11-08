@@ -210,10 +210,10 @@ void BluetoothPanel::paint_dialog(ui::Canvas &canvas, const ui::Box &box, PanelP
             canvas.rounded(field, metrics::radius_widget, palette::text_alpha08, 1.0f,
                            palette::text_alpha15);
             if (code_.text.empty()) {
-                widgets::centered_text(
-                    canvas, request->kind == Kind::input_passkey ? "Passkey\xE2\x80\xA6"
-                                                                 : "PIN\xE2\x80\xA6",
-                    text_style, field, palette::text_dim);
+                widgets::centered_text(canvas,
+                                       request->kind == Kind::input_passkey ? "Passkey\xE2\x80\xA6"
+                                                                            : "PIN\xE2\x80\xA6",
+                                       text_style, field, palette::text_dim);
             } else {
                 widgets::centered_text(canvas, code_.text, text_style, field, palette::text);
             }
@@ -311,7 +311,8 @@ bool BluetoothPanel::activate(const PanelRegion &region, double, double) {
 
 bool BluetoothPanel::key(const input::KeyEvent &event) {
     if (wants_text()) {
-        bool passkey = bluetooth_.agent_request()->kind == BluetoothAgentRequest::Kind::input_passkey;
+        bool passkey =
+            bluetooth_.agent_request()->kind == BluetoothAgentRequest::Kind::input_passkey;
         if (event.kind == input::KeyKind::Preedit) {
             return true;
         }

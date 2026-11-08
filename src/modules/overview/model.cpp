@@ -17,7 +17,6 @@ namespace {
 
 namespace cfg = overview_config;
 
-constexpr Grid grid{cfg::columns, cfg::rows};
 constexpr ScrollMetrics scroll_style{};
 constexpr uint64_t owner_indicator_x = 3;
 constexpr uint64_t owner_indicator_y = 4;
@@ -77,6 +76,11 @@ int Model::active_workspace(const std::string &monitor_name) const {
     return it != state.by_monitor.end() && it->second.active_id >= 1 ? it->second.active_id : 1;
 }
 
+Grid Model::grid() const {
+    int per_monitor = std::max(1, compositor_.workspaces_per_monitor());
+    return {cfg::columns, (per_monitor + cfg::columns - 1) / cfg::columns};
+}
+
 const CompositorMonitor *Model::bound_monitor() const {
     return compositor_monitor(compositor_.state(), output_name_);
 }
@@ -94,7 +98,7 @@ void Model::open(std::string output_name, float width, float height) {
     width_ = width;
     height_ = height;
     selected_ = active_workspace(output_name_);
-    group_ = page_of(grid, selected_);
+    group_ = page_of(grid(), selected_);
     global_mode_ = false;
     dragging_ = false;
     open_ = true;
@@ -146,9 +150,9 @@ void Model::compute_layout(float width, float height) {
     float pad = cfg::padding;
 
     if (global_mode_ && !state.monitors.empty()) {
-        float gap_x = spacing * (cfg::columns - 1) + pad * 2.0f + cfg::global_block_spacing +
+        float gap_x = spacing * (grid().columns - 1) + pad * 2.0f + cfg::global_block_spacing +
                       scroll_style.reach() * 2.0f;
-        float gap_y = spacing * (cfg::rows - 1) + pad * 2.0f + cfg::global_block_spacing +
+        float gap_y = spacing * (grid().rows - 1) + pad * 2.0f + cfg::global_block_spacing +
                       scroll_style.overhang * 2.0f;
         float frame_x = 2.0f * (pad + cfg::margin + scroll_style.reach());
         float frame_y = 2.0f * (pad + cfg::margin);
@@ -164,12 +168,12 @@ void Model::compute_layout(float width, float height) {
         float scale = cfg::global_scale;
         for (size_t i = 0; i < ms.size(); ++i) {
             WorkArea area = compositor_work_area(ms[i]);
-            float fixed_x = steps_x[i] * gap_x + spacing * (cfg::columns - 1) + frame_x;
-            float fixed_y = steps_y[i] * gap_y + spacing * (cfg::rows - 1) + frame_y;
+            float fixed_x = steps_x[i] * gap_x + spacing * (grid().columns - 1) + frame_x;
+            float fixed_y = steps_y[i] * gap_y + spacing * (grid().rows - 1) + frame_y;
             float per_x =
-                static_cast<float>((ms[i].x - min_x + std::max(1.0, area.width)) * cfg::columns);
+                static_cast<float>((ms[i].x - min_x + std::max(1.0, area.width)) * grid().columns);
             float per_y =
-                static_cast<float>((ms[i].y - min_y + std::max(1.0, area.height)) * cfg::rows);
+                static_cast<float>((ms[i].y - min_y + std::max(1.0, area.height)) * grid().rows);
             scale = std::min({scale, (width - fixed_x) / per_x, (height - fixed_y) / per_y});
         }
         scale = std::max(scale, 0.01f);
@@ -177,11 +181,12 @@ void Model::compute_layout(float width, float height) {
         for (size_t i = 0; i < ms.size(); ++i) {
             WorkArea area = compositor_work_area(ms[i]);
             float x =
-                static_cast<float>((ms[i].x - min_x) * cfg::columns * scale) + steps_x[i] * gap_x;
+                static_cast<float>((ms[i].x - min_x) * grid().columns * scale) + steps_x[i] * gap_x;
             float y =
-                static_cast<float>((ms[i].y - min_y) * cfg::rows * scale) + steps_y[i] * gap_y;
+                static_cast<float>((ms[i].y - min_y) * grid().rows * scale) + steps_y[i] * gap_y;
             blocks.push_back(make_block(area.width, area.height,
-                                        page_of(grid, active_workspace(ms[i].name)), scale, x, y));
+                                        page_of(grid(), active_workspace(ms[i].name)), scale, x,
+                                        y));
         }
     } else {
         double work_w = width;
@@ -197,10 +202,10 @@ void Model::compute_layout(float width, float height) {
         work_h = std::max(1.0, work_h);
         float frame_x = 2.0f * (pad + cfg::margin + scroll_style.reach());
         float frame_y = 2.0f * (pad + cfg::margin);
-        float fit_x = (width - frame_x - spacing * (cfg::columns - 1)) /
-                      (static_cast<float>(work_w) * cfg::columns);
-        float fit_y = (height - frame_y - spacing * (cfg::rows - 1)) /
-                      (static_cast<float>(work_h) * cfg::rows);
+        float fit_x = (width - frame_x - spacing * (grid().columns - 1)) /
+                      (static_cast<float>(work_w) * grid().columns);
+        float fit_y = (height - frame_y - spacing * (grid().rows - 1)) /
+                      (static_cast<float>(work_h) * grid().rows);
         layout_.scale = std::max(0.01f, std::min({cfg::scale, fit_x, fit_y}));
         blocks.push_back(make_block(work_w, work_h, group_, layout_.scale, 0.0f, 0.0f));
     }
@@ -208,8 +213,8 @@ void Model::compute_layout(float width, float height) {
     float grid_w = 0.0f;
     float grid_h = 0.0f;
     for (const Block &b : blocks) {
-        grid_w = std::max(grid_w, b.x + b.cell_w * cfg::columns + spacing * (cfg::columns - 1));
-        grid_h = std::max(grid_h, b.y + b.cell_h * cfg::rows + spacing * (cfg::rows - 1));
+        grid_w = std::max(grid_w, b.x + b.cell_w * grid().columns + spacing * (grid().columns - 1));
+        grid_h = std::max(grid_h, b.y + b.cell_h * grid().rows + spacing * (grid().rows - 1));
     }
     float root_w = grid_w + pad * 2.0f + cfg::margin * 2.0f;
     float root_h = grid_h + pad * 2.0f + cfg::margin * 2.0f;
@@ -219,12 +224,12 @@ void Model::compute_layout(float width, float height) {
     for (const Block &b : blocks) {
         layout_.panels.push_back(
             {origin_x + b.x, origin_y + b.y,
-             b.cell_w * cfg::columns + spacing * (cfg::columns - 1) + pad * 2.0f,
-             b.cell_h * cfg::rows + spacing * (cfg::rows - 1) + pad * 2.0f});
-        for (int row = 0; row < cfg::rows; ++row) {
-            for (int col = 0; col < cfg::columns; ++col) {
+             b.cell_w * grid().columns + spacing * (grid().columns - 1) + pad * 2.0f,
+             b.cell_h * grid().rows + spacing * (grid().rows - 1) + pad * 2.0f});
+        for (int row = 0; row < grid().rows; ++row) {
+            for (int col = 0; col < grid().columns; ++col) {
                 layout_.cells.push_back(
-                    {workspace_at(grid, b.group, row, col),
+                    {workspace_at(grid(), b.group, row, col),
                      {origin_x + b.x + pad + static_cast<float>(col) * (b.cell_w + spacing),
                       origin_y + b.y + pad + static_cast<float>(row) * (b.cell_h + spacing),
                       b.cell_w, b.cell_h}});
@@ -320,7 +325,7 @@ void Model::update_indicator() {
     indicator_visible_ = false;
     int active =
         active_workspace(global_mode_ ? compositor_.state().focused_monitor : output_name_);
-    int page = page_of(grid, active);
+    int page = page_of(grid(), active);
     const Cell *cell = find_cell(active);
     if (cell == nullptr) {
         indicator_tracking_ = false;
@@ -373,7 +378,7 @@ ui::Box Model::tile_rect(const Tile &tile) const {
 
 void Model::select(int workspace, bool shift, bool alt) {
     selected_ = workspace;
-    group_ = page_of(grid, workspace);
+    group_ = page_of(grid(), workspace);
     if (shift) {
         compositor_.swap_workspace(workspace, global_mode_);
     } else if (alt) {
@@ -388,7 +393,7 @@ bool Model::key(const input::KeyEvent &event) {
         return false;
     }
     if (global_mode_) {
-        group_ = page_of(grid, selected_);
+        group_ = page_of(grid(), selected_);
     }
     uint32_t sym = event.base_sym != 0
                        ? event.base_sym
@@ -404,7 +409,7 @@ bool Model::key(const input::KeyEvent &event) {
         int d_row = event.kind == input::KeyKind::Up     ? -1
                     : event.kind == input::KeyKind::Down ? 1
                                                          : 0;
-        select(step(grid, group_, selected_, d_col, d_row), event.shift, event.alt);
+        select(step(grid(), group_, selected_, d_col, d_row), event.shift, event.alt);
         return true;
     }
     case input::KeyKind::Tab:
@@ -417,7 +422,7 @@ bool Model::key(const input::KeyEvent &event) {
         global_mode_ = !global_mode_;
         dragging_ = false;
         indicator_tracking_ = false;
-        group_ = page_of(grid, selected_);
+        group_ = page_of(grid(), selected_);
         return true;
     case input::KeyKind::Escape:
         if (on_close_requested) {
@@ -427,8 +432,8 @@ bool Model::key(const input::KeyEvent &event) {
     case input::KeyKind::Text:
         if (sym >= '0' && sym <= '9') {
             int position = sym == '0' ? 10 : static_cast<int>(sym - '0');
-            if (position <= grid.per_page()) {
-                select(group_ * grid.per_page() + position, event.shift, event.alt);
+            if (position <= grid().per_page()) {
+                select(group_ * grid().per_page() + position, event.shift, event.alt);
             }
             return true;
         }

@@ -10,6 +10,7 @@
 #include "wayland/render/texture.h"
 
 #include "hyprland-toplevel-export-v1-client-protocol.h"
+#include "wlr-foreign-toplevel-management-unstable-v1-client-protocol.h"
 
 struct ToplevelExportCapture {
     wl_shm *shm = nullptr;
@@ -38,7 +39,8 @@ struct ToplevelExportState {
 
 void toplevel_export_request(ToplevelExportState &state,
                              hyprland_toplevel_export_manager_v1 *manager, wl_shm *shm,
-                             const std::string &address, int min_interval_ms);
+                             const std::string &address, zwlr_foreign_toplevel_handle_v1 *toplevel,
+                             int min_interval_ms);
 
 const Texture *toplevel_export_texture(const ToplevelExportState &state,
                                        const std::string &address);

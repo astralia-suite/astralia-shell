@@ -125,7 +125,13 @@ void registry_global(void *data, wl_registry *registry, uint32_t name, const cha
         state->shm = static_cast<wl_shm *>(wl_registry_bind(registry, name, &wl_shm_interface, 1));
     } else if (strcmp(interface, hyprland_toplevel_export_manager_v1_interface.name) == 0) {
         state->toplevel_export_manager = static_cast<hyprland_toplevel_export_manager_v1 *>(
-            wl_registry_bind(registry, name, &hyprland_toplevel_export_manager_v1_interface, 1));
+            wl_registry_bind(registry, name, &hyprland_toplevel_export_manager_v1_interface,
+                             std::min(version, 2u)));
+    } else if (strcmp(interface, zwlr_foreign_toplevel_manager_v1_interface.name) == 0) {
+        toplevel_list_bind(state->toplevels,
+                           static_cast<zwlr_foreign_toplevel_manager_v1 *>(wl_registry_bind(
+                               registry, name, &zwlr_foreign_toplevel_manager_v1_interface,
+                               std::min(version, 3u))));
     } else if (strcmp(interface, zwp_text_input_manager_v3_interface.name) == 0) {
         state->text_input_manager = static_cast<zwp_text_input_manager_v3 *>(
             wl_registry_bind(registry, name, &zwp_text_input_manager_v3_interface, 1));

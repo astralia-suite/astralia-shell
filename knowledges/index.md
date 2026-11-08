@@ -16,15 +16,30 @@
 - `readme.md`: Overview, features, requirements, install, build options, usage, configuration and testing.
 - `.clang-format`: Project code style.
 - `.gitignore`: Ignores the build tree, caches and `local/`.
-- `CLAUDE.md`: Project instructions: restrictions, markdown, planning and convention rules.
 - `LICENSE`: The project license text.
 - `THIRD_PARTY_LICENSES`: Licenses of the bundled third-party code and assets.
 
-## `important/`
+## `knowledges/`
 
+- `readme.md`: Rules for the topic files: layout, entry format, no overlap, and backend tags.
 - `convention.md`: Commenting, formatting, backend and module boundary, and include rules.
-- `knowledge.md`: Programming techniques and pitfalls, one statement and one explanation each, tagged by backend where they differ.
 - `index.md`: This map of the code base.
+- `build-and-testing.md`: Linking the executable and plugins, test isolation and live-session safety.
+- `structure-and-refactoring.md`: Refactoring habits, wall-clock timers and shared drawing rules.
+- `dbus.md`: `sdbus` proxies, async replies and BlueZ on the reactor thread.
+- `threads-and-lifetime.md`: Worker threads, async results and change flags.
+- `processes-and-signals.md`: Spawning and reaping children, single instance, crash handling and the poll loop.
+- `config-and-files.md`: Reading, writing and watching config files and assets.
+- `memory.md`: Allocator tuning, heap growth and wiping secret buffers.
+- `system-integration.md`: Backlight, icon themes, `sysfs` sensors, PipeWire and idle timing.
+- `compositors.md`: i3, Hyprland and ShojiWM behaviour behind the `Compositor` interface.
+- `images-fonts-text.md`: Glyphs, text metrics, alpha conventions and image decoding.
+- `wayland-rendering.md`: The GLES2 renderer, shape shaders and portable GLSL ES.
+- `wayland-animation.md`: Frame-callback pacing and `AnimationManager` tweens.
+- `wayland-media-decode.md`: Animated wallpapers, the `ffmpeg` plugin and its frame cache.
+- `wayland-render-threads.md`: Render threads with a share context and EGL surface ownership.
+- `wayland-surfaces.md`: Layer-shell, `xdg` and session-lock surfaces, input and teardown.
+- `x11.md`: The `xcb` event loop, windows under i3, cairo painting and X11 services.
 
 ## `assets/`
 
@@ -118,7 +133,6 @@
 ## `src/backend/wayland/`
 
 - `backend.cpp`: Wayland backend plugin: services, modules and the poll loop, run as `Backend::run`.
-- `meson.build`: Wayland source list, protocol generation, dependencies, compile arguments, media plugin sources and shader installation.
 
 ## `src/backend/wayland/app/`
 
@@ -179,7 +193,6 @@
 ## `src/backend/x11/`
 
 - `backend.cpp`: X11 backend plugin: connects to X, builds the services and every module, binds the verbs and runs the loop.
-- `meson.build`: X11 source list, dependencies, compile arguments and asset installation.
 
 ## `src/backend/x11/app/`
 
@@ -294,6 +307,7 @@
 - `compositor_service.{h,cpp}`: The `Compositor` interface, shared state types, work-area maths and `make_compositor`.
 - `hyprland_service.{h,cpp}`: Hyprland compositor over its request and event sockets, with Lua dispatch, workspace paging and palette-driven window border colours.
 - `i3_service.{h,cpp}`: i3 compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
+- `shojiwm_service.{h,cpp}`: ShojiWM compositor over the config runtime's NDJSON IPC socket, with per-monitor workspaces mapped onto ten-wide id pages and a reconnecting event socket.
 - `dock_service.{h,cpp}`: Per-output dock entries from the compositor client list, ordered left to right.
 - `user_service.{h,cpp}`: Display name, OS name, uptime text and the profile picture path.
 

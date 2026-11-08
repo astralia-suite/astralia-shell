@@ -80,6 +80,7 @@ class Model {
     const Cell *find_cell(int workspace) const;
     const Cell *cell_at(double x, double y) const;
     int active_workspace(const std::string &monitor_name) const;
+    Grid grid() const;
     const CompositorMonitor *bound_monitor() const;
 
     Compositor &compositor_;

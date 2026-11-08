@@ -2,11 +2,10 @@
 
 #include "config/bar_layout.h"
 
-#include "render/icons.h"
-
 #include "core/animation.h"
-
 #include "core/wall_clock.h"
+
+#include "render/icons.h"
 
 #include "modules/bar/model/model.h"
 #include "modules/bar/paint/frame.h"

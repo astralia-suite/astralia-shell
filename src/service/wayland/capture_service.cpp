@@ -181,7 +181,8 @@ const hyprland_toplevel_export_frame_v1_listener &frame_listener() {
 
 void toplevel_export_request(ToplevelExportState &state,
                              hyprland_toplevel_export_manager_v1 *manager, wl_shm *shm,
-                             const std::string &address, int min_interval_ms) {
+                             const std::string &address, zwlr_foreign_toplevel_handle_v1 *toplevel,
+                             int min_interval_ms) {
     if (!manager || !shm)
         return;
 
@@ -194,9 +195,16 @@ void toplevel_export_request(ToplevelExportState &state,
             return;
     }
 
-    uint32_t handle = parse_handle(address);
     cap.shm = shm;
-    cap.frame = hyprland_toplevel_export_manager_v1_capture_toplevel(manager, 0, handle);
+    if (toplevel != nullptr) {
+        if (hyprland_toplevel_export_manager_v1_get_version(manager) < 2)
+            return;
+        cap.frame = hyprland_toplevel_export_manager_v1_capture_toplevel_with_wlr_toplevel_handle(
+            manager, 0, toplevel);
+    } else {
+        cap.frame =
+            hyprland_toplevel_export_manager_v1_capture_toplevel(manager, 0, parse_handle(address));
+    }
     if (!cap.frame)
         return;
     cap.in_flight = true;

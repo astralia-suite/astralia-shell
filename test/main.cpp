@@ -54,6 +54,7 @@ void check_brightness();
 void check_dock();
 void check_hyprland();
 void check_i3();
+void check_shojiwm();
 void check_session();
 void check_shell();
 void check_spawn_helpers();
@@ -145,6 +146,7 @@ int main() {
     check_dock();
     check_hyprland();
     check_i3();
+    check_shojiwm();
     check_session();
     check_shell();
     check_launcher_text();

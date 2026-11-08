@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstdlib>
 #include <memory>
 
 #include "core/log.h"
@@ -5,6 +7,7 @@
 #include "service/compositor_service.h"
 #include "service/hyprland_service.h"
 #include "service/i3_service.h"
+#include "service/shojiwm_service.h"
 
 namespace astralia {
 
@@ -45,10 +48,49 @@ const CompositorMonitor *compositor_monitor(const CompositorState &state, int id
     return nullptr;
 }
 
+std::unordered_map<std::string, std::size_t>
+pair_toplevels(const std::vector<CompositorClient> &clients,
+               const std::vector<ToplevelIdentity> &toplevels) {
+    std::vector<std::size_t> order(clients.size());
+    for (std::size_t i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+    auto creation = [&](std::size_t i) {
+        return std::strtoull(clients[i].address.c_str(), nullptr, 16);
+    };
+    std::ranges::stable_sort(
+        order, [&](std::size_t a, std::size_t b) { return creation(a) < creation(b); });
+    std::unordered_map<std::string, std::size_t> paired;
+    std::vector<bool> used(toplevels.size(), false);
+    auto take = [&](std::size_t client, bool same_title) {
+        for (std::size_t t = 0; t < toplevels.size(); ++t) {
+            if (used[t] || toplevels[t].app_id != clients[client].window_class ||
+                (same_title && toplevels[t].title != clients[client].title)) {
+                continue;
+            }
+            used[t] = true;
+            paired.emplace(clients[client].address, t);
+            return;
+        }
+    };
+    for (std::size_t client : order) {
+        take(client, true);
+    }
+    for (std::size_t client : order) {
+        if (!paired.contains(clients[client].address)) {
+            take(client, false);
+        }
+    }
+    return paired;
+}
+
 std::unique_ptr<Compositor> make_compositor(Reactor &loop, std::string_view i3_socket_fallback) {
     std::unique_ptr<Compositor> compositor;
     if (HyprlandCompositor::available()) {
         compositor = std::make_unique<HyprlandCompositor>(loop);
+    } else if (ShojiCompositor::available()) {
+        compositor =
+            std::make_unique<ShojiCompositor>(loop, ShojiCompositor::default_socket_path());
     } else if (I3Compositor::available(i3_socket_fallback)) {
         compositor = std::make_unique<I3Compositor>(loop, i3_socket_path(i3_socket_fallback));
     }

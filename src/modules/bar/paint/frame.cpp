@@ -1,5 +1,4 @@
 #include "modules/bar/paint/frame.h"
-
 #include "modules/bar/paint/chips.h"
 
 namespace astralia::bar {

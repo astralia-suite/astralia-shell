@@ -625,7 +625,6 @@ void BluetoothService::register_agent() {
     if (!manager_) {
         return;
     }
-    // ponytail: a failed registration is not retried until bluetoothd restarts
     agent_registered_ = true;
     try {
         manager_->callMethodAsync("RegisterAgent")
@@ -735,8 +734,7 @@ void BluetoothService::export_agent() {
                         hold({Kind::input_passkey, device, device_name(device), {}, 0},
                              [reply](bool accept, const std::string &text) {
                                  if (accept) {
-                                     reply->returnResults(
-                                         static_cast<uint32_t>(std::stoul(text)));
+                                     reply->returnResults(static_cast<uint32_t>(std::stoul(text)));
                                  } else {
                                      reply->returnError(rejection());
                                  }

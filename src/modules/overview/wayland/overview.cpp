@@ -1,6 +1,8 @@
 #include <GLES3/gl32.h>
 #include <algorithm>
 #include <chrono>
+#include <string>
+#include <unordered_map>
 
 #include "wayland/app/monitor_output.h"
 #include "wayland/app/wayland_state.h"
@@ -145,20 +147,31 @@ void render(State &state, WaylandState &app) {
         model.tick(now);
         if (state.base.open && compositor_available(app)) {
             model.sync(static_cast<float>(state.base.width), static_cast<float>(state.base.height));
-            overview::paint(state.canvas, model,
-                            [&](astralia::ui::Canvas &, const Tile &tile,
-                                const astralia::ui::Box &rect, float radius) {
-                                toplevel_export_request(
-                                    state.capture, app.toplevel_export_manager, app.shm,
-                                    tile.address, astralia::overview_config::capture_interval_ms);
-                                const Texture *tex =
-                                    toplevel_export_texture(state.capture, tile.address);
-                                if (!tex || !tex->id)
-                                    return false;
-                                static const float white[4] = {1, 1, 1, 1};
-                                state.canvas.texture(*tex, rect, white, radius);
-                                return true;
-                            });
+            bool by_handle = app.desktop->capture_by_toplevel_handle();
+            std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1 *> handles;
+            if (by_handle)
+                handles = toplevel_handles_for(app.toplevels, app.desktop->state().clients);
+            overview::paint(
+                state.canvas, model,
+                [&](astralia::ui::Canvas &, const Tile &tile, const astralia::ui::Box &rect,
+                    float radius) {
+                    zwlr_foreign_toplevel_handle_v1 *toplevel = nullptr;
+                    if (by_handle) {
+                        auto found = handles.find(tile.address);
+                        if (found != handles.end())
+                            toplevel = found->second;
+                    }
+                    if (!by_handle || toplevel)
+                        toplevel_export_request(state.capture, app.toplevel_export_manager, app.shm,
+                                                tile.address, toplevel,
+                                                astralia::overview_config::capture_interval_ms);
+                    const Texture *tex = toplevel_export_texture(state.capture, tile.address);
+                    if (!tex || !tex->id)
+                        return false;
+                    static const float white[4] = {1, 1, 1, 1};
+                    state.canvas.texture(*tex, rect, white, radius);
+                    return true;
+                });
             std::vector<std::string> live_addresses;
             for (const astralia::CompositorClient &c : app.desktop->state().clients)
                 live_addresses.push_back(c.address);

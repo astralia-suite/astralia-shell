@@ -1,8 +1,8 @@
 # Astralia Shell
 
-A colourful desktop shell for Hyprland and i3, themed from your wallpaper.
+A colourful wallaper-themed desktop shell
 
-One executable, `astralia`, detects the running session and loads the matching backend.
+Supports Hyprland, ShojiWM and i3.
 
 ## Features
 
@@ -15,7 +15,9 @@ One executable, `astralia`, detects the running session and loads the matching b
 
 ## Requirements
 
-- Wayland: Hyprland and OpenGL ES 2.0.
+- Wayland: 
+    - Hyprland or ShojiWM, and OpenGL ES 2.0.
+    - ShojiWM needs a config that serves the workspace IPC (`workspaces.*` and `windows.*` methods) on `$XDG_RUNTIME_DIR/shojiwm-$WAYLAND_DISPLAY.sock`.
 - X11: i3.
 - Both: `sdbus-c++`, PipeWire, `polkit`, `fd` and `brightnessctl`.
 
