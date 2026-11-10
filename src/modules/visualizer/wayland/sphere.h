@@ -6,7 +6,7 @@
 
 namespace astralia::visualizer {
 
-class SphereVisualizer {
+class Sphere {
   public:
     bool init();
     void destroy();

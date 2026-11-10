@@ -12,19 +12,19 @@
 
 namespace astralia::bar {
 
-class Bar;
+class Host;
 
-class BarSet {
+class HostSet {
   public:
-    BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
-    ~BarSet();
-    BarSet(const BarSet &) = delete;
-    BarSet &operator=(const BarSet &) = delete;
+    HostSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    ~HostSet();
+    HostSet(const HostSet &) = delete;
+    HostSet &operator=(const HostSet &) = delete;
 
   private:
     struct Entry {
         std::string output;
-        std::unique_ptr<Bar> bar;
+        std::unique_ptr<Host> bar;
     };
 
     void sync();

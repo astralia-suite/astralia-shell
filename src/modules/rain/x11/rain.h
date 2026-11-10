@@ -21,9 +21,9 @@
 
 namespace astralia::rain {
 
-class Rain {
+class Host {
   public:
-    Rain(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle();
@@ -42,8 +42,8 @@ class Rain {
     XWindow window_;
     Keyboard keyboard_;
     CairoCanvas canvas_;
-    MatrixRain matrix_;
-    StilettoRain stiletto_;
+    Matrix matrix_;
+    Stiletto stiletto_;
     RainParams params_;
     int timer_ = 0;
     bool open_ = false;

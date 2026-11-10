@@ -8,7 +8,7 @@
 
 namespace astralia::polkit {
 
-Polkit::Polkit(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
       window_(x, "astralia-polkit",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_KEY_PRESS),
@@ -19,7 +19,7 @@ Polkit::Polkit(XConnection &x, EventLoop &loop, Shell &shell, Services &services
     loop.on_window(window_.id(), [this](const xcb_generic_event_t &event) { handle(event); });
 }
 
-void Polkit::sync() {
+void Host::sync() {
     bool pending = service_.pending();
     if (pending && !model_.open()) {
         open();
@@ -34,7 +34,7 @@ void Polkit::sync() {
     }
 }
 
-void Polkit::open() {
+void Host::open() {
     window_.place(active_target_output(services_).geometry);
     keyboard_.reload();
     model_.sync(true);
@@ -43,7 +43,7 @@ void Polkit::open() {
     log::info("polkit: open");
 }
 
-void Polkit::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!model_.open()) {
         return;
     }
@@ -79,7 +79,7 @@ void Polkit::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Polkit::paint() {
+void Host::paint() {
     model_.set_prompt(polkit_prompt(service_));
     const OutputGeometry &geometry = window_.geometry();
     cairo_t *cr = window_.cr();

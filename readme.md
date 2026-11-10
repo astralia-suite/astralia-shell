@@ -4,15 +4,6 @@ A colourful wallaper-themed desktop shell
 
 Supports Hyprland, ShojiWM and i3.
 
-## Features
-
-- A bar with workspaces, a dock and panels for network, Bluetooth, volume, brightness, battery, media, clock, tray and system resources.
-- A launcher, overview, settings, wallpaper selector, notifications, on-screen display and logout menu.
-- A lock screen and idle screensaver.
-- Ambient overlays: rain, bamboo and an audio visualizer.
-- Colours taken from the current wallpaper, so the shell changes look when you change wallpaper.
-- Light enough for old hardware: the X11 backend needs no GL.
-
 ## Requirements
 
 - Wayland: 
@@ -87,8 +78,8 @@ Astralia-shell can never be built without the inspiration of existing major work
 - `quickshell-overview` (GPL): Where the overview's initial design was adopted from.
 - `sekaipop` (GPL-3.0): A relatively new shell with gorgeous eyecandy and animations.
 - `GLava` (GPL-3.0): The audio visualizer transforms and FFT are adapted from it.
+- `pocket-dots` (GPL-3.0): The ink spread wallpaper transition is ported from it.
 
 ## License
 
 Astralia Shell is licensed under GPL-3.0, see `LICENSE`. Bundled third-party notices are in `THIRD_PARTY_LICENSES` and `assets/shaders/NOTICE`.
-

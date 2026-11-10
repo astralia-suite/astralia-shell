@@ -14,7 +14,7 @@ constexpr GLfloat quad_verts[18] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -
 
 } // namespace
 
-bool BarVisualizer::init() {
+bool Bars::init() {
     if (ready_)
         return true;
 
@@ -34,15 +34,15 @@ bool BarVisualizer::init() {
     return true;
 }
 
-void BarVisualizer::destroy() {
+void Bars::destroy() {
     if (prog_)
         glDeleteProgram(prog_);
     if (vbo_)
         glDeleteBuffers(1, &vbo_);
-    *this = BarVisualizer{};
+    *this = Bars{};
 }
 
-void BarVisualizer::draw_quad() {
+void Bars::draw_quad() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(0);
@@ -50,8 +50,8 @@ void BarVisualizer::draw_quad() {
     glDisableVertexAttribArray(0);
 }
 
-void BarVisualizer::render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex,
-                           int audio_size, const VisualizerParams &params) {
+void Bars::render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex,
+                  int audio_size, const VisualizerParams &params) {
     (void)tick;
     (void)audio_size;
     (void)params;

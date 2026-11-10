@@ -9,7 +9,7 @@
 
 namespace astralia::rain {
 
-class StilettoRain {
+class Stiletto {
   public:
     void rebuild(int width, int height, bool async_speed);
     void tick();

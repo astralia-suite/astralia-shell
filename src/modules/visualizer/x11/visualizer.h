@@ -19,12 +19,12 @@
 
 namespace astralia::visualizer {
 
-class Visualizer {
+class Host {
   public:
-    Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
-    ~Visualizer();
-    Visualizer(const Visualizer &) = delete;
-    Visualizer &operator=(const Visualizer &) = delete;
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    ~Host();
+    Host(const Host &) = delete;
+    Host &operator=(const Host &) = delete;
 
   private:
     void toggle();

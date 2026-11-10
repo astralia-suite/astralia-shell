@@ -13,7 +13,7 @@ namespace astralia::overview {
 
 namespace cfg = overview_config;
 
-Overview::Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
       window_(x, "astralia-overview",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -42,7 +42,7 @@ Overview::Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
     shell.bind(ShellVerb::overview, [this] { toggle(); });
 }
 
-void Overview::toggle() {
+void Host::toggle() {
     if (model_.is_open()) {
         model_.close();
     } else {
@@ -50,7 +50,7 @@ void Overview::toggle() {
     }
 }
 
-void Overview::open() {
+void Host::open() {
     const Output &target = active_target_output(services_);
     bound_output_ = target.name;
     window_.place(target.geometry);
@@ -63,7 +63,7 @@ void Overview::open() {
     log::info("overview: open");
 }
 
-void Overview::closed() {
+void Host::closed() {
     window_.set_cursor(CursorShape::arrow);
     window_.hide();
     canvas_.release_images();
@@ -71,12 +71,12 @@ void Overview::closed() {
     malloc_trim(0);
 }
 
-void Overview::expect_focus_loss() {
+void Host::expect_focus_loss() {
     focus_grace_until_ =
         std::chrono::steady_clock::now() + std::chrono::milliseconds(cfg::focus_grace_ms);
 }
 
-void Overview::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     bool open = model_.is_open();
     switch (event.response_type & ~0x80) {
     case XCB_EXPOSE:
@@ -138,7 +138,7 @@ void Overview::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Overview::paint() {
+void Host::paint() {
     if (!model_.is_open()) {
         return;
     }

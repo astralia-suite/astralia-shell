@@ -28,16 +28,16 @@ std::optional<uint32_t> close_hit(const std::vector<std::pair<uint32_t, ui::Box>
 
 } // namespace
 
-Notifications::View::View(XConnection &x) : window(x, "astralia-notification", view_events) {}
+Host::View::View(XConnection &x) : window(x, "astralia-notification", view_events) {}
 
-Notifications::Notifications(XConnection &x, EventLoop &loop, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), loop_(loop), services_(services), service_(services.notifications) {
     service_.changed.connect([this] { sync(); });
     services.outputs.changed.connect([this] { sync(); });
     services.settings.changed.connect([this] { sync(); });
 }
 
-Notifications::View &Notifications::view_for(const Output &output) {
+Host::View &Host::view_for(const Output &output) {
     auto it = views_.find(output.name);
     if (it == views_.end()) {
         it = views_.emplace(output.name, std::make_unique<View>(x_)).first;
@@ -48,7 +48,7 @@ Notifications::View &Notifications::view_for(const Output &output) {
     return *it->second;
 }
 
-void Notifications::sync() {
+void Host::sync() {
     model_.sync(service_);
     const std::vector<Output> &outputs = services_.outputs.outputs();
     for (auto &[name, view] : views_) {
@@ -86,7 +86,7 @@ void Notifications::sync() {
     }
 }
 
-void Notifications::apply_input_region(View &view) {
+void Host::apply_input_region(View &view) {
     std::vector<std::pair<uint32_t, ui::Box>> boxes =
         notification::close_boxes(view.layout, view.state);
     if (boxes == view.close_boxes) {
@@ -105,7 +105,7 @@ void Notifications::apply_input_region(View &view) {
     xcb_flush(x_.conn());
 }
 
-void Notifications::handle(View &view, const xcb_generic_event_t &event) {
+void Host::handle(View &view, const xcb_generic_event_t &event) {
     if (!view.window.mapped()) {
         return;
     }
@@ -144,7 +144,7 @@ void Notifications::handle(View &view, const xcb_generic_event_t &event) {
     }
 }
 
-void Notifications::paint(View &view) {
+void Host::paint(View &view) {
     view.window.clear();
     view.canvas.bind(view.window.cr());
     notification::paint(view.canvas, view.state, view.layout);

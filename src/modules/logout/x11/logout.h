@@ -17,9 +17,9 @@
 
 namespace astralia::logout {
 
-class Logout {
+class Host {
   public:
-    Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void open();

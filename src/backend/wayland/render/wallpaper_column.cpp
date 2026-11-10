@@ -1,7 +1,6 @@
 #include <GLES3/gl32.h>
 #include <algorithm>
 #include <chrono>
-#include <cmath>
 #include <random>
 #include <thread>
 
@@ -13,6 +12,7 @@
 #include "wayland/render/renderer.h"
 #include "wayland/render/wallpaper_column.h"
 
+#include "render/palette_extract.h"
 #include "render/tokens.h"
 
 namespace {
@@ -32,32 +32,16 @@ void column_make_current(const WallpaperColumnGl &gl) {
         klog("wallpaper: column eglMakeCurrent %.1fms", ms);
 }
 
-GLuint g_transition_prog[8] = {0};
-bool g_transition_tried = false;
+GLuint g_spread_prog = 0;
+bool g_spread_tried = false;
 
-GLuint transition_program(WallpaperTransition kind) {
-    if (!g_transition_tried) {
-        g_transition_tried = true;
-        struct {
-            WallpaperTransition k;
-            const char *frag;
-            const char *tag;
-        } defs[] = {
-            {WallpaperTransition::Fade, "wallpaper/fade.frag", "wallpaper_fade"},
-            {WallpaperTransition::Wipe, "wallpaper/wipe.frag", "wallpaper_wipe"},
-            {WallpaperTransition::Disc, "wallpaper/disc.frag", "wallpaper_disc"},
-            {WallpaperTransition::Stripes, "wallpaper/stripes.frag", "wallpaper_stripes"},
-            {WallpaperTransition::Zoom, "wallpaper/zoom.frag", "wallpaper_zoom"},
-            {WallpaperTransition::Honeycomb, "wallpaper/honeycomb.frag", "wallpaper_honeycomb"},
-        };
-        for (auto &d : defs)
-            g_transition_prog[static_cast<int>(d.k)] =
-                gl_compile_program_files("renderer/quad.vert", d.frag, d.tag);
+GLuint spread_program() {
+    if (!g_spread_tried) {
+        g_spread_tried = true;
+        g_spread_prog = gl_compile_program_files("renderer/quad.vert", "wallpaper/spread.frag",
+                                                 "wallpaper_spread");
     }
-    int i = static_cast<int>(kind);
-    if (i < 0 || i >= 8)
-        return 0;
-    return g_transition_prog[i];
+    return g_spread_prog;
 }
 
 float rand_range(float lo, float hi) {
@@ -65,37 +49,29 @@ float rand_range(float lo, float hi) {
     return std::uniform_real_distribution<float>(lo, hi)(rng);
 }
 
-WallpaperTransition resolve_transition(WallpaperTransition kind) {
-    if (kind != WallpaperTransition::Random)
-        return kind;
-    int pick = std::min(5, static_cast<int>(rand_range(0.0f, 6.0f)));
-    return static_cast<WallpaperTransition>(static_cast<int>(WallpaperTransition::Fade) + pick);
+Texture map_texture(int width, int height, const uint8_t *rgba) {
+    Texture tex = make_texture_rgba(width, height, rgba);
+    glBindTexture(GL_TEXTURE_2D, tex.id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return tex;
 }
 
-void transition_begin(WallpaperColumn &col, WallpaperTransition kind) {
-    col.transition_kind = resolve_transition(kind);
-    col.transition_start = std::chrono::steady_clock::now();
-    col.transitioning = true;
-    switch (col.transition_kind) {
-    case WallpaperTransition::Wipe:
-        col.tr_direction = std::floor(rand_range(0.0f, 4.0f));
-        break;
-    case WallpaperTransition::Disc:
-        col.tr_center_x = rand_range(0.2f, 0.8f);
-        col.tr_center_y = rand_range(0.2f, 0.8f);
-        break;
-    case WallpaperTransition::Stripes:
-        col.tr_stripe_count = std::round(rand_range(4.0f, 24.0f));
-        col.tr_angle = rand_range(0.0f, 360.0f);
-        break;
-    case WallpaperTransition::Honeycomb:
-        col.tr_cell_size = rand_range(0.02f, 0.06f);
-        col.tr_center_x = rand_range(0.2f, 0.8f);
-        col.tr_center_y = rand_range(0.2f, 0.8f);
-        break;
-    default:
-        break;
+void transition_begin(WallpaperColumn &col) {
+    const astralia::SpreadMap &map = col.pending_spread;
+    if (!map.rgba.empty() && spread_program()) {
+        col.tr_map = map_texture(map.width, map.height, map.rgba.data());
+        col.tr_seed = rand_range(0.0f, 100.0f);
+        col.transition_kind = WallpaperTransition::Spread;
+        col.transition_start = std::chrono::steady_clock::now();
+        col.transitioning = true;
+    } else {
+        col.tex_prev.reset();
     }
+    col.pending_spread = {};
 }
 
 void transition_uv(FillMode mode, float col_w, float col_h, int tw, int th, float out[4]) {
@@ -111,15 +87,14 @@ void transition_uv(FillMode mode, float col_w, float col_h, int tw, int th, floa
 
 void transition_render(Renderer &r, WallpaperColumn &col, float x, float y, float w, float h,
                        float progress) {
-    GLuint prog = transition_program(col.transition_kind);
-    if (!prog || !col.tex.id || !col.tex_prev.id)
+    GLuint prog = spread_program();
+    if (!prog || !col.tex.id || !col.tex_prev.id || !col.tr_map.id)
         return;
     float from_uv[4];
     float to_uv[4];
     transition_uv(col.mode, w, h, col.tex_prev.width, col.tex_prev.height, from_uv);
     transition_uv(col.mode, w, h, col.tex.width, col.tex.height, to_uv);
     const astralia::Color &fill = astralia::palette::base;
-    float aspect = h > 0.0f ? w / h : 1.0f;
     r.draw_custom(prog, x, y, w, h, [&](GLuint p) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, col.tex_prev.id);
@@ -127,17 +102,17 @@ void transition_render(Renderer &r, WallpaperColumn &col, float x, float y, floa
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, col.tex.id);
         glUniform1i(glGetUniformLocation(p, "u_to"), 1);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, col.tr_map.id);
+        glUniform1i(glGetUniformLocation(p, "u_map"), 2);
         glUniform4fv(glGetUniformLocation(p, "u_from_uv"), 1, from_uv);
         glUniform4fv(glGetUniformLocation(p, "u_to_uv"), 1, to_uv);
         glUniform4f(glGetUniformLocation(p, "u_fill"), fill.r, fill.g, fill.b, fill.a);
         glUniform1f(glGetUniformLocation(p, "u_progress"), progress);
-        glUniform1f(glGetUniformLocation(p, "u_smoothness"), wallpaper_transition_smoothness);
-        glUniform1f(glGetUniformLocation(p, "u_direction"), col.tr_direction);
-        glUniform2f(glGetUniformLocation(p, "u_center"), col.tr_center_x, col.tr_center_y);
-        glUniform1f(glGetUniformLocation(p, "u_aspect"), aspect);
-        glUniform1f(glGetUniformLocation(p, "u_stripe_count"), col.tr_stripe_count);
-        glUniform1f(glGetUniformLocation(p, "u_angle"), col.tr_angle);
-        glUniform1f(glGetUniformLocation(p, "u_cell_size"), col.tr_cell_size);
+        glUniform2f(glGetUniformLocation(p, "u_map_size"), static_cast<float>(col.tr_map.width),
+                    static_cast<float>(col.tr_map.height));
+        glUniform4fv(glGetUniformLocation(p, "u_ember"), 1, astralia::rgba(col.tr_ember));
+        glUniform1f(glGetUniformLocation(p, "u_seed"), col.tr_seed);
         glActiveTexture(GL_TEXTURE0);
     });
 }
@@ -177,14 +152,14 @@ bool wallpaper_column_draw_transition(Renderer &renderer, WallpaperColumn &col, 
     float raw = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() -
                                                          col.transition_start)
                     .count() /
-                wallpaper_transition_duration_ms;
+                wallpaper_spread_duration_ms;
     if (raw >= 1.0f || col.transition_kind == WallpaperTransition::None) {
         col.tex_prev.reset();
+        col.tr_map.reset();
         col.transitioning = false;
         return false;
     }
-    transition_render(renderer, col, x, y, column_w, height,
-                      astralia::apply_easing(astralia::Easing::EaseInOutCubic, raw));
+    transition_render(renderer, col, x, y, column_w, height, raw);
     return true;
 }
 
@@ -203,7 +178,7 @@ void wallpaper_column_upload_pending(WallpaperColumn &col, const WallpaperColumn
             } else {
                 col.tex_prev = std::move(col.tex);
                 col.tex = std::move(fresh);
-                transition_begin(col, col.pending_transition);
+                transition_begin(col);
             }
         }
         col.pending_transition = WallpaperTransition::None;
@@ -211,8 +186,6 @@ void wallpaper_column_upload_pending(WallpaperColumn &col, const WallpaperColumn
         col.pending_pixels = nullptr;
         if (gl.request_frame)
             gl.request_frame();
-        if (col.on_uploaded)
-            col.on_uploaded();
         return;
     }
     update_texture_rgba(col.tex, col.pending_width, col.pending_height, col.pending_pixels,
@@ -221,8 +194,6 @@ void wallpaper_column_upload_pending(WallpaperColumn &col, const WallpaperColumn
     col.pending_pixels = nullptr;
     if (gl.request_frame)
         gl.request_frame();
-    if (col.on_uploaded)
-        col.on_uploaded();
     float ms =
         std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
     if (ms > 5.0f)
@@ -248,6 +219,8 @@ void wallpaper_column_clear(WallpaperColumn &col, const WallpaperColumnGl &gl) {
     col.video_surface = 0;
     col.tex.reset();
     col.tex_prev.reset();
+    col.tr_map.reset();
+    col.pending_spread = {};
     col.transitioning = false;
     col.pending_transition = WallpaperTransition::None;
     col.zero_copy = false;
@@ -264,35 +237,46 @@ void wallpaper_column_set_static(WallpaperColumn &col, const WallpaperColumnGl &
     if (col.path == path && col.mode == mode && col.target_w == target_w &&
         col.target_h == target_h && col.tex.id)
         return;
-    col.pending_transition = col.tex.id ? WallpaperTransition::Random : WallpaperTransition::None;
+    col.pending_transition = col.tex.id ? WallpaperTransition::Spread : WallpaperTransition::None;
     col.path = path;
     col.mode = mode;
     col.target_w = target_w;
     col.target_h = target_h;
     uint64_t gen = ++col.generation;
     std::weak_ptr<int> life = col.life;
-    std::thread([&col, &gl, path, gen, target_w, target_h, life] {
+    bool spread = col.pending_transition == WallpaperTransition::Spread;
+    auto seed = static_cast<uint32_t>(rand_range(0.0f, 1.0e9f));
+    std::thread([&col, &gl, path, gen, target_w, target_h, life, spread, seed] {
         int w = 0, h = 0;
         unsigned char *data = animate_decode_scaled(path, target_w, target_h, w, h);
-        astralia::DeferredCall::call_later([&col, &gl, data, w, h, gen, life] {
-            auto keep = life.lock();
-            if (!keep) {
-                delete[] data;
-                return;
-            }
-            if (gen != col.generation) {
-                delete[] data;
-                return;
-            }
-            if (!data)
-                return;
-            delete[] col.pending_pixels;
-            col.pending_pixels = data;
-            col.pending_width = w;
-            col.pending_height = h;
-            col.pending_stride = 0;
-            wallpaper_column_upload_pending(col, gl);
-        });
+        astralia::SpreadMap map;
+        astralia::Color ember{1.0f, 1.0f, 1.0f, 1.0f};
+        if (spread && data) {
+            map = astralia::make_spread_map(seed);
+            ember = astralia::ember_colour(astralia::extract_seeds(data, w, h, false));
+        }
+        astralia::DeferredCall::call_later(
+            [&col, &gl, data, w, h, gen, life, map = std::move(map), ember]() mutable {
+                auto keep = life.lock();
+                if (!keep) {
+                    delete[] data;
+                    return;
+                }
+                if (gen != col.generation) {
+                    delete[] data;
+                    return;
+                }
+                if (!data)
+                    return;
+                delete[] col.pending_pixels;
+                col.pending_pixels = data;
+                col.pending_width = w;
+                col.pending_height = h;
+                col.pending_stride = 0;
+                col.pending_spread = std::move(map);
+                col.tr_ember = ember;
+                wallpaper_column_upload_pending(col, gl);
+            });
     }).detach();
 }
 

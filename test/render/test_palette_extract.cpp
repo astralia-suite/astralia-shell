@@ -147,4 +147,14 @@ void check_palette_extract() {
     Extraction g = extract_seeds(half.data.data(), half.width, half.height, true);
     check(g.found && hue_distance(g.seeds.front().hue, hue_of("#E0405A")) < 3.0f,
           "premultiplied pixels are read back to the same hue");
+
+    Image dim(40, 40, color("#5A1020"));
+    Extraction dim_seeds = extract_seeds(dim.data.data(), dim.width, dim.height, false);
+    Oklch ember = oklch_from_color(ember_colour(dim_seeds));
+    check(dim_seeds.found && hue_distance(ember.h, dim_seeds.seeds.front().hue) < 5.0f &&
+              ember.L >= 0.7f,
+          "the ember keeps the vivid hue and is lifted to a bright tone");
+    Oklch near_white = oklch_from_color(ember_colour(dark_tone));
+    check(near_white.C < 0.02f && near_white.L > 0.85f,
+          "an image without a seed gets a near-white ember");
 }

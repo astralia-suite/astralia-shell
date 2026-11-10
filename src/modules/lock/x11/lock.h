@@ -22,9 +22,9 @@
 
 namespace astralia::lock {
 
-class Lock {
+class Host {
   public:
-    Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
     bool locked() const { return locked_; }
 

@@ -18,9 +18,9 @@
 
 namespace astralia::overview {
 
-class Overview {
+class Host {
   public:
-    Overview(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle();

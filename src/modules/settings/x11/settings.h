@@ -19,9 +19,9 @@
 
 namespace astralia::settings {
 
-class Settings {
+class Host {
   public:
-    Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle();

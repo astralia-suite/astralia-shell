@@ -71,7 +71,7 @@ void draw(XConnection &x, xcb_pixmap_t pixmap, const std::vector<Output> &output
 
 } // namespace
 
-Wallpaper::Wallpaper(XConnection &x, EventLoop &loop, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), loop_(loop), services_(services),
       menu_window_(x, "astralia-desktop-menu",
                    XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -88,7 +88,7 @@ Wallpaper::Wallpaper(XConnection &x, EventLoop &loop, Services &services)
     services_.outputs.changed.connect([this] { apply(false); });
 }
 
-Wallpaper::~Wallpaper() {
+Host::~Host() {
     close_menu();
     xcb_connection_t *desktop_conn = x_.conn();
     for (xcb_window_t window : desktop_windows_) {
@@ -109,7 +109,7 @@ Wallpaper::~Wallpaper() {
     xcb_flush(conn);
 }
 
-void Wallpaper::apply(bool force) {
+void Host::apply(bool force) {
     const std::vector<Output> &outputs = services_.outputs.outputs();
     if (!force && outputs == applied_) {
         return;
@@ -136,7 +136,7 @@ void Wallpaper::apply(bool force) {
     layout_desktop_windows();
 }
 
-void Wallpaper::layout_desktop_windows() {
+void Host::layout_desktop_windows() {
     xcb_connection_t *conn = x_.conn();
     for (size_t i = 0; i < applied_.size(); ++i) {
         if (i >= desktop_windows_.size()) {
@@ -168,7 +168,7 @@ void Wallpaper::layout_desktop_windows() {
     xcb_flush(conn);
 }
 
-void Wallpaper::handle_desktop(size_t index, const xcb_generic_event_t &event) {
+void Host::handle_desktop(size_t index, const xcb_generic_event_t &event) {
     if ((event.response_type & ~0x80) != XCB_BUTTON_PRESS || index >= applied_.size()) {
         return;
     }
@@ -180,7 +180,7 @@ void Wallpaper::handle_desktop(size_t index, const xcb_generic_event_t &event) {
     open_menu(index, press.root_x, press.root_y, press.event_x);
 }
 
-void Wallpaper::open_menu(size_t index, int16_t root_x, int16_t root_y, int16_t event_x) {
+void Host::open_menu(size_t index, int16_t root_x, int16_t root_y, int16_t event_x) {
     const Output &output = applied_[index];
     int columns = wallpaper_column_count(services_.settings.config(), output.name, false);
     int column = std::clamp(event_x / std::max(1, output.geometry.width / columns), 0, columns - 1);
@@ -199,7 +199,7 @@ void Wallpaper::open_menu(size_t index, int16_t root_x, int16_t root_y, int16_t 
     grab_menu();
 }
 
-void Wallpaper::close_menu() {
+void Host::close_menu() {
     if (!menu_.is_open()) {
         return;
     }
@@ -214,7 +214,7 @@ void Wallpaper::close_menu() {
     xcb_flush(x_.conn());
 }
 
-void Wallpaper::grab_menu() {
+void Host::grab_menu() {
     constexpr uint16_t mask =
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION;
     xcb_grab_pointer_reply_t *reply = xcb_grab_pointer_reply(
@@ -226,7 +226,7 @@ void Wallpaper::grab_menu() {
     std::free(reply);
 }
 
-void Wallpaper::paint_menu() {
+void Host::paint_menu() {
     if (!menu_.is_open() || menu_window_.cr() == nullptr) {
         return;
     }
@@ -236,7 +236,7 @@ void Wallpaper::paint_menu() {
     menu_window_.present();
 }
 
-void Wallpaper::handle_menu(const xcb_generic_event_t &event) {
+void Host::handle_menu(const xcb_generic_event_t &event) {
     if (!menu_.is_open()) {
         return;
     }

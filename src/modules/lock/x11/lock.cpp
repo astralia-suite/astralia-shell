@@ -51,10 +51,10 @@ bool contains(const ui::Box &box, double x, double y) {
 
 } // namespace
 
-Lock::Surface::Surface(XConnection &x, size_t index)
+Host::Surface::Surface(XConnection &x, size_t index)
     : window(x, "astralia-lock-" + std::to_string(index), window_events) {}
 
-Lock::Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services), keyboard_(x.conn()), user_(services.user.name()) {
     timer_ = loop.add_timer([this] { return next_tick(); }, [this] { poll(); });
     shell.track("lock", [this] { return locked_; });
@@ -70,7 +70,7 @@ Lock::Lock(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     services.notifications.changed.connect(repaint);
 }
 
-std::chrono::milliseconds Lock::next_tick() const {
+std::chrono::milliseconds Host::next_tick() const {
     if (!locked_) {
         return std::chrono::hours(1);
     }
@@ -80,7 +80,7 @@ std::chrono::milliseconds Lock::next_tick() const {
     return model_.failed() ? std::min(tick, std::max(fail, std::chrono::milliseconds(1))) : tick;
 }
 
-size_t Lock::layout_surfaces() {
+size_t Host::layout_surfaces() {
     std::vector<Output> outputs = services_.outputs.outputs();
     if (outputs.empty()) {
         outputs.push_back({"", x_.primary_output()});
@@ -110,7 +110,7 @@ size_t Lock::layout_surfaces() {
     return outputs.size();
 }
 
-size_t Lock::pointer_surface(size_t count) const {
+size_t Host::pointer_surface(size_t count) const {
     auto [x, y] = x_.pointer_position();
     for (size_t i = 0; i < count; ++i) {
         const OutputGeometry &area = surfaces_[i]->output.geometry;
@@ -121,7 +121,7 @@ size_t Lock::pointer_surface(size_t count) const {
     return 0;
 }
 
-void Lock::lock() {
+void Host::lock() {
     if (locked_) {
         return;
     }
@@ -151,7 +151,7 @@ void Lock::lock() {
     log::info("lock: locked {} output(s)", count);
 }
 
-void Lock::outputs_changed() {
+void Host::outputs_changed() {
     if (!locked_) {
         return;
     }
@@ -170,7 +170,7 @@ void Lock::outputs_changed() {
     paint_all(true);
 }
 
-bool Lock::grab() {
+bool Host::grab() {
     xcb_connection_t *conn = x_.conn();
     xcb_window_t window = surfaces_[grab_index_]->window.id();
     bool keyboard = false;
@@ -205,13 +205,13 @@ bool Lock::grab() {
     return keyboard && pointer;
 }
 
-void Lock::release_grabs() {
+void Host::release_grabs() {
     xcb_ungrab_keyboard(x_.conn(), XCB_CURRENT_TIME);
     xcb_ungrab_pointer(x_.conn(), XCB_CURRENT_TIME);
     xcb_flush(x_.conn());
 }
 
-void Lock::unlock() {
+void Host::unlock() {
     release_grabs();
     locked_ = false;
     model_.reset();
@@ -226,7 +226,7 @@ void Lock::unlock() {
     log::info("lock: unlocked");
 }
 
-void Lock::handle(size_t index, const xcb_generic_event_t &event) {
+void Host::handle(size_t index, const xcb_generic_event_t &event) {
     if (!locked_ || index >= surfaces_.size()) {
         return;
     }
@@ -251,7 +251,7 @@ void Lock::handle(size_t index, const xcb_generic_event_t &event) {
     }
 }
 
-void Lock::press(const xcb_key_press_event_t &event) {
+void Host::press(const xcb_key_press_event_t &event) {
     switch (model_.key(to_neutral(keyboard_.press(event.detail, event.state)))) {
     case Key::changed:
         paint_all(true);
@@ -264,7 +264,7 @@ void Lock::press(const xcb_key_press_event_t &event) {
     }
 }
 
-void Lock::click(const xcb_button_press_event_t &event) {
+void Host::click(const xcb_button_press_event_t &event) {
     if (event.detail != XCB_BUTTON_INDEX_1) {
         return;
     }
@@ -293,7 +293,7 @@ void Lock::click(const xcb_button_press_event_t &event) {
     }
 }
 
-void Lock::submit() {
+void Host::submit() {
     std::string password = model_.begin_auth();
     uint64_t generation = model_.generation();
     std::thread([this, generation, password = std::move(password)]() mutable {
@@ -305,7 +305,7 @@ void Lock::submit() {
     paint_all(true);
 }
 
-void Lock::finished(uint64_t generation, bool success) {
+void Host::finished(uint64_t generation, bool success) {
     if (!locked_) {
         return;
     }
@@ -317,7 +317,7 @@ void Lock::finished(uint64_t generation, bool success) {
     loop_.reschedule(timer_);
 }
 
-void Lock::poll() {
+void Host::poll() {
     if (!locked_) {
         return;
     }
@@ -328,7 +328,7 @@ void Lock::poll() {
     paint_all(true);
 }
 
-Info Lock::info() const {
+Info Host::info() const {
     return {user_,
             services_.user.os_name(),
             services_.compositor->name(),
@@ -345,7 +345,7 @@ Info Lock::info() const {
             &services_.notifications.list()};
 }
 
-void Lock::paint_all(bool with_wallpaper) {
+void Host::paint_all(bool with_wallpaper) {
     for (auto &surface : surfaces_) {
         if (surface->window.mapped()) {
             paint(*surface, with_wallpaper);
@@ -353,7 +353,7 @@ void Lock::paint_all(bool with_wallpaper) {
     }
 }
 
-void Lock::paint(Surface &surface, bool with_wallpaper) {
+void Host::paint(Surface &surface, bool with_wallpaper) {
     const OutputGeometry &area = surface.output.geometry;
     cairo_t *cr = surface.window.cr();
     cairo_reset_clip(cr);

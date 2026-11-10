@@ -59,26 +59,26 @@ class X11Backend final : public Backend {
         }
         Shell shell("x11", x11_capabilities());
         Services services(*x, *loop);
-        astralia::wallpaper::Wallpaper wallpaper(*x, *loop, services);
-        astralia::bar::BarSet bars(*x, *loop, shell, services);
-        astralia::launcher::Launcher launcher(*x, *loop, shell, services);
-        astralia::lock::Lock lock(*x, *loop, shell, services);
-        astralia::logout::Logout logout(*x, *loop, shell, services);
-        astralia::overview::Overview overview(*x, *loop, shell, services);
-        astralia::polkit::Polkit polkit(*x, *loop, shell, services);
-        astralia::notification::Notifications notifications(*x, *loop, services);
-        astralia::osd::Osd osd(*x, *loop, services);
-        astralia::settings::Settings settings(*x, *loop, shell, services);
-        astralia::wallpaper_select::WallpaperSelect wallpaper_select(*x, *loop, shell, services);
+        astralia::wallpaper::Host wallpaper(*x, *loop, services);
+        astralia::bar::HostSet bars(*x, *loop, shell, services);
+        astralia::launcher::Host launcher(*x, *loop, shell, services);
+        astralia::lock::Host lock(*x, *loop, shell, services);
+        astralia::logout::Host logout(*x, *loop, shell, services);
+        astralia::overview::Host overview(*x, *loop, shell, services);
+        astralia::polkit::Host polkit(*x, *loop, shell, services);
+        astralia::notification::Host notifications(*x, *loop, services);
+        astralia::osd::Host osd(*x, *loop, services);
+        astralia::settings::Host settings(*x, *loop, shell, services);
+        astralia::wallpaper_select::Host wallpaper_select(*x, *loop, shell, services);
         wallpaper.on_settings = [&shell] { shell.run(ShellVerb::settings); };
         wallpaper.on_wallpaper = [&wallpaper_select](const std::string &monitor, int column) {
             wallpaper_select.open_on(monitor, column);
         };
-        astralia::dashboard::Dashboard dashboard(*x, *loop, shell, services);
-        astralia::rain::Rain rain(*x, *loop, shell, services);
-        astralia::bamboo::Bamboo bamboo(*x, *loop, shell, services);
-        astralia::idle::Idle idle(*x, *loop, services);
-        astralia::visualizer::Visualizer visualizer(*x, *loop, shell, services);
+        astralia::dashboard::Host dashboard(*x, *loop, shell, services);
+        astralia::rain::Host rain(*x, *loop, shell, services);
+        astralia::bamboo::Host bamboo(*x, *loop, shell, services);
+        astralia::idle::Host idle(*x, *loop, services);
+        astralia::visualizer::Host visualizer(*x, *loop, shell, services);
         shell.attach(**ipc);
         if (start_locked_pending()) {
             shell.run(ShellVerb::lock);

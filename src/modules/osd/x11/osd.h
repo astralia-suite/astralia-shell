@@ -17,9 +17,9 @@
 
 namespace astralia::osd {
 
-class Osd {
+class Host {
   public:
-    Osd(XConnection &x, EventLoop &loop, Services &services);
+    Host(XConnection &x, EventLoop &loop, Services &services);
 
   private:
     struct Surface {
@@ -29,7 +29,7 @@ class Osd {
         CairoCanvas canvas;
     };
 
-    void show(OsdKind kind, int percent, bool muted);
+    void show(Kind kind, int percent, bool muted);
     void hide();
     std::chrono::milliseconds until_hide() const;
     void paint(Surface &surface);

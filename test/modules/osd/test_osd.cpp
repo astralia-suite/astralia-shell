@@ -13,8 +13,8 @@
 
 namespace {
 
+using astralia::osd::Kind;
 using astralia::osd::Model;
-using astralia::osd::OsdKind;
 using namespace std::chrono_literals;
 
 struct Instant {
@@ -25,12 +25,11 @@ struct Instant {
 void check_osd_model() {
     auto t0 = astralia::osd::Model::Clock::now();
     astralia::osd::Model model(t0);
-    test::check(!model.show(astralia::osd::OsdKind::volume, 40, false, t0 + 500ms) &&
-                    !model.visible(),
+    test::check(!model.show(astralia::osd::Kind::volume, 40, false, t0 + 500ms) && !model.visible(),
                 "show is ignored during the ready delay");
     {
         Instant instant;
-        test::check(model.show(astralia::osd::OsdKind::volume, 140, false, t0 + 1000ms),
+        test::check(model.show(astralia::osd::Kind::volume, 140, false, t0 + 1000ms),
                     "show works once ready");
         test::check(model.visible() && model.percent() == 100 && model.opacity() == 1.0f,
                     "percent is clamped and the card is opaque");
@@ -39,7 +38,7 @@ void check_osd_model() {
                     "until_hide counts down and floors at zero");
         test::check(model.label() == "100%", "label is the percent");
 
-        model.show(astralia::osd::OsdKind::volume, 30, true, t0 + 1200ms);
+        model.show(astralia::osd::Kind::volume, 30, true, t0 + 1200ms);
         test::check(model.label() == "muted" && model.muted() && model.icon_mix() == 1.0f &&
                         model.bar_fill() == 0.3f,
                     "muted label and icon mix");
@@ -53,7 +52,7 @@ void check_osd_model() {
     }
 
     astralia::osd::Model animated(t0);
-    animated.show(astralia::osd::OsdKind::brightness, 20, false, t0 + 1000ms);
+    animated.show(astralia::osd::Kind::brightness, 20, false, t0 + 1000ms);
     test::check(animated.animating() && animated.opacity() == 0.0f,
                 "fade in starts from transparent");
     animated.tick(astralia::osd::Model::Clock::now() + 1s);
@@ -62,7 +61,7 @@ void check_osd_model() {
     animated.hide();
     animated.tick(astralia::osd::Model::Clock::now() + 2s);
     test::check(!animated.visible() && !animated.animating(), "double hide completes once");
-    test::check(animated.show(astralia::osd::OsdKind::brightness, 20, false, t0 + 1000ms) &&
+    test::check(animated.show(astralia::osd::Kind::brightness, 20, false, t0 + 1000ms) &&
                     animated.visible(),
                 "a hidden card shows again");
 }
@@ -72,21 +71,21 @@ void check_osd_glyphs() {
     astralia::osd::Model model(astralia::osd::Model::Clock::now() - 10s);
     auto now = astralia::osd::Model::Clock::now();
     Instant instant;
-    model.show(astralia::osd::OsdKind::volume, 0, false, now);
+    model.show(astralia::osd::Kind::volume, 0, false, now);
     test::check(model.glyph() == icon::volume_empty, "zero volume");
-    model.show(astralia::osd::OsdKind::volume, 30, false, now);
+    model.show(astralia::osd::Kind::volume, 30, false, now);
     test::check(model.glyph() == icon::volume_low, "low volume");
-    model.show(astralia::osd::OsdKind::volume, 80, false, now);
+    model.show(astralia::osd::Kind::volume, 80, false, now);
     test::check(model.glyph() == icon::volume_high, "high volume");
-    model.show(astralia::osd::OsdKind::volume, 80, true, now);
+    model.show(astralia::osd::Kind::volume, 80, true, now);
     test::check(model.glyph() == icon::volume_mute, "muted volume");
-    model.show(astralia::osd::OsdKind::mic, 80, true, now);
+    model.show(astralia::osd::Kind::mic, 80, true, now);
     test::check(model.glyph() == icon::mic_off, "muted mic");
-    model.show(astralia::osd::OsdKind::mic, 80, false, now);
+    model.show(astralia::osd::Kind::mic, 80, false, now);
     test::check(model.glyph() == icon::mic_on, "live mic");
-    model.show(astralia::osd::OsdKind::brightness, 20, false, now);
+    model.show(astralia::osd::Kind::brightness, 20, false, now);
     test::check(model.glyph() == icon::brightness_down, "dim brightness");
-    model.show(astralia::osd::OsdKind::brightness, 90, false, now);
+    model.show(astralia::osd::Kind::brightness, 90, false, now);
     test::check(model.glyph() == icon::brightness_up, "bright brightness");
 }
 
@@ -101,7 +100,7 @@ void check_osd_view() {
 
     Instant instant;
     astralia::osd::Model model(astralia::osd::Model::Clock::now() - 10s);
-    model.show(astralia::osd::OsdKind::volume, 50, false, astralia::osd::Model::Clock::now());
+    model.show(astralia::osd::Kind::volume, 50, false, astralia::osd::Model::Clock::now());
     test::RecordingCanvas canvas;
     astralia::osd::paint(canvas, model);
     test::check(canvas.ops.front().kind == Kind::opacity && canvas.ops.front().value == 1.0f,
@@ -124,7 +123,7 @@ void check_osd_view() {
                     std::fabs(label.box.x + 27 - (300 - 25)) < 1e-3f,
                 "label is right aligned");
 
-    model.show(astralia::osd::OsdKind::volume, 0, false, astralia::osd::Model::Clock::now());
+    model.show(astralia::osd::Kind::volume, 0, false, astralia::osd::Model::Clock::now());
     test::RecordingCanvas empty;
     astralia::osd::paint(empty, model);
     test::check(empty.count(Kind::rounded) == 3, "no fill at zero");

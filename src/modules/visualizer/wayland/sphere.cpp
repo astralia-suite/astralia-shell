@@ -36,7 +36,7 @@ float particle_thin_hash(float px, float py) {
 
 } // namespace
 
-bool SphereVisualizer::init() {
+bool Sphere::init() {
     if (ready_)
         return true;
 
@@ -69,7 +69,7 @@ bool SphereVisualizer::init() {
     return true;
 }
 
-void SphereVisualizer::destroy() {
+void Sphere::destroy() {
     GLuint progs[] = {sphere1_prog_, sphere2_prog_, glow_prog_, present_prog_};
     for (GLuint p : progs)
         if (p)
@@ -88,10 +88,10 @@ void SphereVisualizer::destroy() {
         glDeleteBuffers(1, &vbo_);
     if (particle_vbo_)
         glDeleteBuffers(1, &particle_vbo_);
-    *this = SphereVisualizer{};
+    *this = Sphere{};
 }
 
-void SphereVisualizer::ensure_targets(int canvas) {
+void Sphere::ensure_targets(int canvas) {
     if (fbo_tex_[0] && canvas == canvas_)
         return;
 
@@ -137,7 +137,7 @@ void SphereVisualizer::ensure_targets(int canvas) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void SphereVisualizer::ensure_particle_grid(int canvas, float particle_thin) {
+void Sphere::ensure_particle_grid(int canvas, float particle_thin) {
     if (particle_vbo_ && canvas == particle_grid_canvas_ && particle_thin == particle_grid_thin_)
         return;
 
@@ -162,7 +162,7 @@ void SphereVisualizer::ensure_particle_grid(int canvas, float particle_thin) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void SphereVisualizer::draw_quad() {
+void Sphere::draw_quad() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(0);
@@ -170,9 +170,8 @@ void SphereVisualizer::draw_quad() {
     glDisableVertexAttribArray(0);
 }
 
-void SphereVisualizer::set_audio_uniforms(GLuint prog, GLuint audio_l_tex, GLuint audio_r_tex,
-                                          int audio_size, int tick, int canvas,
-                                          const VisualizerParams &params) {
+void Sphere::set_audio_uniforms(GLuint prog, GLuint audio_l_tex, GLuint audio_r_tex, int audio_size,
+                                int tick, int canvas, const VisualizerParams &params) {
     glUniform2f(glGetUniformLocation(prog, "resolution"), static_cast<float>(canvas),
                 static_cast<float>(canvas));
     glUniform1f(glGetUniformLocation(prog, "time"), static_cast<float>(tick));
@@ -196,8 +195,8 @@ void SphereVisualizer::set_audio_uniforms(GLuint prog, GLuint audio_l_tex, GLuin
     glActiveTexture(GL_TEXTURE0);
 }
 
-void SphereVisualizer::render(int width, int height, int tick, GLuint audio_l_tex,
-                              GLuint audio_r_tex, int audio_size, const VisualizerParams &params) {
+void Sphere::render(int width, int height, int tick, GLuint audio_l_tex, GLuint audio_r_tex,
+                    int audio_size, const VisualizerParams &params) {
     if (!ready_ || width <= 0 || height <= 0)
         return;
 
@@ -252,7 +251,7 @@ void SphereVisualizer::render(int width, int height, int tick, GLuint audio_l_te
     glDisable(GL_BLEND);
 }
 
-void SphereVisualizer::present(int width, int height, int canvas) {
+void Sphere::present(int width, int height, int canvas) {
     int off_x = (width - canvas) / 2;
     int off_y = (height - canvas) / 2;
 

@@ -23,12 +23,10 @@ inline constexpr float label_height = 34.0f;
 inline constexpr int label_px = 15;
 
 // Motion
-inline constexpr float zoom_ms = 360.0f;
+inline constexpr float appear_ms = 260.0f;
+inline constexpr float appear_scale = 0.92f;
 inline constexpr float step_ms = 240.0f;
 inline constexpr float fade_in_ms = 160.0f;
-inline constexpr float reveal_timeout_ms = 250.0f;
-inline constexpr float handoff_timeout_ms = 1500.0f;
-inline constexpr float handoff_settle_ms = 50.0f;
 inline constexpr float wheel_notch = 1.0f;
 inline constexpr float wayland_wheel_unit = 10.0f;
 

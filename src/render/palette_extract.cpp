@@ -18,6 +18,8 @@ constexpr float vivid_chroma = 0.12f;
 constexpr float secondary_hue_gap = 40.0f;
 constexpr float secondary_hue_near = 90.0f;
 constexpr float merge_distance = 1e-4f;
+constexpr float ember_min_lightness = 0.72f;
+constexpr float ember_plain_lightness = 0.92f;
 
 float chroma_weight(float chroma) {
     return std::clamp((chroma - grey_chroma) / (vivid_chroma - grey_chroma), 0.0f, 1.0f);
@@ -208,6 +210,20 @@ Extraction extract_seeds(const uint8_t *rgba, int width, int height, bool premul
         }
     }
     return result;
+}
+
+Color ember_colour(const Extraction &extraction) {
+    if (!extraction.found || extraction.seeds.empty()) {
+        return color_from_oklch({ember_plain_lightness, 0.0f, 0.0f});
+    }
+    const Seed *vivid = &extraction.seeds.front();
+    for (const Seed &seed : extraction.seeds) {
+        if (seed.chroma > vivid->chroma) {
+            vivid = &seed;
+        }
+    }
+    float lightness = std::max(vivid->lightness, ember_min_lightness);
+    return color_from_oklch({lightness, vivid->chroma, vivid->hue});
 }
 
 } // namespace astralia

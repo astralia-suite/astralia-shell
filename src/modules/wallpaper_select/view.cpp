@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <numeric>
@@ -41,12 +40,11 @@ void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, ui::Imag
     canvas.end_group();
 }
 
-void draw_card(ui::Canvas &canvas, const ui::Box &box, float zoom, ui::ImageId image,
-               float reveal) {
-    float radius = metrics::radius_card * zoom;
-    float border = metrics::border_thick * zoom;
+void draw_card(ui::Canvas &canvas, const ui::Box &box, ui::ImageId image, float reveal) {
+    float radius = metrics::radius_card;
+    float border = metrics::border_thick;
     sticker(canvas, box, radius, palette::paper, palette::border_outer, border,
-            metrics::shadow_offset * zoom);
+            metrics::shadow_offset);
     ui::Box inner{box.x + border, box.y + border, std::max(0.0f, box.w - border * 2.0f),
                   std::max(0.0f, box.h - border * 2.0f)};
     draw_cover(canvas, inner, std::max(0.0f, radius - border), image, reveal);
@@ -80,39 +78,28 @@ void paint(ui::Canvas &canvas, Model &model, float width, float height) {
     float x1 = std::floor(width * static_cast<float>(model.column() + 1) / columns);
     width = x1 - x0;
     int centre_px = std::min(cfg::centre_px, static_cast<int>(std::max(width, height)));
-
-    if (model.waiting()) {
-        if (canvas.thumbnail(model.current(), centre_px) != ui::no_image) {
-            model.reveal();
-        } else {
-            model.reveal_if_overdue(std::chrono::steady_clock::now());
-        }
-        if (model.waiting()) {
-            return;
-        }
-    }
-
-    float zoom = std::clamp(model.zoom(), 0.0f, 1.0f);
-    canvas.rect({x0, 0.0f, width, height}, palette::base);
+    float appear = std::clamp(model.appear(), 0.0f, 1.0f);
 
     const std::vector<std::string> &files = model.files();
     if (files.empty()) {
         if (!model.scanning()) {
+            canvas.set_opacity(appear);
             centred_text(canvas,
                          (model.animated() ? "No videos in " : "No images in ") + model.directory(),
                          x0 + width / 2.0f, height / 2.0f, palette::text);
+            canvas.set_opacity(1.0f);
         }
         return;
     }
 
-    float target_w = width * cfg::card_scale;
     float target_h = height * cfg::card_scale;
     float stack_h = target_h + cfg::label_gap + cfg::label_height;
     float target_cy = (height - stack_h) / 2.0f + target_h / 2.0f;
-    float card_w = lerp(width, target_w, zoom);
-    float card_h = lerp(height, target_h, zoom);
+    float grow = lerp(cfg::appear_scale, 1.0f, appear);
+    float card_w = width * cfg::card_scale * grow;
+    float card_h = target_h * grow;
     float cx = x0 + width / 2.0f;
-    float cy = lerp(height / 2.0f, target_cy, zoom);
+    float cy = target_cy;
 
     float position = model.position();
     int first = std::max(0, static_cast<int>(std::floor(position)) - cfg::visible_neighbours);
@@ -128,7 +115,7 @@ void paint(ui::Canvas &canvas, Model &model, float width, float height) {
     std::vector<ui::ImageId> images(request_order.size(), ui::no_image);
     for (int index : request_order) {
         const std::string &path = files[static_cast<size_t>(index)];
-        bool sharp = path == model.target() || (settled && index == model.selected());
+        bool sharp = settled && index == model.selected();
         images[static_cast<size_t>(index - first)] =
             canvas.thumbnail(path, sharp ? centre_px : cfg::neighbour_px);
     }
@@ -148,19 +135,17 @@ void paint(ui::Canvas &canvas, Model &model, float width, float height) {
                 std::abs(distance) <= 1.0f
                     ? 1.0f
                     : std::max(0.0f, 1.0f - (std::abs(distance) - 1.0f) * cfg::neighbour_fade);
-            canvas.set_opacity(fade);
+            canvas.set_opacity(fade * appear);
             ui::ImageId image = images[static_cast<size_t>(index - first)];
             float reveal = model.fade(files[static_cast<size_t>(index)], image != ui::no_image);
-            draw_card(canvas, {box.x - x0, box.y, box.w, box.h}, zoom, image, reveal);
+            draw_card(canvas, {box.x - x0, box.y, box.w, box.h}, image, reveal);
             model.add_card(box, index);
         }
     }
     canvas.set_opacity(1.0f);
     canvas.end_group();
 
-    if (zoom < 1.0f) {
-        return;
-    }
+    canvas.set_opacity(appear);
     const std::string name =
         std::filesystem::path(files[static_cast<size_t>(model.selected())]).filename().string();
     std::string counter =
@@ -173,6 +158,7 @@ void paint(ui::Canvas &canvas, Model &model, float width, float height) {
             metrics::radius_widget, palette::paper);
     canvas.text(label, label_style, cx - size.w / 2.0f,
                 label_y + (cfg::label_height - size.h) / 2.0f, palette::text);
+    canvas.set_opacity(1.0f);
 }
 
 } // namespace astralia::wallpaper_select

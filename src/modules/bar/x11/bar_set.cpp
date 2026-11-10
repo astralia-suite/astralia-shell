@@ -13,7 +13,7 @@ constexpr int32_t status_message_timeout_ms = 6000;
 
 }
 
-BarSet::BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+HostSet::HostSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), shell_(shell), services_(services) {
     services_.bluetooth.messages.connect([this](const StatusMessage &message) {
         services_.notifications.post("Bluetooth", message.summary, message.body,
@@ -32,16 +32,16 @@ BarSet::BarSet(XConnection &x, EventLoop &loop, Shell &shell, Services &services
     sync();
 }
 
-BarSet::~BarSet() = default;
+HostSet::~HostSet() = default;
 
-void BarSet::sync() {
+void HostSet::sync() {
     std::vector<std::string> shown;
     for (const Output &output : services_.outputs.outputs()) {
         shown.push_back(output.name);
         auto it = std::ranges::find(bars_, output.name, &Entry::output);
         if (it == bars_.end()) {
             bars_.push_back(
-                {output.name, std::make_unique<Bar>(x_, loop_, shell_, services_, output)});
+                {output.name, std::make_unique<Host>(x_, loop_, shell_, services_, output)});
             continue;
         }
         it->bar->place(output);

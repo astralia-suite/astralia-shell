@@ -18,6 +18,8 @@ void check_animation();
 void check_tokens();
 void check_oklab();
 void check_palette_extract();
+void check_spread_map();
+void check_field_ops();
 void check_scroll();
 void check_scroll_sequence();
 void check_theme();
@@ -110,6 +112,8 @@ int main() {
     check_tokens();
     check_oklab();
     check_palette_extract();
+    check_spread_map();
+    check_field_ops();
     check_scroll();
     check_scroll_sequence();
     check_theme();

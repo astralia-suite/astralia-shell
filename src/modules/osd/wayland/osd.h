@@ -44,12 +44,12 @@ bool init_egl(State &state, Renderer &renderer, EGLDisplay display, EGLConfig co
 
 void request_frame(State &state);
 
-void show(State &state, OsdKind kind, int percent, bool muted);
+void show(State &state, Kind kind, int percent, bool muted);
 
 void hide(State &state);
 
 std::unique_ptr<PerMonitorModule> make_per_monitor_module();
 
-void show_on_monitors(WaylandState &app, OsdKind kind, int percent, bool muted);
+void show_on_monitors(WaylandState &app, Kind kind, int percent, bool muted);
 
 } // namespace astralia::osd

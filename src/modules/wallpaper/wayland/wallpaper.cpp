@@ -254,13 +254,7 @@ void wallpaper_sync_from_config(State &wp, const Config &cfg, const std::string 
                 continue;
             wallpaper_column_set_animated(col, wp.gl, path, sz.w, sz.h, mode);
         } else {
-            col.on_uploaded = [&wp, i] {
-                if (wp.app && wp.app->on_wallpaper_uploaded)
-                    wp.app->on_wallpaper_uploaded(wp.output_name, i);
-            };
             wallpaper_column_set_static(col, wp.gl, path, sz.w, sz.h, mode);
-            if (wp.app && wp.app->suppress_wallpaper_transition)
-                col.pending_transition = WallpaperTransition::None;
         }
     }
 }

@@ -328,7 +328,7 @@ Action Model::press(double x, double y) const {
             return {ActionKind::toggle, id, 0};
         }
     }
-    for (const BarWorkspace &ws : workspaces_) {
+    for (const WorkspaceSlot &ws : workspaces_) {
         float gap = style_->workspace_gap;
         ui::Box hit{ws.box.x - gap / 2.0f, 0.0f, ws.box.w + gap, layout_.height};
         if (inside(hit, x, y)) {

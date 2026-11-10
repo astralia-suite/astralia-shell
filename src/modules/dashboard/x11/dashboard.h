@@ -15,9 +15,9 @@
 
 namespace astralia::dashboard {
 
-class Dashboard {
+class Host {
   public:
-    Dashboard(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle();

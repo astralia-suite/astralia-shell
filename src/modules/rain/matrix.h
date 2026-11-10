@@ -9,7 +9,7 @@
 
 namespace astralia::rain {
 
-class MatrixRain {
+class Matrix {
   public:
     void rebuild(int width, int height, bool async_speed);
     void tick();

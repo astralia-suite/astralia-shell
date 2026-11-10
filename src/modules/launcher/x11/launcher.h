@@ -19,9 +19,9 @@
 
 namespace astralia::launcher {
 
-class Launcher {
+class Host {
   public:
-    Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle(bool global);

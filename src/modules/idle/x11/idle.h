@@ -19,9 +19,9 @@
 
 namespace astralia::idle {
 
-class Idle {
+class Host {
   public:
-    Idle(XConnection &x, EventLoop &loop, Services &services);
+    Host(XConnection &x, EventLoop &loop, Services &services);
 
   private:
     struct Overlay {

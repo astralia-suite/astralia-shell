@@ -1,9 +1,8 @@
 #include <csignal>
 #include <cstdlib>
+#include <print>
 #include <string_view>
 #include <vector>
-
-#include <print>
 
 #include "app/session.h"
 #include "app/shell.h"

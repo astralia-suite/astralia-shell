@@ -12,22 +12,18 @@
 #include "wayland/render/texture.h"
 #include "wayland/render/video_texture.h"
 
+#include "render/spread_map.h"
+#include "render/tokens.h"
+
 #include "service/wayland/media_service.h"
 
 enum class WallpaperTransition : uint8_t {
     None,
-    Fade,
-    Wipe,
-    Disc,
-    Stripes,
-    Zoom,
-    Honeycomb,
-    Random,
+    Spread,
 };
 
 // transition timing
-inline constexpr float wallpaper_transition_duration_ms = 900.0f;
-inline constexpr float wallpaper_transition_smoothness = 0.3f;
+inline constexpr float wallpaper_spread_duration_ms = 1800.0f;
 
 class Renderer;
 
@@ -61,19 +57,16 @@ struct WallpaperColumn {
     int target_h = 0;
 
     std::shared_ptr<int> life = std::make_shared<int>(0);
-    std::function<void()> on_uploaded;
 
     Texture tex_prev;
     WallpaperTransition pending_transition = WallpaperTransition::None;
     bool transitioning = false;
     WallpaperTransition transition_kind = WallpaperTransition::None;
     std::chrono::steady_clock::time_point transition_start{};
-    float tr_direction = 0.0f;
-    float tr_center_x = 0.5f;
-    float tr_center_y = 0.5f;
-    float tr_stripe_count = 12.0f;
-    float tr_angle = 30.0f;
-    float tr_cell_size = 0.04f;
+    astralia::SpreadMap pending_spread;
+    Texture tr_map;
+    astralia::Color tr_ember{1.0f, 1.0f, 1.0f, 1.0f};
+    float tr_seed = 0.0f;
 
     WallpaperColumn() = default;
     WallpaperColumn(const WallpaperColumn &) = delete;

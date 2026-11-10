@@ -16,15 +16,10 @@ namespace {
 
 namespace cfg = wallpaper_select_config;
 
-constexpr uint64_t owner_zoom = 1;
+constexpr uint64_t owner_appear = 1;
 constexpr uint64_t owner_step = 2;
 
 using Clock = std::chrono::steady_clock;
-
-Clock::duration millis(float ms) {
-    return std::chrono::duration_cast<Clock::duration>(
-        std::chrono::duration<float, std::milli>(ms));
-}
 
 bool same_file(const std::string &a, const std::string &b) {
     return std::filesystem::path(a).lexically_normal() ==
@@ -58,63 +53,18 @@ void Model::open(const std::string &monitor, int column) {
     selected_ = 0;
     position_ = 0.0f;
     wheel_ = 0.0f;
-    zoom_ = 0.0f;
+    appear_ = 0.0f;
     open_ = true;
     closing_ = false;
-    holding_ = false;
-    applying_ = false;
-    target_.clear();
     seen_.clear();
-    waiting_ = true;
-    opened_at_ = Clock::now();
-    if (current_.empty()) {
-        reveal();
-    }
+    animations_.animate(
+        0.0f, 1.0f, cfg::appear_ms, Easing::EaseOutCubic, [this](float v) { appear_ = v; }, {},
+        owner_appear);
     scan();
     changed();
 }
 
-void Model::start_zoom() {
-    animations_.animate(
-        0.0f, 1.0f, cfg::zoom_ms, Easing::EaseOutCubic, [this](float v) { zoom_ = v; }, {},
-        owner_zoom);
-}
-
-void Model::reveal() {
-    if (!waiting_ || !open_ || closing_) {
-        return;
-    }
-    waiting_ = false;
-    seen_[current_] = Clock::time_point{};
-    start_zoom();
-    if (on_revealed) {
-        on_revealed();
-    }
-    changed();
-}
-
-void Model::reveal_if_overdue(Clock::time_point now) {
-    if (waiting_ && now - opened_at_ >= millis(cfg::reveal_timeout_ms)) {
-        reveal();
-    }
-}
-
-void Model::tick(Clock::time_point now) {
-    animations_.tick(now);
-    if (holding_ && (now >= hold_deadline_ ||
-                     (settled_ && now >= settled_at_ + millis(cfg::handoff_settle_ms)))) {
-        finish_close();
-    }
-}
-
-void Model::wallpaper_settled(const std::string &monitor, int column) {
-    if (!applying_ || settled_ || monitor != monitor_ || column != column_) {
-        return;
-    }
-    settled_ = true;
-    settled_at_ = Clock::now();
-    changed();
-}
+void Model::tick(Clock::time_point now) { animations_.tick(now); }
 
 float Model::fade(const std::string &path, bool ready) {
     if (animation_instant()) {
@@ -138,21 +88,11 @@ void Model::close() {
         return;
     }
     closing_ = true;
-    waiting_ = false;
     ++generation_;
     animations_.cancel_owner(owner_step);
     animations_.animate(
-        zoom_, 0.0f, cfg::zoom_ms, Easing::EaseInCubic, [this](float v) { zoom_ = v; },
-        [this] {
-            if (applying_ && !settled_) {
-                holding_ = true;
-                hold_deadline_ = Clock::now() + millis(cfg::handoff_timeout_ms);
-                changed();
-                return;
-            }
-            finish_close();
-        },
-        owner_zoom);
+        appear_, 0.0f, cfg::appear_ms, Easing::EaseInCubic, [this](float v) { appear_ = v; },
+        [this] { finish_close(); }, owner_appear);
     changed();
 }
 
@@ -160,9 +100,6 @@ void Model::finish_close() {
     open_ = false;
     closing_ = false;
     scanning_ = false;
-    holding_ = false;
-    applying_ = false;
-    waiting_ = false;
     files_.clear();
     cards_.clear();
     seen_.clear();
@@ -241,13 +178,10 @@ void Model::apply() {
     }
     const std::string path = files_[static_cast<size_t>(selected_)];
     if (!same_file(path, current_)) {
-        target_ = path;
-        applying_ = true;
         hooks_.update(
             [monitor = monitor_, column = column_, animated = animated_, path](Config &config) {
                 wallpaper_set_column(config, monitor, column, path, animated);
             });
-        settled_ = animated_ || !hooks_.settled || hooks_.settled();
     }
     request_close();
 }

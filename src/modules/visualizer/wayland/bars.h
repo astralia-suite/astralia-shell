@@ -6,7 +6,7 @@
 
 namespace astralia::visualizer {
 
-class BarVisualizer {
+class Bars {
   public:
     bool init();
     void destroy();

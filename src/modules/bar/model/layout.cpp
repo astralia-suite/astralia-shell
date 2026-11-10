@@ -129,7 +129,7 @@ void Model::layout(ui::Canvas &canvas, float width) {
             bool badges = style.workspace_badges;
             float wx = badges ? x : x + pad;
             float wy = badges ? 0.0f : (height - style.workspace_size) / 2.0f;
-            for (BarWorkspace &ws : workspaces_) {
+            for (WorkspaceSlot &ws : workspaces_) {
                 float bw = style.workspace_size * (1.0f + (style.workspace_scale - 1.0f) * ws.grow);
                 ws.box = {wx, wy, bw, badges ? height : style.workspace_size};
                 wx += bw + style.workspace_gap;

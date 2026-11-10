@@ -14,7 +14,7 @@ constexpr std::chrono::milliseconds caret_interval{1000};
 
 }
 
-Launcher::Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
       window_(x, "astralia-launcher",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -51,7 +51,7 @@ Launcher::Launcher(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
     shell.bind(ShellVerb::launcher_global, [this] { toggle(true); });
 }
 
-void Launcher::toggle(bool global) {
+void Host::toggle(bool global) {
     if (model_.is_open()) {
         close();
     } else {
@@ -59,7 +59,7 @@ void Launcher::toggle(bool global) {
     }
 }
 
-void Launcher::open(bool global) {
+void Host::open(bool global) {
     const Output &target = active_target_output(services_);
     bound_output_ = target.name;
     window_.place(target.geometry);
@@ -70,7 +70,7 @@ void Launcher::open(bool global) {
     loop_.reschedule(caret_timer_);
 }
 
-void Launcher::close() {
+void Host::close() {
     if (!model_.is_open()) {
         return;
     }
@@ -81,7 +81,7 @@ void Launcher::close() {
     malloc_trim(0);
 }
 
-int Launcher::row_at(double x, double y) const {
+int Host::row_at(double x, double y) const {
     for (const auto &[box, index] : frame_.rows) {
         if (x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h) {
             return index;
@@ -90,7 +90,7 @@ int Launcher::row_at(double x, double y) const {
     return -1;
 }
 
-void Launcher::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     switch (event.response_type & ~0x80) {
     case XCB_EXPOSE:
         if (model_.is_open()) {
@@ -151,7 +151,7 @@ void Launcher::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Launcher::paint() {
+void Host::paint() {
     if (!model_.is_open()) {
         return;
     }

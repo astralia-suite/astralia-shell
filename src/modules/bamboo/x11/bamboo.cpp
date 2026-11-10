@@ -14,7 +14,7 @@ constexpr std::chrono::milliseconds idle_interval{std::chrono::hours(1)};
 
 }
 
-Bamboo::Bamboo(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
       window_(x, "Bamboo",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
@@ -33,7 +33,7 @@ Bamboo::Bamboo(XConnection &x, EventLoop &loop, Shell &shell, Services &services
     shell.bind(ShellVerb::bamboo, [this] { toggle(); });
 }
 
-void Bamboo::toggle() {
+void Host::toggle() {
     if (open_) {
         close();
     } else {
@@ -41,7 +41,7 @@ void Bamboo::toggle() {
     }
 }
 
-void Bamboo::open() {
+void Host::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
         static_cast<int16_t>(target.x + (target.width - bamboo_config::default_window_width) / 2);
@@ -57,7 +57,7 @@ void Bamboo::open() {
     loop_.reschedule(timer_);
 }
 
-void Bamboo::close() {
+void Host::close() {
     if (!open_) {
         return;
     }
@@ -68,9 +68,9 @@ void Bamboo::close() {
     malloc_trim(0);
 }
 
-void Bamboo::rebuild() { grow_.rebuild(window_.geometry().width, window_.geometry().height); }
+void Host::rebuild() { grow_.rebuild(window_.geometry().width, window_.geometry().height); }
 
-void Bamboo::step() {
+void Host::step() {
     if (!open_) {
         return;
     }
@@ -78,7 +78,7 @@ void Bamboo::step() {
     paint();
 }
 
-void Bamboo::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!open_) {
         return;
     }
@@ -109,7 +109,7 @@ void Bamboo::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Bamboo::paint() {
+void Host::paint() {
     if (!open_) {
         return;
     }

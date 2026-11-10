@@ -10,7 +10,7 @@
 
 namespace astralia::dashboard {
 
-Dashboard::Dashboard(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
       window_(x, dashboard_config::title,
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
@@ -22,7 +22,7 @@ Dashboard::Dashboard(XConnection &x, EventLoop &loop, Shell &shell, Services &se
     shell.bind(ShellVerb::dashboard, [this] { toggle(); });
 }
 
-void Dashboard::toggle() {
+void Host::toggle() {
     if (open_) {
         close();
     } else {
@@ -30,7 +30,7 @@ void Dashboard::toggle() {
     }
 }
 
-void Dashboard::open() {
+void Host::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
         static_cast<int16_t>(target.x + (target.width - dashboard_config::default_width) / 2);
@@ -43,7 +43,7 @@ void Dashboard::open() {
     window_.show(false);
 }
 
-void Dashboard::close() {
+void Host::close() {
     if (!open_) {
         return;
     }
@@ -53,7 +53,7 @@ void Dashboard::close() {
     malloc_trim(0);
 }
 
-void Dashboard::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!open_) {
         return;
     }
@@ -83,7 +83,7 @@ void Dashboard::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Dashboard::paint() {
+void Host::paint() {
     if (!open_) {
         return;
     }

@@ -17,12 +17,12 @@
 
 namespace astralia::wallpaper {
 
-class Wallpaper {
+class Host {
   public:
-    Wallpaper(XConnection &x, EventLoop &loop, Services &services);
-    ~Wallpaper();
-    Wallpaper(const Wallpaper &) = delete;
-    Wallpaper &operator=(const Wallpaper &) = delete;
+    Host(XConnection &x, EventLoop &loop, Services &services);
+    ~Host();
+    Host(const Host &) = delete;
+    Host &operator=(const Host &) = delete;
 
     std::function<void()> on_settings;
     std::function<void(const std::string &, int)> on_wallpaper;

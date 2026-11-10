@@ -40,8 +40,8 @@ void render_thread_main(State *state) {
          state->base.output_scale.scale);
 
     auto stages = std::make_unique<AudioStages>();
-    auto sphere = std::make_unique<SphereVisualizer>();
-    auto bar = std::make_unique<BarVisualizer>();
+    auto sphere = std::make_unique<Sphere>();
+    auto bar = std::make_unique<Bars>();
     bool stages_ok = stages->init();
     bool sphere_ok = false;
     bool bar_ok = false;

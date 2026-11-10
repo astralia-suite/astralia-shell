@@ -102,7 +102,7 @@ void request_frame(State &state) {
     request_frame(state.frame_clock);
 }
 
-void show(State &state, OsdKind kind, int percent, bool muted) {
+void show(State &state, Kind kind, int percent, bool muted) {
     if (state.model.show(kind, percent, muted, std::chrono::steady_clock::now()))
         osd::request_frame(state);
 }
@@ -162,7 +162,7 @@ std::unique_ptr<PerMonitorModule> make_per_monitor_module() {
     return std::make_unique<PerMonitor>();
 }
 
-void show_on_monitors(WaylandState &app, OsdKind kind, int percent, bool muted) {
+void show_on_monitors(WaylandState &app, Kind kind, int percent, bool muted) {
     for (auto &mon : app.outputs) {
         if (!osd_enabled_for(app.cfg, mon->output.name))
             continue;

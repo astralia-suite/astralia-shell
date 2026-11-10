@@ -11,7 +11,7 @@
 
 namespace astralia::logout {
 
-Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), services_(services),
       window_(x, "astralia-logout",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -41,7 +41,7 @@ Logout::Logout(XConnection &x, EventLoop &loop, Shell &shell, Services &services
     });
 }
 
-void Logout::open() {
+void Host::open() {
     const Output &target = active_target_output(services_);
     bound_output_ = target.name;
     window_.place(target.geometry);
@@ -52,7 +52,7 @@ void Logout::open() {
     log::info("logout: open");
 }
 
-void Logout::closed() {
+void Host::closed() {
     window_.set_cursor(CursorShape::arrow);
     window_.hide();
     canvas_.release_images();
@@ -60,7 +60,7 @@ void Logout::closed() {
     malloc_trim(0);
 }
 
-void Logout::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     const OutputGeometry &geometry = window_.geometry();
     switch (event.response_type & ~0x80) {
     case XCB_EXPOSE:
@@ -102,7 +102,7 @@ void Logout::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Logout::paint() {
+void Host::paint() {
     if (!model_.open_state()) {
         return;
     }

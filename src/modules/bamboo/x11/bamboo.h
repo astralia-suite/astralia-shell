@@ -20,9 +20,9 @@
 
 namespace astralia::bamboo {
 
-class Bamboo {
+class Host {
   public:
-    Bamboo(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void toggle();

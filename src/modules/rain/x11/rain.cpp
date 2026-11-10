@@ -14,7 +14,7 @@ constexpr std::chrono::milliseconds idle_interval{std::chrono::hours(1)};
 
 }
 
-Rain::Rain(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
       window_(x, "Rain",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
@@ -34,7 +34,7 @@ Rain::Rain(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     shell.bind(ShellVerb::rain, [this] { toggle(); });
 }
 
-void Rain::toggle() {
+void Host::toggle() {
     if (open_) {
         close();
     } else {
@@ -42,7 +42,7 @@ void Rain::toggle() {
     }
 }
 
-void Rain::open() {
+void Host::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
         static_cast<int16_t>(target.x + (target.width - rain_config::default_window_width) / 2);
@@ -58,7 +58,7 @@ void Rain::open() {
     loop_.reschedule(timer_);
 }
 
-void Rain::close() {
+void Host::close() {
     if (!open_) {
         return;
     }
@@ -70,7 +70,7 @@ void Rain::close() {
     malloc_trim(0);
 }
 
-void Rain::apply_params(const RainParams &params) {
+void Host::apply_params(const RainParams &params) {
     if (params == params_) {
         return;
     }
@@ -80,7 +80,7 @@ void Rain::apply_params(const RainParams &params) {
     }
 }
 
-void Rain::rebuild() {
+void Host::rebuild() {
     int width = window_.geometry().width;
     int height = window_.geometry().height;
     if (params_.mode == RainMode::Matrix) {
@@ -92,7 +92,7 @@ void Rain::rebuild() {
     }
 }
 
-void Rain::step() {
+void Host::step() {
     if (!open_) {
         return;
     }
@@ -104,11 +104,11 @@ void Rain::step() {
     paint();
 }
 
-Frame Rain::frame() const {
+Frame Host::frame() const {
     return params_.mode == RainMode::Matrix ? matrix_.frame() : stiletto_.frame();
 }
 
-void Rain::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!open_) {
         return;
     }
@@ -139,7 +139,7 @@ void Rain::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Rain::paint() {
+void Host::paint() {
     if (!open_) {
         return;
     }

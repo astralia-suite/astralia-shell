@@ -11,7 +11,6 @@
 
 namespace astralia {
 
-// Fallback for a shojiwm that doesn't send workspacesPerMonitor.
 inline constexpr int shoji_default_workspaces_per_monitor = 5;
 
 struct ShojiWorkspaceRef {

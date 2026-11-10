@@ -44,7 +44,7 @@ Color function_fill(Item id, const StyleSpec &style) {
     }
 }
 
-const Color &workspace_fill(const BarWorkspace &ws, const Color &active, const Color &occupied,
+const Color &workspace_fill(const WorkspaceSlot &ws, const Color &active, const Color &occupied,
                             const Color &empty) {
     return ws.active ? active : ws.occupied ? occupied : empty;
 }
@@ -86,14 +86,14 @@ void paint_workspaces(ui::Canvas &canvas, const Model &model) {
     }
     const StyleSpec &style = model.style();
     if (style.workspace_badges) {
-        for (const BarWorkspace &ws : model.workspaces()) {
+        for (const WorkspaceSlot &ws : model.workspaces()) {
             paint_badge(canvas, style, ws.box, std::to_string(ws.id),
                         workspace_fill(ws, palette::pop_a, palette::pop_b, palette::accent));
         }
         return;
     }
     paint_pill(canvas, style, layout.workspaces, style.bg);
-    for (const BarWorkspace &ws : model.workspaces()) {
+    for (const WorkspaceSlot &ws : model.workspaces()) {
         sticker(canvas, ws.box, ws.box.h / 2.0f,
                 workspace_fill(ws, palette::accent, palette::pop_b, palette::paper),
                 palette::border_outer, metrics::border_thin, 0.0f);

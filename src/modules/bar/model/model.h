@@ -58,7 +58,7 @@ struct ItemView {
     ui::Box box;
 };
 
-struct BarWorkspace {
+struct WorkspaceSlot {
     int id = 0;
     bool active = false;
     bool occupied = false;
@@ -120,7 +120,7 @@ class Model {
     std::chrono::milliseconds until_idle(Clock::time_point now) const;
 
     const ItemView &item(Item id) const { return items_[static_cast<size_t>(id)]; }
-    const std::vector<BarWorkspace> &workspaces() const { return workspaces_; }
+    const std::vector<WorkspaceSlot> &workspaces() const { return workspaces_; }
     const std::vector<DockSlot> &dock() const { return dock_; }
     const Layout &layout() const { return layout_; }
     Frame frame() const;
@@ -141,7 +141,7 @@ class Model {
     Sources sources_;
     const StyleSpec *style_;
     std::array<ItemView, item_count> items_{};
-    std::vector<BarWorkspace> workspaces_;
+    std::vector<WorkspaceSlot> workspaces_;
     std::unordered_map<int, float> grow_;
     std::unordered_map<int, bool> was_active_;
     std::vector<DockSlot> dock_;

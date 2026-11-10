@@ -24,8 +24,8 @@ namespace astralia::rain {
 struct State {
     ToplevelWindowBase base;
     Renderer *renderer = nullptr;
-    MatrixRain matrix;
-    StilettoRain stiletto;
+    Matrix matrix;
+    Stiletto stiletto;
     Texture texture;
     astralia::RainMode mode = astralia::RainMode::Matrix;
     bool async_speed = false;

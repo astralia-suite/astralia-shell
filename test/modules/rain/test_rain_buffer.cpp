@@ -59,6 +59,6 @@ template <typename Rain> void check_rain(const char *name) {
 } // namespace
 
 void check_rain_buffer() {
-    check_rain<astralia::rain::MatrixRain>("the matrix buffer has the requested size");
-    check_rain<astralia::rain::StilettoRain>("the stiletto buffer has the requested size");
+    check_rain<astralia::rain::Matrix>("the matrix buffer has the requested size");
+    check_rain<astralia::rain::Stiletto>("the stiletto buffer has the requested size");
 }

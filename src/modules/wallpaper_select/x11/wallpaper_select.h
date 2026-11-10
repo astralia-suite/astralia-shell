@@ -17,9 +17,9 @@
 
 namespace astralia::wallpaper_select {
 
-class WallpaperSelect {
+class Host {
   public:
-    WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
     void open_on(const std::string &monitor, int column);
 

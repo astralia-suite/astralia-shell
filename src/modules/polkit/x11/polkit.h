@@ -17,9 +17,9 @@
 
 namespace astralia::polkit {
 
-class Polkit {
+class Host {
   public:
-    Polkit(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services);
 
   private:
     void sync();

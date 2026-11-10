@@ -22,12 +22,12 @@
 
 namespace astralia::bar {
 
-class Bar {
+class Host {
   public:
-    Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, const Output &output);
-    ~Bar();
-    Bar(const Bar &) = delete;
-    Bar &operator=(const Bar &) = delete;
+    Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services, const Output &output);
+    ~Host();
+    Host(const Host &) = delete;
+    Host &operator=(const Host &) = delete;
 
     void place(const Output &output);
     void hide();

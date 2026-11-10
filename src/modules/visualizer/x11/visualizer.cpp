@@ -32,7 +32,7 @@ void top_rounded(cairo_t *cr, double x, double y, double width, double height, d
 
 } // namespace
 
-Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
       window_(x, title,
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
@@ -47,14 +47,14 @@ Visualizer::Visualizer(XConnection &x, EventLoop &loop, Shell &shell, Services &
     shell.bind(ShellVerb::visualizer, [this] { toggle(); });
 }
 
-Visualizer::~Visualizer() { capture_.stop(); }
+Host::~Host() { capture_.stop(); }
 
-int Visualizer::fps() const {
+int Host::fps() const {
     return std::clamp(visualizer_config::bar_fps, visualizer_config::fps_min,
                       visualizer_config::fps_max);
 }
 
-void Visualizer::toggle() {
+void Host::toggle() {
     if (open_) {
         close();
     } else {
@@ -62,7 +62,7 @@ void Visualizer::toggle() {
     }
 }
 
-void Visualizer::open() {
+void Host::open() {
     const OutputGeometry &target = active_target_output(services_).geometry;
     int16_t x =
         static_cast<int16_t>(target.x + (target.width - visualizer_config::default_window) / 2);
@@ -79,7 +79,7 @@ void Visualizer::open() {
     loop_.reschedule(timer_);
 }
 
-void Visualizer::close() {
+void Host::close() {
     if (!open_) {
         return;
     }
@@ -92,7 +92,7 @@ void Visualizer::close() {
     malloc_trim(0);
 }
 
-void Visualizer::step() {
+void Host::step() {
     if (!open_) {
         return;
     }
@@ -116,7 +116,7 @@ void Visualizer::step() {
     paint();
 }
 
-void Visualizer::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!open_) {
         return;
     }
@@ -146,7 +146,7 @@ void Visualizer::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Visualizer::paint() {
+void Host::paint() {
     if (!open_ || window_.cr() == nullptr) {
         return;
     }

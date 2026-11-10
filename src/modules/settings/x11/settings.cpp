@@ -34,7 +34,7 @@ constexpr float wheel_notch = 10.0f;
 
 } // namespace
 
-Settings::Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
       window_(x, "astralia-settings",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -110,7 +110,7 @@ Settings::Settings(XConnection &x, EventLoop &loop, Shell &shell, Services &serv
     });
 }
 
-void Settings::toggle() {
+void Host::toggle() {
     if (open_) {
         close();
     } else {
@@ -118,7 +118,7 @@ void Settings::toggle() {
     }
 }
 
-void Settings::open() {
+void Host::open() {
     const Output &target = active_target_output(services_);
     bound_output_ = target.name;
     window_.place(target.geometry);
@@ -131,14 +131,14 @@ void Settings::open() {
     log::info("settings: open");
 }
 
-void Settings::close() {
+void Host::close() {
     if (!open_) {
         return;
     }
     model_.close();
 }
 
-void Settings::closed() {
+void Host::closed() {
     open_ = false;
     repaint_pending_ = false;
     window_.set_cursor(CursorShape::arrow);
@@ -148,11 +148,11 @@ void Settings::closed() {
     malloc_trim(0);
 }
 
-void Settings::expect_focus_loss() {
+void Host::expect_focus_loss() {
     refocus_until_ = std::chrono::steady_clock::now() + cfg::relayout_grace;
 }
 
-void Settings::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!open_) {
         return;
     }
@@ -198,7 +198,7 @@ void Settings::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void Settings::schedule_paint() {
+void Host::schedule_paint() {
     if (!open_ || repaint_pending_) {
         return;
     }
@@ -206,7 +206,7 @@ void Settings::schedule_paint() {
     loop_.reschedule(repaint_timer_);
 }
 
-void Settings::paint() {
+void Host::paint() {
     if (!open_) {
         return;
     }

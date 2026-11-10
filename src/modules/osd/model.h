@@ -7,7 +7,7 @@
 
 namespace astralia::osd {
 
-enum class OsdKind { volume, mic, brightness };
+enum class Kind { volume, mic, brightness };
 
 class Model {
   public:
@@ -15,11 +15,11 @@ class Model {
 
     explicit Model(Clock::time_point created = Clock::now());
 
-    bool show(OsdKind kind, int percent, bool muted, Clock::time_point now);
+    bool show(Kind kind, int percent, bool muted, Clock::time_point now);
     void hide();
     void tick(Clock::time_point now);
 
-    OsdKind kind() const { return kind_; }
+    Kind kind() const { return kind_; }
     int percent() const { return percent_; }
     bool muted() const { return muted_; }
     bool visible() const { return visible_; }
@@ -34,7 +34,7 @@ class Model {
     std::string label() const;
 
   private:
-    OsdKind kind_ = OsdKind::volume;
+    Kind kind_ = Kind::volume;
     int percent_ = 0;
     bool muted_ = false;
     bool visible_ = false;

@@ -69,7 +69,7 @@ void draw_glyph_centered(cairo_t *cr, char32_t glyph, float cell_x, float cell_y
 
 } // namespace
 
-char32_t MatrixRain::random_glyph() const {
+char32_t Matrix::random_glyph() const {
     const std::u32string &pool = matrix_rain_glyph_pool();
     if (pool.empty())
         return U' ';
@@ -79,7 +79,7 @@ char32_t MatrixRain::random_glyph() const {
     return pool[idx];
 }
 
-void MatrixRain::rebuild(int width, int height, bool async_speed) {
+void Matrix::rebuild(int width, int height, bool async_speed) {
     width_ = std::max(1, width);
     height_ = std::max(1, height);
 
@@ -106,7 +106,7 @@ void MatrixRain::rebuild(int width, int height, bool async_speed) {
     buffer_.assign(static_cast<size_t>(stride_) * static_cast<size_t>(height_), 0);
 }
 
-void MatrixRain::decay() {
+void Matrix::decay() {
     int alpha_step = std::clamp(static_cast<int>(255.0f * rain_config::fade_alpha), 1, 255);
     for (int y = 0; y < height_; ++y) {
         uint8_t *row = buffer_.data() + static_cast<size_t>(y) * stride_;
@@ -128,7 +128,7 @@ void MatrixRain::decay() {
     }
 }
 
-void MatrixRain::tick() {
+void Matrix::tick() {
     if (buffer_.empty() || columns_.empty())
         return;
 

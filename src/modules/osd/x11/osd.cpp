@@ -14,23 +14,23 @@ namespace cfg = osd_config;
 
 } // namespace
 
-Osd::Osd(XConnection &x, EventLoop &loop, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), loop_(loop), services_(services) {
     timer_ = loop_.add_timer([this] { return until_hide(); }, [this] { hide(); });
     services_.brightness.changed.connect(
-        [this] { show(OsdKind::brightness, services_.brightness.percent(), false); });
+        [this] { show(Kind::brightness, services_.brightness.percent(), false); });
     services_.audio.changed.connect([this](AudioKind kind) {
         if (kind == AudioKind::sink) {
             AudioLevel level = services_.audio.sink();
-            show(OsdKind::volume, level.present ? level.percent : 0, level.muted);
+            show(Kind::volume, level.present ? level.percent : 0, level.muted);
         } else if (kind == AudioKind::source) {
             AudioLevel level = services_.audio.source();
-            show(OsdKind::mic, level.present ? level.percent : 0, level.muted);
+            show(Kind::mic, level.present ? level.percent : 0, level.muted);
         }
     });
 }
 
-Osd::Surface &Osd::surface_for(const std::string &output) {
+Host::Surface &Host::surface_for(const std::string &output) {
     auto it = surfaces_.find(output);
     if (it == surfaces_.end()) {
         it = surfaces_.emplace(output, std::make_unique<Surface>(x_)).first;
@@ -45,7 +45,7 @@ Osd::Surface &Osd::surface_for(const std::string &output) {
     return *it->second;
 }
 
-void Osd::show(OsdKind kind, int percent, bool muted) {
+void Host::show(Kind kind, int percent, bool muted) {
     if (!model_.show(kind, percent, muted, Model::Clock::now())) {
         return;
     }
@@ -69,7 +69,7 @@ void Osd::show(OsdKind kind, int percent, bool muted) {
     }
 }
 
-void Osd::hide() {
+void Host::hide() {
     if (Model::Clock::now() < model_.hide_at()) {
         return;
     }
@@ -79,7 +79,7 @@ void Osd::hide() {
     }
 }
 
-std::chrono::milliseconds Osd::until_hide() const {
+std::chrono::milliseconds Host::until_hide() const {
     bool visible = std::ranges::any_of(
         surfaces_, [](const auto &entry) { return entry.second->window.mapped(); });
     if (!visible) {
@@ -88,7 +88,7 @@ std::chrono::milliseconds Osd::until_hide() const {
     return model_.until_hide(Model::Clock::now());
 }
 
-void Osd::paint(Surface &surface) {
+void Host::paint(Surface &surface) {
     surface.window.clear();
     surface.canvas.bind(surface.window.cr());
     osd::paint(surface.canvas, model_);

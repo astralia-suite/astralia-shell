@@ -49,7 +49,7 @@ Sources make_sources(Services &services, const std::string &output) {
 
 } // namespace
 
-Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, const Output &output)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services, const Output &output)
     : x_(x), loop_(loop), shell_(shell), services_(services), output_name_(output.name),
       window_(x, "astralia-shell",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -120,9 +120,9 @@ Bar::Bar(XConnection &x, EventLoop &loop, Shell &shell, Services &services, cons
     window_.show(false);
 }
 
-Bar::~Bar() = default;
+Host::~Host() = default;
 
-bool Bar::refresh_style() {
+bool Host::refresh_style() {
     BarStyle next = style_resolve(services_.settings.config().bar_style, true);
     if (spec_ != nullptr && next == style_) {
         return false;
@@ -135,7 +135,7 @@ bool Bar::refresh_style() {
     return true;
 }
 
-bool Bar::refresh_autohide() {
+bool Host::refresh_autohide() {
     bool enabled = autohide_enabled_for(services_.settings.config(), output_name_);
     if (enabled == autohide_) {
         return false;
@@ -146,12 +146,12 @@ bool Bar::refresh_autohide() {
     return true;
 }
 
-uint16_t Bar::collapsed_height() const {
+uint16_t Host::collapsed_height() const {
     return static_cast<uint16_t>(
         autohide_geometry(true, true, bar_layout::height, spec_->top_margin, 0).height);
 }
 
-void Bar::set_collapsed(bool collapsed) {
+void Host::set_collapsed(bool collapsed) {
     if (!autohide_ || collapsed == collapsed_) {
         return;
     }
@@ -161,7 +161,7 @@ void Bar::set_collapsed(bool collapsed) {
     draw();
 }
 
-void Bar::update_autohide() {
+void Host::update_autohide() {
     if (!autohide_ || collapsed_ || panels_->is_open()) {
         return;
     }
@@ -175,7 +175,7 @@ void Bar::update_autohide() {
     }
 }
 
-void Bar::apply_output(const OutputGeometry &output) {
+void Host::apply_output(const OutputGeometry &output) {
     output_ = output;
     width_ = output.width;
     window_.place({output.x, output.y, width_, height_});
@@ -183,7 +183,7 @@ void Bar::apply_output(const OutputGeometry &output) {
     set_hints(output);
 }
 
-void Bar::place(const Output &output) {
+void Host::place(const Output &output) {
     bool restyled = refresh_style();
     bool autohide_changed = refresh_autohide();
     if (!restyled && !autohide_changed && window_.mapped() &&
@@ -197,13 +197,13 @@ void Bar::place(const Output &output) {
     window_.show(false);
 }
 
-void Bar::hide() {
+void Host::hide() {
     panels_->panels().close_all();
     hover(std::nullopt, std::nullopt);
     window_.hide();
 }
 
-void Bar::set_hints(const OutputGeometry &output) {
+void Host::set_hints(const OutputGeometry &output) {
     xcb_ewmh_connection_t *ewmh = x_.ewmh();
     xcb_ewmh_set_wm_window_type(ewmh, window_.id(), 1, &ewmh->_NET_WM_WINDOW_TYPE_DOCK);
     std::array<xcb_atom_t, 2> states{ewmh->_NET_WM_STATE_STICKY, ewmh->_NET_WM_STATE_ABOVE};
@@ -219,7 +219,7 @@ void Bar::set_hints(const OutputGeometry &output) {
     xcb_ewmh_set_wm_strut(ewmh, window_.id(), 0, 0, top, 0);
 }
 
-void Bar::refresh_clock() {
+void Host::refresh_clock() {
     std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm local{};
     localtime_r(&now, &local);
@@ -228,14 +228,14 @@ void Bar::refresh_clock() {
     clock_label_.assign(buffer, length);
 }
 
-void Bar::prepare() {
+void Host::prepare() {
     auto now = Model::Clock::now();
     float width = static_cast<float>(width_) - 2.0f * static_cast<float>(spec_->side_margin);
     model_.refresh(now);
     model_.layout(canvas_, width);
 }
 
-void Bar::draw(const ui::Box *dirty) {
+void Host::draw(const ui::Box *dirty) {
     cairo_t *cr = window_.cr();
     if (collapsed_) {
         window_.clear();
@@ -281,7 +281,7 @@ void Bar::draw(const ui::Box *dirty) {
     }
 }
 
-void Bar::redraw_clock() {
+void Host::redraw_clock() {
     std::string before = clock_label_;
     refresh_clock();
     if (before == clock_label_) {
@@ -293,7 +293,7 @@ void Bar::redraw_clock() {
     draw();
 }
 
-void Bar::close_other_overlays(Item keep) {
+void Host::close_other_overlays(Item keep) {
     if (keep != Item::logout) {
         std::vector<std::string> open = shell_.open_modules();
         if (std::ranges::find(open, "logout") != open.end()) {
@@ -307,7 +307,7 @@ void Bar::close_other_overlays(Item keep) {
     }
 }
 
-void Bar::scroll(const xcb_button_press_event_t &event) {
+void Host::scroll(const xcb_button_press_event_t &event) {
     std::optional<input::ScrollEvent> wheel = scroll_event(event.detail);
     if (!wheel || collapsed_) {
         return;
@@ -333,7 +333,7 @@ void Bar::scroll(const xcb_button_press_event_t &event) {
     }
 }
 
-void Bar::click(const xcb_button_press_event_t &event) {
+void Host::click(const xcb_button_press_event_t &event) {
     if (event.detail == XCB_BUTTON_INDEX_4 || event.detail == XCB_BUTTON_INDEX_5) {
         scroll(event);
         return;
@@ -372,7 +372,7 @@ void Bar::click(const xcb_button_press_event_t &event) {
     }
 }
 
-void Bar::hover(std::optional<int> x, std::optional<int> y) {
+void Host::hover(std::optional<int> x, std::optional<int> y) {
     std::optional<double> lx;
     std::optional<double> ly;
     if (x && y) {
@@ -384,7 +384,7 @@ void Bar::hover(std::optional<int> x, std::optional<int> y) {
     }
 }
 
-void Bar::sync_panels() {
+void Host::sync_panels() {
     std::optional<Item> open;
     if (PanelId id = panels_->panels().active_id(); id != PanelId::count) {
         open = item_for(id);
@@ -409,9 +409,9 @@ void Bar::sync_panels() {
     }
 }
 
-void Bar::start_linger() { loop_.reschedule(linger_timer_); }
+void Host::start_linger() { loop_.reschedule(linger_timer_); }
 
-void Bar::sync_hover() {
+void Host::sync_hover() {
     auto now = Model::Clock::now();
     bool animated = model_.animating();
     bool changed = model_.tick(now) || animated;
@@ -435,7 +435,7 @@ void Bar::sync_hover() {
     }
 }
 
-std::chrono::milliseconds Bar::until_linger_end() const {
+std::chrono::milliseconds Host::until_linger_end() const {
     return model_.until_idle(Model::Clock::now());
 }
 

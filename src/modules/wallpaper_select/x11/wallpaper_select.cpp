@@ -24,7 +24,7 @@ constexpr std::chrono::milliseconds repaint_batch{50};
 
 } // namespace
 
-WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
     : x_(x), loop_(loop), services_(services),
       window_(x, "astralia-wallpaper-select",
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
@@ -33,8 +33,7 @@ WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, 
       model_(Hooks{[&services]() -> const Config & { return services.settings.config(); },
                    [&services](const std::function<void(Config &)> &edit) {
                        services.settings.update(edit);
-                   },
-                   {}},
+                   }},
              x11_capabilities().animated_wallpaper) {
     repaint_timer_ = loop.add_timer(
         [this] {
@@ -68,7 +67,7 @@ WallpaperSelect::WallpaperSelect(XConnection &x, EventLoop &loop, Shell &shell, 
     });
 }
 
-void WallpaperSelect::toggle() {
+void Host::toggle() {
     if (open_) {
         close();
     } else {
@@ -76,7 +75,7 @@ void WallpaperSelect::toggle() {
     }
 }
 
-void WallpaperSelect::open_on(const std::string &monitor, int column) {
+void Host::open_on(const std::string &monitor, int column) {
     if (open_ || !model_.available()) {
         return;
     }
@@ -96,14 +95,14 @@ void WallpaperSelect::open_on(const std::string &monitor, int column) {
     log::info("wallpaper-select: open on {}", found->name);
 }
 
-void WallpaperSelect::close() {
+void Host::close() {
     if (!open_) {
         return;
     }
     model_.close();
 }
 
-void WallpaperSelect::closed() {
+void Host::closed() {
     open_ = false;
     repaint_pending_ = false;
     shown_ = false;
@@ -114,7 +113,7 @@ void WallpaperSelect::closed() {
     malloc_trim(0);
 }
 
-void WallpaperSelect::handle(const xcb_generic_event_t &event) {
+void Host::handle(const xcb_generic_event_t &event) {
     if (!open_) {
         return;
     }
@@ -152,7 +151,7 @@ void WallpaperSelect::handle(const xcb_generic_event_t &event) {
     }
 }
 
-void WallpaperSelect::schedule_paint() {
+void Host::schedule_paint() {
     if (!open_ || repaint_pending_) {
         return;
     }
@@ -160,7 +159,7 @@ void WallpaperSelect::schedule_paint() {
     loop_.reschedule(repaint_timer_);
 }
 
-void WallpaperSelect::paint() {
+void Host::paint() {
     if (!open_) {
         return;
     }
@@ -169,9 +168,8 @@ void WallpaperSelect::paint() {
     canvas_.bind(window_.cr());
     wallpaper_select::paint(canvas_, model_, static_cast<float>(window_.geometry().width),
                             static_cast<float>(window_.geometry().height));
-    if (model_.waiting()) {
+    if (model_.animating()) {
         schedule_paint();
-        return;
     }
     window_.present();
     if (!shown_ && open_) {

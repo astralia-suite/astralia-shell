@@ -22,7 +22,7 @@ constexpr uint64_t owner_icon_mix = 3;
 
 Model::Model(Clock::time_point created) : created_(created) {}
 
-bool Model::show(OsdKind kind, int percent, bool muted, Clock::time_point now) {
+bool Model::show(Kind kind, int percent, bool muted, Clock::time_point now) {
     if (now - created_ < cfg::ready_delay) {
         return false;
     }
@@ -76,11 +76,11 @@ std::chrono::milliseconds Model::until_hide(Clock::time_point now) const {
 
 const char *Model::glyph() const {
     switch (kind_) {
-    case OsdKind::brightness:
+    case Kind::brightness:
         return icon::brightness_threshold(percent_);
-    case OsdKind::mic:
+    case Kind::mic:
         return muted_ ? icon::mic_off : icon::mic_on;
-    case OsdKind::volume:
+    case Kind::volume:
         return icon::volume_threshold(muted_, percent_);
     }
     return icon::volume_high;

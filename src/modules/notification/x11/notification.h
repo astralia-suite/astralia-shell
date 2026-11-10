@@ -19,9 +19,9 @@
 
 namespace astralia::notification {
 
-class Notifications {
+class Host {
   public:
-    Notifications(XConnection &x, EventLoop &loop, Services &services);
+    Host(XConnection &x, EventLoop &loop, Services &services);
 
   private:
     struct View {

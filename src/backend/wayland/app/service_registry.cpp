@@ -78,7 +78,7 @@ class BrightnessOsdService final : public Service {
 
     bool init(WaylandState &app) override {
         app.brightness_service->changed.connect([&app] {
-            astralia::osd::show_on_monitors(app, astralia::osd::OsdKind::brightness,
+            astralia::osd::show_on_monitors(app, astralia::osd::Kind::brightness,
                                             app.brightness_service->percent(), false);
         });
         return true;
@@ -93,11 +93,11 @@ class PipewireOsdService final : public Service {
         app.audio->changed.connect([&app](astralia::AudioKind kind) {
             if (kind == astralia::AudioKind::sink) {
                 astralia::AudioLevel level = app.audio->sink();
-                astralia::osd::show_on_monitors(app, astralia::osd::OsdKind::volume,
+                astralia::osd::show_on_monitors(app, astralia::osd::Kind::volume,
                                                 level.present ? level.percent : 0, level.muted);
             } else if (kind == astralia::AudioKind::source) {
                 astralia::AudioLevel level = app.audio->source();
-                astralia::osd::show_on_monitors(app, astralia::osd::OsdKind::mic,
+                astralia::osd::show_on_monitors(app, astralia::osd::Kind::mic,
                                                 level.present ? level.percent : 0, level.muted);
             } else {
                 return;

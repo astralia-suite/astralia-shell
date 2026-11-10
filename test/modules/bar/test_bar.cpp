@@ -377,7 +377,7 @@ void check_bar_interaction() {
                     model.until_idle(now + 200ms) == 1h,
                 "the linger ends and the model goes idle");
 
-    const astralia::bar::BarWorkspace &second = model.workspaces()[1];
+    const astralia::bar::WorkspaceSlot &second = model.workspaces()[1];
     action = model.press(second.box.x + 2, 20);
     test::check(action.kind == astralia::bar::ActionKind::workspace && action.workspace == 2,
                 "clicking a workspace pill focuses it");

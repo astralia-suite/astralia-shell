@@ -118,7 +118,7 @@
 
 ## `assets/shaders/wallpaper/`
 
-- `*.frag`: Wallpaper transitions `fade`, `wipe`, `zoom`, `stripes`, `disc` and `honeycomb`.
+- `spread.frag`: The one wallpaper transition, an ink spread ported from pocket-dots; it reads the arrival map from `spread_map` and glows in the new image's `ember_colour`.
 
 ## `src/`
 
@@ -182,7 +182,7 @@
 - `image.{h,cpp}`: Loads image files into textures.
 - `arc_gauge.{h,cpp}`: Cached arc gauge textures.
 - `video_texture.{h,cpp}`: Imports decoded `DMA-BUF` frames as textures.
-- `wallpaper_column.{h,cpp}`: Draws a wallpaper column and its transitions.
+- `wallpaper_column.{h,cpp}`: Draws a wallpaper column and its ink spread transition; the decode thread builds the spread map and glow colour, and the GL thread uploads the map.
 - `thunder.{h,cpp}`: The bolt, ring and rectangular shock burst shaders.
 - `layer_surface.{h,cpp}`: Layer-shell surface configuration and teardown.
 - `overlay_panel.{h,cpp}`: `OverlayPanelBase`: surface, input region, toggle and frame requests of a full overlay.
@@ -272,7 +272,9 @@
 - `canvas.h`: The `Canvas` interface every view draws through: shapes, fillets, erase mode, text, images, groups, opacity and gauges.
 - `tokens.h`: `Color`, the mutable palette (with the sticker roles `border_outer`, `border_inner` and `shadow`), metrics and colour helpers shared by every backend.
 - `oklab.h`: OKLab and OKLCH conversion with gamut reduction, WCAG contrast and hue distance.
-- `palette_extract.{h,cpp}`: Downsamples an image, clusters it with k-means in OKLab and ranks up to four seeds.
+- `palette_extract.{h,cpp}`: Downsamples an image, clusters it with k-means in OKLab and ranks up to four seeds; `ember_colour` lifts the most vivid seed for the ink spread's glow.
+- `field_ops.{h,cpp}`: Seeded value noise, even ranking, Gaussian blur and 16-bit quantizing for generated fields.
+- `spread_map.{h,cpp}`: `make_spread_map`, the ink spread's `480 x 270` arrival map: Dijkstra from random colonies over a noise cost field, ranked by area, with a blurred twin for the glow.
 - `theme.{h,cpp}`: `Theme` roles derived from the seeds and the wallpaper `tone` in OKLCH, with no scheme setting: `depth` runs from a pale palette to a deep one and a contrast solver keeps `text` and `text_muted` readable at every tone, and `theme_apply` onto the palette; `ink` is the deep line colour and `text` the reading colour.
 - `sticker.{h,cpp}`: `sticker()`, the five-role look every component shares (text, fill, inner ring, outer border, hard offset shadow), and `selectable()`, the shared control look.
 - `scroll.{h,cpp}`: Scroll geometry, painting and slide-in offsets, horizontal or vertical; the rollers touch when closed and float a gap off the paper when open.
@@ -725,7 +727,9 @@
 - `recording_canvas.h`: A canvas that records draw calls so views are checked headless.
 - `test_module_base.cpp`: Module base config fan-out and IPC registration.
 - `test_oklab.cpp`: OKLab conversion and contrast.
-- `test_palette_extract.cpp`: Clustering and seed ranking.
+- `test_palette_extract.cpp`: Clustering, seed ranking and the ember colour.
+- `test_field_ops.cpp`: Seeded noise, ranking, blur and quantizing.
+- `test_spread_map.cpp`: Spread map determinism, rank coverage and even area growth.
 - `test_scroll.cpp`: Scroll geometry.
 - `test_scroll_sequence.cpp`: Scroll stage timing.
 - `test_text_cursor.cpp`: Text field cursor and selection editing.

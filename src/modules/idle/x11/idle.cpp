@@ -21,7 +21,7 @@ constexpr float max_frame_seconds = 0.5f;
 
 } // namespace
 
-Idle::Idle(XConnection &x, EventLoop &loop, Services &services)
+Host::Host(XConnection &x, EventLoop &loop, Services &services)
     : x_(x), loop_(loop), services_(services), applied_(services.settings.config()) {
     const xcb_query_extension_reply_t *extension =
         xcb_get_extension_data(x_.conn(), &xcb_screensaver_id);
@@ -60,16 +60,16 @@ Idle::Idle(XConnection &x, EventLoop &loop, Services &services)
     });
 }
 
-std::chrono::milliseconds Idle::until_step() const {
+std::chrono::milliseconds Host::until_step() const {
     return animating() ? frame_interval : poll_interval;
 }
 
-bool Idle::animating() const {
+bool Host::animating() const {
     return std::ranges::any_of(overlays_,
                                [](const auto &entry) { return entry.second->shown.screensaver; });
 }
 
-Idle::Overlay &Idle::overlay_for(const Output &output) {
+Host::Overlay &Host::overlay_for(const Output &output) {
     auto it = overlays_.find(output.name);
     if (it == overlays_.end()) {
         it = overlays_.emplace(output.name, std::make_unique<Overlay>(x_)).first;
@@ -86,7 +86,7 @@ Idle::Overlay &Idle::overlay_for(const Output &output) {
     return *it->second;
 }
 
-void Idle::poll() {
+void Host::poll() {
     auto now = std::chrono::steady_clock::now();
     last_poll_ = now;
     xcb_connection_t *conn = x_.conn();
@@ -107,7 +107,7 @@ void Idle::poll() {
     clock_.activity(services_.outputs.at_pointer().name, now);
 }
 
-void Idle::step() {
+void Host::step() {
     if (!available_) {
         return;
     }
@@ -137,7 +137,7 @@ void Idle::step() {
     }
 }
 
-void Idle::apply(const Output &output, Overlay &overlay, Verdict verdict) {
+void Host::apply(const Output &output, Overlay &overlay, Verdict verdict) {
     Verdict next{verdict.ambient && !verdict.screensaver, verdict.screensaver};
     if (next == overlay.shown) {
         return;
@@ -158,7 +158,7 @@ void Idle::apply(const Output &output, Overlay &overlay, Verdict verdict) {
     overlay.window.show(false);
 }
 
-void Idle::hide_missing() {
+void Host::hide_missing() {
     for (auto &[name, overlay] : overlays_) {
         const std::vector<Output> &outputs = services_.outputs.outputs();
         if (std::ranges::any_of(outputs,
@@ -172,7 +172,7 @@ void Idle::hide_missing() {
     }
 }
 
-void Idle::paint(const Output &output, Overlay &overlay) {
+void Host::paint(const Output &output, Overlay &overlay) {
     if (overlay.window.cr() == nullptr) {
         return;
     }

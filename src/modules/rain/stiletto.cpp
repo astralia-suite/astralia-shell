@@ -71,7 +71,7 @@ void draw_trail_segment(cairo_t *cr, float x, float y0, float y1) {
 
 } // namespace
 
-void StilettoRain::rebuild(int width, int height, bool async_speed) {
+void Stiletto::rebuild(int width, int height, bool async_speed) {
     width_ = std::max(1, width);
     height_ = std::max(1, height);
 
@@ -95,7 +95,7 @@ void StilettoRain::rebuild(int width, int height, bool async_speed) {
     frame_.assign(buffer_.size(), 0);
 }
 
-void StilettoRain::decay() {
+void Stiletto::decay() {
     int alpha_step = std::clamp(static_cast<int>(255.0f * rain_config::fade_alpha), 1, 255);
     for (int y = 0; y < height_; ++y) {
         uint8_t *row = buffer_.data() + static_cast<size_t>(y) * stride_;
@@ -117,7 +117,7 @@ void StilettoRain::decay() {
     }
 }
 
-void StilettoRain::tick() {
+void Stiletto::tick() {
     if (buffer_.empty() || comets_.empty())
         return;
 
