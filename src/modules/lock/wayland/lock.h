@@ -76,7 +76,7 @@ struct State {
 };
 
 bool request(State &st, WaylandState &app);
-void lock_begin(State &st, WaylandState &app, bool animate = true);
+void begin(State &st, WaylandState &app, bool animate = true);
 void teardown(State &st);
 void begin_unlock(State &st);
 void handle_key(State &st, const KeyEvent &ev);

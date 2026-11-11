@@ -247,6 +247,14 @@ int32_t hypr_parse_rounding(std::string_view reply) {
     return parsed ? static_cast<int32_t>(parsed->number_or("int", 0)) : 0;
 }
 
+std::optional<CursorPosition> hypr_parse_cursor(std::string_view reply) {
+    std::optional<Json> parsed = parse_json(reply);
+    if (!parsed || parsed->find("x") == nullptr || parsed->find("y") == nullptr) {
+        return std::nullopt;
+    }
+    return CursorPosition{parsed->number_or("x", 0.0), parsed->number_or("y", 0.0)};
+}
+
 HyprEventKind hypr_apply_event(CompositorState &state, std::string_view line) {
     std::size_t separator = line.find(">>");
     if (separator == std::string_view::npos) {
@@ -376,6 +384,13 @@ void HyprlandCompositor::refresh() {
     hypr_parse_monitors(monitors, state_);
     state_.clients = hypr_parse_clients(clients);
     clients_reply_ = std::move(clients);
+}
+
+std::optional<CursorPosition> HyprlandCompositor::cursor_position() const {
+    if (request_path_.empty()) {
+        return std::nullopt;
+    }
+    return hypr_parse_cursor(request(request_path_, "j/cursorpos"));
 }
 
 bool HyprlandCompositor::refresh_clients() {

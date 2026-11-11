@@ -354,7 +354,7 @@ bool request(State &st, WaylandState &app) {
     return true;
 }
 
-void lock_begin(State &st, WaylandState &app, bool animate) {
+void begin(State &st, WaylandState &app, bool animate) {
     if (st.active || st.transition.active)
         return;
     st.app = &app;
@@ -596,7 +596,7 @@ class Adapter final : public Module {
                      astralia::cpu_temp_poll(app.cpu_temp);
                      astralia::system_stats_poll(app.system_stats);
                      astralia::gpu_temp_poll(app.gpu_temp);
-                     lock_begin(state_, app);
+                     begin(state_, app);
                  }}};
     }
 
@@ -629,7 +629,7 @@ void at_startup(WaylandState &app) {
     astralia::system_stats_poll(app.system_stats);
     astralia::gpu_temp_poll(app.gpu_temp);
     lm->state().acknowledge_startup = true;
-    lock_begin(lm->state(), app, false);
+    begin(lm->state(), app, false);
 }
 
 void notify_output_added(WaylandState &app, wl_output *output, const char *name) {

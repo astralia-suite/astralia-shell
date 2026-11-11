@@ -19,7 +19,7 @@ namespace {
 namespace cfg = settings_config;
 
 Caps x11_caps() {
-    Caps caps = settings_caps(x11_capabilities());
+    Caps caps = settings::caps(x11_capabilities());
     caps.autohide = true;
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;

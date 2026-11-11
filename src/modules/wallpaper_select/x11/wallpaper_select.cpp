@@ -71,7 +71,11 @@ void Host::toggle() {
     if (open_) {
         close();
     } else {
-        open_on(active_target_output(services_).name, 0);
+        const Output &target = active_target_output(services_);
+        const OutputGeometry &area = target.geometry;
+        auto [x, y] = x_.pointer_position();
+        open_on(target.name,
+                model_.column_at(target.name, x - area.x, y - area.y, area.width, area.height));
     }
 }
 

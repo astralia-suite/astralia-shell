@@ -22,7 +22,7 @@ namespace {
 namespace cfg = astralia::settings_config;
 
 Caps wayland_caps() {
-    Caps caps = settings_caps(astralia::wayland_capabilities());
+    Caps caps = settings::caps(astralia::wayland_capabilities());
     caps.wallpaper_columns = true;
     caps.default_wallpaper = true;
     caps.autohide = true;

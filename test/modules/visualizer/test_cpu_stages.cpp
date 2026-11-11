@@ -71,9 +71,8 @@ void check_visualizer_bars() {
     check(rising && last < 4096 / 2, "bars sample the lower half of the spectrum, rising");
     check(astralia::visualizer::bar_texel(0, 0, 0) == 0,
           "an empty spectrum maps to the first texel");
-    check(astralia::visualizer::visualizer_bar_height(0.0f, 800.0f) ==
-                  visualizer_config::bar_min_height &&
-              astralia::visualizer::visualizer_bar_height(2.0f, 800.0f) ==
+    check(astralia::visualizer::bar_height(0.0f, 800.0f) == visualizer_config::bar_min_height &&
+              astralia::visualizer::bar_height(2.0f, 800.0f) ==
                   visualizer_config::bar_height_ratio * 800.0f,
           "a bar has a minimum height and clamps at the ratio");
 }

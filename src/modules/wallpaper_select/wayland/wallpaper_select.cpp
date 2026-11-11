@@ -110,12 +110,30 @@ class Adapter final : public Module {
                      return;
                  }
                  if (MonitorOutput *target = app_detail::active_target_monitor(app))
-                     open_on(app, *target, 0);
+                     open_on(app, *target, pointer_column(app, *target));
              }},
         };
     }
 
   private:
+    int pointer_column(WaylandState &app, const MonitorOutput &target) const {
+        if (!model_)
+            return 0;
+        const std::string &name = target.output.name;
+        const astralia::CompositorMonitor *monitor =
+            astralia::compositor_monitor(app.desktop->state(), name);
+        std::optional<astralia::CursorPosition> cursor = app.desktop->cursor_position();
+        if (monitor && cursor) {
+            auto [width, height] = astralia::compositor_logical_size(*monitor);
+            return model_->column_at(name, cursor->x - monitor->x, cursor->y - monitor->y, width,
+                                     height);
+        }
+        if (app.wallpaper_pointer && app.wallpaper_pointer->monitor == name)
+            return model_->column_at(name, app.wallpaper_pointer->x, 0.0,
+                                     app.wallpaper_pointer->width, 1.0);
+        return 0;
+    }
+
     void open_on(WaylandState &app, MonitorOutput &target, int column) {
         if (!enabled_ || !model_ || base_.open || !model_->available())
             return;

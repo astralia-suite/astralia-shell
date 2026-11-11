@@ -20,7 +20,7 @@
 
 namespace astralia::settings {
 
-Caps settings_caps(const Capabilities &capabilities) {
+Caps caps(const Capabilities &capabilities) {
     Caps caps;
     caps.animation = capabilities.animations;
     caps.idle = capabilities.idle;

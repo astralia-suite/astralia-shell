@@ -13,7 +13,7 @@ std::mt19937 &rng() {
 
 } // namespace
 
-void bamboo_seed(uint32_t seed) { rng().seed(seed); }
+void seed(uint32_t seed) { rng().seed(seed); }
 
 float random01() {
     static std::uniform_real_distribution<float> dist(0.0f, 1.0f);

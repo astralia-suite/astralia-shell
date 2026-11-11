@@ -1,14 +1,19 @@
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <charconv>
 #include <cstdint>
 #include <cstring>
+#include <format>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "config/launcher_config.h"
+
 #include "core/log.h"
+#include "core/spawn.h"
 
 #include "service/network_service.h"
 
@@ -33,6 +38,15 @@ constexpr std::chrono::milliseconds rescan_after_connect{5000};
 constexpr std::chrono::milliseconds rescan_after_change{3000};
 constexpr std::chrono::milliseconds rescan_after_state{1000};
 constexpr std::chrono::milliseconds rescan_never = std::chrono::hours(24);
+
+// Captive portal
+constexpr std::array portal_urls{
+    "http://httpforever.com",
+    "http://captive.apple.com/hotspot-detect.html",
+    "http://example.com",
+    "http://neverssl.net",
+};
+constexpr int portal_probe_seconds = 3;
 
 std::string wifi_ssid(const NetworkStatus &status) {
     return status.kind == NetworkKind::wifi ? status.ssid : std::string();
@@ -135,6 +149,18 @@ std::string connect_error(const std::string &output) {
 
 } // namespace
 
+std::string network_portal_command() {
+    std::string urls;
+    for (const char *url : portal_urls) {
+        urls += ' ';
+        urls += url;
+    }
+    return std::format("for url in{}; do curl -so /dev/null --max-time {} \"$url\" && exec {} "
+                       "\"$url\"; done; exec {} {}",
+                       urls, portal_probe_seconds, launcher_config::browser,
+                       launcher_config::browser, portal_urls.front());
+}
+
 std::vector<StatusMessage> network_changes(const NetworkStatus &prev, const NetworkStatus &next) {
     std::vector<StatusMessage> messages;
     std::string was = wifi_ssid(prev);
@@ -154,8 +180,10 @@ std::vector<StatusMessage> network_changes(const NetworkStatus &prev, const Netw
         messages.push_back({"Disconnected", "Ethernet disconnected"});
     }
     if (next.portal && !prev.portal) {
-        messages.push_back({"Captive Portal", now.empty() ? std::string("Sign in required")
-                                                          : "Sign in required for " + now});
+        messages.push_back(
+            {"Captive Portal",
+             now.empty() ? std::string("Sign in required") : "Sign in required for " + now,
+             network_portal_command()});
     }
     return messages;
 }
@@ -619,6 +647,8 @@ void NetworkService::clear_error() {
     last_error_.clear();
     changed.emit();
 }
+
+void NetworkService::open_portal() { spawn_detached(network_portal_command()); }
 
 void NetworkService::schedule_rescan(std::chrono::milliseconds delay) {
     if (!watching_) {

@@ -27,7 +27,10 @@ struct Entry {
     float progress = 1.0f;
     bool exiting = false;
     bool timed = false;
+    bool clickable = false;
 };
+
+using Boxes = std::vector<std::pair<uint32_t, ui::Box>>;
 
 class Model {
   public:
@@ -51,6 +54,11 @@ class ViewState {
   public:
     bool hide_locally(uint32_t id);
     bool set_hover(std::optional<uint32_t> id);
+    bool set_pointer(const Boxes &close, const Boxes &cards, double x, double y);
+    bool press(const Boxes &close, const Boxes &cards, double x, double y,
+               NotificationService &service);
+    bool clear_pointer();
+    bool wants_hand() const { return hovered_ != 0 || card_hovered_ != 0; }
     void tick(std::chrono::steady_clock::time_point now) { animations_.tick(now); }
     void forget_missing(const std::vector<Entry> &entries);
     bool animating() const { return animations_.has_active(); }
@@ -60,6 +68,7 @@ class ViewState {
 
   private:
     uint32_t hovered_ = 0;
+    uint32_t card_hovered_ = 0;
     AnimationManager animations_;
     std::unordered_map<uint32_t, float> local_exit_;
 };
@@ -83,7 +92,13 @@ Layout layout_notifications(ui::Canvas &canvas, const Model &model, const ViewSt
 
 std::optional<uint32_t> close_at(const Layout &layout, const ViewState &view, double x, double y);
 
-std::vector<std::pair<uint32_t, ui::Box>> close_boxes(const Layout &layout, const ViewState &view);
+Boxes close_boxes(const Layout &layout, const ViewState &view);
+
+Boxes card_boxes(const Layout &layout, const ViewState &view);
+
+Boxes input_boxes(const Layout &layout, const ViewState &view);
+
+std::optional<uint32_t> box_at(const Boxes &boxes, double x, double y);
 
 float card_height(float header, float summary, float body);
 

@@ -170,7 +170,7 @@ void Host::paint() {
             int texel = bar_texel(i, count, stages_.size());
             magnitude = std::max(stages_.smooth_texel(0, texel), stages_.smooth_texel(1, texel));
         }
-        double bar_height = visualizer_bar_height(magnitude, height);
+        double bar_height = visualizer::bar_height(magnitude, height);
         top_rounded(cr, start + i * slot, height - bar_height, visualizer_config::bar_width,
                     bar_height, std::min(radius, bar_height));
         cairo_fill(cr);

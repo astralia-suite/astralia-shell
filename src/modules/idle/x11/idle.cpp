@@ -122,7 +122,7 @@ void Host::step() {
         if (!clock_.known(output.name)) {
             clock_.activity(output.name, now);
         }
-        Verdict verdict = idle_verdict(clock_, config, output.name, now);
+        Verdict verdict = idle::verdict(clock_, config, output.name, now);
         auto it = overlays_.find(output.name);
         if (it == overlays_.end() && !verdict.ambient && !verdict.screensaver) {
             continue;

@@ -15,7 +15,7 @@ StyleSpec okinami{.border_width = metrics::border_thick,
                   .rail_height = 6.0f,
                   .island_radius = metrics::radius_card,
                   .fillet_radius = metrics::radius_card,
-                  .zones = &bar_zones(),
+                  .zones = &zones(),
                   .icon_gap = bar_layout::pop_icon_gap};
 StyleSpec continuous{.border_width = metrics::border_thick,
                      .radius = bar_layout::pop_radius,
@@ -28,7 +28,7 @@ StyleSpec continuous{.border_width = metrics::border_thick,
                      .shadow = metrics::shadow_offset,
                      .continuous = true,
                      .shadow_dx = 0.0f,
-                     .zones = &bar_zones(),
+                     .zones = &zones(),
                      .text_lift = metrics::shadow_offset / 2.0f,
                      .uniform_fill = true,
                      .icon_gap = bar_layout::pop_icon_gap};
@@ -42,7 +42,7 @@ StyleSpec pop{.border_width = metrics::border_thick,
               .fillet_radius = 0.0f,
               .shadow = metrics::shadow_offset,
               .shadow_dx = 0.0f,
-              .zones = &bar_zones(),
+              .zones = &zones(),
               .text_lift = metrics::shadow_offset / 2.0f,
               .uniform_fill = true,
               .workspace_badges = true,
@@ -91,8 +91,8 @@ IslandShape island_shape(const StyleSpec &spec, float left, float right, bool fl
     return shape;
 }
 
-Frame bar_frame(const StyleSpec &spec, std::optional<float> left_end,
-                std::optional<IslandSpan> center, std::optional<float> right_start, float width) {
+Frame frame(const StyleSpec &spec, std::optional<float> left_end, std::optional<IslandSpan> center,
+            std::optional<float> right_start, float width) {
     Frame frame;
     if (left_end) {
         frame.islands.push_back(island_shape(spec, 0.0f, *left_end, true, false));

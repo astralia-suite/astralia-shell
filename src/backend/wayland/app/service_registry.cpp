@@ -51,8 +51,8 @@ void notification_refresh(WaylandState &app) {
             nv->request_frame();
 }
 
-void network_notify(WaylandState &app, const std::string &summary, const std::string &body) {
-    app.notifications->post("Network", summary, body, 6000);
+void network_notify(WaylandState &app, const astralia::StatusMessage &message) {
+    app.notifications->post("Network", message.summary, message.body, 6000, message.click_command);
     notification_refresh(app);
 }
 
@@ -124,9 +124,8 @@ class NetworkService final : public Service {
 
     bool init(WaylandState &app) override {
         app.network->changed.connect([&app] { network_dispatch(app, true); });
-        app.network->messages.connect([&app](const astralia::StatusMessage &message) {
-            network_notify(app, message.summary, message.body);
-        });
+        app.network->messages.connect(
+            [&app](const astralia::StatusMessage &message) { network_notify(app, message); });
         app.reactor->add_timer([] { return std::chrono::milliseconds(400); },
                                [&app] {
                                    if (app.network->scanning() && app.network->wifi_enabled() &&

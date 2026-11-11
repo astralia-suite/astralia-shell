@@ -47,8 +47,22 @@ void check_status_changes() {
               Messages{{"Disconnected", "Ethernet disconnected"}},
           "Ethernet down");
     check(astralia::network_changes(cafe, portal) ==
-              Messages{{"Captive Portal", "Sign in required for cafe"}},
+              Messages{{"Captive Portal", "Sign in required for cafe",
+                        astralia::network_portal_command()}},
           "captive portal");
+    std::string portal_command = astralia::network_portal_command();
+    std::size_t httpforever = portal_command.find("http://httpforever.com");
+    std::size_t apple = portal_command.find("http://captive.apple.com/hotspot-detect.html");
+    std::size_t example = portal_command.find("http://example.com");
+    std::size_t neverssl = portal_command.find("http://neverssl.net");
+    check(httpforever != std::string::npos && httpforever < apple && apple < example &&
+              example < neverssl && neverssl != std::string::npos,
+          "portal URLs are tried in order");
+    check(portal_command.find("curl -f") == std::string::npos &&
+              portal_command.find(" -f ") == std::string::npos,
+          "any HTTP reply counts as reachable");
+    check(portal_command.ends_with("astralia-open browser http://httpforever.com"),
+          "the primary URL opens when every probe fails");
     astralia::BluetoothStatus idle{true, true, false, ""};
     astralia::BluetoothStatus buds{true, true, true, "Buds"};
     check(astralia::bluetooth_changes(idle, idle).empty(), "unchanged Bluetooth sends nothing");

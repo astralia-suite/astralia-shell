@@ -44,7 +44,7 @@ struct Caps {
     std::vector<BarStyle> bar_styles{BarStyle::continuous, BarStyle::okinami, BarStyle::pop};
 };
 
-Caps settings_caps(const Capabilities &capabilities);
+Caps caps(const Capabilities &capabilities);
 
 enum class Field : uint8_t {
     none,

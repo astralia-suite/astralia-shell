@@ -147,7 +147,7 @@ void check_bar_styles() {
     using namespace astralia;
     test::apply_base_theme();
     const astralia::bar::StyleSpec &okinami = astralia::bar::style_spec(BarStyle::okinami, false);
-    astralia::bar::Frame frame = astralia::bar::bar_frame(
+    astralia::bar::Frame frame = astralia::bar::frame(
         okinami, 100.0f, astralia::bar::IslandSpan{150.0f, 250.0f}, 300.0f, 400.0f);
 
     cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 400, 40);

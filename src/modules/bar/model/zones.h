@@ -22,6 +22,6 @@ struct Zones {
 
 inline constexpr std::array<Item, 3> status_members{Item::network, Item::bluetooth, Item::volume};
 
-const Zones &bar_zones();
+const Zones &zones();
 
 } // namespace astralia::bar

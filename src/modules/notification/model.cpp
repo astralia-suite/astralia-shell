@@ -22,11 +22,13 @@ void load(Entry &entry, const Notification &notification) {
     entry.urgency = notification.urgency;
     entry.progress = 1.0f;
     entry.timed = !animation_instant();
+    entry.clickable = !notification.click_command.empty();
 }
 
 bool same_content(const Entry &entry, const Notification &notification) {
     return entry.app == notification.app && entry.summary == notification.summary &&
-           entry.body == notification.body;
+           entry.body == notification.body &&
+           entry.clickable == !notification.click_command.empty();
 }
 
 } // namespace
@@ -152,6 +154,32 @@ bool ViewState::set_hover(std::optional<uint32_t> id) {
     return true;
 }
 
+bool ViewState::set_pointer(const Boxes &close, const Boxes &cards, double x, double y) {
+    std::optional<uint32_t> over_close = box_at(close, x, y);
+    bool changed = set_hover(over_close);
+    uint32_t card = over_close ? 0 : box_at(cards, x, y).value_or(0);
+    changed = changed || card != card_hovered_;
+    card_hovered_ = card;
+    return changed;
+}
+
+bool ViewState::press(const Boxes &close, const Boxes &cards, double x, double y,
+                      NotificationService &service) {
+    if (auto id = box_at(close, x, y)) {
+        return hide_locally(*id);
+    }
+    if (auto id = box_at(cards, x, y)) {
+        service.click(*id);
+    }
+    return false;
+}
+
+bool ViewState::clear_pointer() {
+    bool changed = set_hover(std::nullopt) || card_hovered_ != 0;
+    card_hovered_ = 0;
+    return changed;
+}
+
 void ViewState::forget_missing(const std::vector<Entry> &entries) {
     std::erase_if(local_exit_, [&entries](const auto &kv) {
         return std::ranges::none_of(entries, [&kv](const Entry &e) { return e.id == kv.first; });
@@ -215,26 +243,62 @@ Layout layout_notifications(ui::Canvas &canvas, const Model &model, const ViewSt
     return layout;
 }
 
-std::vector<std::pair<uint32_t, ui::Box>> close_boxes(const Layout &layout, const ViewState &view) {
-    std::vector<std::pair<uint32_t, ui::Box>> boxes;
+namespace {
+
+ui::Box close_box(const Card &card) {
+    return {cfg::card_width - cfg::close_hit, card.y + card.entry->slide_offset, cfg::close_hit,
+            cfg::close_hit};
+}
+
+ui::Box card_box(const Card &card) {
+    return {0.0f, card.y + card.entry->slide_offset, cfg::card_width, card.height};
+}
+
+bool opens(const Card &card) { return card.entry->clickable && !card.entry->exiting; }
+
+} // namespace
+
+Boxes close_boxes(const Layout &layout, const ViewState &view) {
+    Boxes boxes;
     for (const Card &card : layout.cards) {
-        if (view.fading(card.entry->id)) {
-            continue;
+        if (!view.fading(card.entry->id)) {
+            boxes.push_back({card.entry->id, close_box(card)});
         }
-        boxes.push_back({card.entry->id,
-                         {cfg::card_width - cfg::close_hit, card.y + card.entry->slide_offset,
-                          cfg::close_hit, cfg::close_hit}});
     }
     return boxes;
 }
 
-std::optional<uint32_t> close_at(const Layout &layout, const ViewState &view, double x, double y) {
-    for (const auto &[id, box] : notification::close_boxes(layout, view)) {
+Boxes card_boxes(const Layout &layout, const ViewState &view) {
+    Boxes boxes;
+    for (const Card &card : layout.cards) {
+        if (!view.fading(card.entry->id) && opens(card)) {
+            boxes.push_back({card.entry->id, card_box(card)});
+        }
+    }
+    return boxes;
+}
+
+Boxes input_boxes(const Layout &layout, const ViewState &view) {
+    Boxes boxes;
+    for (const Card &card : layout.cards) {
+        if (!view.fading(card.entry->id)) {
+            boxes.push_back({card.entry->id, opens(card) ? card_box(card) : close_box(card)});
+        }
+    }
+    return boxes;
+}
+
+std::optional<uint32_t> box_at(const Boxes &boxes, double x, double y) {
+    for (const auto &[id, box] : boxes) {
         if (x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h) {
             return id;
         }
     }
     return std::nullopt;
+}
+
+std::optional<uint32_t> close_at(const Layout &layout, const ViewState &view, double x, double y) {
+    return box_at(notification::close_boxes(layout, view), x, y);
 }
 
 } // namespace astralia::notification

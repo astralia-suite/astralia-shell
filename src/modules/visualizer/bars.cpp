@@ -19,7 +19,7 @@ int bar_texel(int index, int count, int size) {
                       std::max(size - 1, 0));
 }
 
-float visualizer_bar_height(float magnitude, float area_height) {
+float bar_height(float magnitude, float area_height) {
     return std::max(visualizer_config::bar_min_height, std::clamp(magnitude, 0.0f, 1.0f) *
                                                            visualizer_config::bar_height_ratio *
                                                            area_height);

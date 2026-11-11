@@ -17,7 +17,7 @@ Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services)
               XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
                   XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW |
                   XCB_EVENT_MASK_KEY_PRESS),
-      keyboard_(x.conn()), model_(logout_commands(true)) {
+      keyboard_(x.conn()), model_(commands(true)) {
     model_.on_execute = [](const std::string &command) { spawn_detached(command); };
     model_.on_closed = [this] { closed(); };
     services.outputs.changed.connect([this] {

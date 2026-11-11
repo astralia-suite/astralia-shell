@@ -22,7 +22,7 @@ struct Prompt {
 
 enum class Key { none, changed, submit, cancel };
 
-Prompt polkit_prompt(const PolkitService &service);
+Prompt prompt(const PolkitService &service);
 
 class Model {
   public:

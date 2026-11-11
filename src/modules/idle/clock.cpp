@@ -19,8 +19,8 @@ bool Clock::idle(const std::string &output, uint32_t timeout_seconds, Time now) 
            static_cast<int64_t>(timeout_seconds);
 }
 
-Verdict idle_verdict(const Clock &clock, const Config &config, const std::string &output,
-                     Clock::Time now) {
+Verdict verdict(const Clock &clock, const Config &config, const std::string &output,
+                Clock::Time now) {
     Verdict verdict;
     verdict.ambient = ambient_enabled_for(config, output) &&
                       clock.idle(output, ambient_timeout_for(config, output), now);

@@ -27,6 +27,7 @@ struct Notification {
     std::chrono::milliseconds timeout = notification_hang_time;
     std::chrono::steady_clock::time_point created;
     std::chrono::steady_clock::time_point deadline;
+    std::string click_command = {};
 
     bool critical() const { return urgency == notification_urgency_critical; }
 };
@@ -41,14 +42,16 @@ class NotificationService {
 
     const std::vector<Notification> &list() const { return list_; }
     void dismiss(uint32_t id);
+    void click(uint32_t id);
     uint32_t post(std::string app, std::string summary, std::string body,
-                  int32_t expire_timeout = -1);
+                  int32_t expire_timeout = -1, std::string click_command = {});
 
     Signal<> changed;
 
   private:
     uint32_t notify(std::string app, uint32_t replaces_id, std::string summary, std::string body,
-                    const std::map<std::string, sdbus::Variant> &hints, int32_t expire_timeout);
+                    const std::map<std::string, sdbus::Variant> &hints, int32_t expire_timeout,
+                    std::string click_command = {});
     void close(uint32_t id, uint32_t reason);
     void expire();
     std::chrono::milliseconds until_next() const;

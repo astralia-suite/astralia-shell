@@ -21,7 +21,7 @@ HostSet::HostSet(XConnection &x, EventLoop &loop, Shell &shell, Services &servic
     });
     services_.network.messages.connect([this](const StatusMessage &message) {
         services_.notifications.post("Network", message.summary, message.body,
-                                     status_message_timeout_ms);
+                                     status_message_timeout_ms, message.click_command);
     });
     shell_.track("bar", [this] {
         return std::ranges::any_of(bars_,

@@ -209,6 +209,12 @@ void check_hyprland() {
     check(hypr_parse_rounding(R"({"option":"decoration:rounding","int":10,"set":true})") == 10 &&
               hypr_parse_rounding("x") == 0,
           "rounding parses");
+    {
+        std::optional<CursorPosition> cursor = hypr_parse_cursor(R"({"x":1610,"y":-27})");
+        check(cursor && cursor->x == 1610.0 && cursor->y == -27.0, "cursor position parses");
+        check(!hypr_parse_cursor("unknown request") && !hypr_parse_cursor(R"({"x":1})"),
+              "a malformed cursor reply yields nothing");
+    }
     check(hypr_lua_border(color("#00feee"), color("#757bcc")) ==
               "hl.config({general={col={active_border=\"rgba(00feeeee)\","
               "inactive_border=\"rgba(757bcccc)\"}}})",

@@ -46,7 +46,7 @@ void set_surface_geometry(zwlr_layer_surface_v1 *layer_surface, wl_surface *surf
 void layer_surface_configure(void *data, zwlr_layer_surface_v1 *layer_surface, uint32_t serial,
                              uint32_t width, uint32_t) {
     auto *mon = static_cast<MonitorOutput *>(data);
-    PerMonitorState &bs = bar_state(*mon);
+    PerMonitorState &bs = monitor_state(*mon);
     zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
     bs.width = static_cast<int32_t>(width);
     if (bs.egl_window) {
@@ -97,16 +97,16 @@ void adjust_brightness(WaylandState &app, const std::string &output, double dy) 
 
 } // namespace
 
-PerMonitorState &bar_state(MonitorOutput &mon) { return mon.module<PerMonitor>()->state; }
+PerMonitorState &monitor_state(MonitorOutput &mon) { return mon.module<PerMonitor>()->state; }
 
-const PerMonitorState &bar_state(const MonitorOutput &mon) {
+const PerMonitorState &monitor_state(const MonitorOutput &mon) {
     return mon.module<PerMonitor>()->state;
 }
 
 namespace detail {
 
 void close_other_overlays(MonitorOutput &mon, Item keep) {
-    PerMonitorState &bs = bar_state(mon);
+    PerMonitorState &bs = monitor_state(mon);
     if (keep != Item::logout) {
         if (Module *m = find_overlay_by_name(*mon.app, "logout"); m && m->is_open())
             m->toggle_from_widget(*mon.app);
@@ -116,7 +116,7 @@ void close_other_overlays(MonitorOutput &mon, Item keep) {
 }
 
 void toggle_panel(MonitorOutput &mon, Item item) {
-    PerMonitorState &bs = bar_state(mon);
+    PerMonitorState &bs = monitor_state(mon);
     if (!bs.panels)
         return;
     close_other_overlays(mon, item);
@@ -125,35 +125,35 @@ void toggle_panel(MonitorOutput &mon, Item item) {
 }
 
 int32_t current_height(const MonitorOutput &mon) {
-    return autohide_geometry(bar_state(mon).autohide.enabled, bar_state(mon).autohide.collapsed,
-                             static_cast<int>(layout_cfg::height), style_of(mon).top_margin,
-                             bar_hug_radius_px(mon))
+    return autohide_geometry(
+               monitor_state(mon).autohide.enabled, monitor_state(mon).autohide.collapsed,
+               static_cast<int>(layout_cfg::height), style_of(mon).top_margin, hug_radius_px(mon))
         .height;
 }
 
 void autohide_apply_geometry(MonitorOutput &mon, bool autohide, bool collapsed,
                              const StyleSpec &style) {
     Geometry g = autohide_geometry(autohide, collapsed, static_cast<int>(layout_cfg::height),
-                                   style.top_margin, bar_hug_radius_px(mon));
-    set_surface_geometry(bar_state(mon).layer_surface, bar_state(mon).surface,
-                         bar_state(mon).egl_window, bar_state(mon).width, g.height, g.margin_top,
-                         bar_side_margin_px(mon, style), g.exclusive_zone,
-                         bar_state(mon).output_scale.scale);
+                                   style.top_margin, hug_radius_px(mon));
+    set_surface_geometry(monitor_state(mon).layer_surface, monitor_state(mon).surface,
+                         monitor_state(mon).egl_window, monitor_state(mon).width, g.height,
+                         g.margin_top, side_margin_px(mon, style), g.exclusive_zone,
+                         monitor_state(mon).output_scale.scale);
 }
 
 void monitor_autohide_apply(MonitorOutput &mon, bool enabled, const StyleSpec &style) {
-    bar_state(mon).autohide.enabled = enabled;
-    bar_state(mon).autohide.hidden = false;
-    bar_state(mon).autohide.collapsed = enabled && bar_state(mon).autohide.collapsed;
-    bar_state(mon).autohide.opacity = bar_state(mon).autohide.collapsed ? 0.0f : 1.0f;
-    autohide_apply_geometry(mon, enabled, bar_state(mon).autohide.collapsed, style);
+    monitor_state(mon).autohide.enabled = enabled;
+    monitor_state(mon).autohide.hidden = false;
+    monitor_state(mon).autohide.collapsed = enabled && monitor_state(mon).autohide.collapsed;
+    monitor_state(mon).autohide.opacity = monitor_state(mon).autohide.collapsed ? 0.0f : 1.0f;
+    autohide_apply_geometry(mon, enabled, monitor_state(mon).autohide.collapsed, style);
 }
 
 } // namespace detail
 
 bool init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLConfig config,
               EGLContext context) {
-    PerMonitorState &bs = bar_state(mon);
+    PerMonitorState &bs = monitor_state(mon);
     int32_t scale = bs.output_scale.scale;
     bs.egl_window =
         wl_egl_window_create(bs.surface, bs.width * scale, detail::current_height(mon) * scale);
@@ -175,7 +175,7 @@ bool init_egl(MonitorOutput &mon, Renderer &renderer, EGLDisplay display, EGLCon
 }
 
 void dispatch_bar_click(MonitorOutput &mon, double click_x, double click_y) {
-    PerMonitorState &bs = bar_state(mon);
+    PerMonitorState &bs = monitor_state(mon);
     if (!bs.model)
         return;
     if (bs.autohide.enabled)
@@ -205,7 +205,7 @@ void dispatch_bar_click(MonitorOutput &mon, double click_x, double click_y) {
 
 void render(MonitorOutput &mon) {
     WaylandState &app = *mon.app;
-    PerMonitorState &bs = bar_state(mon);
+    PerMonitorState &bs = monitor_state(mon);
     const StyleSpec &style = style_of(mon);
     auto now = std::chrono::steady_clock::now();
 
@@ -294,9 +294,8 @@ void render(MonitorOutput &mon) {
     Frame frame = model.frame();
     frame_base(bs.canvas, style, frame, width, height);
     paint(bs.canvas, model);
-    frame_overlay(bs.canvas, style, frame, width, height,
-                  static_cast<float>(bar_hug_radius_px(mon)), model.layout().left_end.has_value(),
-                  model.layout().right_start.has_value());
+    frame_overlay(bs.canvas, style, frame, width, height, static_cast<float>(hug_radius_px(mon)),
+                  model.layout().left_end.has_value(), model.layout().right_start.has_value());
     bs.canvas.end_group();
     bs.canvas.flush();
     eglSwapBuffers(app.egl_display, bs.egl_surface);
@@ -306,9 +305,9 @@ void render(MonitorOutput &mon) {
 }
 
 void request_frame(MonitorOutput &mon) {
-    if (bar_state(mon).egl_surface == EGL_NO_SURFACE)
+    if (monitor_state(mon).egl_surface == EGL_NO_SURFACE)
         return;
-    request_frame(bar_state(mon).frame_clock);
+    request_frame(monitor_state(mon).frame_clock);
 }
 
 bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output *output) {
@@ -319,7 +318,7 @@ bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output
     const StyleSpec &style = style_spec(app.cfg.bar_style, true);
     Geometry geometry = autohide_geometry(state.autohide.enabled, state.autohide.collapsed,
                                           static_cast<int>(layout_cfg::height), style.top_margin,
-                                          bar_hug_radius_px(mon));
+                                          hug_radius_px(mon));
     LayerSurfaceConfig bar_cfg{
         .layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         .name_space = "astralia-shell",
@@ -327,8 +326,8 @@ bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output
                   ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
         .height = geometry.height,
         .margin_top = geometry.margin_top,
-        .margin_right = bar_side_margin_px(mon, style),
-        .margin_left = bar_side_margin_px(mon, style),
+        .margin_right = side_margin_px(mon, style),
+        .margin_left = side_margin_px(mon, style),
         .exclusive_zone = geometry.exclusive_zone,
     };
     state.layer_surface = layer_surface_create(state.surface, app.compositor, app.layer_shell,
@@ -398,8 +397,8 @@ void PerMonitor::apply_config(WaylandState &app, MonitorOutput &mon, const Confi
 }
 
 void PerMonitor::tick(WaylandState &, MonitorOutput &mon) {
-    int32_t hug = bar_hug_radius_px(mon);
-    int32_t side = bar_side_margin_px(mon, style_of(mon));
+    int32_t hug = hug_radius_px(mon);
+    int32_t side = side_margin_px(mon, style_of(mon));
     if (hug != state.applied_hug_radius_px || side != state.applied_side_margin_px) {
         state.applied_hug_radius_px = hug;
         state.applied_side_margin_px = side;

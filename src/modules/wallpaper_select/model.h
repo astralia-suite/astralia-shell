@@ -36,6 +36,8 @@ class Model {
     Model &operator=(const Model &) = delete;
 
     bool available() const;
+    int column_at(const std::string &monitor, double x, double y, double width,
+                  double height) const;
     void open(const std::string &monitor, int column);
     void close();
     void tick(std::chrono::steady_clock::time_point now);
@@ -76,6 +78,7 @@ class Model {
     std::function<void()> on_changed;
 
   private:
+    bool wants_animated() const;
     void changed();
     void scan();
     void finish_close();

@@ -66,8 +66,7 @@ void wake(State &wp);
 
 void draw_columns(const State &wp, GlCanvas &canvas, int32_t width, int32_t height);
 
-void wallpaper_sync_from_config(State &wp, const Config &cfg, const std::string &monitor_name,
-                                bool animated);
+void sync_from_config(State &wp, const Config &cfg, const std::string &monitor_name, bool animated);
 
 void columns_stop_all(State &wp);
 void columns_pause_all(State &wp);
@@ -94,7 +93,7 @@ class PerMonitor final : public PerMonitorModule {
     void pause_animation();
     void resume_animation();
     MediaDecodeStatus decode_status(int column_index) const;
-    const State &wallpaper_state() const { return state_; }
+    const State &state() const { return state_; }
 
   private:
     State state_;

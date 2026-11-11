@@ -187,6 +187,44 @@ void check_close_hit() {
                 "a fading card cannot be closed again");
 }
 
+void check_card_click() {
+    namespace notification = astralia::notification;
+    Instant instant;
+    Model model;
+    ViewState view;
+    test::RecordingCanvas canvas;
+    Notification portal = make(2, "Network", "Captive Portal");
+    portal.click_command = "open";
+    model.sync({make(1, "mail"), portal});
+    Layout layout = notification::layout_notifications(canvas, model, view, 480);
+    notification::Boxes close = notification::close_boxes(layout, view);
+    notification::Boxes cards = notification::card_boxes(layout, view);
+    test::check(cards.size() == 1 && cards[0].first == 2, "only a card with a command opens");
+    test::check(notification::box_at(cards, 200, layout.cards[0].y + 5) == 2u,
+                "the card body hits the clickable card");
+    test::check(!notification::box_at(cards, 200, layout.cards[1].y + 5),
+                "a plain card stays click-through");
+    test::check(notification::box_at(notification::input_boxes(layout, view), 200,
+                                     layout.cards[0].y + 5) == 2u,
+                "the input region covers a clickable card");
+    test::check(
+        !notification::box_at(notification::input_boxes(layout, view), 200, layout.cards[1].y + 5),
+        "the input region keeps a plain card to its close button");
+
+    double close_x = cfg::card_width - 10;
+    double close_y = layout.cards[0].y + 5;
+    test::check(view.set_pointer(close, cards, close_x, close_y) && view.hovered() == 2,
+                "the close button wins over the card");
+    test::check(view.set_pointer(close, cards, 200, close_y) && view.hovered() == 0 &&
+                    view.wants_hand(),
+                "the card shows a hand without lighting the close glyph");
+    test::check(!view.set_pointer(close, cards, 201, close_y), "moving within a card is quiet");
+    test::check(view.clear_pointer() && !view.wants_hand(), "leaving clears the hand");
+
+    view.hide_locally(2);
+    test::check(notification::card_boxes(layout, view).empty(), "a fading card cannot open");
+}
+
 void check_paint() {
     using Kind = test::Op::Kind;
     Instant instant;
@@ -235,6 +273,7 @@ void check_notification_module() {
     check_view_state();
     check_layout();
     check_close_hit();
+    check_card_click();
     check_paint();
     check_paint_animated();
 }

@@ -24,7 +24,7 @@ uint64_t owner_gate(int i) { return 80 + static_cast<uint64_t>(i); }
 
 } // namespace
 
-std::array<std::string, logout_config::button_count> logout_commands(bool with_lock) {
+std::array<std::string, logout_config::button_count> commands(bool with_lock) {
     std::array<std::string, logout_config::button_count> commands;
     for (size_t i = 0; i < commands.size(); ++i) {
         commands[i] = cfg::actions[i].command;

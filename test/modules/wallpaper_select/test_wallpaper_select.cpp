@@ -216,6 +216,28 @@ void check_animated(astralia::PollReactor &reactor) {
                 "applying sets the animated column and leaves the static ones alone");
 }
 
+void check_column_at() {
+    Env still;
+    still.config.wallpaper_column_counts["DP-1"] = 3;
+    test::check(still.model.column_at("DP-1", 0.0, 0.0, 900.0, 500.0) == 0 &&
+                    still.model.column_at("DP-1", 450.0, 10.0, 900.0, 500.0) == 1 &&
+                    still.model.column_at("DP-1", 899.0, 499.0, 900.0, 500.0) == 2,
+                "the pointer picks the column it is over");
+    test::check(still.model.column_at("DP-1", -1.0, 10.0, 900.0, 500.0) == 0 &&
+                    still.model.column_at("DP-1", 900.0, 10.0, 900.0, 500.0) == 0 &&
+                    still.model.column_at("DP-1", 450.0, 500.0, 900.0, 500.0) == 0,
+                "a pointer off the monitor falls back to the first column");
+    test::check(still.model.column_at("HDMI-1", 899.0, 10.0, 900.0, 500.0) == 0,
+                "a single column monitor always resolves to the first column");
+
+    Env animated(true);
+    animated.config.wallpaper_animated_enabled = true;
+    animated.config.wallpaper_column_counts["DP-1"] = 4;
+    animated.config.wallpaper_animated_column_counts["DP-1"] = 2;
+    test::check(animated.model.column_at("DP-1", 600.0, 10.0, 900.0, 500.0) == 1,
+                "the animated column count divides the monitor when animated is on");
+}
+
 void check_view(astralia::PollReactor &reactor) {
     using Kind = test::Op::Kind;
     Folder folder;
@@ -295,6 +317,7 @@ void check_wallpaper_select() {
     check_clicks(reactor);
     check_availability();
     check_animated(reactor);
+    check_column_at();
     check_view(reactor);
     check_appear(reactor);
     check_target_resolution(reactor);

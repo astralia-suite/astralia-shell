@@ -2,8 +2,6 @@
 
 #include <EGL/egl.h>
 #include <cstdint>
-#include <utility>
-#include <vector>
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
@@ -38,7 +36,9 @@ struct View {
     FrameClock frame_clock;
     GlCanvas canvas;
     ViewState state;
-    std::vector<std::pair<uint32_t, astralia::ui::Box>> close_hitboxes;
+    Boxes close_hitboxes;
+    Boxes card_hitboxes;
+    Boxes input_hitboxes;
 };
 
 bool view_create_surface(View &view, wl_compositor *compositor, zwlr_layer_shell_v1 *layer_shell,
@@ -49,11 +49,9 @@ bool view_init_egl(View &view, Model &service, Renderer &renderer, EGLDisplay di
 
 void view_request_frame(View &view);
 
-bool view_handle_close_click(View &view, double x, double y);
+bool view_set_hover(View &view, double x, double y);
 
-bool view_set_close_hover(View &view, double x, double y);
-
-bool view_clear_close_hover(View &view);
+bool view_clear_hover(View &view);
 
 void render(View &view, Model &service);
 

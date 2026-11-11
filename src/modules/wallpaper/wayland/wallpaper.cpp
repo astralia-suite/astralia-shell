@@ -210,8 +210,8 @@ MediaDecodeStatus column_status(const State &wp, int column_index) {
     return wallpaper_column_decode_status(*wp.columns[static_cast<size_t>(column_index)]);
 }
 
-void wallpaper_sync_from_config(State &wp, const Config &cfg, const std::string &monitor_name,
-                                bool animated) {
+void sync_from_config(State &wp, const Config &cfg, const std::string &monitor_name,
+                      bool animated) {
     int count = astralia::wallpaper_column_count(cfg, monitor_name, animated);
 
     if (!animated) {
@@ -262,7 +262,7 @@ void wallpaper_sync_from_config(State &wp, const Config &cfg, const std::string 
 namespace {
 
 void sync_active_mode(State &wp, const Config &cfg, const std::string &monitor_name) {
-    wallpaper_sync_from_config(wp, cfg, monitor_name, cfg.wallpaper_animated_enabled);
+    sync_from_config(wp, cfg, monitor_name, cfg.wallpaper_animated_enabled);
 }
 
 } // namespace
@@ -287,7 +287,7 @@ bool PerMonitor::init_egl(WaylandState &app, MonitorOutput &mon) {
     state_.on_resize = [&app, &mon, this] {
         if (!app.cfg.wallpaper_animated_enabled)
             return;
-        wallpaper_sync_from_config(state_, app.cfg, mon.output.name, true);
+        sync_from_config(state_, app.cfg, mon.output.name, true);
     };
     wallpaper::request_frame(state_);
     app_detail::rest_egl_current(app);
@@ -343,7 +343,10 @@ void PerMonitor::handle_click(WaylandState &app, MonitorOutput &mon, wl_surface 
     }
 }
 
-void PerMonitor::handle_pointer_move(WaylandState &app, MonitorOutput &, double x, double y) {
+void PerMonitor::handle_pointer_move(WaylandState &app, MonitorOutput &mon, double x, double y) {
+    if (app.pointer.focused_surface == state_.surface)
+        app.wallpaper_pointer =
+            WallpaperPointer{mon.output.name, x, static_cast<double>(state_.width)};
     if (!state_.menu.is_open())
         return;
     bool changed = false;

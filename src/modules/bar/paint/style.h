@@ -66,8 +66,8 @@ struct Frame {
 
 IslandShape island_shape(const StyleSpec &spec, float left, float right, bool flush_left,
                          bool flush_right);
-Frame bar_frame(const StyleSpec &spec, std::optional<float> left_end,
-                std::optional<IslandSpan> center, std::optional<float> right_start, float width);
+Frame frame(const StyleSpec &spec, std::optional<float> left_end, std::optional<IslandSpan> center,
+            std::optional<float> right_start, float width);
 
 struct Geometry {
     int height;

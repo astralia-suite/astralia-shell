@@ -29,6 +29,7 @@ struct NetworkStatus {
 struct StatusMessage {
     std::string summary;
     std::string body;
+    std::string click_command = {};
     bool operator==(const StatusMessage &) const = default;
 };
 
@@ -53,6 +54,7 @@ struct NetworkDeviceStatus {
     bool operator==(const NetworkDeviceStatus &) const = default;
 };
 
+std::string network_portal_command();
 std::vector<StatusMessage> network_changes(const NetworkStatus &prev, const NetworkStatus &next);
 NetworkMap network_parse_networks(const std::string &text, const std::set<std::string> &profiles);
 NetworkDeviceStatus network_parse_device_status(const std::string &text);
@@ -85,6 +87,7 @@ class NetworkService {
     void forget(const std::string &ssid);
     void set_wifi_enabled(bool enabled);
     void clear_error();
+    void open_portal();
 
     Signal<> changed;
     Signal<const StatusMessage &> messages;

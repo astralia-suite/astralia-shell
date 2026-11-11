@@ -131,7 +131,7 @@ void render(State &state, WaylandState &app) {
 
     state.canvas.begin(scale);
     if (state.model.open()) {
-        state.model.set_prompt(polkit_prompt(*app.polkit));
+        state.model.set_prompt(prompt(*app.polkit));
         polkit::paint(state.canvas, state.model, static_cast<float>(state.base.width),
                       static_cast<float>(state.base.height));
     }

@@ -23,7 +23,7 @@ namespace {
 
 void draw_monitor_wallpaper(MonitorOutput &mon, GlCanvas &canvas, int32_t w, int32_t h) {
     if (auto *wp = mon.module<astralia::wallpaper::PerMonitor>())
-        astralia::wallpaper::draw_columns(wp->wallpaper_state(), canvas, w, h);
+        astralia::wallpaper::draw_columns(wp->state(), canvas, w, h);
 }
 
 void draw_named_wallpaper(WaylandState &app, const std::string &output_name, GlCanvas &canvas,

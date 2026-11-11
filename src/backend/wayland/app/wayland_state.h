@@ -4,6 +4,7 @@
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include <wayland-client.h>
@@ -44,6 +45,12 @@
 #include "xdg-shell-client-protocol.h"
 
 struct MonitorOutput;
+
+struct WallpaperPointer {
+    std::string monitor;
+    double x = 0.0;
+    double width = 0.0;
+};
 
 struct WaylandState {
     astralia::Capabilities capabilities = astralia::wayland_capabilities();
@@ -94,6 +101,7 @@ struct WaylandState {
     int config_watch_fd = -1;
     bool own_write_pending = false;
     MonitorOutput *last_pointer_monitor = nullptr;
+    std::optional<WallpaperPointer> wallpaper_pointer;
     std::unique_ptr<astralia::Compositor> desktop = std::make_unique<astralia::NullCompositor>();
     astralia::Reactor *reactor = nullptr;
     std::vector<std::unique_ptr<MonitorOutput>> outputs;

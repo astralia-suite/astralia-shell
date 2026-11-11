@@ -311,7 +311,8 @@ std::chrono::milliseconds Model::until_idle(Clock::time_point now) const {
 }
 
 Frame Model::frame() const {
-    return bar_frame(*style_, layout_.left_end, layout_.center, layout_.right_start, layout_.width);
+    return bar::frame(*style_, layout_.left_end, layout_.center, layout_.right_start,
+                      layout_.width);
 }
 
 Action Model::press(double x, double y) const {

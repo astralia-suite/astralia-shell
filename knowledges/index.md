@@ -349,7 +349,7 @@
 - `layout.cpp`: `Model::layout`, one zone-driven layout for every style; the style only supplies data (zones, dividers, workspace badge size, icon gap).
 - `motion.cpp`: Workspace pill growth and the animated dock row.
 - `items.{h,cpp}`: The one `Item` to `PanelId` mapping and back, shared by both backends.
-- `zones.{h,cpp}`: Left, centre and right slot lists a style points at (`bar_zones`, shared by every style).
+- `zones.{h,cpp}`: Left, centre and right slot lists a style points at (`zones`, shared by every style).
 - `item.h`: The `Item` enum.
 
 ## `src/modules/bar/paint/`

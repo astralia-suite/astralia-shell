@@ -99,7 +99,7 @@ void check_bar_style() {
                 "collapsed autohide is a strip");
 
     const astralia::bar::StyleSpec &okinami = astralia::bar::style_spec(BarStyle::okinami, false);
-    astralia::bar::Frame frame = astralia::bar::bar_frame(
+    astralia::bar::Frame frame = astralia::bar::frame(
         okinami, 300.0f, astralia::bar::IslandSpan{500.0f, 700.0f}, 900.0f, 1000.0f);
     test::check(frame.islands.size() == 3 && frame.fillets.size() == 4,
                 "three islands and four fillets");
@@ -110,7 +110,7 @@ void check_bar_style() {
     test::check(frame.islands[1].inner_x == 500.0f + okinami.border_width,
                 "inner edge is inset by the border");
     astralia::bar::Frame none =
-        astralia::bar::bar_frame(okinami, std::nullopt, std::nullopt, std::nullopt, 400.0f);
+        astralia::bar::frame(okinami, std::nullopt, std::nullopt, std::nullopt, 400.0f);
     test::check(none.islands.empty() && none.fillets.empty(), "no groups, no islands");
 }
 
@@ -401,7 +401,7 @@ void check_bar_frame() {
     using astralia::bar::style_spec;
     using test::Op;
     const astralia::bar::StyleSpec &okinami = astralia::bar::style_spec(BarStyle::okinami, false);
-    astralia::bar::Frame frame = astralia::bar::bar_frame(
+    astralia::bar::Frame frame = astralia::bar::frame(
         okinami, 300.0f, astralia::bar::IslandSpan{500.0f, 700.0f}, 900.0f, 1000.0f);
 
     test::RecordingCanvas base;

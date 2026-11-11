@@ -118,7 +118,7 @@ void check_bamboo_grow() {
     grow.tick();
     check(!grow.frame().ready(), "ticking without a rebuild does nothing");
 
-    astralia::bamboo::bamboo_seed(7);
+    astralia::bamboo::seed(7);
     grow.rebuild(480, 600);
     astralia::bamboo::Frame frame = grow.frame();
     check(frame.ready() && frame.width == 480 && frame.height == 600 && frame.stride >= 480 * 4,
@@ -140,7 +140,7 @@ void check_bamboo_grow() {
     check(ascii_or_bar(grown), "the scene holds ascii and the vertical bar only");
     std::vector<uint8_t> first = copy(grow.frame());
 
-    astralia::bamboo::bamboo_seed(7);
+    astralia::bamboo::seed(7);
     grow.rebuild(480, 600);
     for (int i = 0; i < 10; ++i) {
         grow.tick();

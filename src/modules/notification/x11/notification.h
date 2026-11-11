@@ -3,8 +3,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 #include <xcb/xcb.h>
 
 #include "app/services.h"
@@ -31,7 +29,9 @@ class Host {
         CairoCanvas canvas;
         ViewState state;
         Layout layout;
-        std::vector<std::pair<uint32_t, ui::Box>> close_boxes;
+        Boxes close_boxes;
+        Boxes card_boxes;
+        Boxes input_boxes;
     };
 
     void sync();

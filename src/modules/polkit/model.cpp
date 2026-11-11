@@ -26,7 +26,7 @@ void Model::clear_password() {
     text_field_type_anim_clear(dot_anim_, animations_, owner_dots);
 }
 
-Prompt polkit_prompt(const PolkitService &service) {
+Prompt prompt(const PolkitService &service) {
     PolkitRequest request = service.request();
     Prompt prompt;
     prompt.message = request.message.empty() ? request.action_id : request.message;

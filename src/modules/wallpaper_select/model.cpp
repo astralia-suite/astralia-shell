@@ -35,6 +35,19 @@ Model::~Model() { *alive_ = false; }
 
 bool Model::available() const { return true; }
 
+bool Model::wants_animated() const {
+    return animated_wallpaper_ && hooks_.config().wallpaper_animated_enabled;
+}
+
+int Model::column_at(const std::string &monitor, double x, double y, double width,
+                     double height) const {
+    if (x < 0.0 || y < 0.0 || x >= width || y >= height) {
+        return 0;
+    }
+    int columns = wallpaper_column_count(hooks_.config(), monitor, wants_animated());
+    return std::min(static_cast<int>(x * columns / width), columns - 1);
+}
+
 void Model::open(const std::string &monitor, int column) {
     if (open_) {
         return;
@@ -42,7 +55,7 @@ void Model::open(const std::string &monitor, int column) {
     const Config &config = hooks_.config();
     monitor_ = monitor;
     column_ = column;
-    animated_ = animated_wallpaper_ && config.wallpaper_animated_enabled;
+    animated_ = wants_animated();
     current_ = animated_ ? wallpaper_column_override(config, monitor, column, true)
                          : wallpaper_column_path(config, monitor, column, false);
     directory_ = animated_ ? config.wallpaper_animated_dir : config.wallpaper_dir;

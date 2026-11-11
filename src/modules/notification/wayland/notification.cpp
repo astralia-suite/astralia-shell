@@ -109,13 +109,18 @@ void render(View &view, Model &model) {
     notification::paint(view.canvas, view.state, layout);
     view.canvas.end_group();
 
-    std::vector<std::pair<uint32_t, astralia::ui::Box>> hitboxes;
-    for (const auto &[id, box] : notification::close_boxes(layout, view.state))
-        hitboxes.push_back({id, astralia::ui::Box{box.x, box.y + origin, box.w, box.h}});
-    if (view.compositor && hitboxes != view.close_hitboxes) {
-        view.close_hitboxes = hitboxes;
+    auto on_surface = [origin](Boxes boxes) {
+        for (auto &[id, box] : boxes)
+            box.y += origin;
+        return boxes;
+    };
+    view.close_hitboxes = on_surface(notification::close_boxes(layout, view.state));
+    view.card_hitboxes = on_surface(notification::card_boxes(layout, view.state));
+    Boxes input = on_surface(notification::input_boxes(layout, view.state));
+    if (view.compositor && input != view.input_hitboxes) {
+        view.input_hitboxes = input;
         wl_region *region = wl_compositor_create_region(view.compositor);
-        for (const auto &[id, r] : hitboxes)
+        for (const auto &[id, r] : input)
             wl_region_add(region, static_cast<int>(r.x), static_cast<int>(r.y),
                           static_cast<int>(r.w), static_cast<int>(r.h));
         wl_surface_set_input_region(view.surface, region);
@@ -130,27 +135,11 @@ void render(View &view, Model &model) {
         request_frame(view.frame_clock);
 }
 
-namespace {
-
-std::optional<uint32_t> close_hit(const View &view, double x, double y) {
-    for (const auto &[id, r] : view.close_hitboxes)
-        if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)
-            return id;
-    return std::nullopt;
+bool view_set_hover(View &view, double x, double y) {
+    return view.state.set_pointer(view.close_hitboxes, view.card_hitboxes, x, y);
 }
 
-} // namespace
-
-bool view_handle_close_click(View &view, double x, double y) {
-    auto id = close_hit(view, x, y);
-    return id && view.state.hide_locally(*id);
-}
-
-bool view_set_close_hover(View &view, double x, double y) {
-    return view.state.set_hover(close_hit(view, x, y));
-}
-
-bool view_clear_close_hover(View &view) { return view.state.set_hover(std::nullopt); }
+bool view_clear_hover(View &view) { return view.state.clear_pointer(); }
 
 bool PerMonitor::create_surface(WaylandState &app, MonitorOutput &mon, wl_output *output) {
     if (notifications_enabled_for(app.cfg, mon.output.name) &&
@@ -177,23 +166,22 @@ bool PerMonitor::owns_surface(wl_surface *surface) const { return surface == sta
 
 void PerMonitor::request_frame() { view_request_frame(state_); }
 
-void PerMonitor::handle_click(WaylandState &, MonitorOutput &, wl_surface *, int button, double x,
-                              double y, uint32_t) {
+void PerMonitor::handle_click(WaylandState &app, MonitorOutput &, wl_surface *, int button,
+                              double x, double y, uint32_t) {
     if (button != BTN_LEFT)
         return;
-    if (view_handle_close_click(state_, x, y))
+    if (state_.state.press(state_.close_hitboxes, state_.card_hitboxes, x, y, *app.notifications))
         view_request_frame(state_);
 }
 
 void PerMonitor::handle_pointer_move(WaylandState &app, MonitorOutput &, double x, double y) {
-    bool changed = app.pointer.focused_surface == state_.surface
-                       ? view_set_close_hover(state_, x, y)
-                       : view_clear_close_hover(state_);
+    bool changed = app.pointer.focused_surface == state_.surface ? view_set_hover(state_, x, y)
+                                                                 : view_clear_hover(state_);
     if (changed)
         view_request_frame(state_);
 }
 
-bool PerMonitor::wants_hand_cursor() const { return state_.state.hovered() != 0; }
+bool PerMonitor::wants_hand_cursor() const { return state_.state.wants_hand(); }
 
 void PerMonitor::apply_config(WaylandState &app, MonitorOutput &mon, const Config &new_cfg) {
     bool want = notifications_enabled_for(new_cfg, mon.output.name);

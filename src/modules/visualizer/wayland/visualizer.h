@@ -37,7 +37,7 @@ struct State {
     std::unique_ptr<RenderThreadState> thread_state;
 };
 
-void visualizer_shutdown(State &state);
+void shutdown(State &state);
 
 void apply_params(State &state, const VisualizerParams &params);
 

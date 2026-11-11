@@ -81,21 +81,21 @@ class PerMonitor final : public PerMonitorModule {
     double pointer_x_ = -1, pointer_y_ = -1;
 };
 
-PerMonitorState &bar_state(MonitorOutput &mon);
-const PerMonitorState &bar_state(const MonitorOutput &mon);
+PerMonitorState &monitor_state(MonitorOutput &mon);
+const PerMonitorState &monitor_state(const MonitorOutput &mon);
 
 inline const StyleSpec &style_of(const MonitorOutput &mon) {
     return style_spec(mon.app->cfg.bar_style, true);
 }
 
-inline int32_t bar_side_margin_px(const MonitorOutput &mon, const StyleSpec &style) {
+inline int32_t side_margin_px(const MonitorOutput &mon, const StyleSpec &style) {
     if (style.side_margin == 0)
         return 0;
     return mon.app->desktop->state().gaps_out_px.value_or(style.side_margin);
 }
 
-inline int32_t bar_hug_radius_px(const MonitorOutput &mon) {
-    if (mon.app->cfg.bar_style != BarStyle::okinami || bar_state(mon).autohide.enabled)
+inline int32_t hug_radius_px(const MonitorOutput &mon) {
+    if (mon.app->cfg.bar_style != BarStyle::okinami || monitor_state(mon).autohide.enabled)
         return 0;
     return mon.app->desktop->state().hug_radius_px;
 }

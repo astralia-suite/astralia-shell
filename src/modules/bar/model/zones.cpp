@@ -2,7 +2,7 @@
 
 namespace astralia::bar {
 
-const Zones &bar_zones() {
+const Zones &zones() {
     static const Zones zones{
         {{SlotKind::item, Item::logout},
          {SlotKind::item, Item::active_window},

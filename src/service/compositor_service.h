@@ -76,6 +76,11 @@ struct CompositorState {
     bool operator==(const CompositorState &) const = default;
 };
 
+struct CursorPosition {
+    double x = 0.0;
+    double y = 0.0;
+};
+
 struct WorkArea {
     double x = 0.0;
     double y = 0.0;
@@ -119,6 +124,7 @@ class Compositor {
     virtual void apply_border_colors(Color, Color) {}
     virtual int workspaces_per_monitor() const { return 5; }
     virtual bool capture_by_toplevel_handle() const { return false; }
+    virtual std::optional<CursorPosition> cursor_position() const { return std::nullopt; }
 
     Signal<> active_changed;
     Signal<> structure_changed;

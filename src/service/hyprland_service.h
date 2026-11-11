@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,6 +21,7 @@ void hypr_parse_workspaces(std::string_view reply, CompositorState &state);
 void hypr_parse_monitors(std::string_view reply, CompositorState &state);
 int32_t hypr_parse_gaps_out(std::string_view reply);
 int32_t hypr_parse_rounding(std::string_view reply);
+std::optional<CursorPosition> hypr_parse_cursor(std::string_view reply);
 HyprEventKind hypr_apply_event(CompositorState &state, std::string_view line);
 int hypr_resolve_workspace(const CompositorState &state, int id, bool global);
 std::string hypr_lua_focus(int workspace);
@@ -51,6 +53,7 @@ class HyprlandCompositor final : public Compositor {
     void move_workspace_in(int id, bool global = false) override;
     void swap_workspace(int id, bool global = false) override;
     void apply_border_colors(Color active, Color inactive) override;
+    std::optional<CursorPosition> cursor_position() const override;
 
     void set_request_socket(std::string path) { request_path_ = std::move(path); }
 

@@ -93,6 +93,6 @@ class Model {
     AnimationManager animations_;
 };
 
-std::array<std::string, logout_config::button_count> logout_commands(bool with_lock);
+std::array<std::string, logout_config::button_count> commands(bool with_lock);
 
 } // namespace astralia::logout

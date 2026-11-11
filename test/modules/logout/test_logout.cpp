@@ -32,7 +32,7 @@ KeyEvent key(KeyKind kind, std::string text = "") {
 }
 
 struct Harness {
-    astralia::logout::Model model{astralia::logout::logout_commands(true)};
+    astralia::logout::Model model{astralia::logout::commands(true)};
     std::vector<std::string> executed;
     int closed = 0;
 
@@ -43,8 +43,8 @@ struct Harness {
 };
 
 void check_commands() {
-    auto plain = astralia::logout::logout_commands(false);
-    auto lock = astralia::logout::logout_commands(true);
+    auto plain = astralia::logout::commands(false);
+    auto lock = astralia::logout::commands(true);
     test::check(plain[0] == "systemctl poweroff" && plain[1] == "systemctl reboot",
                 "default commands come from the config");
     test::check(plain[astralia::logout_config::lock_index].empty() &&

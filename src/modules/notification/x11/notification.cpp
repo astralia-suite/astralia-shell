@@ -16,16 +16,6 @@ namespace cfg = notification_config;
 constexpr uint32_t view_events = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS |
                                  XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW;
 
-std::optional<uint32_t> close_hit(const std::vector<std::pair<uint32_t, ui::Box>> &boxes, double x,
-                                  double y) {
-    for (const auto &[id, box] : boxes) {
-        if (x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h) {
-            return id;
-        }
-    }
-    return std::nullopt;
-}
-
 } // namespace
 
 Host::View::View(XConnection &x) : window(x, "astralia-notification", view_events) {}
@@ -87,14 +77,15 @@ void Host::sync() {
 }
 
 void Host::apply_input_region(View &view) {
-    std::vector<std::pair<uint32_t, ui::Box>> boxes =
-        notification::close_boxes(view.layout, view.state);
-    if (boxes == view.close_boxes) {
+    view.close_boxes = notification::close_boxes(view.layout, view.state);
+    view.card_boxes = notification::card_boxes(view.layout, view.state);
+    Boxes boxes = notification::input_boxes(view.layout, view.state);
+    if (boxes == view.input_boxes) {
         return;
     }
-    view.close_boxes = std::move(boxes);
+    view.input_boxes = std::move(boxes);
     std::vector<xcb_rectangle_t> rectangles;
-    for (const auto &[id, box] : view.close_boxes) {
+    for (const auto &[id, box] : view.input_boxes) {
         rectangles.push_back({static_cast<int16_t>(box.x), static_cast<int16_t>(box.y),
                               static_cast<uint16_t>(std::ceil(box.w)),
                               static_cast<uint16_t>(std::ceil(box.h))});
@@ -118,23 +109,24 @@ void Host::handle(View &view, const xcb_generic_event_t &event) {
         if (press.detail != XCB_BUTTON_INDEX_1) {
             break;
         }
-        if (auto id = close_hit(view.close_boxes, press.event_x, press.event_y);
-            id && view.state.hide_locally(*id)) {
+        if (view.state.press(view.close_boxes, view.card_boxes, press.event_x, press.event_y,
+                             service_)) {
             sync();
         }
         break;
     }
     case XCB_MOTION_NOTIFY: {
         const auto &motion = reinterpret_cast<const xcb_motion_notify_event_t &>(event);
-        if (view.state.set_hover(close_hit(view.close_boxes, motion.event_x, motion.event_y))) {
-            view.window.set_cursor(view.state.hovered() != 0 ? CursorShape::hand
-                                                             : CursorShape::arrow);
+        if (view.state.set_pointer(view.close_boxes, view.card_boxes, motion.event_x,
+                                   motion.event_y)) {
+            view.window.set_cursor(view.state.wants_hand() ? CursorShape::hand
+                                                           : CursorShape::arrow);
             paint(view);
         }
         break;
     }
     case XCB_LEAVE_NOTIFY:
-        if (view.state.set_hover(std::nullopt)) {
+        if (view.state.clear_pointer()) {
             view.window.set_cursor(CursorShape::arrow);
             paint(view);
         }

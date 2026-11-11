@@ -32,24 +32,23 @@ void check_idle() {
     astralia::idle::Clock fresh;
     fresh.reset({"A"}, start);
     astralia::idle::Verdict early =
-        astralia::idle::idle_verdict(fresh, config, "A", start + seconds(100));
+        astralia::idle::verdict(fresh, config, "A", start + seconds(100));
     check(!early.ambient && !early.screensaver, "nothing shows before the ambient timeout");
     astralia::idle::Verdict ambient =
-        astralia::idle::idle_verdict(fresh, config, "A", start + seconds(200));
+        astralia::idle::verdict(fresh, config, "A", start + seconds(200));
     check(ambient.ambient && !ambient.screensaver, "the ambient overlay comes first");
     astralia::idle::Verdict saver =
-        astralia::idle::idle_verdict(fresh, config, "A", start + seconds(400));
+        astralia::idle::verdict(fresh, config, "A", start + seconds(400));
     check(saver.ambient && saver.screensaver, "the screensaver follows");
     config.idle_enabled = false;
-    astralia::idle::Verdict off =
-        astralia::idle::idle_verdict(fresh, config, "A", start + seconds(400));
+    astralia::idle::Verdict off = astralia::idle::verdict(fresh, config, "A", start + seconds(400));
     check(!off.ambient && !off.screensaver, "disabled idle management shows nothing");
     config.idle_enabled = true;
     config.monitor_overrides["A"].enabled = true;
     config.monitor_overrides["A"].ambient_timeout = 10;
     config.monitor_overrides["A"].screensaver_enabled = false;
     astralia::idle::Verdict overridden =
-        astralia::idle::idle_verdict(fresh, config, "A", start + seconds(400));
+        astralia::idle::verdict(fresh, config, "A", start + seconds(400));
     check(overridden.ambient && !overridden.screensaver,
           "an override picks its own timeout and switches");
 

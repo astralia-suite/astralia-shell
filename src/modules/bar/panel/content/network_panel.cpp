@@ -14,7 +14,7 @@ namespace {
 
 namespace cfg = panel_config;
 
-enum Action { wifi = 1, rescan, dismiss_error, connect, forget, cancel, confirm };
+enum Action { wifi = 1, rescan, dismiss_error, connect, forget, cancel, confirm, open_portal };
 
 constexpr uint64_t anim_owner = 10000;
 constexpr ui::TextStyle text_style{ui::FontFamily::text, cfg::text_px};
@@ -257,6 +257,9 @@ void NetworkPanel::paint(ui::Canvas &canvas, const ui::Box &view, float scroll, 
             int index = static_cast<int>(std::ranges::distance(
                 network_.networks().begin(), network_.networks().find(info.ssid)));
             widgets::device_row(canvas, box, device, paint, connect, forget, index);
+            if (portal) {
+                paint.region(box, open_portal);
+            }
             break;
         }
         case Kind::spacer:
@@ -371,6 +374,9 @@ bool NetworkPanel::activate(const PanelRegion &region, double, double) {
         return true;
     case dismiss_error:
         network_.clear_error();
+        return true;
+    case open_portal:
+        network_.open_portal();
         return true;
     case connect:
     case forget: {

@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "core/log.h"
+#include "core/spawn.h"
 
 #include "service/notification_service.h"
 
@@ -66,15 +67,25 @@ NotificationService::NotificationService(Reactor &loop)
 
 void NotificationService::dismiss(uint32_t id) { close(id, reason_dismissed); }
 
+void NotificationService::click(uint32_t id) {
+    auto it = std::ranges::find(list_, id, &Notification::id);
+    if (it == list_.end() || it->click_command.empty()) {
+        return;
+    }
+    spawn_detached(it->click_command);
+    close(id, reason_dismissed);
+}
+
 uint32_t NotificationService::post(std::string app, std::string summary, std::string body,
-                                   int32_t expire_timeout) {
-    return notify(std::move(app), 0, std::move(summary), std::move(body), {}, expire_timeout);
+                                   int32_t expire_timeout, std::string click_command) {
+    return notify(std::move(app), 0, std::move(summary), std::move(body), {}, expire_timeout,
+                  std::move(click_command));
 }
 
 uint32_t NotificationService::notify(std::string app, uint32_t replaces_id, std::string summary,
                                      std::string body,
                                      const std::map<std::string, sdbus::Variant> &hints,
-                                     int32_t expire_timeout) {
+                                     int32_t expire_timeout, std::string click_command) {
     uint8_t urgency = notification_urgency_normal;
     if (auto hint = hints.find("urgency");
         hint != hints.end() && hint->second.containsValueOfType<uint8_t>()) {
@@ -82,8 +93,9 @@ uint32_t NotificationService::notify(std::string app, uint32_t replaces_id, std:
     }
     std::chrono::milliseconds timeout = notification_timeout(expire_timeout);
     auto now = std::chrono::steady_clock::now();
-    Notification entry{0,   std::move(app), std::move(summary), std::move(body), urgency, timeout,
-                       now, now + timeout};
+    Notification entry{
+        0,   std::move(app), std::move(summary),      std::move(body), urgency, timeout,
+        now, now + timeout,  std::move(click_command)};
     auto replaced = std::ranges::find(list_, replaces_id, &Notification::id);
     if (replaces_id != 0 && replaced != list_.end()) {
         entry.id = replaces_id;

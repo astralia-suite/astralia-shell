@@ -28,7 +28,7 @@ struct State {
     OverlayPanelBase base;
     Renderer *renderer = nullptr;
     GlCanvas canvas;
-    Model model{logout_commands(true)};
+    Model model{commands(true)};
     bool opened_by_widget = false;
     std::string logo_path;
     wl_output *bound_output = nullptr;

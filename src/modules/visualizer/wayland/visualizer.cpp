@@ -198,7 +198,7 @@ void apply_params(State &state, const VisualizerParams &params) {
     state.thread_state->cv.notify_one();
 }
 
-void visualizer_shutdown(State &state) {
+void shutdown(State &state) {
     state.capture.stop();
 
     if (state.thread_state) {
@@ -242,7 +242,7 @@ void toggle(State &state, WaylandState &app) {
     }
 
     state.base.open = false;
-    visualizer_shutdown(state);
+    shutdown(state);
     toplevel_window_destroy_surface(state.base);
     app_detail::rest_egl_current(app);
 }
@@ -262,7 +262,7 @@ namespace {
 
 class Adapter final : public Module {
   public:
-    ~Adapter() override { visualizer_shutdown(state_); }
+    ~Adapter() override { shutdown(state_); }
 
     const char *name() const override { return "visualizer"; }
     bool is_open() const override { return state_.base.open; }

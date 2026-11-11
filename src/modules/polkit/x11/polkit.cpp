@@ -80,7 +80,7 @@ void Host::handle(const xcb_generic_event_t &event) {
 }
 
 void Host::paint() {
-    model_.set_prompt(polkit_prompt(service_));
+    model_.set_prompt(prompt(service_));
     const OutputGeometry &geometry = window_.geometry();
     cairo_t *cr = window_.cr();
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);

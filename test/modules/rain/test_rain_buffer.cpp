@@ -33,7 +33,7 @@ template <typename Rain> void check_rain(const char *name) {
                 name);
     test::check(!has_ink(copy(frame)), "a fresh buffer is transparent");
 
-    astralia::rain::rain_seed(7);
+    astralia::rain::seed(7);
     rain.rebuild(480, 600, true);
     for (int i = 0; i < 40; ++i) {
         rain.tick();
@@ -41,7 +41,7 @@ template <typename Rain> void check_rain(const char *name) {
     std::vector<uint8_t> first = copy(rain.frame());
     test::check(has_ink(first), "ticking draws");
 
-    astralia::rain::rain_seed(7);
+    astralia::rain::seed(7);
     rain.rebuild(480, 600, true);
     for (int i = 0; i < 40; ++i) {
         rain.tick();
