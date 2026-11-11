@@ -44,6 +44,8 @@ FILE *&state_file() {
     return file;
 }
 
+bool stderr_is_log = false;
+
 void emit(std::string_view level, std::string_view message) {
     timeval tv;
     gettimeofday(&tv, nullptr);
@@ -51,7 +53,7 @@ void emit(std::string_view level, std::string_view message) {
     tm local{};
     localtime_r(&tv.tv_sec, &local);
     std::strftime(stamp, sizeof stamp, "%Y-%m-%d %H:%M:%S", &local);
-    FILE *outs[2] = {stderr, state_file()};
+    FILE *outs[2] = {stderr_is_log ? nullptr : stderr, state_file()};
     for (FILE *out : outs) {
         if (!out) {
             continue;
@@ -83,7 +85,7 @@ void crash_handler(int sig) {
     int n = backtrace(frames, 64);
     char header[64];
     int header_len = std::snprintf(header, sizeof header, "astralia: crashed on signal %d\n", sig);
-    int fds[2] = {STDERR_FILENO, state_file() ? fileno(state_file()) : -1};
+    int fds[2] = {stderr_is_log ? -1 : STDERR_FILENO, state_file() ? fileno(state_file()) : -1};
     for (int fd : fds) {
         if (fd < 0) {
             continue;
@@ -91,7 +93,19 @@ void crash_handler(int sig) {
         (void)!::write(fd, header, static_cast<std::size_t>(header_len));
         backtrace_symbols_fd(frames, n, fd);
     }
-    _exit(128 + sig);
+    raise(sig);
+}
+
+void redirect_null_stderr() {
+    struct stat err{};
+    struct stat null{};
+    if (!state_file() || fstat(STDERR_FILENO, &err) != 0 || stat("/dev/null", &null) != 0 ||
+        err.st_rdev != null.st_rdev || !S_ISCHR(err.st_mode)) {
+        return;
+    }
+    if (dup2(fileno(state_file()), STDERR_FILENO) >= 0) {
+        stderr_is_log = true;
+    }
 }
 
 } // namespace
@@ -109,11 +123,13 @@ void writef(std::string_view level, const char *fmt, ...) {
 
 void install_crash_handler() {
     state_file();
+    redirect_null_stderr();
     void *warmup[8];
     backtrace(warmup, 8);
     std::set_terminate(terminate_handler);
     struct sigaction sa{};
     sa.sa_handler = crash_handler;
+    sa.sa_flags = SA_RESETHAND;
     sigemptyset(&sa.sa_mask);
     for (int sig : {SIGSEGV, SIGABRT, SIGBUS, SIGILL, SIGFPE}) {
         sigaction(sig, &sa, nullptr);
