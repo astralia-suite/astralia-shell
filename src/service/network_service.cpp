@@ -12,6 +12,7 @@
 
 #include "config/launcher_config.h"
 
+#include "core/config_file.h"
 #include "core/log.h"
 #include "core/spawn.h"
 
@@ -52,14 +53,6 @@ std::string wifi_ssid(const NetworkStatus &status) {
     return status.kind == NetworkKind::wifi ? status.ssid : std::string();
 }
 
-std::string trim(const std::string &s) {
-    std::size_t begin = s.find_first_not_of(" \t\r\n");
-    if (begin == std::string::npos) {
-        return {};
-    }
-    return s.substr(begin, s.find_last_not_of(" \t\r\n") - begin + 1);
-}
-
 std::vector<std::string> split_fields(const std::string &line) {
     std::vector<std::string> parts;
     std::string current;
@@ -82,7 +75,7 @@ std::vector<std::string> lines(const std::string &text) {
     std::istringstream stream(text);
     std::string raw;
     while (std::getline(stream, raw)) {
-        std::string line = trim(raw);
+        std::string line{trim(raw)};
         if (!line.empty()) {
             out.push_back(std::move(line));
         }
@@ -467,7 +460,7 @@ void NetworkService::finish_refresh(NetworkStatus next) {
 
 void NetworkService::check_connectivity() {
     connectivity_proc_.start(connectivity_argv(), [this](const std::string &output) {
-        std::string text = trim(output);
+        std::string text{trim(output)};
         for (char &c : text) {
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         }

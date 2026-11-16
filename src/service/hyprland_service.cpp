@@ -7,8 +7,6 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "core/json.h"
@@ -20,54 +18,36 @@ namespace astralia {
 
 namespace {
 
-constexpr timeval request_timeout{0, 100000};
+constexpr std::chrono::milliseconds request_timeout{100};
 constexpr int workspaces_per_monitor = 5;
 constexpr const char *swap_temp_workspace = "special:__tmp_swp";
 constexpr std::chrono::milliseconds client_poll_interval{1000};
 constexpr std::chrono::milliseconds client_poll_idle = std::chrono::hours(1);
 
-int connect_socket(const std::string &path) {
-    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-    if (fd < 0) {
-        return -1;
-    }
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
-    if (connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof addr) < 0) {
-        close(fd);
-        return -1;
-    }
-    return fd;
-}
-
 std::string request(const std::string &socket_path, const std::string &command) {
     if (socket_path.empty()) {
         return {};
     }
-    int fd = connect_socket(socket_path);
-    if (fd < 0) {
+    UniqueFd fd = connect_unix(socket_path, request_timeout);
+    if (fd.get() < 0) {
         return {};
     }
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &request_timeout, sizeof request_timeout);
-    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &request_timeout, sizeof request_timeout);
     std::size_t sent = 0;
     while (sent < command.size()) {
-        ssize_t n = send(fd, command.data() + sent, command.size() - sent, MSG_NOSIGNAL);
+        ssize_t n = send(fd.get(), command.data() + sent, command.size() - sent, MSG_NOSIGNAL);
         if (n < 0) {
             if (errno == EINTR) {
                 continue;
             }
-            close(fd);
             return {};
         }
         sent += static_cast<std::size_t>(n);
     }
-    shutdown(fd, SHUT_WR);
+    shutdown(fd.get(), SHUT_WR);
     std::string result;
     char buffer[4096];
     for (;;) {
-        ssize_t n = recv(fd, buffer, sizeof buffer, 0);
+        ssize_t n = recv(fd.get(), buffer, sizeof buffer, 0);
         if (n > 0) {
             result.append(buffer, static_cast<std::size_t>(n));
             continue;
@@ -80,7 +60,6 @@ std::string request(const std::string &socket_path, const std::string &command) 
         }
         break;
     }
-    close(fd);
     return result;
 }
 
@@ -348,12 +327,11 @@ HyprlandCompositor::HyprlandCompositor(Reactor &loop) : loop_(loop) {
     state_.gaps_out_px = gaps_out;
     state_.hug_radius_px =
         gaps_out + hypr_parse_rounding(request(request_path_, "j/getoption decoration:rounding"));
-    int fd = connect_socket(event_path_);
-    if (fd < 0) {
+    event_fd_ = connect_unix(event_path_);
+    if (event_fd_.get() < 0) {
         log::error("hyprland: cannot connect the event socket: {}", std::strerror(errno));
     } else {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
-        event_fd_ = UniqueFd(fd);
+        fcntl(event_fd_.get(), F_SETFL, fcntl(event_fd_.get(), F_GETFL, 0) | O_NONBLOCK);
         loop_.on_fd(event_fd_.get(), [this] { read_events(); });
     }
     timer_ = loop_.add_timer([this] { return watching_ ? client_poll_interval : client_poll_idle; },
@@ -464,16 +442,6 @@ void HyprlandCompositor::apply_border_colors(Color active, Color inactive) {
     request(request_path_, "eval " + border_lua_);
 }
 
-std::vector<const CompositorClient *> HyprlandCompositor::clients_in(int workspace) const {
-    std::vector<const CompositorClient *> out;
-    for (const CompositorClient &client : state_.clients) {
-        if (client.workspace_id == workspace) {
-            out.push_back(&client);
-        }
-    }
-    return out;
-}
-
 void HyprlandCompositor::move_all(const std::vector<const CompositorClient *> &windows,
                                   const std::string &workspace_lua) {
     for (const CompositorClient *window : windows) {
@@ -495,17 +463,8 @@ void HyprlandCompositor::close_window(const std::string &address) {
 }
 
 void HyprlandCompositor::close_windows(CloseScope scope, int id) {
-    std::vector<std::string> targets;
-    for (const CompositorClient &client : state_.clients) {
-        bool match = scope == CloseScope::all ||
-                     (scope == CloseScope::workspace && client.workspace_id == id) ||
-                     (scope == CloseScope::monitor && client.monitor_id == id);
-        if (match) {
-            targets.push_back(client.address);
-        }
-    }
-    for (const std::string &address : targets) {
-        dispatch(hypr_lua_close(address));
+    for (const CompositorClient *client : clients_in(state_, scope, id)) {
+        dispatch(hypr_lua_close(client->address));
     }
     if (scope == CloseScope::all) {
         focus_workspace(1);
@@ -519,7 +478,7 @@ void HyprlandCompositor::move_workspace_in(int id, bool global) {
     if (source < 0 || source == destination) {
         return;
     }
-    move_all(clients_in(source), std::to_string(destination));
+    move_all(clients_in(state_, CloseScope::workspace, source), std::to_string(destination));
     focus_workspace(id, global);
 }
 
@@ -530,8 +489,10 @@ void HyprlandCompositor::swap_workspace(int id, bool global) {
     if (source < 0 || source == destination) {
         return;
     }
-    std::vector<const CompositorClient *> from_source = clients_in(source);
-    std::vector<const CompositorClient *> from_destination = clients_in(destination);
+    std::vector<const CompositorClient *> from_source =
+        clients_in(state_, CloseScope::workspace, source);
+    std::vector<const CompositorClient *> from_destination =
+        clients_in(state_, CloseScope::workspace, destination);
     if (from_source.empty() && from_destination.empty()) {
         return;
     }

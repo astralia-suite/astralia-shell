@@ -34,10 +34,6 @@ ScrollEntry entry_of(PanelAnchor anchor) {
     return ScrollEntry::from_right;
 }
 
-bool inside(const ui::Box &box, double x, double y) {
-    return box.w > 0 && x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
-}
-
 } // namespace
 
 Panel::Panel(std::unique_ptr<PanelContent> content, Reactor &reactor)
@@ -101,7 +97,7 @@ PanelRegion *Panel::region_at(double x, double y) {
     double lx = x - card_.x;
     double ly = y - card_.y;
     for (PanelRegion &region : regions_) {
-        if (inside(region.box, lx, ly)) {
+        if (region.box.contains(lx, ly)) {
             return &region;
         }
     }
@@ -109,7 +105,7 @@ PanelRegion *Panel::region_at(double x, double y) {
 }
 
 bool Panel::contains(double x, double y) const {
-    return open_ && (inside(card_, x, y) || inside(dialog_, x, y));
+    return open_ && (card_.contains(x, y) || dialog_.contains(x, y));
 }
 
 bool Panel::clickable(double x, double y) const {
@@ -119,7 +115,7 @@ bool Panel::clickable(double x, double y) const {
     double lx = x - card_.x;
     double ly = y - card_.y;
     return std::ranges::any_of(regions_,
-                               [&](const PanelRegion &r) { return inside(r.box, lx, ly); });
+                               [&](const PanelRegion &r) { return r.box.contains(lx, ly); });
 }
 
 bool Panel::press(double x, double y, input::Button button) {
@@ -146,7 +142,7 @@ bool Panel::press(double x, double y, input::Button button) {
         }
         return true;
     }
-    if (!inside(card_, x, y) && !inside(dialog_, x, y)) {
+    if (!card_.contains(x, y) && !dialog_.contains(x, y)) {
         if (content_->dismiss_dialog()) {
             changed();
         } else {
@@ -266,14 +262,14 @@ void Panel::paint_popup(ui::Canvas &canvas) {
 
 bool Panel::popup_clickable(double x, double y) const {
     return std::ranges::any_of(popup_regions_,
-                               [&](const PanelRegion &r) { return inside(r.box, x, y); });
+                               [&](const PanelRegion &r) { return r.box.contains(x, y); });
 }
 
 bool Panel::hover_popup(double x, double y) {
     int id = -1;
     int a = -1;
     for (const PanelRegion &region : popup_regions_) {
-        if (inside(region.box, x, y)) {
+        if (region.box.contains(x, y)) {
             id = region.id;
             a = region.a;
             break;
@@ -291,7 +287,7 @@ bool Panel::press_popup(double x, double y, input::Button button) {
         return false;
     }
     for (const PanelRegion &region : popup_regions_) {
-        if (inside(region.box, x, y)) {
+        if (region.box.contains(x, y)) {
             PanelRegion hit = region;
             content_->pressed = button;
             if (content_->activate(hit, x, y)) {

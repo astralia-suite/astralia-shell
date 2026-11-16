@@ -21,10 +21,6 @@ constexpr ScrollMetrics scroll_style{};
 constexpr uint64_t owner_indicator_x = 3;
 constexpr uint64_t owner_indicator_y = 4;
 
-bool inside(const ui::Box &box, double x, double y) {
-    return x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
-}
-
 struct Block {
     int group = 0;
     float x = 0.0f;
@@ -135,7 +131,7 @@ const Cell *Model::find_cell(int workspace) const {
 
 const Cell *Model::cell_at(double x, double y) const {
     for (const Cell &cell : layout_.cells) {
-        if (inside(cell.rect, x, y)) {
+        if (cell.rect.contains(x, y)) {
             return &cell;
         }
     }
@@ -462,7 +458,7 @@ void Model::press(double x, double y, const input::Modifiers &mods) {
     press_mods_ = mods;
     for (auto it = tiles_.rbegin(); it != tiles_.rend(); ++it) {
         ui::Box drawn = tile_rect(*it);
-        if (!inside(drawn, x, y)) {
+        if (!drawn.contains(x, y)) {
             continue;
         }
         dragging_ = true;
@@ -487,7 +483,7 @@ void Model::press(double x, double y, const input::Modifiers &mods) {
     }
     constexpr float m = cfg::margin;
     bool near_panel = std::ranges::any_of(layout_.panels, [&](const ui::Box &p) {
-        return inside({p.x - m, p.y - m, p.w + 2.0f * m, p.h + 2.0f * m}, x, y);
+        return ui::Box{p.x - m, p.y - m, p.w + 2.0f * m, p.h + 2.0f * m}.contains(x, y);
     });
     if (!near_panel && on_close_requested) {
         on_close_requested();
@@ -525,7 +521,7 @@ bool Model::clickable(double x, double y) const {
         return false;
     }
     for (const Tile &tile : tiles_) {
-        if (inside(tile_rect(tile), x, y)) {
+        if (tile_rect(tile).contains(x, y)) {
             return true;
         }
     }

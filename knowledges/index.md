@@ -281,9 +281,7 @@
 - `scroll_sequence.{h,cpp}`: `ScrollSequence`, the staged slide, unroll and content fade of every scroll.
 - `icons.h`: The Tabler icon glyph codepoints used by every backend.
 - `glyphs.h`: Volume and brightness glyph thresholds over the icon table.
-- `geometry.h`: `Box`, the one rectangle type.
-- `host.h`: The surface and host contract a backend gives a module.
-- `module_base.{h,cpp}`: Module base class with config fan-out and IPC registration over a host.
+- `geometry.h`: `Box`, the one rectangle type, with `contains` hit testing.
 - `text_field.{h,cpp}`: Text field state, key handling, UTF-8 cursor and selection editing, type animation and row slide.
 - `field_view.{h,cpp}`: Draws a text field with its caret, selection and animated characters over a canvas.
 - `marquee.{h,cpp}`: Scrolling text for labels wider than their box.
@@ -306,7 +304,7 @@
 - `brightness_service.{h,cpp}`: Backlight level through `brightnessctl`, with a `sysfs` watch and a 1% floor.
 - `icon_service.{h,cpp}`: Resolves icon-theme and window-class icon file paths.
 - `telemetry_service.{h,cpp}`: CPU and GPU temperature, usage, clock and system statistics from `sysfs` and `/proc`.
-- `compositor_service.{h,cpp}`: The `Compositor` interface, shared state types, work-area maths and `make_compositor`.
+- `compositor_service.{h,cpp}`: The `Compositor` interface, shared state types, work-area maths, `clients_in`, `connect_unix` and `make_compositor`.
 - `hyprland_service.{h,cpp}`: Hyprland compositor over its request and event sockets, with Lua dispatch, workspace paging and palette-driven window border colours.
 - `i3_service.{h,cpp}`: i3 compositor over the i3 IPC socket, with event subscription and a layout-derived window tree.
 - `shojiwm_service.{h,cpp}`: ShojiWM compositor over the config runtime's NDJSON IPC socket, with per-monitor workspaces mapped onto ten-wide id pages and a reconnecting event socket.
@@ -725,7 +723,6 @@
 ## `test/render/`
 
 - `recording_canvas.h`: A canvas that records draw calls so views are checked headless.
-- `test_module_base.cpp`: Module base config fan-out and IPC registration.
 - `test_oklab.cpp`: OKLab conversion and contrast.
 - `test_palette_extract.cpp`: Clustering, seed ranking and the ember colour.
 - `test_field_ops.cpp`: Seeded noise, ranking, blur and quantizing.

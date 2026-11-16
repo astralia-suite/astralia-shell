@@ -23,6 +23,7 @@ struct ConfigLines {
     std::vector<std::size_t> invalid;
 };
 
+std::string_view trim(std::string_view text);
 std::string config_file_path(std::string_view config_home, std::string_view home,
                              std::string_view relative);
 std::string user_config_path(std::string_view relative);

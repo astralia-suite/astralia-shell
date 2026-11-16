@@ -16,6 +16,9 @@ struct Box {
     float h = 0;
 
     bool operator==(const Box &) const = default;
+    bool contains(double px, double py) const {
+        return px >= x && px < x + w && py >= y && py < y + h;
+    }
 };
 
 } // namespace astralia::ui

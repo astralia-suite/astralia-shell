@@ -22,8 +22,6 @@ float byte_alpha(int value) { return static_cast<float>(value) / 255.0f; }
 constexpr float dusty_chroma = 0.07f;
 constexpr float candy_chroma = 0.16f;
 
-float lerp(float a, float b, float t) { return a + (b - a) * t; }
-
 float wrap_hue(float hue) {
     float h = std::fmod(hue, 360.0f);
     return h < 0.0f ? h + 360.0f : h;
@@ -67,11 +65,11 @@ Theme theme_from_seed(const Extraction &extraction) {
     float alt_hue = seed_hue(1, alt_hue_offset);
 
     float vivid = std::clamp((chroma - dusty_chroma) / (candy_chroma - dusty_chroma), 0.0f, 1.0f);
-    auto c = [vivid](float dusty, float candy) { return lerp(dusty, candy, vivid); };
+    auto c = [vivid](float dusty, float candy) { return std::lerp(dusty, candy, vivid); };
 
     float depth = depth_from_tone(extraction.tone);
-    auto l = [depth](float light, float night) { return lerp(light, night, depth); };
-    float tint = lerp(1.0f, 1.4f, depth);
+    auto l = [depth](float light, float night) { return std::lerp(light, night, depth); };
+    float tint = std::lerp(1.0f, 1.4f, depth);
 
     Oklch paper{l(0.975f, 0.27f), c(0.010f, 0.020f) * tint, hue};
     Oklch surface{l(0.945f, 0.32f), c(0.020f, 0.040f) * tint, hue};

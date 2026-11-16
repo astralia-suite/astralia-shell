@@ -108,7 +108,6 @@ class I3Compositor final : public Compositor {
     void command(const std::string &text);
     void refresh_active();
     void read_events();
-    std::vector<const CompositorClient *> clients_in(int workspace) const;
     void move_all(const std::vector<const CompositorClient *> &windows,
                   const std::string &workspace);
 

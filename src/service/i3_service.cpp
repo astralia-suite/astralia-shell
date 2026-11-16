@@ -5,8 +5,6 @@
 #include <fcntl.h>
 #include <format>
 #include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "core/log.h"
@@ -24,7 +22,7 @@ constexpr uint32_t i3_get_tree = 4;
 constexpr uint32_t i3_event_workspace = 0;
 constexpr std::size_t i3_header_size = 14;
 constexpr std::string_view i3_magic = "i3-ipc";
-constexpr timeval request_timeout{0, 250000};
+constexpr std::chrono::milliseconds request_timeout{250};
 constexpr const char *swap_temp_workspace = "__tmp_swp";
 
 struct Box {
@@ -177,22 +175,6 @@ bool read_exact(int fd, char *buffer, std::size_t size) {
     return true;
 }
 
-UniqueFd connect_to(const std::string &path) {
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    if (path.empty() || path.size() >= sizeof addr.sun_path) {
-        return {};
-    }
-    std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
-    UniqueFd fd(socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
-    if (fd.get() < 0 || connect(fd.get(), reinterpret_cast<sockaddr *>(&addr), sizeof addr) < 0) {
-        return {};
-    }
-    setsockopt(fd.get(), SOL_SOCKET, SO_RCVTIMEO, &request_timeout, sizeof request_timeout);
-    setsockopt(fd.get(), SOL_SOCKET, SO_SNDTIMEO, &request_timeout, sizeof request_timeout);
-    return fd;
-}
-
 } // namespace
 
 I3Tree i3_parse_tree(const Json &root) {
@@ -340,7 +322,7 @@ I3Compositor::I3Compositor(Reactor &loop, std::string socket_path)
         return;
     }
     refresh();
-    UniqueFd fd = connect_to(path_);
+    UniqueFd fd = connect_unix(path_, request_timeout);
     if (fd.get() < 0) {
         log::error("i3: cannot connect the event socket {}: {}", path_, std::strerror(errno));
         return;
@@ -372,7 +354,7 @@ I3Compositor::~I3Compositor() {
 }
 
 std::optional<std::string> I3Compositor::request(uint32_t type, std::string_view payload) {
-    UniqueFd fd = connect_to(path_);
+    UniqueFd fd = connect_unix(path_, request_timeout);
     if (fd.get() < 0) {
         log::error("i3: cannot connect {}: {}", path_, std::strerror(errno));
         return std::nullopt;
@@ -475,16 +457,6 @@ void I3Compositor::read_events() {
     }
 }
 
-std::vector<const CompositorClient *> I3Compositor::clients_in(int workspace) const {
-    std::vector<const CompositorClient *> out;
-    for (const CompositorClient &client : state_.clients) {
-        if (client.workspace_id == workspace) {
-            out.push_back(&client);
-        }
-    }
-    return out;
-}
-
 void I3Compositor::move_all(const std::vector<const CompositorClient *> &windows,
                             const std::string &workspace) {
     for (const CompositorClient *window : windows) {
@@ -506,17 +478,8 @@ void I3Compositor::close_window(const std::string &address) {
 }
 
 void I3Compositor::close_windows(CloseScope scope, int id) {
-    std::vector<std::string> targets;
-    for (const CompositorClient &client : state_.clients) {
-        bool match = scope == CloseScope::all ||
-                     (scope == CloseScope::workspace && client.workspace_id == id) ||
-                     (scope == CloseScope::monitor && client.monitor_id == id);
-        if (match) {
-            targets.push_back(client.address);
-        }
-    }
-    for (const std::string &address : targets) {
-        command(std::format("[con_id={}] kill", address));
+    for (const CompositorClient *client : clients_in(state_, scope, id)) {
+        command(std::format("[con_id={}] kill", client->address));
     }
     if (scope == CloseScope::all) {
         focus_workspace(1);
@@ -529,7 +492,7 @@ void I3Compositor::move_workspace_in(int id, bool) {
     if (source < 0 || source == id) {
         return;
     }
-    move_all(clients_in(source), std::format("number {}", id));
+    move_all(clients_in(state_, CloseScope::workspace, source), std::format("number {}", id));
     focus_workspace(id);
 }
 
@@ -539,8 +502,10 @@ void I3Compositor::swap_workspace(int id, bool) {
     if (source < 0 || source == id) {
         return;
     }
-    std::vector<const CompositorClient *> from_source = clients_in(source);
-    std::vector<const CompositorClient *> from_destination = clients_in(id);
+    std::vector<const CompositorClient *> from_source =
+        clients_in(state_, CloseScope::workspace, source);
+    std::vector<const CompositorClient *> from_destination =
+        clients_in(state_, CloseScope::workspace, id);
     if (from_source.empty() && from_destination.empty()) {
         return;
     }

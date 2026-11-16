@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <regex>
 
+#include "core/config_file.h"
 #include "core/spawn.h"
 
 #include "modules/launcher/desktop_entry.h"
@@ -11,14 +12,6 @@
 namespace astralia::launcher {
 
 namespace {
-
-std::string trim(const std::string &s) {
-    std::size_t b = s.find_first_not_of(" \t\n\r");
-    if (b == std::string::npos) {
-        return "";
-    }
-    return s.substr(b, s.find_last_not_of(" \t\n\r") - b + 1);
-}
 
 std::string url_encode(const std::string &text) {
     constexpr const char *hex = "0123456789ABCDEF";
@@ -62,12 +55,12 @@ std::string shell_quote(const std::string &s) {
 }
 
 std::string make_search_url(const std::string &text, const std::string &base) {
-    std::string t = trim(text);
+    std::string t{trim(text)};
     return t.empty() ? "" : base + url_encode(t);
 }
 
 std::string normalize_url(const std::string &text) {
-    std::string t = trim(text);
+    std::string t{trim(text)};
     if (t.empty()) {
         return "";
     }
@@ -101,7 +94,7 @@ std::string app_command(const DesktopEntry &entry) {
 bool launch_non_drun(LauncherMode mode, const std::string &query) {
     switch (mode) {
     case LauncherMode::run: {
-        std::string command = trim(query);
+        std::string command{trim(query)};
         if (command.empty()) {
             return false;
         }

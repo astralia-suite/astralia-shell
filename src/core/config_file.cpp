@@ -17,15 +17,6 @@ namespace astralia {
 
 namespace {
 
-std::string_view trim(std::string_view text) {
-    constexpr std::string_view space = " \t\r";
-    std::size_t first = text.find_first_not_of(space);
-    if (first == std::string_view::npos) {
-        return {};
-    }
-    return text.substr(first, text.find_last_not_of(space) - first + 1);
-}
-
 std::string_view entry_key(std::string_view line) {
     line = trim(line);
     std::size_t equals = line.find('=');
@@ -44,6 +35,15 @@ template <typename Visit> void for_each_line(std::string_view text, Visit visit)
 }
 
 } // namespace
+
+std::string_view trim(std::string_view text) {
+    constexpr std::string_view space = " \t\r\n";
+    std::size_t first = text.find_first_not_of(space);
+    if (first == std::string_view::npos) {
+        return {};
+    }
+    return text.substr(first, text.find_last_not_of(space) - first + 1);
+}
 
 std::string config_file_path(std::string_view config_home, std::string_view home,
                              std::string_view relative) {

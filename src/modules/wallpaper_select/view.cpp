@@ -20,8 +20,6 @@ namespace cfg = wallpaper_select_config;
 
 constexpr ui::TextStyle label_style{ui::FontFamily::text, cfg::label_px, true};
 
-float lerp(float a, float b, float t) { return a + (b - a) * t; }
-
 void draw_cover(ui::Canvas &canvas, const ui::Box &inner, float radius, ui::ImageId image,
                 float reveal) {
     canvas.begin_group(inner, {.clip = true, .radius = radius});
@@ -51,7 +49,7 @@ void draw_card(ui::Canvas &canvas, const ui::Box &box, ui::ImageId image, float 
 }
 
 float neighbour_scale(float distance) {
-    return lerp(1.0f, cfg::neighbour_scale, std::min(distance, 1.0f));
+    return std::lerp(1.0f, cfg::neighbour_scale, std::min(distance, 1.0f));
 }
 
 float centre_offset(float distance, float width) {
@@ -95,7 +93,7 @@ void paint(ui::Canvas &canvas, Model &model, float width, float height) {
     float target_h = height * cfg::card_scale;
     float stack_h = target_h + cfg::label_gap + cfg::label_height;
     float target_cy = (height - stack_h) / 2.0f + target_h / 2.0f;
-    float grow = lerp(cfg::appear_scale, 1.0f, appear);
+    float grow = std::lerp(cfg::appear_scale, 1.0f, appear);
     float card_w = width * cfg::card_scale * grow;
     float card_h = target_h * grow;
     float cx = x0 + width / 2.0f;

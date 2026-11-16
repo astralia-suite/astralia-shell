@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -12,6 +13,7 @@
 
 #include "core/reactor.h"
 #include "core/signal.h"
+#include "core/unique_fd.h"
 
 #include "render/tokens.h"
 
@@ -103,6 +105,13 @@ pair_toplevels(const std::vector<CompositorClient> &clients,
                const std::vector<ToplevelIdentity> &toplevels);
 
 enum class CloseScope { workspace, monitor, all };
+
+// Clients on workspace or monitor `id`, or every client for `CloseScope::all`.
+std::vector<const CompositorClient *> clients_in(const CompositorState &state, CloseScope scope,
+                                                 int id);
+
+// Blocking unix stream socket; a zero `timeout` leaves send and receive unbounded.
+UniqueFd connect_unix(const std::string &path, std::chrono::milliseconds timeout = {});
 
 class Compositor {
   public:

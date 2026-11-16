@@ -58,10 +58,6 @@ bool flag(const Properties &properties, const std::string &name) {
     return property<bool>(properties, name).value_or(false);
 }
 
-std::string connected_device(const BluetoothStatus &status) {
-    return status.connected ? status.device : std::string();
-}
-
 struct RfkillEntry {
     bool soft = false;
     bool hard = false;
@@ -308,17 +304,24 @@ BluetoothSnapshot bluetooth_parse(const BluetoothObjects &objects,
     return snapshot;
 }
 
-std::vector<StatusMessage> bluetooth_changes(const BluetoothStatus &prev,
-                                             const BluetoothStatus &next) {
-    std::string was = connected_device(prev);
-    std::string now = connected_device(next);
-    if (now == was && prev.connected == next.connected) {
-        return {};
+std::vector<StatusMessage> bluetooth_changes(const std::vector<BluetoothDevice> &prev,
+                                             const std::vector<BluetoothDevice> &next) {
+    auto connected = [](const std::vector<BluetoothDevice> &devices, const std::string &path) {
+        auto it = std::ranges::find(devices, path, &BluetoothDevice::path);
+        return it != devices.end() && it->connected;
+    };
+    std::vector<StatusMessage> messages;
+    for (const BluetoothDevice &device : prev) {
+        if (device.connected && !connected(next, device.path)) {
+            messages.push_back({"Disconnected", "Disconnected from " + device.name});
+        }
     }
-    if (next.connected) {
-        return {{"Connected", "Connected to " + now}};
+    for (const BluetoothDevice &device : next) {
+        if (device.connected && !connected(prev, device.path)) {
+            messages.push_back({"Connected", "Connected to " + device.name});
+        }
     }
-    return {{"Disconnected", "Disconnected from " + was}};
+    return messages;
 }
 
 BluetoothService::BluetoothService(Bus &bus) : bus_(bus), root_(bus_.proxy(bluez, "/")) {
@@ -384,11 +387,11 @@ void BluetoothService::apply(const BluetoothObjects &objects) {
     if (next.status == status_ && next.devices == devices_) {
         return;
     }
-    BluetoothStatus prev = status_;
+    std::vector<BluetoothDevice> prev = std::move(devices_);
     status_ = next.status;
     devices_ = std::move(next.devices);
     if (!first) {
-        for (const StatusMessage &message : bluetooth_changes(prev, status_)) {
+        for (const StatusMessage &message : bluetooth_changes(prev, devices_)) {
             messages.emit(message);
         }
     }

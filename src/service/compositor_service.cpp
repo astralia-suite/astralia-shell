@@ -1,6 +1,10 @@
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/un.h>
 
 #include "core/log.h"
 
@@ -10,6 +14,39 @@
 #include "service/shojiwm_service.h"
 
 namespace astralia {
+
+std::vector<const CompositorClient *> clients_in(const CompositorState &state, CloseScope scope,
+                                                 int id) {
+    std::vector<const CompositorClient *> out;
+    for (const CompositorClient &client : state.clients) {
+        if (scope == CloseScope::all ||
+            (scope == CloseScope::workspace && client.workspace_id == id) ||
+            (scope == CloseScope::monitor && client.monitor_id == id)) {
+            out.push_back(&client);
+        }
+    }
+    return out;
+}
+
+UniqueFd connect_unix(const std::string &path, std::chrono::milliseconds timeout) {
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    if (path.empty() || path.size() >= sizeof addr.sun_path) {
+        return {};
+    }
+    std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
+    UniqueFd fd(socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
+    if (fd.get() < 0 || connect(fd.get(), reinterpret_cast<sockaddr *>(&addr), sizeof addr) < 0) {
+        return {};
+    }
+    if (timeout.count() > 0) {
+        timeval tv{static_cast<time_t>(timeout.count() / 1000),
+                   static_cast<suseconds_t>(timeout.count() % 1000 * 1000)};
+        setsockopt(fd.get(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
+        setsockopt(fd.get(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
+    }
+    return fd;
+}
 
 WorkArea compositor_work_area(const CompositorMonitor &monitor) {
     bool rotated = monitor.transform % 2 == 1;

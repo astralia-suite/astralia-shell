@@ -25,7 +25,6 @@ void check_scroll_sequence();
 void check_theme();
 void check_input();
 void check_text_cursor();
-void check_module_base();
 void check_glyph_thresholds();
 void check_async_process();
 void check_deferred_call();
@@ -119,7 +118,6 @@ int main() {
     check_theme();
     check_input();
     check_text_cursor();
-    check_module_base();
     check_glyph_thresholds();
     check_async_process();
     check_deferred_call();

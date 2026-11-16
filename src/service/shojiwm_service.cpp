@@ -6,8 +6,6 @@
 #include <cstring>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "core/log.h"
@@ -18,29 +16,13 @@ namespace astralia {
 
 namespace {
 
-constexpr timeval request_timeout{0, 250000};
+constexpr std::chrono::milliseconds request_timeout{250};
 constexpr std::chrono::milliseconds reconnect_interval{2000};
 constexpr std::size_t reply_limit = 4 * 1024 * 1024;
 
 std::string environment_value(const char *name) {
     const char *value = std::getenv(name);
     return value != nullptr ? value : "";
-}
-
-UniqueFd connect_to(const std::string &path) {
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    if (path.empty() || path.size() >= sizeof addr.sun_path) {
-        return {};
-    }
-    std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
-    UniqueFd fd(socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
-    if (fd.get() < 0 || connect(fd.get(), reinterpret_cast<sockaddr *>(&addr), sizeof addr) < 0) {
-        return {};
-    }
-    setsockopt(fd.get(), SOL_SOCKET, SO_RCVTIMEO, &request_timeout, sizeof request_timeout);
-    setsockopt(fd.get(), SOL_SOCKET, SO_SNDTIMEO, &request_timeout, sizeof request_timeout);
-    return fd;
 }
 
 bool send_all(int fd, std::string_view data) {
@@ -291,7 +273,7 @@ ShojiCompositor::~ShojiCompositor() {
 }
 
 void ShojiCompositor::connect_events() {
-    UniqueFd fd = connect_to(path_);
+    UniqueFd fd = connect_unix(path_, request_timeout);
     if (fd.get() < 0) {
         return;
     }
@@ -303,7 +285,7 @@ void ShojiCompositor::connect_events() {
 }
 
 std::optional<Json> ShojiCompositor::call(std::string_view method, const Json &params) {
-    UniqueFd fd = connect_to(path_);
+    UniqueFd fd = connect_unix(path_, request_timeout);
     if (fd.get() < 0) {
         log::error("ShojiWM: cannot connect {}: {}", path_, std::strerror(errno));
         return std::nullopt;

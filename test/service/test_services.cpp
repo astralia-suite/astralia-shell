@@ -63,16 +63,31 @@ void check_status_changes() {
           "any HTTP reply counts as reachable");
     check(portal_command.ends_with("astralia-open browser http://httpforever.com"),
           "the primary URL opens when every probe fails");
-    astralia::BluetoothStatus idle{true, true, false, ""};
-    astralia::BluetoothStatus buds{true, true, true, "Buds"};
+    using Devices = std::vector<astralia::BluetoothDevice>;
+    auto device = [](std::string path, std::string name, bool connected) {
+        astralia::BluetoothDevice d;
+        d.path = std::move(path);
+        d.name = std::move(name);
+        d.connected = connected;
+        return d;
+    };
+    auto buds_off = device("/dev_F8", "Buds", false);
+    auto buds_on = device("/dev_F8", "Buds", true);
+    auto kbd_on = device("/dev_D1", "Kbd", true);
+    Devices idle{buds_off};
+    Devices buds{buds_on};
     check(astralia::bluetooth_changes(idle, idle).empty(), "unchanged Bluetooth sends nothing");
-    check(astralia::bluetooth_changes(idle, {true, false, false, ""}).empty(),
-          "power off sends nothing");
     check(astralia::bluetooth_changes(idle, buds) == Messages{{"Connected", "Connected to Buds"}},
           "Bluetooth connect");
     check(astralia::bluetooth_changes(buds, idle) ==
               Messages{{"Disconnected", "Disconnected from Buds"}},
           "Bluetooth disconnect");
+    check(astralia::bluetooth_changes(buds, {kbd_on, buds_on}) ==
+              Messages{{"Connected", "Connected to Kbd"}},
+          "second device connect names only that device");
+    check(astralia::bluetooth_changes({kbd_on, buds_on}, buds) ==
+              Messages{{"Disconnected", "Disconnected from Kbd"}},
+          "second device drop does not re-announce the first");
 }
 
 void check_network_parse() {

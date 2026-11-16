@@ -16,10 +16,6 @@ namespace {
 
 namespace cfg = bar_layout;
 
-bool inside(const ui::Box &box, double x, double y) {
-    return box.w > 0.0f && x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
-}
-
 } // namespace
 
 const char *wifi_glyph(int strength) {
@@ -275,7 +271,7 @@ bool Model::hover(std::optional<double> x, std::optional<double> y, Clock::time_
     if (x && y) {
         for (size_t i = 0; i < item_count; ++i) {
             const ItemView &view = items_[i];
-            if (view.visible && inside(view.box, *x, *y)) {
+            if (view.visible && view.box.contains(*x, *y)) {
                 hovered_ = static_cast<Item>(i);
                 break;
             }
@@ -322,7 +318,7 @@ Action Model::press(double x, double y) const {
         if (id == Item::notifications) {
             continue;
         }
-        if (view.visible && inside(view.box, x, y)) {
+        if (view.visible && view.box.contains(x, y)) {
             if (id == Item::active_window) {
                 return {ActionKind::overview};
             }
@@ -332,7 +328,7 @@ Action Model::press(double x, double y) const {
     for (const WorkspaceSlot &ws : workspaces_) {
         float gap = style_->workspace_gap;
         ui::Box hit{ws.box.x - gap / 2.0f, 0.0f, ws.box.w + gap, layout_.height};
-        if (inside(hit, x, y)) {
+        if (hit.contains(x, y)) {
             return {ActionKind::workspace, Item::count, ws.id};
         }
     }

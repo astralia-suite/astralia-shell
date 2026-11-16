@@ -31,6 +31,7 @@ Behaviour of the window managers behind the `Compositor` interface. Sources: `sr
 
 ## Shared
 
+- Connect compositor sockets through `connect_unix` and select clients by workspace or monitor through `clients_in`. Do not re-add per-backend copies.
 - Refresh compositor state before an overlay reads it on open. Event-driven state can be stale by then.
 - Compositor state is not ready when the first monitor's surface is created. Sizing from it needs a later catch-up.
 - `Config::palette_source` picks the theme. `default_palette` is the fixed Keqing extraction and ignores the wallpaper; `region_capture` extracts from the wallpaper that `capture_monitor` and `capture_column` choose. A fixed `ThemeSource` applies synchronously.

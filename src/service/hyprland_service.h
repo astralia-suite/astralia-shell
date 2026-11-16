@@ -60,7 +60,6 @@ class HyprlandCompositor final : public Compositor {
   private:
     void read_events();
     void dispatch(const std::string &lua);
-    std::vector<const CompositorClient *> clients_in(int workspace) const;
     void move_all(const std::vector<const CompositorClient *> &windows,
                   const std::string &workspace_lua);
 
