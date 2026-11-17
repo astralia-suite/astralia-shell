@@ -285,7 +285,7 @@
 - `text_field.{h,cpp}`: Text field state, key handling, UTF-8 cursor and selection editing, type animation and row slide.
 - `field_view.{h,cpp}`: Draws a text field with its caret, selection and animated characters over a canvas.
 - `marquee.{h,cpp}`: Scrolling text for labels wider than their box.
-- `decode.{h,cpp}`: The one image decoder: `stb_image`, `resvg` and reduced-size `libjpeg` into an RGBA buffer.
+- `decode.{h,cpp}`: The one image decoder: `stb_image`, `librsvg` and reduced-size `libjpeg` into an RGBA buffer.
 - `app_fonts.{h,cpp}`: Registers the bundled fonts with fontconfig and holds the unhinted icon font options.
 
 ## `src/service/`

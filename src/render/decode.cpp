@@ -1,10 +1,12 @@
 #include <algorithm>
+#include <bit>
+#include <cairo.h>
 #include <cmath>
 #include <csetjmp>
 #include <cstdio>
 #include <cstring>
 #include <jpeglib.h>
-#include <resvg/resvg.h>
+#include <librsvg/rsvg.h>
 #include <string_view>
 
 #include "render/decode.h"
@@ -47,9 +49,19 @@ struct JpegError {
     std::jmp_buf jump;
 };
 
-struct DestroyTree {
-    void operator()(resvg_render_tree *tree) const { resvg_tree_destroy(tree); }
+struct UnrefHandle {
+    void operator()(RsvgHandle *handle) const { g_object_unref(handle); }
 };
+
+struct DestroySurface {
+    void operator()(cairo_surface_t *surface) const { cairo_surface_destroy(surface); }
+};
+
+std::string take_error(GError *&error, const char *fallback) {
+    std::string message = error != nullptr ? error->message : fallback;
+    g_clear_error(&error);
+    return message;
+}
 
 enum class Format { jpeg, svg, other };
 
@@ -112,28 +124,58 @@ std::expected<Pixels, std::string> decode_jpeg(std::FILE *file,
 
 std::expected<Pixels, std::string> decode_svg(const std::string &path, int fit_width,
                                               int fit_height) {
-    static resvg_options *options = resvg_options_create();
-    resvg_render_tree *raw = nullptr;
-    if (int32_t status = resvg_parse_tree_from_file(path.c_str(), options, &raw);
-        status != RESVG_OK) {
-        return std::unexpected("resvg error " + std::to_string(status));
+    GError *error = nullptr;
+    std::unique_ptr<RsvgHandle, UnrefHandle> handle(
+        rsvg_handle_new_from_file(path.c_str(), &error));
+    if (!handle) {
+        return std::unexpected(take_error(error, "svg load failed"));
     }
-    std::unique_ptr<resvg_render_tree, DestroyTree> tree(raw);
-    resvg_size size = resvg_get_image_size(tree.get());
-    if (size.width <= 0 || size.height <= 0) {
+    double width = 0;
+    double height = 0;
+    if (!rsvg_handle_get_intrinsic_size_in_pixels(handle.get(), &width, &height)) {
+        gboolean has_viewbox = FALSE;
+        RsvgRectangle viewbox{};
+        rsvg_handle_get_intrinsic_dimensions(handle.get(), nullptr, nullptr, nullptr, nullptr,
+                                             &has_viewbox, &viewbox);
+        if (has_viewbox) {
+            width = viewbox.width;
+            height = viewbox.height;
+        }
+    }
+    if (width <= 0 || height <= 0) {
         return std::unexpected(std::string("empty svg"));
     }
-    double scale = fit_width > 0 && fit_height > 0
-                       ? std::min(fit_width / size.width, fit_height / size.height)
-                       : 1.0;
+    double scale =
+        fit_width > 0 && fit_height > 0 ? std::min(fit_width / width, fit_height / height) : 1.0;
     Pixels pixels;
-    pixels.width = std::max(1, static_cast<int>(std::lround(size.width * scale)));
-    pixels.height = std::max(1, static_cast<int>(std::lround(size.height * scale)));
+    pixels.width = std::max(1, static_cast<int>(std::lround(width * scale)));
+    pixels.height = std::max(1, static_cast<int>(std::lround(height * scale)));
     pixels.premultiplied = true;
-    pixels.data.reset(new uint8_t[static_cast<size_t>(pixels.width) * pixels.height * 4]());
-    resvg_transform transform{static_cast<float>(scale), 0, 0, static_cast<float>(scale), 0, 0};
-    resvg_render(tree.get(), transform, static_cast<uint32_t>(pixels.width),
-                 static_cast<uint32_t>(pixels.height), reinterpret_cast<char *>(pixels.data.get()));
+    size_t count = static_cast<size_t>(pixels.width) * pixels.height;
+    pixels.data.reset(new uint8_t[count * 4]());
+    int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, pixels.width);
+    if (stride != pixels.width * 4) {
+        return std::unexpected(std::string("unexpected cairo stride"));
+    }
+    std::unique_ptr<cairo_surface_t, DestroySurface> surface(cairo_image_surface_create_for_data(
+        pixels.data.get(), CAIRO_FORMAT_ARGB32, pixels.width, pixels.height, stride));
+    cairo_t *context = cairo_create(surface.get());
+    RsvgRectangle viewport{0, 0, static_cast<double>(pixels.width),
+                           static_cast<double>(pixels.height)};
+    gboolean rendered = rsvg_handle_render_document(handle.get(), context, &viewport, &error);
+    cairo_destroy(context);
+    cairo_surface_flush(surface.get());
+    if (!rendered) {
+        return std::unexpected(take_error(error, "svg render failed"));
+    }
+    uint8_t *pixel = pixels.data.get();
+    for (size_t i = 0; i < count; ++i, pixel += 4) {
+        if constexpr (std::endian::native == std::endian::little) {
+            std::swap(pixel[0], pixel[2]);
+        } else {
+            std::rotate(pixel, pixel + 1, pixel + 4);
+        }
+    }
     return pixels;
 }
 

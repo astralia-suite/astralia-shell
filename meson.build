@@ -19,9 +19,9 @@ polkit_agent_dep = dependency('polkit-agent-1', include_type: 'system')
 pam_dep = meson.get_compiler('cpp').find_library('pam')
 
 deps = [sdbus_cpp_dep, threads_dep, libpipewire_dep, polkit_agent_dep, pam_dep]
-resvg_dep = dependency('resvg', include_type: 'system')
+rsvg_dep = dependency('librsvg-2.0', include_type: 'system')
 render_deps = [
-  resvg_dep,
+  rsvg_dep,
   dependency('libjpeg', include_type: 'system'),
   dependency('cairo', include_type: 'system'),
   dependency('fontconfig', include_type: 'system'),
@@ -308,7 +308,7 @@ if wayland_enabled
     dependency('pangocairo'),
     dependency('xkbcommon'),
     dependency('libjpeg'),
-    resvg_dep,
+    rsvg_dep,
     libdrm_dep,
     dependency('glib-2.0'),
     dependency('gio-2.0'),
@@ -461,7 +461,7 @@ if x11_enabled
     dependency('cairo-xcb', include_type: 'system'),
     dependency('pangocairo', include_type: 'system'),
     dependency('fontconfig', include_type: 'system'),
-    resvg_dep,
+    rsvg_dep,
     dependency('libjpeg', include_type: 'system'),
     dependency('xkbcommon', include_type: 'system'),
     dependency('xkbcommon-x11', include_type: 'system'),

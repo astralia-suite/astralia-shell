@@ -20,7 +20,7 @@ JOBS="${ASTRALIA_SHELL_BUILD_JOBS:-$(nproc)}"
 
 cmd_setup() {
     local backend="${1:-all}"
-    local common=(meson ninja gcc clang pkgconf cairo pango fontconfig glib2 stb resvg libjpeg-turbo sdbus-cpp libxkbcommon polkit libpipewire pipewire wireplumber bluez networkmanager upower fd brightnessctl pam)
+    local common=(meson ninja gcc clang pkgconf cairo pango fontconfig glib2 stb librsvg libjpeg-turbo sdbus-cpp libxkbcommon polkit libpipewire pipewire wireplumber bluez networkmanager upower fd brightnessctl pam)
     local wayland=(ffmpeg mesa libglvnd libdrm wayland wayland-protocols nlohmann-json)
     local x11=(libxcb xcb-util-wm xcb-util-keysyms xcb-util-cursor libxkbcommon-x11 xorg-server-xephyr)
     case "$backend" in
