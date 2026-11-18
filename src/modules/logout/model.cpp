@@ -124,11 +124,9 @@ void Model::start_exit_burst() {
 }
 
 void Model::start_slashes() {
-    if (!exiting_) {
-        animations_.animate(
-            0.0f, 1.0f, cfg::charge_ms, astralia::Easing::Linear, [this](float v) { charge_ = v; },
-            {}, owner_charge);
-    }
+    animations_.animate(
+        0.0f, 1.0f, cfg::charge_ms, astralia::Easing::Linear, [this](float v) { charge_ = v; }, {},
+        owner_charge);
     float step = cfg::slash_ms * cfg::slash_advance_frac;
     for (int e = 0; e < count; ++e) {
         auto idx = static_cast<size_t>(e);

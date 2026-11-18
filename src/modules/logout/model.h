@@ -47,10 +47,9 @@ class Model {
                (1.0f - std::min(burst_ / logout_config::scrim_out_frac, 1.0f));
     }
     float flash() const {
-        return burst_ > 0.0f && !exiting_
-                   ? logout_config::flash_peak *
-                         (1.0f - std::min(burst_ / logout_config::flash_frac, 1.0f))
-                   : 0.0f;
+        return burst_ > 0.0f ? logout_config::flash_peak *
+                                   (1.0f - std::min(burst_ / logout_config::flash_frac, 1.0f))
+                             : 0.0f;
     }
     const Floats &slash() const { return slash_; }
     const Floats &travel() const { return travel_; }
