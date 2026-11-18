@@ -72,6 +72,7 @@ Sources bar_sources(WaylandState &app, const std::string &output) {
     sources.network = app.network.get();
     sources.notifications = app.notifications.get();
     sources.brightness = app.brightness_service.get();
+    sources.tray_occupied = [&app] { return !app.tray->items().empty(); };
     sources.compositor = [&app]() -> const astralia::CompositorState & {
         return app.desktop->state();
     };

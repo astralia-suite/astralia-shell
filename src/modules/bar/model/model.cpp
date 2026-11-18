@@ -88,7 +88,7 @@ void Model::refresh(Clock::time_point now) {
         view.alert = false;
     };
     set(Item::logout, icon::power, "Logout", true);
-    set(Item::tray, icon::tray, "Tray", true);
+    set(Item::tray, icon::tray, "Tray", sources_.tray_occupied && sources_.tray_occupied());
     set(Item::resource, icon::cpu, "Resource", sources_.resource);
     set(Item::media, icon::music_note, "Media", true);
     std::tm local = wall_local_time();

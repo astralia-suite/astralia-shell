@@ -35,6 +35,7 @@ struct Sources {
     NotificationService *notifications = nullptr;
     BrightnessService *brightness = nullptr;
     std::function<const CompositorState &()> compositor;
+    std::function<bool()> tray_occupied;
     std::string output;
     bool resource = false;
     int workspace_slots = 0;

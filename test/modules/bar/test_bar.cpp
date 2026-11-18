@@ -48,6 +48,7 @@ astralia::bar::Sources make_sources(const astralia::CompositorState &state) {
     astralia::bar::Sources sources;
     sources.compositor = [&state]() -> const astralia::CompositorState & { return state; };
     sources.output = "DP-1";
+    sources.tray_occupied = [] { return true; };
     return sources;
 }
 
@@ -183,7 +184,7 @@ void check_bar_layout() {
                 "items without a source are hidden");
     test::check(model.item(astralia::bar::Item::tray).visible &&
                     model.item(astralia::bar::Item::network).visible == false,
-                "the tray is always shown, the network needs its service");
+                "an occupied tray is shown, the network needs its service");
 
     const astralia::bar::ItemView &media = model.item(astralia::bar::Item::media);
     const astralia::bar::ItemView &clock = model.item(astralia::bar::Item::time);
@@ -335,6 +336,22 @@ void check_bar_workspace_slots() {
     test::check(fallback.workspaces()[1].active, "an unknown output follows the focused one");
 }
 
+void check_bar_empty_tray() {
+    astralia::CompositorState state = make_state();
+    auto now = astralia::bar::Model::Clock::now();
+    astralia::bar::Sources sources = make_sources(state);
+    sources.tray_occupied = [] { return false; };
+    astralia::bar::Model model(sources, now);
+    model.refresh(now);
+    test::check(!model.item(astralia::bar::Item::tray).visible, "an empty tray is hidden");
+    astralia::bar::Sources bare = make_sources(state);
+    bare.tray_occupied = nullptr;
+    astralia::bar::Model unsourced(bare, now);
+    unsourced.refresh(now);
+    test::check(!unsourced.item(astralia::bar::Item::tray).visible,
+                "a tray without a source is hidden");
+}
+
 void check_bar_interaction() {
     Instant instant;
     astralia::CompositorState state = make_state();
@@ -443,5 +460,6 @@ void check_bar() {
     check_bar_layout();
     check_bar_dock_slide();
     check_bar_workspace_slots();
+    check_bar_empty_tray();
     check_bar_interaction();
 }

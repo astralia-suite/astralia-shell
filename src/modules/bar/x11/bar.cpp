@@ -38,6 +38,7 @@ Sources make_sources(Services &services, const std::string &output) {
     sources.network = &services.network;
     sources.notifications = &services.notifications;
     sources.brightness = &services.brightness;
+    sources.tray_occupied = [&services] { return !services.tray.items().empty(); };
     sources.compositor = [&services]() -> const CompositorState & {
         return services.compositor->state();
     };
@@ -77,6 +78,7 @@ Host::Host(XConnection &x, EventLoop &loop, Shell &shell, Services &services, co
     });
     services_.battery.changed.connect(redraw);
     services_.brightness.changed.connect(redraw);
+    services_.tray.changed.connect(redraw);
     services_.theme.changed.connect([this] {
         spec_ = &style_spec(style_, true);
         draw();
