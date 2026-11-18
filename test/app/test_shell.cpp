@@ -24,12 +24,10 @@ void check_shell() {
     Capabilities wayland = wayland_capabilities();
     Capabilities x11 = x11_capabilities();
     Capabilities bare;
-    check(shell_verb_available(wayland, ShellVerb::dashboard) &&
-              !shell_verb_available(bare, ShellVerb::dashboard),
-          "the dashboard needs its capability");
-    check(shell_verb_available(x11, ShellVerb::dashboard) &&
-              shell_verb_available(x11, ShellVerb::rain),
-          "X11 offers the dashboard and the rain");
+    check(shell_verb_available(wayland, ShellVerb::rain) &&
+              !shell_verb_available(bare, ShellVerb::rain),
+          "the rain needs its capability");
+    check(shell_verb_available(x11, ShellVerb::rain), "X11 offers the rain");
     check(shell_verb_available(x11, ShellVerb::overview) &&
               shell_verb_available(x11, ShellVerb::logout),
           "shared verbs need none");
@@ -47,8 +45,8 @@ void check_shell() {
     check(!shell.run(ShellVerb::logout) && after == 1, "an unbound verb does nothing");
 
     limited.bind(
-        {{ShellVerb::logout, [&] { calls += 10; }}, {ShellVerb::dashboard, [&] { calls += 100; }}});
-    check(limited.bound(ShellVerb::logout) && !limited.bound(ShellVerb::dashboard),
+        {{ShellVerb::logout, [&] { calls += 10; }}, {ShellVerb::rain, [&] { calls += 100; }}});
+    check(limited.bound(ShellVerb::logout) && !limited.bound(ShellVerb::rain),
           "a binding list is filtered by capability");
     shell.bind(ShellVerb::logout, [&] { calls += 10; });
 
@@ -66,11 +64,11 @@ void check_shell() {
           "open modules are listed");
     open = true;
     check(shell.open_modules().size() == 2, "a module that opens is listed too");
-    check(shell.status() == "backend: x11\ncapabilities: lock idle dashboard rain visualizer "
+    check(shell.status() == "backend: x11\ncapabilities: lock idle rain visualizer "
                             "resource_panel\nopen: overview launcher\n",
           "the status lists the backend, the capabilities and the open modules");
     Shell wayland_shell("wayland", wayland);
-    check(wayland_shell.status().find("capabilities: lock idle dashboard rain visualizer "
+    check(wayland_shell.status().find("capabilities: lock idle rain visualizer "
                                       "animated_wallpaper resource_panel animations") !=
                   std::string::npos &&
               wayland_shell.status().ends_with("open: none\n"),
@@ -78,7 +76,7 @@ void check_shell() {
     check(wayland_shell.handlers().front().verb == "status", "the status verb is always offered");
 
     std::string report = shell_report();
-    check(report.find("| `dashboard` | yes | yes |") != std::string::npos &&
+    check(report.find("| `rain` | yes | yes |") != std::string::npos &&
               report.find("| `launcher` | yes | yes |") != std::string::npos,
           "the report lists modules by capability");
     check(report.find("| `overview` | toggle the overview | yes | yes |") != std::string::npos,

@@ -231,7 +231,6 @@
 - `bamboo_config.h`: Bamboo window size, timing, character grid, growth constants and colours.
 - `lock_config.h`: Lock screen card, font, dot, background and asset constants and the layer namespace.
 - `idle_config.h`: Idle activity pulse and screensaver logo constants both hosts use.
-- `dashboard_config.h`: Dashboard window title, id and default size.
 - `launcher_config.h`: Launcher commands, search URLs and limits, row, bullet and animation geometry.
 - `notification_config.h`: Notification card geometry, timing and urgency colours.
 - `polkit_config.h`: Polkit card geometry, line heights, dot size, echo asset and texts.
@@ -386,14 +385,6 @@
 - `bar.{h,cpp}`: Bar window, struts and autohide strip.
 - `bar_set.{h,cpp}`: `BarSet`, one bar per output.
 - `panel_host.{h,cpp}`: The one `PanelHost` window that hosts the open panel.
-
-## `src/modules/dashboard/wayland/`
-
-- `dashboard.{h,cpp}`: Managed dashboard window.
-
-## `src/modules/dashboard/x11/`
-
-- `dashboard.{h,cpp}`: Managed dashboard window drawn with cairo.
 
 ## `src/modules/idle/`
 

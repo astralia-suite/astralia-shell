@@ -4,7 +4,6 @@
 
 #include "modules/bamboo/wayland/bamboo.h"
 #include "modules/bar/wayland/bar.h"
-#include "modules/dashboard/wayland/dashboard.h"
 #include "modules/idle/wayland/idle.h"
 #include "modules/launcher/wayland/launcher.h"
 #include "modules/lock/wayland/lock.h"
@@ -63,8 +62,6 @@ std::vector<std::unique_ptr<Module>> build_app_modules(const astralia::Capabilit
     std::vector<std::unique_ptr<Module>> modules;
     modules.push_back(astralia::launcher::make_module());
     modules.push_back(astralia::logout::make_module());
-    if (capabilities.dashboard)
-        modules.push_back(astralia::dashboard::make_module());
     modules.push_back(astralia::overview::make_module());
     modules.push_back(astralia::settings::make_module(wallpaper_decode_status));
     modules.push_back(astralia::wallpaper_select::make_module());

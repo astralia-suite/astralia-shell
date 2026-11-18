@@ -13,7 +13,6 @@ namespace astralia {
 struct Capabilities {
     bool lock = false;
     bool idle = false;
-    bool dashboard = false;
     bool rain = false;
     bool visualizer = false;
     bool animated_wallpaper = false;
@@ -32,7 +31,6 @@ enum class ShellVerb : int {
     overview,
     settings,
     wallpaper,
-    dashboard,
     rain,
     bamboo,
     visualizer,

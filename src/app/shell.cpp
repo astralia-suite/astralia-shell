@@ -11,7 +11,6 @@ constexpr std::array<ShellVerbSpec, static_cast<size_t>(ShellVerb::count)> verbs
     {"overview", "toggle the overview", nullptr},
     {"settings", "toggle the settings overlay", nullptr},
     {"wallpaper", "toggle the wallpaper selector", nullptr},
-    {"dashboard", "toggle the dashboard window", &Capabilities::dashboard},
     {"rain", "toggle the rain overlay", &Capabilities::rain},
     {"bamboo", "toggle the bamboo overlay", nullptr},
     {"visualizer", "toggle the audio visualizer overlay", &Capabilities::visualizer},
@@ -32,7 +31,6 @@ std::string shell_report() {
     constexpr std::pair<const char *, bool Capabilities::*> features[] = {
         {"lock", &Capabilities::lock},
         {"idle", &Capabilities::idle},
-        {"dashboard", &Capabilities::dashboard},
         {"rain", &Capabilities::rain},
         {"visualizer", &Capabilities::visualizer},
         {"animated_wallpaper", &Capabilities::animated_wallpaper},
@@ -56,14 +54,13 @@ std::string shell_report() {
 }
 
 Capabilities wayland_capabilities() {
-    return {true, true, true, true, true, true, true, true, true};
+    return {true, true, true, true, true, true, true, true};
 }
 
 Capabilities x11_capabilities() {
     Capabilities capabilities;
     capabilities.lock = true;
     capabilities.idle = true;
-    capabilities.dashboard = true;
     capabilities.rain = true;
     capabilities.visualizer = true;
     capabilities.resource_panel = true;
@@ -153,7 +150,6 @@ std::string Shell::status() const {
     constexpr std::pair<const char *, bool Capabilities::*> names[] = {
         {"lock", &Capabilities::lock},
         {"idle", &Capabilities::idle},
-        {"dashboard", &Capabilities::dashboard},
         {"rain", &Capabilities::rain},
         {"visualizer", &Capabilities::visualizer},
         {"animated_wallpaper", &Capabilities::animated_wallpaper},

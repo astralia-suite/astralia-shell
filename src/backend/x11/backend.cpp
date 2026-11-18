@@ -15,7 +15,6 @@
 
 #include "modules/bamboo/x11/bamboo.h"
 #include "modules/bar/x11/bar_set.h"
-#include "modules/dashboard/x11/dashboard.h"
 #include "modules/idle/x11/idle.h"
 #include "modules/launcher/x11/launcher.h"
 #include "modules/lock/x11/lock.h"
@@ -74,7 +73,6 @@ class X11Backend final : public Backend {
         wallpaper.on_wallpaper = [&wallpaper_select](const std::string &monitor, int column) {
             wallpaper_select.open_on(monitor, column);
         };
-        astralia::dashboard::Host dashboard(*x, *loop, shell, services);
         astralia::rain::Host rain(*x, *loop, shell, services);
         astralia::bamboo::Host bamboo(*x, *loop, shell, services);
         astralia::idle::Host idle(*x, *loop, services);
