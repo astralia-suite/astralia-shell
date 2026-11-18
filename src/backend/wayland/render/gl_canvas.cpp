@@ -212,12 +212,13 @@ void GlCanvas::start_thumbnail(const std::string &key, int px) {
     thumbs_[key].pending = true;
     ++in_flight_;
     std::weak_ptr<bool> alive = alive_;
-    std::thread([this, alive, key, px] {
+    uint64_t generation = generation_;
+    std::thread([this, alive, key, px, generation] {
         int w = 0;
         int h = 0;
         unsigned char *data = animate_decode_scaled(key, px, px, w, h);
-        astralia::DeferredCall::call_later([this, alive, key, px, data, w, h] {
-            if (!alive.lock()) {
+        astralia::DeferredCall::call_later([this, alive, key, px, generation, data, w, h] {
+            if (!alive.lock() || generation != generation_) {
                 delete[] data;
                 return;
             }
@@ -277,6 +278,25 @@ ui::ImageId GlCanvas::thumbnail(std::string_view path, int px) {
     thumb_order_.push_front(key);
     start_thumbnail(key, px);
     return ui::no_image;
+}
+
+void GlCanvas::release_thumbnails() {
+    if (thumbs_.empty() && in_flight_ == 0) {
+        return;
+    }
+    if (make_current_) {
+        make_current_();
+    }
+    for (const auto &[key, thumb] : thumbs_) {
+        if (thumb.id != ui::no_image) {
+            images_[static_cast<size_t>(thumb.id)].reset();
+            free_slots_.push_back(thumb.id);
+        }
+    }
+    thumbs_.clear();
+    thumb_order_.clear();
+    in_flight_ = 0;
+    ++generation_;
 }
 
 ui::TextSize GlCanvas::image_size(ui::ImageId id) {

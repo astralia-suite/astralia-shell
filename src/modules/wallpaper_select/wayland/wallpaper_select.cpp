@@ -63,7 +63,10 @@ class Adapter final : public Module {
             };
             model_ = std::make_unique<Model>(std::move(hooks), app.capabilities.animated_wallpaper);
             model_->on_close_requested = [this] { toggle(); };
-            model_->on_closed = [this] { overlay_panel_release(base_); };
+            model_->on_closed = [this] {
+                canvas_.release_thumbnails();
+                overlay_panel_release(base_);
+            };
             model_->on_changed = [this] { request_frame(); };
         }
         bound_output_ = output_;

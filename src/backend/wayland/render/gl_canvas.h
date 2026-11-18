@@ -44,6 +44,7 @@ class GlCanvas final : public astralia::ui::Canvas {
               const astralia::Color &color) override;
     astralia::ui::ImageId image(std::string_view asset, int target_px) override;
     astralia::ui::ImageId thumbnail(std::string_view path, int px) override;
+    void release_thumbnails();
     astralia::ui::TextSize image_size(astralia::ui::ImageId id) override;
     void draw_image(astralia::ui::ImageId id, const astralia::ui::Box &box,
                     const astralia::Color &tint) override;
@@ -94,6 +95,7 @@ class GlCanvas final : public astralia::ui::Canvas {
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     std::function<void()> make_current_;
     size_t in_flight_ = 0;
+    uint64_t generation_ = 0;
     int32_t scale_ = 1;
     bool erase_ = false;
 };
