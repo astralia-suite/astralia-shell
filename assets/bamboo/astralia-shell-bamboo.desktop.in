@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Bamboo
+Comment=Growing ASCII bamboo overlay for astralia-shell
+Exec=astralia bamboo
+Icon=@icon@
+StartupWMClass=astralia-shell-bamboo
+NoDisplay=true
+Terminal=false

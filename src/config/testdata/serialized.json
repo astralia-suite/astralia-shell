@@ -1,0 +1,103 @@
+{
+  "ambient": {
+    "rain": {
+      "mode": "stiletto",
+      "asyncSpeed": true
+    },
+    "visualizer": {
+      "fps": 30,
+      "particleThin": 0.12,
+      "particleSize": 8,
+      "fractalComplexity": 3,
+      "glowDirections": 16,
+      "glowQuality": 6,
+      "visualizerShape": "sphere"
+    }
+  },
+  "bar": {
+    "autohideEnabled": true,
+    "style": "continuous"
+  },
+  "displays": {
+    "defaultOsd": false,
+    "defaultNotifications": true,
+    "defaultWallpaper": false,
+    "defaultLock": true,
+    "idle": {
+      "enabled": false,
+      "ambientEnabled": true,
+      "ambientTimeoutSeconds": 150,
+      "screensaverEnabled": true,
+      "screensaverTimeoutSeconds": 300,
+      "logoPath": ""
+    },
+    "eDP-1": {
+      "_enabled": true,
+      "osd": true,
+      "notifications": true,
+      "autohide": false,
+      "ambientEnabled": true,
+      "ambientTimeoutSeconds": 90,
+      "screensaverEnabled": true,
+      "screensaverTimeoutSeconds": 300,
+      "lock": false
+    }
+  },
+  "general": {
+    "animationsDisabled": false,
+    "logoutLogoPath": "",
+    "syncCompositorBorders": true
+  },
+  "palette": {
+    "source": "default"
+  },
+  "wallpaper": {
+    "path": "/usr/share/astralia-shell/wallpaper/default.jpg",
+    "dir": "~/Pictures",
+    "columns": {
+      "eDP-1": [
+        "~/Pictures/a.jpg",
+        "/abs/b.png"
+      ]
+    },
+    "columnCounts": {
+      "eDP-1": 2
+    },
+    "fillModes": {
+      "eDP-1": [
+        "fit",
+        "crop"
+      ]
+    },
+    "animatedEnabled": false,
+    "animatedDir": "~/clips",
+    "animatedColumns": {
+      "eDP-1": [
+        "~/clips/a.mp4"
+      ]
+    },
+    "animatedColumnCounts": {},
+    "animatedFillModes": {
+      "eDP-1": [
+        "crop"
+      ]
+    },
+    "lockCustom": true,
+    "lockDir": "~/Locks",
+    "lockColumns": {
+      "eDP-1": [
+        "~/Locks/a.jpg"
+      ]
+    },
+    "lockColumnCounts": {
+      "eDP-1": 3
+    },
+    "lockFillModes": {
+      "eDP-1": [
+        "fit"
+      ]
+    },
+    "captureMonitor": "",
+    "captureColumn": 0
+  }
+}
