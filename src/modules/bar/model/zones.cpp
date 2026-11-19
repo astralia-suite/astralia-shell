@@ -15,8 +15,7 @@ const Zones &zones() {
         {{SlotKind::dock},
          {SlotKind::item, Item::resource},
          {SlotKind::item, Item::brightness},
-         {SlotKind::item, Item::battery},
-         {SlotKind::item, Item::notifications}},
+         {SlotKind::item, Item::battery}},
     };
     return zones;
 }

@@ -17,7 +17,6 @@ enum class Item : int {
     time,
     date,
     active_window,
-    notifications,
     count
 };
 

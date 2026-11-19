@@ -26,7 +26,6 @@ std::optional<PanelId> panel_for(Item item) {
         return PanelId::date;
     case Item::logout:
     case Item::active_window:
-    case Item::notifications:
     case Item::count:
         break;
     }

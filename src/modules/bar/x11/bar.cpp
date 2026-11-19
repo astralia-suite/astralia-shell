@@ -36,7 +36,6 @@ Sources make_sources(Services &services, const std::string &output) {
     sources.battery = &services.battery;
     sources.bluetooth = &services.bluetooth;
     sources.network = &services.network;
-    sources.notifications = &services.notifications;
     sources.brightness = &services.brightness;
     sources.tray_occupied = [&services] { return !services.tray.items().empty(); };
     sources.compositor = [&services]() -> const CompositorState & {

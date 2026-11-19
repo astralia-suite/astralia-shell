@@ -21,7 +21,6 @@
 #include "service/compositor_service.h"
 #include "service/dock_service.h"
 #include "service/network_service.h"
-#include "service/notification_service.h"
 
 #include "render/canvas.h"
 
@@ -32,7 +31,6 @@ struct Sources {
     BatteryService *battery = nullptr;
     BluetoothService *bluetooth = nullptr;
     NetworkService *network = nullptr;
-    NotificationService *notifications = nullptr;
     BrightnessService *brightness = nullptr;
     std::function<const CompositorState &()> compositor;
     std::function<bool()> tray_occupied;

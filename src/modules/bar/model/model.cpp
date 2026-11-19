@@ -98,10 +98,6 @@ void Model::refresh(Clock::time_point now) {
     };
     set(Item::time, icon::clock, format("%H:%M:%S"), true, false);
     set(Item::date, icon::calendar, format("%a %Y-%m-%d"), true);
-    set(Item::notifications, icon::bell, "Notifications", sources_.notifications != nullptr);
-    if (sources_.notifications != nullptr && !sources_.notifications->list().empty()) {
-        mut(Item::notifications).tint = palette::accent;
-    }
     refresh_active_window();
 
     if (sources_.network != nullptr) {
@@ -315,9 +311,6 @@ Action Model::press(double x, double y) const {
     for (size_t i = 0; i < item_count; ++i) {
         const ItemView &view = items_[i];
         Item id = static_cast<Item>(i);
-        if (id == Item::notifications) {
-            continue;
-        }
         if (view.visible && view.box.contains(x, y)) {
             if (id == Item::active_window) {
                 return {ActionKind::overview};
