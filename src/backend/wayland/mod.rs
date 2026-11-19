@@ -443,7 +443,8 @@ impl State {
         let logout_here = self.overlays.logout.as_ref().is_some_and(|l| l.shown_on(name));
         let bar = &mut self.monitors[index].bar;
         let (open, clock_open) = bar.panels.open_item();
-        let open = open.or(logout_here.then_some(crate::modules::bar::model::Item::Logout));
+        use crate::modules::bar::model::Item;
+        let open = open.or(logout_here.then_some(Item::Logout)).or(overview_here.then_some(Item::ActiveWindow));
         if bar.draw(&self.egl, &mut self.renderer, &cfg, open, clock_open || overview_here) {
             bar.window.request_frame(&self.qh);
         }
