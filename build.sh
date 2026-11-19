@@ -2,7 +2,7 @@
 
 # Build script for astralia-shell
 # Use:
-# <empty>: run the tests with and without default features
+# <empty>: release build, then the tests with and without default features
 # setup: install build and runtime dependencies
 # build: release build only
 # install: build and install system-wide (DESTDIR=dir stages into dir without sudo)
@@ -42,7 +42,7 @@ cmd_setup() {
 
 cmd_build() { cargo build --release; }
 
-cmd_default() { cargo test; cargo test --no-default-features; }
+cmd_default() { cmd_build; cargo test; cargo test --no-default-features; }
 
 cmd_install() {
     cmd_build
