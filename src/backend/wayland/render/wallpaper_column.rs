@@ -9,7 +9,8 @@ use super::image::upload_pixels;
 use super::renderer::{Renderer, Texture};
 use crate::base::animation;
 use crate::base::process::trim_heap;
-use crate::render::decode::{Pixels, decode_cover};
+use crate::render::decode::Pixels;
+use crate::service::media_decode::decode_cover_cached;
 use crate::render::palette_extract::{ember_colour, extract_seeds};
 use crate::render::spread_map::{SpreadMap, make_spread_map};
 use crate::render::theme::palette;
@@ -129,7 +130,7 @@ impl WallpaperColumn {
         runtime::spawn(async move {
             let decode_path = path.clone();
             let decoded = blocking::unblock(move || {
-                let pixels = decode_cover(&decode_path, target_w, target_h)?;
+                let pixels = decode_cover_cached(&decode_path, target_w, target_h)?;
                 let (spread, ember) = if spread {
                     let ember = ember_colour(&extract_seeds(&pixels.data, pixels.width, pixels.height, pixels.premultiplied));
                     (Some(make_spread_map(seed)), ember)

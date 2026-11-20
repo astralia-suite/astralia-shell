@@ -33,8 +33,11 @@ impl Bamboo {
         self.built = (0, 0);
     }
 
+    /// Drops the texture and the grove's buffers; `opened` rebuilds them at the next paint.
     pub fn closed(&mut self, renderer: &Renderer) {
         self.texture.clear(renderer);
+        self.grow = Grow::default();
+        self.built = (0, 0);
     }
 
     pub fn paint(&mut self, renderer: &Renderer, size: (i32, i32)) {

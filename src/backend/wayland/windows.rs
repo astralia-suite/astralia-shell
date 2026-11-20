@@ -214,6 +214,8 @@ impl State {
             WindowId::Bamboo => self.windows.bamboo.closed(&self.renderer),
             WindowId::Visualizer => self.windows.visualizer.shutdown(&self.egl),
         }
+        // The freed frame buffers go back to the system, not just to the allocator.
+        crate::base::process::trim_heap();
     }
 
     /// New settings and palette reach the windows; a changed rain mode rebuilds an open window.

@@ -7,6 +7,8 @@ use std::os::fd::{AsRawFd, RawFd};
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 use std::rc::Rc;
+use std::os::unix::ffi::OsStringExt;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use async_io::Async;
@@ -83,6 +85,45 @@ pub fn daemonize() {
     redirect(libc::STDERR_FILENO, c"/dev/null", libc::O_WRONLY);
 }
 
+const EGL_VENDOR_VAR: &str = "__EGL_VENDOR_LIBRARY_FILENAMES";
+const MESA_EGL_VENDOR: &str = "/usr/share/glvnd/egl_vendor.d/50_mesa.json";
+
+/// Set when `prefer_mesa_egl` wrote `EGL_VENDOR_VAR`, so children get the user's environment.
+static EGL_VENDOR_OVERRIDDEN: AtomicBool = AtomicBool::new(false);
+
+/// `glvnd` loads every installed EGL vendor (~105 MB for NVIDIA); with the NVIDIA driver not
+/// loaded only Mesa can render, so the others are skipped. Must run before any thread starts.
+pub fn prefer_mesa_egl() -> bool {
+    if std::env::var_os(EGL_VENDOR_VAR).is_some()
+        || std::path::Path::new("/dev/nvidiactl").exists()
+        || !std::path::Path::new(MESA_EGL_VENDOR).exists()
+    {
+        return false;
+    }
+    // SAFETY: called from `main` before any other thread exists.
+    unsafe { std::env::set_var(EGL_VENDOR_VAR, MESA_EGL_VENDOR) };
+    EGL_VENDOR_OVERRIDDEN.store(true, Ordering::Relaxed);
+    true
+}
+
+/// The environment children receive: ours, minus the EGL vendor override `prefer_mesa_egl` added.
+fn child_environ() -> Option<Vec<CString>> {
+    if !EGL_VENDOR_OVERRIDDEN.load(Ordering::Relaxed) {
+        return None;
+    }
+    let prefix = format!("{EGL_VENDOR_VAR}=");
+    Some(
+        std::env::vars_os()
+            .filter_map(|(k, v)| {
+                let mut entry = k.into_vec();
+                entry.push(b'=');
+                entry.extend(v.into_vec());
+                (!entry.starts_with(prefix.as_bytes())).then(|| CString::new(entry).ok()).flatten()
+            })
+            .collect(),
+    )
+}
+
 pub fn tune_allocator(max_arenas: i32) {
     // SAFETY: mallopt only adjusts glibc allocator parameters.
     unsafe {
@@ -108,6 +149,12 @@ fn spawn_child(argv: &[&str], stdin: Option<RawFd>, stdout: Output, stderr: Outp
     ptrs.push(std::ptr::null_mut());
     unsafe extern "C" {
         static environ: *const *mut libc::c_char;
+    }
+    let own_env = child_environ();
+    let mut env_ptrs: Vec<*mut libc::c_char> = Vec::new();
+    if let Some(env) = &own_env {
+        env_ptrs = env.iter().map(|e| e.as_ptr().cast_mut()).collect();
+        env_ptrs.push(std::ptr::null_mut());
     }
     // SAFETY: the attribute and action objects are initialised before use and destroyed after;
     // every pointer passed outlives the call.
@@ -144,7 +191,8 @@ fn spawn_child(argv: &[&str], stdin: Option<RawFd>, stdout: Output, stderr: Outp
         libc::posix_spawnattr_setsigdefault(&mut attr, &defaults);
         libc::posix_spawnattr_setflags(&mut attr, (libc::POSIX_SPAWN_SETSIGMASK | libc::POSIX_SPAWN_SETSIGDEF) as libc::c_short);
         let mut pid = -1;
-        let result = libc::posix_spawnp(&mut pid, ptrs[0], &actions, &attr, ptrs.as_ptr(), environ);
+        let envp = if own_env.is_some() { env_ptrs.as_ptr() } else { environ };
+        let result = libc::posix_spawnp(&mut pid, ptrs[0], &actions, &attr, ptrs.as_ptr(), envp);
         libc::posix_spawn_file_actions_destroy(&mut actions);
         libc::posix_spawnattr_destroy(&mut attr);
         // Arguments can carry a password; wipe our copies.

@@ -3,6 +3,8 @@
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use crate::render::decode::Pixels;
+
 pub const ANIMATE_WALLPAPER_FPS: i32 = 15;
 pub const ANIMATE_MAX_DECODE_DIM: i32 = 1440;
 const RGBA_CACHE_MAX_BYTES: u64 = 512 * 1024 * 1024;
@@ -110,7 +112,9 @@ pub fn rgba_read(path: &Path) -> Option<(i32, i32, Vec<u8>)> {
     if let Ok(file) = std::fs::File::options().write(true).open(path) {
         let _ = file.set_modified(SystemTime::now());
     }
-    Some((width, height, data[8..].to_vec()))
+    let mut data = data;
+    data.drain(..8);
+    Some((width, height, data))
 }
 
 pub fn rgba_write(path: &Path, width: i32, height: i32, rgba: &[u8], max_bytes: u64) {
@@ -153,7 +157,12 @@ pub fn rgba_prune(dir: &Path, max_bytes: u64) {
 
 /// A still image as straight RGBA, else (with `video`) the first video frame scaled to cover the target.
 fn decode_first_frame(path: &str, target_w: i32, target_h: i32) -> Option<MediaFrame> {
-    if let Ok(p) = crate::render::decode::decode_pixels(path, 0) {
+    let still = if target_w > 0 && target_h > 0 {
+        crate::render::decode::decode_cover(path, target_w, target_h)
+    } else {
+        crate::render::decode::decode_pixels(path, 0)
+    };
+    if let Ok(p) = still {
         return Some(MediaFrame { width: p.width, height: p.height, rgba: p.data });
     }
     #[cfg(feature = "video")]
@@ -175,6 +184,16 @@ fn decode_first_frame(path: &str, target_w: i32, target_h: i32) -> Option<MediaF
 /// The first frame of `path` downsampled to cover `target_w` by `target_h`, through the frame cache.
 pub fn animate_decode_scaled(path: &str, target_w: i32, target_h: i32) -> Option<MediaFrame> {
     decode_scaled_cached(&rgba_cache_dir, path, target_w, target_h)
+}
+
+/// `decode_cover` (or a video's first frame) through the frame cache, so a large wallpaper is decoded
+/// once per size instead of on every picker open or start. An SVG is rendered directly.
+pub fn decode_cover_cached(path: &str, width: i32, height: i32) -> Result<Pixels, String> {
+    if crate::render::decode::is_svg(path) {
+        return crate::render::decode::decode_cover(path, width, height);
+    }
+    let frame = animate_decode_scaled(path, width, height).ok_or_else(|| format!("cannot decode {path}"))?;
+    Ok(Pixels { width: frame.width, height: frame.height, data: frame.rgba, premultiplied: false })
 }
 
 fn decode_scaled_cached(cache_dir: &dyn Fn() -> PathBuf, path: &str, target_w: i32, target_h: i32) -> Option<MediaFrame> {

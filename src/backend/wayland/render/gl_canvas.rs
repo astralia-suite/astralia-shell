@@ -10,7 +10,8 @@ use super::renderer::{Affine2D, Renderer, Texture};
 use super::text::{advance_px, rasterize_text};
 use super::texture_cache::TextureCache;
 use crate::render::canvas::{Canvas, FontFamily, GroupOptions, ImageId, NO_IMAGE, TextSize, TextStyle};
-use crate::render::decode::{Pixels, asset_path, decode_cover, decode_image};
+use crate::render::decode::{Pixels, asset_path, decode_image};
+use crate::service::media_decode::decode_cover_cached;
 use crate::render::geometry::{Point, Rect};
 use crate::render::tokens::{self, Color};
 use crate::service::runtime;
@@ -59,16 +60,6 @@ pub struct GlCanvas {
     snapshot: Option<Texture>,
 }
 
-/// A video file's first frame, scaled to cover a `px` square, for the pickers.
-fn video_thumbnail(path: &str, px: i32) -> Option<Pixels> {
-    #[cfg(feature = "video")]
-    if crate::service::wallpaper::wallpaper_is_video(path) {
-        let frame = crate::service::media_decode::animate_decode_scaled(path, px, px)?;
-        return Some(Pixels { width: frame.width, height: frame.height, data: frame.rgba, premultiplied: false });
-    }
-    let _ = (path, px);
-    None
-}
 
 impl GlCanvas {
     pub fn new() -> GlCanvas {
@@ -214,7 +205,7 @@ impl GlCanvas {
         self.thumbs.entry(key.to_string()).or_insert(Thumb { id: NO_IMAGE, px: 0, pending: false }).pending = true;
         self.in_flight += 1;
         let path = key.to_string();
-        self.spawn_decode(Job::Thumb { key: key.to_string(), px }, move || decode_cover(&path, px, px).ok().or_else(|| video_thumbnail(&path, px)));
+        self.spawn_decode(Job::Thumb { key: key.to_string(), px }, move || decode_cover_cached(&path, px, px).ok());
     }
 
     fn thumbnail(&mut self, key: &str, px: i32) -> ImageId {

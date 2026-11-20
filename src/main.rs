@@ -29,7 +29,11 @@ fn main() -> ExitCode {
         Invocation::Daemon | Invocation::Debug => {}
     }
 
+    let mesa_only = process::prefer_mesa_egl();
     base::log::init();
+    if mesa_only {
+        ::log::info!("nvidia driver not loaded: using the mesa egl vendor only");
+    }
     render::app_fonts::register();
     match session::detect(&SessionEnv::from_env()) {
         SessionKind::Wayland => {}

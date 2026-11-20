@@ -45,7 +45,35 @@ pub fn contain(image_width: i32, image_height: i32, area_width: i32, area_height
     place(scale, image_width, image_height, area_width, area_height)
 }
 
-fn is_svg(path: &str) -> bool {
+/// Raster images above this many pixels decode one at a time: a 10K JPEG holds several hundred MB
+/// while it decodes, and two at once were the shell's peak.
+const LARGE_PIXELS: u64 = 16_000_000;
+static LARGE_DECODE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Decodes a raster image and hands it to `use_image`; a large image keeps the decode slot until
+/// `use_image` returns, so its full-size buffer is gone before the next large decode starts.
+fn with_raster<T>(path: &str, use_image: impl FnOnce(image::DynamicImage) -> T) -> Result<T, String> {
+    let reader = || image::ImageReader::open(path).map_err(|e| e.to_string())?.with_guessed_format().map_err(|e| e.to_string());
+    let (width, height) = reader()?.into_dimensions().map_err(|e| e.to_string())?;
+    let _slot = (u64::from(width) * u64::from(height) > LARGE_PIXELS).then(|| LARGE_DECODE.lock().unwrap_or_else(|e| e.into_inner()));
+    let image = reader()?.decode().map_err(|e| e.to_string())?;
+    Ok(use_image(image))
+}
+
+/// `image` scaled by `scale` when that shrinks it, as straight RGBA.
+fn shrink_to_rgba(image: image::DynamicImage, scale: f64) -> Pixels {
+    let (width, height) = (image.width(), image.height());
+    let image = if scale < 1.0 {
+        let fit = |side: u32| ((f64::from(side) * scale).round() as u32).max(1);
+        image.resize_exact(fit(width), fit(height), FilterType::Triangle)
+    } else {
+        image
+    };
+    let rgba = image.into_rgba8();
+    Pixels { width: rgba.width() as i32, height: rgba.height() as i32, data: rgba.into_raw(), premultiplied: false }
+}
+
+pub(crate) fn is_svg(path: &str) -> bool {
     use std::io::Read;
     let mut head = [0u8; 64];
     let Ok(n) = std::fs::File::open(path).and_then(|mut f| f.read(&mut head)) else { return false };
@@ -78,18 +106,11 @@ pub fn decode_pixels(path: &str, max_side: u32) -> Result<Pixels, String> {
         let side = i32::try_from(max_side).unwrap_or(i32::MAX);
         return decode_svg(path, side, side);
     }
-    let image = image::ImageReader::open(path).map_err(|e| e.to_string())?.with_guessed_format().map_err(|e| e.to_string())?.decode().map_err(|e| e.to_string())?;
-    let (width, height) = (image.width(), image.height());
-    let longer = width.max(height);
-    let image = if longer > max_side && max_side > 0 {
-        let scale = f64::from(max_side) / f64::from(longer);
-        let fit = |side: u32| ((f64::from(side) * scale).round() as u32).max(1);
-        image.resize_exact(fit(width), fit(height), FilterType::Triangle)
-    } else {
-        image
-    };
-    let rgba = image.into_rgba8();
-    Ok(Pixels { width: rgba.width() as i32, height: rgba.height() as i32, data: rgba.into_raw(), premultiplied: false })
+    with_raster(path, |image| {
+        let longer = image.width().max(image.height());
+        let scale = if max_side > 0 { f64::from(max_side) / f64::from(longer) } else { 1.0 };
+        shrink_to_rgba(image, scale)
+    })
 }
 
 /// An icon or asset: an SVG fitted inside an `svg_px` square, a raster image at its own size.
@@ -97,18 +118,17 @@ pub fn decode_image(path: &str, svg_px: i32) -> Result<Pixels, String> {
     if is_svg(path) { decode_svg(path, svg_px, svg_px) } else { decode_pixels(path, 0) }
 }
 
-/// Downscaled (never enlarged) until it just covers a `width` by `height` box.
+/// Downscaled (never enlarged) until it just covers a `width` by `height` box; a raster image is
+/// scaled before it becomes RGBA, so no full-size RGBA copy is made.
 pub fn decode_cover(path: &str, width: i32, height: i32) -> Result<Pixels, String> {
-    let pixels = decode_image(path, width.max(height))?;
-    let scale = (width as f32 / pixels.width as f32).max(height as f32 / pixels.height as f32);
-    if pixels.premultiplied || scale >= 1.0 {
-        return Ok(pixels);
+    if is_svg(path) {
+        let side = width.max(height);
+        return decode_svg(path, side, side);
     }
-    let fit = |side: i32| ((side as f32 * scale).round() as u32).max(1);
-    let (w, h) = (fit(pixels.width), fit(pixels.height));
-    let image = image::RgbaImage::from_raw(pixels.width as u32, pixels.height as u32, pixels.data).ok_or("bad pixel buffer")?;
-    let scaled = image::imageops::resize(&image, w, h, FilterType::Triangle);
-    Ok(Pixels { width: w as i32, height: h as i32, data: scaled.into_raw(), premultiplied: false })
+    with_raster(path, |image| {
+        let scale = (f64::from(width) / f64::from(image.width())).max(f64::from(height) / f64::from(image.height()));
+        shrink_to_rgba(image, scale)
+    })
 }
 
 #[cfg(test)]
