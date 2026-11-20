@@ -20,6 +20,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_millis(100);
 const WORKSPACES_PER_MONITOR: i32 = 5;
 const SWAP_TEMP_WORKSPACE: &str = "special:__tmp_swp";
 const CLIENT_POLL_INTERVAL: Duration = Duration::from_millis(1000);
+const LOAD_RETRY_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HyprEventKind {
@@ -268,13 +269,9 @@ impl HyprlandCompositor {
             active_changed: Signal::default(),
             structure_changed: Signal::default(),
         });
-        if !compositor.request_path.borrow().is_empty() {
-            compositor.refresh();
-            let gaps_out = hypr_parse_gaps_out(&compositor.request("j/getoption general:gaps_out"));
-            let rounding = hypr_parse_rounding(&compositor.request("j/getoption decoration:rounding"));
-            let mut state = compositor.state.borrow_mut();
-            state.gaps_out_px = Some(gaps_out);
-            state.hug_radius_px = gaps_out + rounding;
+        if !compositor.request_path.borrow().is_empty() && !compositor.load() {
+            ::log::warn!("hyprland: no reply at startup, retrying");
+            runtime::spawn(retry_load(Rc::downgrade(&compositor)));
         }
         if !event_path.is_empty() {
             match connect_unix(&event_path, None).and_then(Async::new) {
@@ -283,6 +280,34 @@ impl HyprlandCompositor {
             }
         }
         compositor
+    }
+
+    /// The full state and the gaps; false when Hyprland did not answer in time.
+    fn load(&self) -> bool {
+        if !self.try_refresh() {
+            return false;
+        }
+        let gaps_out = hypr_parse_gaps_out(&self.request("j/getoption general:gaps_out"));
+        let rounding = hypr_parse_rounding(&self.request("j/getoption decoration:rounding"));
+        let mut state = self.state.borrow_mut();
+        state.gaps_out_px = Some(gaps_out);
+        state.hug_radius_px = gaps_out + rounding;
+        true
+    }
+
+    fn try_refresh(&self) -> bool {
+        let workspaces = self.request("j/workspaces");
+        let monitors = self.request("j/monitors");
+        let clients = self.request("j/clients");
+        if workspaces.is_empty() || monitors.is_empty() || clients.is_empty() {
+            return false;
+        }
+        let mut state = self.state.borrow_mut();
+        hypr_parse_workspaces(&workspaces, &mut state);
+        hypr_parse_monitors(&monitors, &mut state);
+        state.clients = hypr_parse_clients(&clients);
+        *self.clients_reply.borrow_mut() = clients;
+        true
     }
 
     pub fn set_request_socket(&self, path: String) {
@@ -360,6 +385,19 @@ async fn read_events(stream: Async<UnixStream>, compositor: Weak<HyprlandComposi
     }
 }
 
+/// Hyprland can be too busy at login to answer within `REQUEST_TIMEOUT`; keep asking until it does.
+async fn retry_load(compositor: Weak<HyprlandCompositor>) {
+    loop {
+        Timer::after(LOAD_RETRY_INTERVAL).await;
+        let Some(compositor) = compositor.upgrade() else { return };
+        if compositor.load() {
+            ::log::info!("hyprland: loaded after retry");
+            compositor.structure_changed.emit(&());
+            return;
+        }
+    }
+}
+
 async fn poll_clients(compositor: Weak<HyprlandCompositor>, generation: u64) {
     loop {
         Timer::after(CLIENT_POLL_INTERVAL).await;
@@ -383,17 +421,7 @@ impl Compositor for HyprlandCompositor {
     }
 
     fn refresh(&self) {
-        let workspaces = self.request("j/workspaces");
-        let monitors = self.request("j/monitors");
-        let clients = self.request("j/clients");
-        if workspaces.is_empty() || monitors.is_empty() || clients.is_empty() {
-            return;
-        }
-        let mut state = self.state.borrow_mut();
-        hypr_parse_workspaces(&workspaces, &mut state);
-        hypr_parse_monitors(&monitors, &mut state);
-        state.clients = hypr_parse_clients(&clients);
-        *self.clients_reply.borrow_mut() = clients;
+        self.try_refresh();
     }
 
     /// True when the client order changed; an empty or identical reply is no change.
@@ -691,5 +719,40 @@ mod tests {
         assert_eq!(structure.get(), 1, "a batch with a structural event fires structure_changed once");
         assert_eq!(active.get(), 1, "the structural refresh replaces the active signal");
         assert_eq!(compositor.state().by_monitor["DP-1"].active_id, 3);
+    }
+
+    #[test]
+    fn hypr_startup_retries_until_answered() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("h.sock");
+        let mut event_loop: EventLoop<'static, ()> = EventLoop::try_new().unwrap();
+        runtime::attach(&event_loop.handle()).unwrap();
+        let compositor = HyprlandCompositor::with_paths(path.to_str().unwrap().into(), String::new());
+        assert!(compositor.state().monitors.is_empty(), "no socket yet, nothing loaded");
+        let structure = Rc::new(Cell::new(0));
+        let s = structure.clone();
+        compositor.structure_changed().connect(move |_| s.set(s.get() + 1));
+        let listener = UnixListener::bind(&path).unwrap();
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let mut stream = stream.unwrap();
+                let mut command = String::new();
+                let _ = stream.read_to_string(&mut command);
+                let reply = match command.as_str() {
+                    "j/workspaces" => r#"[{"id": 1, "name": "1", "monitor": "DP-1", "windows": 1}]"#,
+                    "j/monitors" => r#"[{"id": 0, "name": "DP-1", "focused": true, "activeWorkspace": {"id": 1}}]"#,
+                    "j/clients" => ONE_CLIENT,
+                    _ => r#"{"css": "8 8 8 8"}"#,
+                };
+                let _ = stream.write_all(reply.as_bytes());
+            }
+        });
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while structure.get() == 0 && Instant::now() < deadline {
+            event_loop.dispatch(Duration::from_millis(20), &mut ()).unwrap();
+        }
+        assert_eq!(structure.get(), 1, "a late answer loads the state and fires structure_changed");
+        assert_eq!(compositor.state().by_monitor["DP-1"].active_id, 1);
+        assert_eq!(compositor.state().gaps_out_px, Some(8), "the gaps load with the retry");
     }
 }
