@@ -445,7 +445,9 @@ mod tests {
         for _ in 0..5 {
             spawn_detached(&tag);
         }
-        assert!(!child_cmdlines().iter().any(|c| c.contains(&tag) || c.starts_with("sh ")), "spawn_detached leaves no children to reap");
+        // Only this test's shells: other tests running in parallel spawn their own `sh -c` children.
+        let ours = |c: &String| c.contains(&tag) || c.starts_with("/bin/sh -c eval \"$1\" &");
+        assert!(!child_cmdlines().iter().any(ours), "spawn_detached leaves no children to reap");
     }
 
     #[test]
