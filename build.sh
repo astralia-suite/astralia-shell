@@ -6,6 +6,7 @@
 # setup: install build and runtime dependencies
 # build: release build only
 # install: build and install system-wide (DESTDIR=dir stages into dir without sudo)
+# uninstall: stop the running shell and remove everything install placed (honours DESTDIR)
 # run: kill the running shell, install and start it
 
 set -euo pipefail
@@ -55,12 +56,17 @@ cmd_install() {
         as_root install -Dm644 /dev/stdin "$DESTDIR/usr/share/applications/astralia-shell-bamboo.desktop"
 }
 
+cmd_uninstall() {
+    [[ -n "$DESTDIR" ]] || "$BIN" kill 2>/dev/null || true
+    as_root rm -rf "$DESTDIR/usr/bin/$BIN" "$DESTDIR$DATA" "$DESTDIR/usr/share/applications/astralia-shell-bamboo.desktop"
+}
+
 cmd_run() { "$BIN" kill 2>/dev/null || true; cmd_install; "$BIN"; }
 
 main() {
     local cmd="${1:-default}"
     case "$cmd" in
-    default | setup | build | install | run) shift || true; "cmd_$cmd" "$@" ;;
+    default | setup | build | install | uninstall | run) shift || true; "cmd_$cmd" "$@" ;;
     *) echo "unknown command: $cmd" >&2; exit 2 ;;
     esac
 }
