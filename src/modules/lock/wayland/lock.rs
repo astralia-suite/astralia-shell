@@ -249,6 +249,10 @@ impl State {
         self.session_locked = false;
         self.lock.model.reset();
         self.redraw.all();
+        // A decode that landed while locked went to the lock surface; the wallpaper surface never drew it.
+        for i in 0..self.monitors.len() {
+            self.request_wallpaper_frame(i);
+        }
         self.lock_release_wallpaper_if_idle();
     }
 

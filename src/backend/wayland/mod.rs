@@ -462,7 +462,7 @@ impl State {
         }
     }
 
-    fn request_wallpaper_frame(&mut self, index: usize) {
+    pub(crate) fn request_wallpaper_frame(&mut self, index: usize) {
         if self.monitors[index].wallpaper.as_mut().is_some_and(|w| w.window.request_frame(&self.qh)) {
             self.draw_wallpaper(index);
         }
