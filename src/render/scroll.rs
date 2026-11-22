@@ -114,13 +114,14 @@ pub fn scroll_geometry(panel: Rect, open: f32, m: &ScrollMetrics) -> ScrollGeome
     let t = open.clamp(0.0, 1.0);
     let gap = m.gap * t;
     if m.axis == ScrollAxis::Vertical {
+        // Top roller stays put; only the paper and the bottom roller travel.
         let paper_h = panel.h * t;
         let left = panel.x - m.overhang;
         let width = panel.w + m.overhang * 2.0;
         return ScrollGeometry {
             paper: Rect { h: paper_h, ..panel },
-            first_roller: Rect { x: left, y: panel.y - m.roller_w - gap, w: width, h: m.roller_w },
-            second_roller: Rect { x: left, y: panel.y + paper_h + gap, w: width, h: m.roller_w },
+            first_roller: Rect { x: left, y: panel.y - m.roller_w - m.gap, w: width, h: m.roller_w },
+            second_roller: Rect { x: left, y: panel.y - m.gap + (panel.h + m.gap * 2.0) * t, w: width, h: m.roller_w },
         };
     }
     let cx = panel.x + panel.w / 2.0;
@@ -227,7 +228,7 @@ mod tests {
 
         let closed = scroll_geometry(panel, 0.0, &m);
         assert!(closed.paper.h == 0.0 && near(closed.first_roller.y + closed.first_roller.h, closed.second_roller.y));
-        assert!(near(closed.first_roller.y, panel.y - m.roller_w) && near(closed.first_roller.w, panel.w + m.overhang * 2.0));
+        assert!(near(closed.first_roller.y, panel.y - m.roller_w - m.gap) && near(closed.first_roller.w, panel.w + m.overhang * 2.0));
 
         let open = scroll_geometry(panel, 1.0, &m);
         assert!(open.paper == panel && near(open.second_roller.y, panel.y + panel.h + m.gap));
@@ -238,7 +239,7 @@ mod tests {
             let g = scroll_geometry(panel, t, &m);
             assert!(g.paper.h >= last, "paper grows downward");
             last = g.paper.h;
-            assert!(near(g.first_roller.y, panel.y - m.roller_w - m.gap * t) && near(g.paper.y, panel.y));
+            assert!(near(g.first_roller.y, panel.y - m.roller_w - m.gap) && near(g.paper.y, panel.y), "top roller stays put");
         }
         assert!(rounded_count(&closed, &m) < rounded_count(&open, &m), "paper drawn only once it has height");
     }
