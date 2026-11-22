@@ -274,6 +274,7 @@ impl Bar {
         }
         let style = style_spec(cfg.bar_style, true);
         self.model.set_style(&style);
+        self.model.set_expand_all(cfg.expand_widgets);
         self.model.set_open(open, now);
         if self.autohide.enabled {
             let want_shown = self.pointer.is_some() || open.is_some() || keep_shown;

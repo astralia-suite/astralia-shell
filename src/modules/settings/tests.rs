@@ -326,6 +326,10 @@ fn settings_actions() {
     let x11 = Env::new(Caps { bar_styles: vec![BarStyle::Continuous, BarStyle::Okinami], ..Caps::default() });
     x11.config().bar_style = BarStyle::Pop;
     assert_eq!(x11.model.effective_bar_style(), BarStyle::Continuous, "an unsupported style shows as continuous");
+    env.click(Act::ToggleExpandWidgets, 0, 0);
+    assert!(env.cfg().expand_widgets, "expand widgets switches on");
+    env.click(Act::ToggleExpandWidgets, 0, 0);
+    assert!(!env.cfg().expand_widgets, "expand widgets switches off");
 
     env.click(Act::ToggleOsd, 0, 0);
     assert!(!env.cfg().default_osd, "default toggles flip the default");

@@ -120,6 +120,8 @@ fn bar_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     let labels: Vec<&str> = styles.iter().map(|s| s.label()).collect();
     let active = styles.iter().position(|&s| s == effective).unwrap_or(0);
     tiles(pane, x, y, w, &labels, active, Act::BarStyle, 0);
+    let expand = pane.config.expand_widgets;
+    toggle_row(pane, x, y + cfg::SELECTOR_HEIGHT + cfg::ROW_GAP, w, "Expand Widgets", expand, Act::ToggleExpandWidgets, 0, 0, true);
 }
 
 #[allow(clippy::too_many_arguments)]

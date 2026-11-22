@@ -144,6 +144,7 @@ pub struct Config {
     pub capture_column: i32,
 
     pub autohide: bool,
+    pub expand_widgets: bool,
     pub bar_style: BarStyle,
     pub default_osd: bool,
     pub default_notifications: bool,
@@ -194,6 +195,7 @@ impl Config {
             capture_monitor: String::new(),
             capture_column: 0,
             autohide: false,
+            expand_widgets: false,
             bar_style: BarStyle::Continuous,
             default_osd: true,
             default_notifications: true,
@@ -362,6 +364,7 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
 
     let bar = section(root, "bar", "qixing");
     cfg.autohide = flag(bar, "autohideEnabled", cfg.autohide);
+    cfg.expand_widgets = flag(bar, "expandWidgets", cfg.expand_widgets);
     let style = text(bar, "style", BarStyle::Continuous.name());
     if let Some(style) = BarStyle::ALL.into_iter().find(|s| s.name() == style) {
         cfg.bar_style = style;
@@ -612,7 +615,7 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
     ]);
     let mode = if cfg.rain.mode == RainMode::Stiletto { "stiletto" } else { "matrix" };
     let rain = object(vec![("mode", Str(mode.into())), ("asyncSpeed", Bool(cfg.rain.async_speed))]);
-    let bar = object(vec![("autohideEnabled", Bool(cfg.autohide)), ("style", Str(cfg.bar_style.name().into()))]);
+    let bar = object(vec![("autohideEnabled", Bool(cfg.autohide)), ("expandWidgets", Bool(cfg.expand_widgets)), ("style", Str(cfg.bar_style.name().into()))]);
     let general = object(vec![
         ("animationsDisabled", Bool(cfg.animations_disabled)),
         ("logoutLogoPath", path(&cfg.logout_logo_path)),
@@ -641,7 +644,7 @@ mod tests {
     fn sample_config() -> &'static str {
         r#"{
   "animation": {"disabled": false},
-  "bar": {"autohideEnabled": true, "style": "continuous"},
+  "bar": {"autohideEnabled": true, "expandWidgets": true, "style": "continuous"},
   "displays": {
     "defaultLock": true,
     "defaultNotifications": true,
@@ -687,7 +690,8 @@ mod tests {
         assert_eq!(parse("[1,2]"), Config::with_home(HOME), "a non-object gives the defaults");
 
         let cfg = parse(sample_config());
-        assert!(cfg.autohide && cfg.bar_style == BarStyle::Continuous, "bar section");
+        assert!(cfg.autohide && cfg.expand_widgets && cfg.bar_style == BarStyle::Continuous, "bar section");
+        assert!(!defaults.expand_widgets, "expand widgets defaults off");
         assert!(!cfg.default_osd && !cfg.default_wallpaper && cfg.default_lock, "display defaults");
         let edp = &cfg.monitor_overrides["eDP-1"];
         assert!(edp.enabled && edp.osd && !edp.lock, "monitor override fields");
@@ -770,7 +774,7 @@ mod tests {
         assert_eq!(round, cfg, "serialize then parse round-trips");
         assert_eq!(serialize(&round), serialize(&cfg), "serialization is stable");
         let text = serialize(&cfg);
-        assert!(text.contains("\"autohideEnabled\": true"), "bar key is written");
+        assert!(text.contains("\"autohideEnabled\": true") && text.contains("\"expandWidgets\": true"), "bar keys are written");
         assert!(text.contains("~/Pictures/a.jpg"), "home is collapsed when saving");
         assert!(text.contains("\"lockCustom\": true") && text.contains("~/Locks/a.jpg"), "lock wallpaper keys are written");
         assert!(text.contains("\"particleThin\": 0.12"), "floats are written in their shortest form");

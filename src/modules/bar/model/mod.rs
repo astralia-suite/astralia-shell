@@ -218,6 +218,8 @@ pub struct Model {
     peek_deadline: Instant,
     peek_level: i32,
     peek_muted: bool,
+    /// Keeps every item's label out instead of only the hovered one's.
+    expand_all: bool,
 }
 
 #[cfg_attr(not(test), expect(dead_code))]
@@ -257,11 +259,16 @@ impl Model {
             peek_deadline: now,
             peek_level: -1,
             peek_muted: false,
+            expand_all: false,
         }
     }
 
     pub fn set_style(&mut self, style: &StyleSpec) {
         self.style = *style;
+    }
+
+    pub fn set_expand_all(&mut self, on: bool) {
+        self.expand_all = on;
     }
 
     pub fn style(&self) -> &StyleSpec {
@@ -427,7 +434,7 @@ impl Model {
         let mut changed = false;
         for id in Item::ALL {
             let view = &self.items[id as usize];
-            let want = view.visible && (target == Some(id) || !view.retracts) && !view.label.is_empty();
+            let want = view.visible && (target == Some(id) || !view.retracts || self.expand_all) && !view.label.is_empty();
             changed |= self.update_expand(id, want, want && self.open == Some(id));
         }
         self.sync();

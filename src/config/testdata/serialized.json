@@ -16,6 +16,7 @@
   },
   "bar": {
     "autohideEnabled": true,
+    "expandWidgets": true,
     "style": "continuous"
   },
   "displays": {

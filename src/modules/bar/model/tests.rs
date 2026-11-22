@@ -250,6 +250,13 @@ fn bar_interaction() {
     model.tick(now + Duration::from_millis(200));
     assert!(model.item(Item::Tray).expand == 0.0 && model.until_idle(now + Duration::from_millis(200)) == Duration::from_secs(3600), "the linger ends and the model goes idle");
 
+    model.set_expand_all(true);
+    model.tick(now);
+    assert!(model.item(Item::Date).expand == 1.0 && model.item(Item::Tray).expand == 1.0, "expand all keeps every label out without hover");
+    model.set_expand_all(false);
+    model.tick(now);
+    assert_eq!(model.item(Item::Date).expand, 0.0, "switching it off retracts them again");
+
     let second = model.workspaces()[1].rect;
     let action = model.press(second.x as f64 + 2.0, 20.0);
     assert!(action.kind == ActionKind::Workspace && action.workspace == 2, "clicking a workspace pill focuses it");

@@ -151,6 +151,7 @@ pub enum Act {
     ToggleOsd,
     ToggleNotifications,
     ToggleAutohide,
+    ToggleExpandWidgets,
     IdleEnable,
     IdleAmbient,
     IdleScreensaver,
@@ -852,6 +853,7 @@ impl Model {
                 }
             }),
             Act::IdleEnable => self.edit(|config| config.idle_enabled = !config.idle_enabled),
+            Act::ToggleExpandWidgets => self.edit(|config| config.expand_widgets = !config.expand_widgets),
             Act::IdleAmbientReset => self.edit(|config| {
                 let timeout = config.ambient_timeout;
                 config.monitor_overrides.entry(target.clone()).or_default().ambient_timeout = timeout;
