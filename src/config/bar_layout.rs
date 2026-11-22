@@ -41,6 +41,8 @@ pub const POP_ICON_GAP: f32 = 15.0;
 pub const WORKSPACE_INFO_CAP: f32 = 260.0;
 pub const WORKSPACE_INFO_NAME_PX: i32 = 13;
 pub const WORKSPACE_INFO_TITLE_PX: i32 = 11;
+/// How far the title tucks up into the name line's empty descent.
+pub const WORKSPACE_INFO_LINE_TUCK: f32 = 3.0;
 
 pub const BATTERY_CRITICAL_PERCENT: i32 = 10;
 

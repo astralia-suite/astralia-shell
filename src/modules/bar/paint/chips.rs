@@ -6,7 +6,7 @@ use crate::render::canvas::{Canvas, FontFamily, GroupOptions, TextStyle};
 use crate::render::geometry::Rect;
 use crate::render::sticker::{StickerStyle, sticker};
 use crate::render::theme::palette;
-use crate::render::tokens::{Color, metrics, with_alpha};
+use crate::render::tokens::{Color, with_alpha};
 
 const ICON_STYLE: TextStyle = TextStyle { family: FontFamily::Icon, px: bar_layout::ICON_PX as i32, bold: false, max_width: 0, wrap: false };
 const TEXT_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::TEXT_PX, bold: false, max_width: 0, wrap: false };
@@ -62,7 +62,7 @@ pub fn paint_icon_label(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, gly
     canvas.end_group();
 }
 
-/// The workspace info: an optional lead number and dot, then name over title squeezed into the pill's inner height.
+/// The workspace info: an optional lead number and dot, then name over title.
 pub fn paint_two_lines(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, glyph: &str, lead: &str, title: &str, detail: &str, amount: f32) {
     let p = palette();
     let pad = r.h * style.pad_ratio;
@@ -81,14 +81,13 @@ pub fn paint_two_lines(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, glyp
             x += size.w + bar_layout::LABEL_GAP;
         }
     }
-    let edge = style.border_width + metrics::RING_WIDTH;
-    let inner = r.h - style.shadow - 2.0 * edge;
-    let stacked = if detail.is_empty() { a.h } else { a.h + b.h };
-    let overlap = (stacked - inner).max(0.0);
-    let y = edge + (inner - (stacked - overlap)) / 2.0;
+    // Centred like single-line labels; the title tucks into the name's descent to keep clear of the ring.
+    let tuck = if detail.is_empty() { 0.0 } else { bar_layout::WORKSPACE_INFO_LINE_TUCK };
+    let stacked = if detail.is_empty() { a.h } else { a.h + b.h - tuck };
+    let y = (r.h - stacked) / 2.0 - dy;
     canvas.text(title, &first_style, x, y, with_alpha(p.text, amount));
     if !detail.is_empty() {
-        canvas.text(detail, &TITLE_STYLE, x, y + a.h - overlap, with_alpha(p.text_muted, amount));
+        canvas.text(detail, &TITLE_STYLE, x, y + a.h - tuck, with_alpha(p.text_muted, amount));
     }
     canvas.end_group();
 }
