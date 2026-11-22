@@ -193,9 +193,9 @@ mod tests {
 
     #[test]
     fn bar_paint_ops() {
-        // Items in `Item` order (logout, tray, media, time, date, active window), the status pill (empty),
+        // Items in `Item` order (logout, tray, media, time, date, active window, workspace info), the status pill (empty),
         // workspaces, the dock, then the dividers; only the time is expanded and draws its label.
-        let flat = "GTE".repeat(3) + "GTTE" + &"GTE".repeat(2) + "RRRR" + "rrrrr";
+        let flat = "GTE".repeat(3) + "GTTE" + &"GTE".repeat(3) + "RRRR" + "rrrrrr";
         for style in [BarStyle::Continuous, BarStyle::Okinami] {
             let (m, mut canvas) = model(style);
             paint(&mut canvas, &m);
@@ -203,7 +203,7 @@ mod tests {
             assert!(canvas.count(OpKind::Image) <= m.dock().len());
         }
         // Pop: a three-layer sticker pill under every item, badge and the dock, and no dividers.
-        let pop = "RRRGTE".repeat(3) + "RRRGTTE" + &"RRRGTE".repeat(2) + "RRRTRRRT" + "RRR";
+        let pop = "RRRGTE".repeat(3) + "RRRGTTE" + &"RRRGTE".repeat(3) + "RRRTRRRT" + "RRR";
         let (m, mut canvas) = model(BarStyle::Pop);
         paint(&mut canvas, &m);
         assert_eq!(signature(&canvas), pop);

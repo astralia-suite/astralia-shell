@@ -206,6 +206,18 @@ pub fn clients_in(state: &CompositorState, scope: CloseScope, id: i32) -> Vec<&C
         .collect()
 }
 
+/// The monitor's active workspace, else the focused monitor's, else 1.
+pub fn active_workspace(state: &CompositorState, monitor: &str) -> i32 {
+    let found = state.by_monitor.get(monitor).filter(|w| w.active_id >= 1).or_else(|| state.by_monitor.get(&state.focused_monitor));
+    found.filter(|w| w.active_id >= 1).map_or(1, |w| w.active_id)
+}
+
+/// The monitor's active workspace and how many windows are on it.
+pub fn window_count(state: &CompositorState, monitor: &str) -> (i32, usize) {
+    let id = active_workspace(state, monitor);
+    (id, clients_in(state, CloseScope::Workspace, id).len())
+}
+
 /// Blocking unix stream; `timeout` bounds each send and receive.
 pub fn connect_unix(path: &str, timeout: Option<Duration>) -> io::Result<UnixStream> {
     if path.is_empty() {
@@ -362,6 +374,13 @@ mod tests {
         assert_eq!(addresses(clients_in(&state, CloseScope::Workspace, 2)), ["0x1", "0x3"]);
         assert_eq!(addresses(clients_in(&state, CloseScope::Monitor, 0)), ["0x2", "0x3"]);
         assert_eq!(clients_in(&state, CloseScope::All, -1).len(), 3);
+
+        assert_eq!(window_count(&state, "DP-1"), (1, 1), "no workspaces read as workspace 1");
+        state.by_monitor.insert("DP-1".into(), MonitorWorkspaces { active_id: 2, ..Default::default() });
+        state.by_monitor.insert("HDMI-1".into(), MonitorWorkspaces { active_id: 1, ..Default::default() });
+        state.focused_monitor = "HDMI-1".into();
+        assert_eq!(window_count(&state, "DP-1"), (2, 2), "the monitor's active workspace is counted");
+        assert_eq!(window_count(&state, "nope"), (1, 1), "an unknown monitor falls back to the focused one");
     }
 
     #[test]

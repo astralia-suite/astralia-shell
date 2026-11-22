@@ -50,6 +50,27 @@ fn paint_tile<C: Canvas>(canvas: &mut C, model: &mut Model, tile: &Tile, art: &m
     canvas.draw_image(icon, Rect { x: rect.x + rect.w - size - cfg::CORNER_ICON_INSET, y: rect.y + rect.h - size - cfg::CORNER_ICON_INSET, w: size, h: size }, WHITE);
 }
 
+/// "Workspace N · M windows", centered under the blocks.
+fn paint_banner(canvas: &mut dyn Canvas, model: &Model) {
+    let panels = &model.layout().panels;
+    let (Some(left), Some(right), Some(bottom)) = (
+        panels.iter().map(|r| r.x).reduce(f32::min),
+        panels.iter().map(|r| r.x + r.w).reduce(f32::max),
+        panels.iter().map(|r| r.y + r.h).reduce(f32::max),
+    ) else {
+        return;
+    };
+    let (workspace, windows) = model.banner();
+    let label = format!("Workspace {workspace} · {windows} {}", if windows == 1 { "window" } else { "windows" });
+    let style = TextStyle { family: FontFamily::Text, px: cfg::BANNER_PX, ..TextStyle::default() };
+    let size = canvas.measure(&label, &style);
+    let w = size.w + 2.0 * cfg::BANNER_PAD;
+    let rect = Rect { x: ((left + right - w) / 2.0).round(), y: bottom + cfg::BANNER_GAP, w, h: cfg::BANNER_HEIGHT };
+    let p = palette();
+    sticker(canvas, rect, metrics::RADIUS_CARD, p.surface, &flat(cfg::WORKSPACE_BORDER_WIDTH));
+    canvas.text(&label, &style, rect.x + cfg::BANNER_PAD, rect.y + (rect.h - size.h) / 2.0, p.text);
+}
+
 /// Paints the open overview; `art` draws a tile's live picture and returns false when it has none,
 /// which leaves the placeholder card.
 pub fn paint<C: Canvas>(canvas: &mut C, model: &mut Model, art: &mut impl FnMut(&mut C, &Tile, Rect, f32) -> bool) {
@@ -71,6 +92,7 @@ pub fn paint<C: Canvas>(canvas: &mut C, model: &mut Model, art: &mut impl FnMut(
     for tile in model.tiles().to_vec() {
         paint_tile(canvas, model, &tile, art, scale);
     }
+    paint_banner(canvas, model);
     if let Some(indicator) = model.indicator() {
         let p = palette();
         let radius = metrics::RADIUS_CARD * scale;

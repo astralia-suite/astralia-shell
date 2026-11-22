@@ -21,6 +21,11 @@ pub const NUMBER_FADE: f32 = 0.8;
 // Window tile
 pub const CORNER_ICON_RATIO: f32 = 0.2;
 pub const CORNER_ICON_INSET: f32 = 4.0;
+// Banner
+pub const BANNER_GAP: f32 = 10.0;
+pub const BANNER_HEIGHT: f32 = 36.0;
+pub const BANNER_PAD: f32 = 16.0;
+pub const BANNER_PX: i32 = 17;
 // Animation
 pub const ANIM_MS: f32 = 200.0;
 // Interaction

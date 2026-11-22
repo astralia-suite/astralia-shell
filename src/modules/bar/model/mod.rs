@@ -24,7 +24,7 @@ use crate::service::audio::AudioService;
 use crate::service::battery::{BatteryService, BatteryStatus};
 use crate::service::bluetooth::{BluetoothService, BluetoothStatus};
 use crate::service::brightness::BrightnessService;
-use crate::service::compositor::Compositor;
+use crate::service::compositor::{Compositor, window_count};
 use crate::service::dock::DockEntry;
 use crate::service::network::{NetworkKind, NetworkService};
 pub use crate::config::settings::BarStyle;
@@ -302,6 +302,9 @@ impl Model {
         self.set(Item::Time, Some(icons::CLOCK), wall_clock::format_tm(&local, "%H:%M:%S"), true, false);
         self.set(Item::Date, Some(icons::CALENDAR), wall_clock::format_tm(&local, "%a %Y-%m-%d"), true, true);
         self.refresh_active_window();
+        let (_, windows) = window_count(&self.sources.compositor.state(), &self.sources.output);
+        let label = if windows == 1 { "1 window".to_string() } else { format!("{windows} windows") };
+        self.set(Item::WorkspaceInfo, Some(icons::APP_WINDOW), label, true, true);
 
         match self.sources.network.clone() {
             Some(net) => {
@@ -504,7 +507,7 @@ impl Model {
             if !view.visible || !view.rect.contains(x, y) {
                 continue;
             }
-            if id == Item::ActiveWindow {
+            if matches!(id, Item::ActiveWindow | Item::WorkspaceInfo) {
                 return Action { kind: ActionKind::Overview, ..Default::default() };
             }
             return Action { kind: ActionKind::Toggle, item: Some(id), workspace: 0 };

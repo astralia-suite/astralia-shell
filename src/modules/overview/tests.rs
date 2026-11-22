@@ -345,10 +345,13 @@ fn overview_view() {
 
     let mut canvas = RecordingCanvas::default();
     view::paint(&mut canvas, &mut model, &mut no_art());
-    assert_eq!(canvas.count(OpKind::Rounded), scroll_ops + 10 + 2 + 2, "the scroll, cells, one tile and the indicator with its shadow");
+    assert_eq!(canvas.count(OpKind::Rounded), scroll_ops + 10 + 2 + 2 + 2, "the scroll, cells, one tile, the banner and the indicator with its shadow");
     let frames: Vec<_> = canvas.ops.iter().filter(|op| op.kind == OpKind::Rounded).collect();
     assert!(frames.len() >= 2 && frames[frames.len() - 1].color.a == 0.0 && frames[frames.len() - 2].color.a == 0.0, "the indicator and its shadow leave the tiles visible");
-    assert!(canvas.count(OpKind::Text) == 5 && canvas.count(OpKind::Image) <= 1, "a number per cell");
+    assert!(canvas.count(OpKind::Text) == 6 && canvas.count(OpKind::Image) <= 1, "a number per cell and the banner");
+    assert_eq!(model.banner(), (1, 1), "the banner counts the active workspace's windows");
+    let bottom = model.layout().panels[0].y + model.layout().panels[0].h;
+    assert!(canvas.ops.iter().any(|op| op.kind == OpKind::Rounded && op.rect.y == bottom + cfg::BANNER_GAP), "the banner sits under the grid");
 
     let mut live = RecordingCanvas::default();
     let mut art_calls = 0;
@@ -356,7 +359,7 @@ fn overview_view() {
         art_calls += 1;
         true
     });
-    assert!(art_calls == 1 && live.count(OpKind::Rounded) == scroll_ops + 10 + 2, "live art replaces the placeholder tile");
+    assert!(art_calls == 1 && live.count(OpKind::Rounded) == scroll_ops + 10 + 2 + 2, "live art replaces the placeholder tile");
 }
 
 #[test]
@@ -391,7 +394,7 @@ fn overview_staged_view() {
     model.sync(1366.0, 768.0);
     let mut open = RecordingCanvas::default();
     view::paint(&mut open, &mut model, &mut no_art());
-    assert!(open.count(OpKind::Text) == 5 && open.count(OpKind::BeginGroup) == 0, "the grid appears once the scroll is open");
+    assert!(open.count(OpKind::Text) == 6 && open.count(OpKind::BeginGroup) == 0, "the grid and banner appear once the scroll is open");
 
     model.close();
     let closing = Instant::now();
@@ -399,7 +402,7 @@ fn overview_staged_view() {
     model.sync(1366.0, 768.0);
     let mut fading = RecordingCanvas::default();
     view::paint(&mut fading, &mut model, &mut no_art());
-    assert!(model.grid_alpha() > 0.0 && model.grid_alpha() < 1.0 && model.scroll() == 1.0 && fading.count(OpKind::Text) == 5, "the grid fades while the scroll stays open");
+    assert!(model.grid_alpha() > 0.0 && model.grid_alpha() < 1.0 && model.scroll() == 1.0 && fading.count(OpKind::Text) == 6, "the grid and banner fade while the scroll stays open");
 
     model.tick(closing + Duration::from_secs(4));
     model.sync(1366.0, 768.0);

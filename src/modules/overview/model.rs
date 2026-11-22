@@ -14,7 +14,7 @@ use crate::config::overview_config as cfg;
 use crate::render::geometry::Rect;
 use crate::render::scroll::ScrollMetrics;
 use crate::render::scroll_sequence::{ScrollSequence, ScrollTimings};
-use crate::service::compositor::{CloseScope, Compositor, CompositorMonitor, CompositorState, WorkArea, compositor_logical_size, compositor_monitor_by_id, compositor_monitor_by_name, compositor_work_area};
+use crate::service::compositor::{CloseScope, Compositor, CompositorMonitor, CompositorState, WorkArea, compositor_logical_size, compositor_monitor_by_id, compositor_monitor_by_name, compositor_work_area, active_workspace, window_count};
 use crate::service::icon::window_icon_path;
 
 /// Shows the user a message (summary, body).
@@ -79,12 +79,6 @@ fn tile_owner(address: &str, component: u64) -> u64 {
     let mut hasher = DefaultHasher::new();
     address.hash(&mut hasher);
     1000u64.wrapping_add(hasher.finish() << 2).wrapping_add(component)
-}
-
-/// The monitor's active workspace, else the focused monitor's, else 1.
-fn active_workspace_in(state: &CompositorState, monitor_name: &str) -> i32 {
-    let found = state.by_monitor.get(monitor_name).filter(|w| w.active_id >= 1).or_else(|| state.by_monitor.get(&state.focused_monitor));
-    found.filter(|w| w.active_id >= 1).map_or(1, |w| w.active_id)
 }
 
 fn rect_of(v: &[Value; 4]) -> Rect {
@@ -175,7 +169,12 @@ impl Model {
     }
 
     fn active_workspace(&self, monitor_name: &str) -> i32 {
-        active_workspace_in(&self.state(), monitor_name)
+        active_workspace(&self.state(), monitor_name)
+    }
+
+    /// The active workspace and its window count, for the banner under the grid.
+    pub fn banner(&self) -> (i32, usize) {
+        window_count(&self.state(), &self.output_name)
     }
 
     fn grid(&self) -> Grid {
@@ -351,7 +350,7 @@ impl Model {
                 let area = compositor_work_area(m);
                 let x = ((m.x - min_x) * f64::from(grid.columns) * f64::from(scale)) as f32 + steps_x[i] * gap_x;
                 let y = ((m.y - min_y) * f64::from(grid.rows) * f64::from(scale)) as f32 + steps_y[i] * gap_y;
-                let group = page_of(grid, active_workspace_in(&state, &m.name));
+                let group = page_of(grid, active_workspace(&state, &m.name));
                 blocks.push(make_block(area.width, area.height, group, scale, x, y));
             }
         } else {

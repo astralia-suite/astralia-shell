@@ -15,7 +15,7 @@ pub fn panel_for(item: Item) -> Option<PanelId> {
         Item::Brightness => PanelId::Brightness,
         Item::Time => PanelId::Time,
         Item::Date => PanelId::Date,
-        Item::Logout | Item::ActiveWindow => return None,
+        Item::Logout | Item::ActiveWindow | Item::WorkspaceInfo => return None,
     })
 }
 
@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     fn bar_items_map_panels() {
-        for item in [Item::Logout, Item::ActiveWindow] {
+        for item in [Item::Logout, Item::ActiveWindow, Item::WorkspaceInfo] {
             assert_eq!(panel_for(item), None, "{item:?} opens no panel");
         }
         assert_eq!(panel_for(Item::Tray), Some(PanelId::Tray));

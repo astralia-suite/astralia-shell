@@ -98,7 +98,9 @@ fn bar_layout() {
     let window = model.item(Item::ActiveWindow);
     assert!(window.visible && window.rect.x == logout.rect.x + logout.rect.w + 10.0 && media.x == window.rect.x + window.rect.w + 10.0, "the active window and media follow the logout pill");
     assert_eq!(model.item(Item::Tray).rect.x, media.x + media.w + 10.0, "the tray follows media");
-    assert_eq!(model.layout_ref().workspaces.x + model.layout_ref().workspaces.w + 10.0, clock.x, "the time pill follows the workspaces");
+    let info = model.item(Item::WorkspaceInfo).rect;
+    assert_eq!(model.layout_ref().workspaces.x + model.layout_ref().workspaces.w + 10.0, info.x, "the workspace info follows the workspaces");
+    assert_eq!(info.x + info.w + 10.0, clock.x, "the time pill follows the workspace info");
     let date = model.item(Item::Date).rect;
     assert_eq!(clock.x + clock.w + 10.0, date.x, "the date pill follows the time pill");
     let center = (model.layout_ref().workspaces.x + date.x + date.w) / 2.0;
@@ -249,6 +251,17 @@ fn bar_interaction() {
     assert_eq!(model.item(Item::Tray).expand, 1.0, "the pill stays open during the linger");
     model.tick(now + Duration::from_millis(200));
     assert!(model.item(Item::Tray).expand == 0.0 && model.until_idle(now + Duration::from_millis(200)) == Duration::from_secs(3600), "the linger ends and the model goes idle");
+
+    assert_eq!(model.item(Item::WorkspaceInfo).label, "1 window", "the active workspace's windows are counted");
+    let info = model.item(Item::WorkspaceInfo).rect;
+    assert_eq!(model.press(info.x as f64 + 5.0, 20.0).kind, ActionKind::Overview, "the workspace info opens the overview");
+    let mut state = make_state();
+    state.clients.push(CompositorClient { address: "0x2".into(), workspace_id: 2, ..Default::default() });
+    state.clients.push(CompositorClient { address: "0x3".into(), workspace_id: 1, ..Default::default() });
+    _c.set_state(state);
+    model.refresh(now);
+    model.layout(&mut canvas, 1000.0);
+    assert_eq!(model.item(Item::WorkspaceInfo).label, "2 windows", "other workspaces' windows are left out");
 
     model.set_expand_all(true);
     model.tick(now);
