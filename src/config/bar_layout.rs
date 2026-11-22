@@ -38,9 +38,9 @@ pub const POP_BADGE_ACTIVE: f32 = 42.0;
 pub const POP_BADGE_GAP: f32 = 6.0;
 pub const POP_SIDE_MARGIN: i32 = 16;
 pub const POP_ICON_GAP: f32 = 15.0;
-pub const ACTIVE_WINDOW_CAP: f32 = 260.0;
-pub const ACTIVE_WINDOW_NAME_PX: i32 = 13;
-pub const ACTIVE_WINDOW_TITLE_PX: i32 = 11;
+pub const WORKSPACE_INFO_CAP: f32 = 260.0;
+pub const WORKSPACE_INFO_NAME_PX: i32 = 13;
+pub const WORKSPACE_INFO_TITLE_PX: i32 = 11;
 
 pub const BATTERY_CRITICAL_PERCENT: i32 = 10;
 

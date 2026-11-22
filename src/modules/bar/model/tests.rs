@@ -97,12 +97,10 @@ fn bar_layout() {
     assert!(model.item(Item::Tray).visible && !model.item(Item::Network).visible, "an occupied tray is shown, the network needs its service");
     let media = model.item(Item::Media).rect;
     let clock = model.item(Item::Time).rect;
-    let window = model.item(Item::ActiveWindow);
-    assert!(window.visible && window.rect.x == logout.rect.x + logout.rect.w + 10.0 && media.x == window.rect.x + window.rect.w + 10.0, "the active window and media follow the logout pill");
+    let window = model.item(Item::WorkspaceInfo);
+    assert!(window.visible && window.rect.x == logout.rect.x + logout.rect.w + 10.0 && media.x == window.rect.x + window.rect.w + 10.0, "the workspace info and media follow the logout pill");
     assert_eq!(model.item(Item::Tray).rect.x, media.x + media.w + 10.0, "the tray follows media");
-    let info = model.item(Item::WorkspaceInfo).rect;
-    assert_eq!(model.layout_ref().workspaces.x + model.layout_ref().workspaces.w + 10.0, info.x, "the workspace info follows the workspaces");
-    assert_eq!(info.x + info.w + 10.0, clock.x, "the time pill follows the workspace info");
+    assert_eq!(model.layout_ref().workspaces.x + model.layout_ref().workspaces.w + 10.0, clock.x, "the time pill follows the workspaces");
     let date = model.item(Item::Date).rect;
     assert_eq!(clock.x + clock.w + 10.0, date.x, "the date pill follows the time pill");
     let center = (model.layout_ref().workspaces.x + date.x + date.w) / 2.0;
@@ -123,12 +121,12 @@ fn bar_layout() {
     model.set_style(&style(BarStyle::Pop, true));
     model.refresh(now);
     model.layout(&mut canvas, 1000.0);
-    let window = model.item(Item::ActiveWindow).rect;
+    let window = model.item(Item::WorkspaceInfo).rect;
     let media = model.item(Item::Media).rect;
     let clock = model.item(Item::Time).clone();
     let date = model.item(Item::Date).clone();
     let logout = model.item(Item::Logout).rect;
-    assert!(logout.x == 0.0 && window.x == logout.x + logout.w + 10.0 && media.x == window.x + window.w + 10.0 && model.item(Item::Tray).rect.x == media.x + media.w + 10.0, "pop left zone is logout, active window, media, tray");
+    assert!(logout.x == 0.0 && window.x == logout.x + logout.w + 10.0 && media.x == window.x + window.w + 10.0 && model.item(Item::Tray).rect.x == media.x + media.w + 10.0, "pop left zone is logout, workspace info, media, tray");
     assert_eq!(model.press(window.x as f64 + 2.0, 20.0).kind, ActionKind::Overview, "the window widget opens the overview");
     assert!(model.item(Item::Logout).rect.w > 0.0 && model.layout_ref().dock.w > 0.0, "pop shows logout and the dock");
     assert!(date.rect.x == clock.rect.x + clock.rect.w + 10.0 && ((model.layout_ref().workspaces.x + date.rect.x + date.rect.w) / 2.0 - 500.0).abs() <= 1.0, "pop center zone is centered");
@@ -254,16 +252,14 @@ fn bar_interaction() {
     model.tick(now + Duration::from_millis(200));
     assert!(model.item(Item::Tray).expand == 0.0 && model.until_idle(now + Duration::from_millis(200)) == Duration::from_secs(3600), "the linger ends and the model goes idle");
 
-    assert_eq!(model.item(Item::WorkspaceInfo).label, "1", "the active workspace's windows are counted");
-    let info = model.item(Item::WorkspaceInfo).rect;
-    assert_eq!(model.press(info.x as f64 + 5.0, 20.0).kind, ActionKind::Overview, "the workspace info opens the overview");
+    assert_eq!(model.item(Item::WorkspaceInfo).lead, "1", "the active workspace's window count leads the name");
     let mut state = make_state();
     state.clients.push(CompositorClient { address: "0x2".into(), workspace_id: 2, ..Default::default() });
     state.clients.push(CompositorClient { address: "0x3".into(), workspace_id: 1, ..Default::default() });
     _c.set_state(state);
     model.refresh(now);
     model.layout(&mut canvas, 1000.0);
-    assert_eq!(model.item(Item::WorkspaceInfo).label, "2", "other workspaces' windows are left out");
+    assert_eq!(model.item(Item::WorkspaceInfo).lead, "2", "other workspaces' windows are left out");
 
     model.set_expand_all(true);
     model.tick(now);

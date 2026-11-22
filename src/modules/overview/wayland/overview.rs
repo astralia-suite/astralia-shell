@@ -50,7 +50,7 @@ impl Overview {
         self.overlay.is_open()
     }
 
-    /// Open on `output` from the bar's active-window item.
+    /// Open on `output` from the bar's workspace info item.
     pub fn shown_on(&self, output: &str) -> bool {
         self.is_open() && self.opened_by_widget && self.output == output
     }

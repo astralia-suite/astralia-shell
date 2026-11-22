@@ -3,7 +3,7 @@
 use super::zones::{STATUS_MEMBERS, Slot, SlotKind};
 use super::{Item, ItemView, Layout, Model};
 use crate::config::bar_layout;
-use crate::modules::bar::paint::chips::icon_cell_extent;
+use crate::modules::bar::paint::chips::{DOT, icon_cell_extent};
 use crate::modules::bar::paint::style::IslandSpan;
 use crate::modules::bar::panel::core::panel_set::PanelAnchor;
 use crate::render::canvas::{Canvas, FontFamily, TextStyle};
@@ -11,8 +11,8 @@ use crate::render::geometry::Rect;
 
 const ICON_STYLE: TextStyle = TextStyle { family: FontFamily::Icon, px: bar_layout::ICON_PX as i32, bold: false, max_width: 0, wrap: false };
 const TEXT_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::TEXT_PX, bold: false, max_width: 0, wrap: false };
-const NAME_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::ACTIVE_WINDOW_NAME_PX, bold: false, max_width: 0, wrap: false };
-const TITLE_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::ACTIVE_WINDOW_TITLE_PX, bold: false, max_width: 0, wrap: false };
+const NAME_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::WORKSPACE_INFO_NAME_PX, bold: false, max_width: 0, wrap: false };
+const TITLE_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::WORKSPACE_INFO_TITLE_PX, bold: false, max_width: 0, wrap: false };
 
 struct Run {
     start: f32,
@@ -33,7 +33,10 @@ impl Model {
             return collapsed;
         }
         if view.detail_w > 0.0 {
-            text = text.min(bar_layout::ACTIVE_WINDOW_CAP - collapsed - bar_layout::LABEL_GAP);
+            text = text.min(bar_layout::WORKSPACE_INFO_CAP - collapsed - bar_layout::LABEL_GAP);
+        }
+        if view.lead_w > 0.0 {
+            text += view.lead_w + bar_layout::LABEL_GAP;
         }
         collapsed + (text + bar_layout::LABEL_GAP) * view.expand
     }
@@ -145,6 +148,7 @@ impl Model {
             view.grouped = false;
             view.zone = PanelAnchor::Right;
             view.detail_w = 0.0;
+            view.lead_w = 0.0;
             if !view.visible {
                 continue;
             }
@@ -158,6 +162,9 @@ impl Model {
             }
             if !view.detail.is_empty() {
                 view.detail_w = canvas.measure(&view.detail, &TITLE_STYLE).w.max(canvas.measure(&view.label, &NAME_STYLE).w);
+            }
+            if !view.lead.is_empty() {
+                view.lead_w = canvas.measure(&view.lead, &TEXT_STYLE).w + bar_layout::LABEL_GAP + canvas.measure(DOT, &TEXT_STYLE).w;
             }
         }
         for slot in &mut self.dock {

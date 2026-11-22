@@ -10,8 +10,11 @@ use crate::render::tokens::{Color, metrics, with_alpha};
 
 const ICON_STYLE: TextStyle = TextStyle { family: FontFamily::Icon, px: bar_layout::ICON_PX as i32, bold: false, max_width: 0, wrap: false };
 const TEXT_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::TEXT_PX, bold: false, max_width: 0, wrap: false };
-const NAME_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::ACTIVE_WINDOW_NAME_PX, bold: false, max_width: 0, wrap: false };
-const TITLE_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::ACTIVE_WINDOW_TITLE_PX, bold: false, max_width: 0, wrap: false };
+const NAME_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::WORKSPACE_INFO_NAME_PX, bold: false, max_width: 0, wrap: false };
+const TITLE_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: bar_layout::WORKSPACE_INFO_TITLE_PX, bold: false, max_width: 0, wrap: false };
+
+/// Sets a lead number apart from the label after it.
+pub const DOT: &str = "·";
 
 const CLIPPED: GroupOptions = GroupOptions { scale: 1.0, clip: true, radius: 0.0, rotation: 0.0 };
 
@@ -59,8 +62,8 @@ pub fn paint_icon_label(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, gly
     canvas.end_group();
 }
 
-/// The active window: name over title, squeezed into the pill's inner height.
-pub fn paint_two_lines(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, glyph: &str, title: &str, detail: &str, amount: f32) {
+/// The workspace info: an optional lead number and dot, then name over title squeezed into the pill's inner height.
+pub fn paint_two_lines(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, glyph: &str, lead: &str, title: &str, detail: &str, amount: f32) {
     let p = palette();
     let pad = r.h * style.pad_ratio;
     let dy = style.text_lift;
@@ -70,7 +73,14 @@ pub fn paint_two_lines(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, glyp
     let first_style = if detail.is_empty() { TEXT_STYLE } else { NAME_STYLE };
     let a = canvas.measure(title, &first_style);
     let b = canvas.measure(detail, &TITLE_STYLE);
-    let x = pad + icon.w + bar_layout::LABEL_GAP;
+    let mut x = pad + icon.w + bar_layout::LABEL_GAP;
+    if !lead.is_empty() {
+        for part in [lead, DOT] {
+            let size = canvas.measure(part, &TEXT_STYLE);
+            canvas.text(part, &TEXT_STYLE, x, (r.h - size.h) / 2.0 - dy, with_alpha(p.text, amount));
+            x += size.w + bar_layout::LABEL_GAP;
+        }
+    }
     let edge = style.border_width + metrics::RING_WIDTH;
     let inner = r.h - style.shadow - 2.0 * edge;
     let stacked = if detail.is_empty() { a.h } else { a.h + b.h };

@@ -49,6 +49,8 @@ pub struct ItemView {
     pub glyph: Option<&'static str>,
     pub label: String,
     pub detail: String,
+    /// A number set apart from the label by a dot.
+    pub lead: String,
     pub tint: Option<Color>,
     pub alert: bool,
     pub visible: bool,
@@ -59,6 +61,8 @@ pub struct ItemView {
     pub icon_w: f32,
     pub label_w: f32,
     pub detail_w: f32,
+    /// The lead, its gap and the dot.
+    pub lead_w: f32,
     /// Drawn inside the status pill.
     pub grouped: bool,
     pub zone: PanelAnchor,
@@ -71,6 +75,7 @@ impl Default for ItemView {
             glyph: None,
             label: String::new(),
             detail: String::new(),
+            lead: String::new(),
             tint: None,
             alert: false,
             visible: false,
@@ -80,6 +85,7 @@ impl Default for ItemView {
             icon_w: 0.0,
             label_w: 0.0,
             detail_w: 0.0,
+            lead_w: 0.0,
             grouped: false,
             zone: PanelAnchor::Right,
             rect: Rect::default(),
@@ -307,9 +313,7 @@ impl Model {
         let local = wall_clock::now_tm();
         self.set(Item::Time, Some(icons::CLOCK), wall_clock::format_tm(&local, "%H:%M:%S"), true, false);
         self.set(Item::Date, Some(icons::CALENDAR), wall_clock::format_tm(&local, "%a %d %b"), true, true);
-        self.refresh_active_window();
-        let (_, windows) = window_count(&self.sources.compositor.state(), &self.sources.output);
-        self.set(Item::WorkspaceInfo, Some(icons::APP_WINDOW), windows.to_string(), true, true);
+        self.refresh_workspace_info();
 
         match self.sources.network.clone() {
             Some(net) => {
@@ -389,19 +393,22 @@ impl Model {
         self.apply_hover(now);
     }
 
-    fn refresh_active_window(&mut self) {
+    fn refresh_workspace_info(&mut self) {
         let compositor = self.sources.compositor.clone();
         let state = compositor.state();
-        let active = state.by_monitor.get(&self.sources.output).map_or(-1, |m| m.active_id);
-        let view = &mut self.items[Item::ActiveWindow as usize];
+        let (active, windows) = window_count(&state, &self.sources.output);
+        let view = &mut self.items[Item::WorkspaceInfo as usize];
         view.glyph = Some(icons::APP_WINDOW);
         view.visible = true;
         view.detail.clear();
-        view.label = format!("Workspace {}", if active > 0 { active } else { 1 });
+        let mut name = format!("Workspace {active}");
         if let Some(client) = state.clients.iter().find(|c| c.focus_history_id == 0 && c.workspace_id == active) {
-            view.label = if client.initial_title.is_empty() { client.window_class.clone() } else { client.initial_title.clone() };
+            name = if client.initial_title.is_empty() { client.window_class.clone() } else { client.initial_title.clone() };
             view.detail = client.title.clone();
         }
+        // The active workspace's window count leads, set apart by a dot.
+        view.lead = windows.to_string();
+        view.label = name;
     }
 
     fn update_expand(&mut self, id: Item, target: bool, instant: bool) -> bool {
@@ -514,7 +521,7 @@ impl Model {
             if !view.visible || !view.rect.contains(x, y) {
                 continue;
             }
-            if matches!(id, Item::ActiveWindow | Item::WorkspaceInfo) {
+            if id == Item::WorkspaceInfo {
                 return Action { kind: ActionKind::Overview, ..Default::default() };
             }
             return Action { kind: ActionKind::Toggle, item: Some(id), workspace: 0 };

@@ -13,7 +13,6 @@ pub enum Item {
     Media,
     Time,
     Date,
-    ActiveWindow,
     WorkspaceInfo,
 }
 
@@ -30,9 +29,8 @@ impl Item {
         Item::Media,
         Item::Time,
         Item::Date,
-        Item::ActiveWindow,
         Item::WorkspaceInfo,
     ];
 }
 
-pub const ITEM_COUNT: usize = 13;
+pub const ITEM_COUNT: usize = 12;
