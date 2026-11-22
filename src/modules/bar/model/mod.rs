@@ -155,12 +155,18 @@ pub fn bluetooth_label(status: &BluetoothStatus) -> String {
     if !status.present {
         String::new()
     } else if !status.powered {
-        "Disconnected".into()
+        "Off".into()
     } else if status.connected && !status.device.is_empty() {
-        status.device.clone()
+        clip(&status.device)
     } else {
         "Idle".into()
     }
+}
+
+/// Free text (SSID, device name) capped so expanded labels stay a similar width.
+pub fn clip(s: &str) -> String {
+    const MAX: usize = 14;
+    if s.chars().count() <= MAX { s.to_string() } else { s.chars().take(MAX - 1).chain(['\u{2026}']).collect() }
 }
 
 pub fn battery_glyph(status: &BatteryStatus) -> &'static str {
@@ -300,11 +306,10 @@ impl Model {
         self.set(Item::Media, Some(icons::MUSIC_NOTE), "Media".into(), true, true);
         let local = wall_clock::now_tm();
         self.set(Item::Time, Some(icons::CLOCK), wall_clock::format_tm(&local, "%H:%M:%S"), true, false);
-        self.set(Item::Date, Some(icons::CALENDAR), wall_clock::format_tm(&local, "%a %Y-%m-%d"), true, true);
+        self.set(Item::Date, Some(icons::CALENDAR), wall_clock::format_tm(&local, "%a %d %b"), true, true);
         self.refresh_active_window();
         let (_, windows) = window_count(&self.sources.compositor.state(), &self.sources.output);
-        let label = if windows == 1 { "1 window".to_string() } else { format!("{windows} windows") };
-        self.set(Item::WorkspaceInfo, Some(icons::APP_WINDOW), label, true, true);
+        self.set(Item::WorkspaceInfo, Some(icons::APP_WINDOW), windows.to_string(), true, true);
 
         match self.sources.network.clone() {
             Some(net) => {
@@ -315,13 +320,13 @@ impl Model {
                 } else if status.kind == NetworkKind::Ethernet || net.ethernet_connected() {
                     (icons::ROUTER, "Ethernet".to_string())
                 } else if status.kind == NetworkKind::Wifi {
-                    (wifi_glyph(status.strength), status.ssid.clone())
+                    (wifi_glyph(status.strength), clip(&status.ssid))
                 } else if net.ethernet_available() && !net.wifi_available() {
                     (icons::ROUTER, String::new())
                 } else {
                     (icons::WIFI_OFF, String::new())
                 };
-                self.set(Item::Network, Some(glyph), if label.is_empty() { "Wi-Fi".into() } else { label }, true, true);
+                self.set(Item::Network, Some(glyph), if label.is_empty() { "Offline".into() } else { label }, true, true);
             }
             None => self.set(Item::Network, None, String::new(), false, true),
         }
@@ -335,7 +340,7 @@ impl Model {
         let sink = self.sources.audio.as_ref().map(|a| a.sink()).filter(|l| l.present);
         match sink {
             Some(level) => {
-                let label = if level.muted { "muted".into() } else { format!("{}%", level.percent) };
+                let label = if level.muted { "Muted".into() } else { format!("{}%", level.percent) };
                 self.set(Item::Volume, Some(glyphs::volume_threshold(level.muted, level.percent)), label, true, true);
                 if !self.peek_ready && now.saturating_duration_since(self.started) >= bar_layout::PEEK_READY_DELAY {
                     self.peek_ready = true;
@@ -437,7 +442,9 @@ impl Model {
         let mut changed = false;
         for id in Item::ALL {
             let view = &self.items[id as usize];
-            let want = view.visible && (target == Some(id) || !view.retracts || self.expand_all) && !view.label.is_empty();
+            // Name-only labels ("Logout", "Tray"…) stay a hover hint; expand-all shows only labels that carry a value.
+            let name_only = matches!(id, Item::Logout | Item::Tray | Item::Resource | Item::Media);
+            let want = view.visible && (target == Some(id) || !view.retracts || (self.expand_all && !name_only)) && !view.label.is_empty();
             changed |= self.update_expand(id, want, want && self.open == Some(id));
         }
         self.sync();

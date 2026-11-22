@@ -73,7 +73,9 @@ fn bar_text() {
     assert_eq!(bluetooth_glyph(&bt(true, false, true, "")), icons::BLUETOOTH_OFF, "unpowered is off");
     assert_eq!(bluetooth_glyph(&bt(true, true, true, "")), icons::BLUETOOTH_CONNECTED, "a connected device shows connected");
     assert!(bluetooth_label(&BluetoothStatus::default()).is_empty(), "no adapter has no label");
-    assert_eq!(bluetooth_label(&bt(true, false, false, "")), "Disconnected");
+    assert_eq!(bluetooth_label(&bt(true, false, false, "")), "Off");
+    assert_eq!(clip("Living Room Speaker"), "Living Room S\u{2026}", "long names are clipped");
+    assert_eq!(clip("Buds"), "Buds");
     assert_eq!(bluetooth_label(&bt(true, true, false, "")), "Idle");
     assert_eq!(bluetooth_label(&bt(true, true, true, "Buds")), "Buds");
 }
@@ -252,7 +254,7 @@ fn bar_interaction() {
     model.tick(now + Duration::from_millis(200));
     assert!(model.item(Item::Tray).expand == 0.0 && model.until_idle(now + Duration::from_millis(200)) == Duration::from_secs(3600), "the linger ends and the model goes idle");
 
-    assert_eq!(model.item(Item::WorkspaceInfo).label, "1 window", "the active workspace's windows are counted");
+    assert_eq!(model.item(Item::WorkspaceInfo).label, "1", "the active workspace's windows are counted");
     let info = model.item(Item::WorkspaceInfo).rect;
     assert_eq!(model.press(info.x as f64 + 5.0, 20.0).kind, ActionKind::Overview, "the workspace info opens the overview");
     let mut state = make_state();
@@ -261,11 +263,12 @@ fn bar_interaction() {
     _c.set_state(state);
     model.refresh(now);
     model.layout(&mut canvas, 1000.0);
-    assert_eq!(model.item(Item::WorkspaceInfo).label, "2 windows", "other workspaces' windows are left out");
+    assert_eq!(model.item(Item::WorkspaceInfo).label, "2", "other workspaces' windows are left out");
 
     model.set_expand_all(true);
     model.tick(now);
-    assert!(model.item(Item::Date).expand == 1.0 && model.item(Item::Tray).expand == 1.0, "expand all keeps every label out without hover");
+    assert!(model.item(Item::Date).expand == 1.0, "expand all keeps value labels out without hover");
+    assert_eq!(model.item(Item::Logout).expand, 0.0, "name-only labels stay a hover hint");
     model.set_expand_all(false);
     model.tick(now);
     assert_eq!(model.item(Item::Date).expand, 0.0, "switching it off retracts them again");
