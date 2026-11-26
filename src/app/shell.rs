@@ -137,8 +137,7 @@ impl<C: Host> Shell<C> {
 pub fn report() -> String {
     let mut text = String::from("| Module |\n| --- |\n");
     for name in [
-        "bar", "launcher", "logout", "overview", "settings", "notification", "osd", "polkit", "wallpaper", "bamboo", "lock", "idle", "rain",
-        "visualizer",
+        "bar", "launcher", "logout", "overview", "settings", "notification", "osd", "polkit", "wallpaper", "bamboo", "lock", "rain", "visualizer",
     ] {
         text += &format!("| `{name}` |\n");
     }

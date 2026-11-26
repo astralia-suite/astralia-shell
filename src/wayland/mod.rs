@@ -11,7 +11,6 @@ pub mod render;
 pub mod text_input;
 pub mod toplevel;
 pub mod windows;
-pub mod idle;
 
 use std::ffi::c_void;
 use std::rc::Rc;
@@ -54,7 +53,6 @@ use monitor::{FrameTarget, Monitor, Reasons, Redraw};
 use overlays::{KeyRoute, OverlayId, Overlays, route_key};
 use render::toplevel_window::Request;
 use windows::{WindowId, Windows};
-use crate::modules::idle::wayland::IdleOverlay;
 use crate::modules::rain::wayland::Rain;
 use smithay_client_toolkit::seat::pointer::BTN_LEFT;
 use clipboard::Clipboard;
@@ -133,8 +131,6 @@ pub struct State {
     /// The compositor confirmed the session lock; every other surface stays hidden.
     pub session_locked: bool,
     pub windows: Windows,
-    /// The activity clock and its pulse; present with the idle capability.
-    pub idle: Option<idle::Idle>,
 }
 
 /// What a surface host needs from `State` to draw and to create child surfaces, borrowed beside the monitors.
@@ -168,9 +164,6 @@ impl Drop for State {
         self.capture.destroy(&self.renderer);
         self.overlays.destroy(&self.egl, &self.renderer);
         for monitor in self.monitors.drain(..) {
-            if let Some(overlay) = monitor.idle {
-                overlay.destroy(&self.egl, &self.renderer);
-            }
             if let Some(n) = monitor.notifications {
                 n.destroy(&self.egl, &self.renderer);
             }
@@ -345,11 +338,8 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         }),
         session_locked: false,
         windows: Windows::default(),
-        idle: Some(idle::Idle::new(globals.bind(&qh, 1..=1, ()).ok())),
     };
     state.windows.rain = Some(Rain::new(&state.config().rain));
-    let cfg = state.config();
-    state.idle_apply_config(&cfg);
     let wake = state.redraw.clone();
     let clipboard = state.clipboard.clone().map(|c| c as Rc<dyn crate::base::input::Clipboard>);
     state.overlays.launcher = Some(Launcher::new(Rc::new(move || wake.launcher()), clipboard));
@@ -380,7 +370,6 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         .insert_source(Timer::from_duration(to_next_second()), move |_, _, state: &mut State| {
             state.repaint(Reasons { all: true, ..Reasons::default() });
             state.lock_timer_tick();
-            state.idle_timer_tick();
             if state.overlays.launcher.as_mut().is_some_and(Launcher::blink) {
                 state.request_overlay_frame(OverlayId::Launcher);
             }
@@ -411,7 +400,6 @@ impl State {
                 || m.wallpaper.as_ref().is_some_and(|w| w.owns(surface))
                 || m.osd.as_ref().is_some_and(|o| o.owns(surface))
                 || m.notifications.as_ref().is_some_and(|n| n.owns(surface))
-                || m.idle.as_ref().is_some_and(|o| o.owns(surface))
         })
     }
 
@@ -636,9 +624,6 @@ impl State {
         }
         if reasons.config || reasons.all {
             self.windows_apply_config(&cfg);
-        }
-        if reasons.config {
-            self.idle_apply_config(&cfg);
         }
         if reasons.notifications
             && let Some(services) = &self.core.services
@@ -1248,9 +1233,6 @@ impl SeatHandler for State {
 
     fn new_capability(&mut self, _: &Connection, qh: &QueueHandle<Self>, seat: WlSeat, capability: Capability) {
         self.wl_seat.get_or_insert_with(|| seat.clone());
-        if let Some(idle) = &mut self.idle {
-            idle.init(self.wl_seat.as_ref(), qh);
-        }
         if let Some(manager) = &self.text_input_manager {
             self.text_input.bind(manager, &seat, qh);
         }
@@ -1409,10 +1391,6 @@ impl CompositorHandler for State {
             self.request_osd_frame_only(i);
             return;
         }
-        if let Some(overlay) = self.monitors[i].idle.as_mut().filter(|o| o.owns(surface)) {
-            overlay.window.set_scale(new_factor);
-            return;
-        }
         if self.monitors[i].wallpaper.as_ref().is_some_and(|w| w.owns(surface)) {
             let cfg = self.config();
             if let Some(wallpaper) = &mut self.monitors[i].wallpaper {
@@ -1471,12 +1449,6 @@ impl CompositorHandler for State {
             }
             return;
         }
-        if let Some(overlay) = self.monitors[i].idle.as_mut().filter(|o| o.owns(surface)) {
-            if overlay.window.frame_done(qh) {
-                self.draw_idle(i);
-            }
-            return;
-        }
         let (monitors, mut ctx) = self.split();
         let Some(bar) = &mut monitors[i].bar else { return };
         if !bar.window.owns(surface) {
@@ -1512,12 +1484,7 @@ impl OutputHandler for State {
         let mut osd = Osd::new(&self.compositor, &self.layer_shell, qh, &output);
         osd.window.set_scale(scale);
         self.output_names.borrow_mut().push(name.clone());
-        let idle = (self.idle.is_some() && name != "HEADLESS").then(|| {
-            let mut overlay = IdleOverlay::new(&self.compositor, &self.layer_shell, qh, &output);
-            overlay.window.set_scale(scale);
-            overlay
-        });
-        self.monitors.push(Monitor { output, name, scale, bar: None, wallpaper: Some(wallpaper), osd: Some(osd), notifications: None, idle });
+        self.monitors.push(Monitor { output, name, scale, bar: None, wallpaper: Some(wallpaper), osd: Some(osd), notifications: None });
         let index = self.monitors.len() - 1;
         self.sync_bar_surface(index, &cfg);
         self.sync_notification_surface(index, &cfg);
@@ -1550,10 +1517,6 @@ impl OutputHandler for State {
         let monitor = self.monitors.remove(i);
         ::log::info!("bar: removed from '{}'", monitor.name);
         self.output_names.borrow_mut().retain(|n| *n != monitor.name);
-        if let Some(overlay) = monitor.idle {
-            self.forget_surfaces(&[overlay.surface_id()]);
-            overlay.destroy(&self.egl, &self.renderer);
-        }
         if let Some(wallpaper) = monitor.wallpaper {
             self.forget_surfaces(&[wallpaper.surface_id()]);
             wallpaper.destroy(&self.egl, &self.renderer);
@@ -1628,13 +1591,6 @@ impl LayerShellHandler for State {
         }
         if let Some(osd) = self.monitors[i].osd.as_mut().filter(|o| o.owns(layer.wl_surface())) {
             osd.configure(&self.egl, width);
-            return;
-        }
-        if let Some(overlay) = self.monitors[i].idle.as_mut().filter(|o| o.owns(layer.wl_surface())) {
-            overlay.configure(&self.egl, width, height);
-            if overlay.fade.screensaver_active || overlay.fade.ambient_opacity.get() > 0.0 {
-                self.request_idle_frame(i);
-            }
             return;
         }
         if self.monitors[i].wallpaper.as_ref().is_some_and(|w| w.owns(layer.wl_surface())) {

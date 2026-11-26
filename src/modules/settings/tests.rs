@@ -158,27 +158,19 @@ impl Pump {
 #[test]
 fn settings_fields() {
     let mut config = Config::default();
-    apply_field(&mut config, Field::AmbientTimeout, "5", "");
-    assert_eq!(config.ambient_timeout, cfg::IDLE_TIMEOUT_MIN as u32, "timeouts clamp to the minimum");
-    apply_field(&mut config, Field::AmbientTimeout, "9999", "");
-    assert_eq!(config.ambient_timeout, cfg::IDLE_TIMEOUT_MAX as u32, "and to the maximum");
-    apply_field(&mut config, Field::ScreensaverTimeout, "200", "DP-1");
-    config.monitor_overrides.entry("DP-1".into()).or_default().enabled = true;
-    assert!(config.monitor_overrides["DP-1"].screensaver_timeout == 200 && config.screensaver_timeout == 300, "monitor fields write the override");
-    apply_field(&mut config, Field::VisualizerFps, "abc", "");
+    apply_field(&mut config, Field::VisualizerFps, "abc");
     assert_eq!(config.visualizer.fps, 60, "unparsable text keeps the value");
-    apply_field(&mut config, Field::VisualizerThin, "2", "");
+    apply_field(&mut config, Field::VisualizerThin, "2");
     assert_eq!(config.visualizer.particle_thin, 0.95, "floats clamp");
-    apply_field(&mut config, Field::WallpaperDir, "/tmp/x", "");
+    apply_field(&mut config, Field::WallpaperDir, "/tmp/x");
     assert_eq!(config.wallpaper_dir, "/tmp/x", "directories are stored");
-    apply_field(&mut config, Field::LockWallpaperDir, "/tmp/lock", "");
+    apply_field(&mut config, Field::LockWallpaperDir, "/tmp/lock");
     assert!(
-        config.lock_wallpaper_dir == "/tmp/lock" && config.wallpaper_dir == "/tmp/x" && field_text(&config, Field::LockWallpaperDir, "") == "/tmp/lock",
+        config.lock_wallpaper_dir == "/tmp/lock" && config.wallpaper_dir == "/tmp/x" && field_text(&config, Field::LockWallpaperDir) == "/tmp/lock",
         "the lock directory is its own field"
     );
-    assert_eq!(field_text(&config, Field::VisualizerThin, ""), "0.95", "floats print without trailing zeros");
-    assert_eq!(field_text(&config, Field::VisualizerFps, ""), "60", "integers print plainly");
-    assert_eq!(field_text(&config, Field::ScreensaverTimeout, "DP-1"), "200", "monitor values read the override");
+    assert_eq!(field_text(&config, Field::VisualizerThin), "0.95", "floats print without trailing zeros");
+    assert_eq!(field_text(&config, Field::VisualizerFps), "60", "integers print plainly");
 }
 
 #[test]
@@ -342,17 +334,6 @@ fn settings_actions() {
     assert!(!env.cfg().monitor_overrides["DP-1"].enabled, "the override switches off");
     env.click(Act::DisplaysMonitor, -1, 0);
     assert!(env.model.displays_monitor().is_empty(), "the default tile clears the selection");
-
-    env.click(Act::IdleEnable, 0, 1);
-    assert!(!env.cfg().idle_enabled, "idle management flips");
-    env.click(Act::DisplaysMonitor, 1, 0);
-    assert_eq!(env.model.displays_monitor(), "HDMI-1", "idle shares the display selection");
-    env.click(Act::ToggleOverride, 0, 1);
-    env.click(Act::IdleAmbient, 0, 1);
-    assert!(!env.cfg().monitor_overrides["HDMI-1"].ambient_enabled && env.cfg().ambient_enabled, "idle toggles write the override");
-    env.config().monitor_overrides.get_mut("HDMI-1").unwrap().ambient_timeout = 20;
-    env.click(Act::IdleAmbientReset, 0, 0);
-    assert_eq!(env.cfg().monitor_overrides["HDMI-1"].ambient_timeout, env.cfg().ambient_timeout, "reset restores the default timeout");
 
     env.click(Act::RainMode, 1, 0);
     env.click(Act::RainAsync, 0, 0);

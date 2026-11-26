@@ -199,11 +199,11 @@ mod tests {
     fn config_watch_in_place_write() {
         let dir = tempfile::tempdir().unwrap();
         let (mut event_loop, path, service, emitted) = start_in(&dir);
-        std::fs::write(&path, r#"{"displays":{"idle":{"ambientTimeoutSeconds":300}}}"#).unwrap();
+        std::fs::write(&path, r#"{"bar":{"autohideEnabled":true}}"#).unwrap();
         assert!(pump_until(&mut event_loop, || emitted.get() == 1));
-        std::fs::write(&path, r#"{"displays":{"idle":{"ambientTimeoutSeconds":400}}}"#).unwrap();
+        std::fs::write(&path, r#"{"bar":{"autohideEnabled":true,"style":"pop"}}"#).unwrap();
         assert!(pump_until(&mut event_loop, || emitted.get() == 2), "an in-place write is seen");
-        assert_eq!(service.config().ambient_timeout, 400);
+        assert_eq!(service.config().bar_style, crate::config::settings::BarStyle::Pop);
     }
 
     #[test]

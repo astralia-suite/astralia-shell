@@ -137,25 +137,6 @@ fn bar_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     tiles(pane, x, y, w, &labels, active, Act::BarStyle, 0);
 }
 
-#[allow(clippy::too_many_arguments)]
-fn idle_tier(pane: &mut Pane, x: f32, y: f32, w: f32, label: &str, field: Field, value: u32, default_value: u32, enabled: bool, show_reset: bool, reset_act: Act, toggle_act: Act) {
-    let p = palette();
-    let h = cfg::TILE_HEIGHT;
-    pane.chip(Rect { x, y, w, h }, p.surface);
-    let inset = cfg::TILE_MARGIN;
-    pane.left(label, &TEXT_STYLE, x + inset, Rect { x, y, w, h }, with_alpha(p.text, cfg::LABEL_OPACITY));
-    let switch_x = x + w - inset - cfg::TOGGLE_WIDTH;
-    let divider_x = switch_x - cfg::TILE_SPACING;
-    let reset_x = divider_x - cfg::TILE_SPACING - cfg::RESET_ICON_SIZE;
-    let field_x = reset_x - cfg::TILE_SPACING - cfg::NUMBER_FIELD_WIDTH;
-    number_field(pane, Rect { x: field_x, y: y + (h - cfg::FIELD_HEIGHT) / 2.0, w: cfg::NUMBER_FIELD_WIDTH, h: cfg::FIELD_HEIGHT }, field, &value.to_string());
-    if show_reset && value != default_value {
-        reset_icon(pane, reset_x, y + h / 2.0, reset_act, 0, 1);
-    }
-    pane.rect(Rect { x: divider_x, y: y + 10.0, w: 1.0, h: h - 20.0 }, p.text_alpha11);
-    toggle_switch(pane, switch_x, y + (h - cfg::TOGGLE_HEIGHT) / 2.0, enabled, toggle_act, 0, 1);
-}
-
 fn section_label(pane: &mut Pane, label: &str, x: f32, y: f32) -> f32 {
     pane.text(label, &SMALL_STYLE, x, y, palette().text_dim);
     cfg::SECTION_HEIGHT
@@ -191,33 +172,6 @@ fn displays_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     };
     row(pane, "OSD", value(config.default_osd, |o| o.osd), Act::ToggleOsd);
     row(pane, "Notifications", value(config.default_notifications, |o| o.notifications), Act::ToggleNotifications);
-    y += section_label(pane, "Idle", x, y);
-    y += toggle_row(pane, x, y, w, "Enable Idle Management", config.idle_enabled, Act::IdleEnable, 0, 1, true) + cfg::GROUP_SPACING;
-    if !config.idle_enabled {
-        return;
-    }
-    let ambient = value(config.ambient_enabled, |o| o.ambient_enabled);
-    let screensaver = value(config.screensaver_enabled, |o| o.screensaver_enabled);
-    let (ambient_timeout, screensaver_timeout) = match o {
-        Some(o) if !is_default => (o.ambient_timeout, o.screensaver_timeout),
-        _ => (config.ambient_timeout, config.screensaver_timeout),
-    };
-    idle_tier(pane, x, y, w, "Ambient Mode", Field::AmbientTimeout, ambient_timeout, config.ambient_timeout, ambient, !is_default, Act::IdleAmbientReset, Act::IdleAmbient);
-    y += cfg::TILE_HEIGHT + cfg::GROUP_SPACING;
-    idle_tier(
-        pane,
-        x,
-        y,
-        w,
-        "Screensaver",
-        Field::ScreensaverTimeout,
-        screensaver_timeout,
-        config.screensaver_timeout,
-        screensaver,
-        !is_default,
-        Act::IdleScreensaverReset,
-        Act::IdleScreensaver,
-    );
 }
 
 fn rain_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32) -> f32 {
@@ -255,9 +209,9 @@ fn visualizer_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32) -> f32 {
         pane.left(label, &TEXT_STYLE, x + cfg::TILE_MARGIN, Rect { x, y, w, h }, with_alpha(p.text, cfg::LABEL_OPACITY));
         let field_x = x + w - cfg::TILE_MARGIN - cfg::NUMBER_FIELD_WIDTH;
         let reset_x = field_x - cfg::TILE_SPACING - cfg::RESET_ICON_SIZE;
-        let value = field_text(config, field, "");
+        let value = field_text(config, field);
         number_field(pane, Rect { x: field_x, y: y + (h - cfg::FIELD_HEIGHT) / 2.0, w: cfg::NUMBER_FIELD_WIDTH, h: cfg::FIELD_HEIGHT }, field, &value);
-        if value != field_text(&defaults, field, "") {
+        if value != field_text(&defaults, field) {
             reset_icon(pane, reset_x, y + h / 2.0, Act::VisualizerReset, field as i32, 0);
         }
         y += h + cfg::ROW_GAP;

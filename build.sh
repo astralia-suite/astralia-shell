@@ -19,7 +19,6 @@ ASSETS=(
     fonts/tabler-icons.ttf
     fonts/ComicShannsMono-Regular.otf
     fonts/YujiMai.ttf
-    stellar-restoration.svg
     stiletto.svg
     wallpaper/default.jpg
     bamboo/bamboo.png

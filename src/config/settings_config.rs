@@ -65,9 +65,6 @@ pub const DIR_BAR_BUTTON_WIDTH: f32 = 72.0;
 pub const DIR_BAR_BUTTON_HEIGHT: f32 = 28.0;
 pub const MAX_IMAGES: usize = 400;
 pub const MAX_COLUMNS: i32 = 6;
-// Idle
-pub const IDLE_TIMEOUT_MIN: i32 = 10;
-pub const IDLE_TIMEOUT_MAX: i32 = 1800;
 // Animation
 pub const TAB_FADE_MS: f32 = 90.0;
 // Typography

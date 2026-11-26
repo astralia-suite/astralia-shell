@@ -10,8 +10,7 @@ use crate::base::input::{KeyEvent, KeyKind};
 use crate::base::paths::home;
 use crate::config::file::{collapse_home, expand_home};
 use crate::config::settings::{
-    BarStyle, Config, MonitorOverride, PaletteSource, RainMode, VisualizerParams, VisualizerShape, ambient_timeout_for,
-    screensaver_timeout_for,
+    BarStyle, Config, MonitorOverride, PaletteSource, RainMode, VisualizerParams, VisualizerShape,
 };
 use crate::config::settings_config as cfg;
 use crate::config::visualizer_config as vis;
@@ -64,8 +63,6 @@ pub enum Field {
     None,
     WallpaperDir,
     LockWallpaperDir,
-    AmbientTimeout,
-    ScreensaverTimeout,
     VisualizerFps,
     VisualizerThin,
     VisualizerSize,
@@ -75,12 +72,10 @@ pub enum Field {
 }
 
 impl Field {
-    const ALL: [Field; 11] = [
+    const ALL: [Field; 9] = [
         Field::None,
         Field::WallpaperDir,
         Field::LockWallpaperDir,
-        Field::AmbientTimeout,
-        Field::ScreensaverTimeout,
         Field::VisualizerFps,
         Field::VisualizerThin,
         Field::VisualizerSize,
@@ -109,11 +104,6 @@ pub enum Act {
     BarMonitor,
     ToggleBarOverride,
     ToggleBarDisabled,
-    IdleEnable,
-    IdleAmbient,
-    IdleScreensaver,
-    IdleAmbientReset,
-    IdleScreensaverReset,
     BarStyle,
     RainMode,
     RainAsync,
@@ -229,10 +219,6 @@ fn parse_float(text: &str) -> Option<f32> {
 fn enable_defaults(o: &mut MonitorOverride, config: &Config) {
     o.osd = config.default_osd;
     o.notifications = config.default_notifications;
-    o.ambient_enabled = config.ambient_enabled;
-    o.ambient_timeout = config.ambient_timeout;
-    o.screensaver_enabled = config.screensaver_enabled;
-    o.screensaver_timeout = config.screensaver_timeout;
 }
 
 fn enable_bar_defaults(o: &mut MonitorOverride, config: &Config) {
@@ -242,13 +228,11 @@ fn enable_bar_defaults(o: &mut MonitorOverride, config: &Config) {
 }
 
 /// The text a field starts editing with.
-pub fn field_text(config: &Config, field: Field, monitor: &str) -> String {
+pub fn field_text(config: &Config, field: Field) -> String {
     let v = &config.visualizer;
     match field {
         Field::WallpaperDir => collapse_home(&config.wallpaper_dir, &home()),
         Field::LockWallpaperDir => collapse_home(&config.lock_wallpaper_dir, &home()),
-        Field::AmbientTimeout => ambient_timeout_for(config, monitor).to_string(),
-        Field::ScreensaverTimeout => screensaver_timeout_for(config, monitor).to_string(),
         Field::VisualizerFps => v.fps.to_string(),
         Field::VisualizerThin => trim_float(v.particle_thin),
         Field::VisualizerSize => v.particle_size.to_string(),
@@ -260,25 +244,13 @@ pub fn field_text(config: &Config, field: Field, monitor: &str) -> String {
 }
 
 /// Stores a field's edited text, clamped; text that does not parse keeps the previous value.
-pub fn apply_field(config: &mut Config, field: Field, text: &str, monitor: &str) {
+pub fn apply_field(config: &mut Config, field: Field, text: &str) {
     let failed = || ::log::error!("settings: could not parse '{text}' for field {}, keeping the previous value", field as i32);
     let int = |min: i32, max: i32| parse_int(text).map(|v| v.clamp(min, max));
     let float = |min: f32, max: f32| parse_float(text).map(|v| v.clamp(min, max));
-    let timeout = || int(cfg::IDLE_TIMEOUT_MIN, cfg::IDLE_TIMEOUT_MAX).map(|v| v as u32);
     match field {
         Field::WallpaperDir => config.wallpaper_dir = expand_home(text, &home()),
         Field::LockWallpaperDir => config.lock_wallpaper_dir = expand_home(text, &home()),
-        Field::AmbientTimeout | Field::ScreensaverTimeout => {
-            let Some(value) = timeout() else { return failed() };
-            let ambient = field == Field::AmbientTimeout;
-            let target = if monitor.is_empty() {
-                if ambient { &mut config.ambient_timeout } else { &mut config.screensaver_timeout }
-            } else {
-                let o = config.monitor_overrides.entry(monitor.to_string()).or_default();
-                if ambient { &mut o.ambient_timeout } else { &mut o.screensaver_timeout }
-            };
-            *target = value;
-        }
         Field::VisualizerFps => match int(vis::FPS_MIN, vis::FPS_MAX) {
             Some(v) => config.visualizer.fps = v,
             None => failed(),
@@ -593,7 +565,7 @@ impl Model {
         }
         self.commit_field();
         self.focused = field;
-        let text = field_text(&self.config(), field, &self.displays_monitor);
+        let text = field_text(&self.config(), field);
         self.field.text = text;
         self.field.preedit.clear();
         self.field.cursor_idle_visible = true;
@@ -610,9 +582,9 @@ impl Model {
         if self.focused == Field::None {
             return;
         }
-        let (field, text, monitor) = (self.focused, self.field.text.clone(), self.displays_monitor.clone());
+        let (field, text) = (self.focused, self.field.text.clone());
         self.unfocus();
-        self.edit(|config| apply_field(config, field, &text, &monitor));
+        self.edit(|config| apply_field(config, field, &text));
     }
 
     fn edit(&mut self, mut apply: impl FnMut(&mut Config)) {
@@ -761,12 +733,8 @@ impl Model {
                 (Act::ToggleAutohide, None) => &mut config.autohide,
                 (Act::ToggleExpandWidgets, Some(o)) => &mut o.expand_widgets,
                 (Act::ToggleExpandWidgets, None) => &mut config.expand_widgets,
-                (Act::ToggleBarDisabled, Some(o)) => &mut o.bar_disabled,
-                (Act::ToggleBarDisabled, None) => &mut config.bar_disabled,
-                (Act::IdleAmbient, Some(o)) => &mut o.ambient_enabled,
-                (Act::IdleAmbient, None) => &mut config.ambient_enabled,
-                (_, Some(o)) => &mut o.screensaver_enabled,
-                (_, None) => &mut config.screensaver_enabled,
+                (_, Some(o)) => &mut o.bar_disabled,
+                (_, None) => &mut config.bar_disabled,
             };
             *value = !*value;
         };
@@ -777,9 +745,7 @@ impl Model {
             | Act::ToggleNotifications
             | Act::ToggleAutohide
             | Act::ToggleExpandWidgets
-            | Act::ToggleBarDisabled
-            | Act::IdleAmbient
-            | Act::IdleScreensaver => self.edit(|config| {
+            | Act::ToggleBarDisabled => self.edit(|config| {
                 if target.is_empty() {
                     flip(region.act, config, None);
                 } else {
@@ -787,15 +753,6 @@ impl Model {
                     flip(region.act, config, Some(&mut o));
                     config.monitor_overrides.insert(target.clone(), o);
                 }
-            }),
-            Act::IdleEnable => self.edit(|config| config.idle_enabled = !config.idle_enabled),
-            Act::IdleAmbientReset => self.edit(|config| {
-                let timeout = config.ambient_timeout;
-                config.monitor_overrides.entry(target.clone()).or_default().ambient_timeout = timeout;
-            }),
-            Act::IdleScreensaverReset => self.edit(|config| {
-                let timeout = config.screensaver_timeout;
-                config.monitor_overrides.entry(target.clone()).or_default().screensaver_timeout = timeout;
             }),
             Act::BarStyle => {
                 if let Some(&style) = usize::try_from(region.a).ok().and_then(|i| BarStyle::ALL.get(i)) {

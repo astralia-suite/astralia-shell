@@ -53,10 +53,6 @@ pub struct MonitorOverride {
     pub bar_override: bool,
     pub bar_disabled: bool,
     pub expand_widgets: bool,
-    pub ambient_enabled: bool,
-    pub ambient_timeout: u32,
-    pub screensaver_enabled: bool,
-    pub screensaver_timeout: u32,
     pub lock: bool,
 }
 
@@ -70,10 +66,6 @@ impl Default for MonitorOverride {
             bar_override: false,
             bar_disabled: false,
             expand_widgets: false,
-            ambient_enabled: true,
-            ambient_timeout: 150,
-            screensaver_enabled: true,
-            screensaver_timeout: 300,
             lock: true,
         }
     }
@@ -159,13 +151,6 @@ pub struct Config {
 
     pub logout_logo_path: String,
     pub sync_compositor_borders: bool,
-    pub idle_logo_path: String,
-
-    pub idle_enabled: bool,
-    pub ambient_enabled: bool,
-    pub ambient_timeout: u32,
-    pub screensaver_enabled: bool,
-    pub screensaver_timeout: u32,
 
     pub visualizer: VisualizerParams,
     pub rain: RainParams,
@@ -200,12 +185,6 @@ impl Config {
             animations_disabled: false,
             logout_logo_path: String::new(),
             sync_compositor_borders: true,
-            idle_logo_path: String::new(),
-            idle_enabled: true,
-            ambient_enabled: true,
-            ambient_timeout: 150,
-            screensaver_enabled: true,
-            screensaver_timeout: 300,
             visualizer: VisualizerParams::default(),
             rain: RainParams::default(),
         }
@@ -258,22 +237,6 @@ pub fn expand_widgets_for(cfg: &Config, monitor: &str) -> bool {
     bar_override(cfg, monitor).map_or(cfg.expand_widgets, |o| o.expand_widgets)
 }
 
-pub fn ambient_enabled_for(cfg: &Config, monitor: &str) -> bool {
-    cfg.idle_enabled && active_override(cfg, monitor).map_or(cfg.ambient_enabled, |o| o.ambient_enabled)
-}
-
-pub fn ambient_timeout_for(cfg: &Config, monitor: &str) -> u32 {
-    active_override(cfg, monitor).map_or(cfg.ambient_timeout, |o| o.ambient_timeout)
-}
-
-pub fn screensaver_enabled_for(cfg: &Config, monitor: &str) -> bool {
-    cfg.idle_enabled && active_override(cfg, monitor).map_or(cfg.screensaver_enabled, |o| o.screensaver_enabled)
-}
-
-pub fn screensaver_timeout_for(cfg: &Config, monitor: &str) -> u32 {
-    active_override(cfg, monitor).map_or(cfg.screensaver_timeout, |o| o.screensaver_timeout)
-}
-
 pub fn lock_enabled_for(cfg: &Config, monitor: &str) -> bool {
     active_override(cfg, monitor).map_or(cfg.default_lock, |o| o.lock)
 }
@@ -306,10 +269,6 @@ fn number(object: Option<&Object>, key: &str) -> Option<f64> {
 
 fn integer(object: Option<&Object>, key: &str, fallback: i32) -> i32 {
     number(object, key).map_or(fallback, |n| n as i32)
-}
-
-fn seconds(object: Option<&Object>, key: &str, fallback: u32) -> u32 {
-    number(object, key).map_or(fallback, |n| n.max(0.0) as u32)
 }
 
 fn real(object: Option<&Object>, key: &str, fallback: f32) -> f32 {
@@ -416,10 +375,6 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
             bar_override: flag(value, "barOverride", enabled),
             bar_disabled: flag(value, "barDisabled", d.bar_disabled),
             expand_widgets: flag(value, "expandWidgets", cfg.expand_widgets),
-            ambient_enabled: flag(value, "ambientEnabled", d.ambient_enabled),
-            ambient_timeout: seconds(value, "ambientTimeoutSeconds", d.ambient_timeout),
-            screensaver_enabled: flag(value, "screensaverEnabled", d.screensaver_enabled),
-            screensaver_timeout: seconds(value, "screensaverTimeoutSeconds", d.screensaver_timeout),
             lock: flag_or_legacy(value, "lock", "penance", d.lock),
         };
         cfg.monitor_overrides.insert(name.clone(), mo);
@@ -429,13 +384,6 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
     let legacy_disabled = flag(section(root, "animation", "animation"), "disabled", cfg.animations_disabled);
     cfg.animations_disabled = flag(general, "animationsDisabled", legacy_disabled);
 
-    let idle = object_in(displays, "idle").or_else(|| section(root, "idle", "blink"));
-    cfg.idle_enabled = flag(idle, "enabled", cfg.idle_enabled);
-    cfg.ambient_enabled = flag(idle, "ambientEnabled", cfg.ambient_enabled);
-    cfg.ambient_timeout = seconds(idle, "ambientTimeoutSeconds", cfg.ambient_timeout);
-    cfg.screensaver_enabled = flag(idle, "screensaverEnabled", cfg.screensaver_enabled);
-    cfg.screensaver_timeout = seconds(idle, "screensaverTimeoutSeconds", cfg.screensaver_timeout);
-    cfg.idle_logo_path = expand(text(idle, "logoPath", &cfg.idle_logo_path), home);
     cfg.logout_logo_path = expand(text(general, "logoutLogoPath", &cfg.logout_logo_path), home);
     cfg.sync_compositor_borders = flag(general, "syncCompositorBorders", cfg.sync_compositor_borders);
 
@@ -554,7 +502,6 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
     // A float goes through its shortest decimal text, so 0.12f is written as 0.12.
     let float = |f: f32| Number(f.to_string().parse().unwrap_or(f64::from(f)));
     let int = |n: i32| Number(f64::from(n));
-    let uint = |n: u32| Number(f64::from(n));
 
     let wallpaper = object(vec![
         ("path", path(&cfg.wallpaper_path)),
@@ -572,20 +519,11 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
     ]);
     let source = if cfg.palette_source == PaletteSource::RegionCapture { "region" } else { "default" };
     let palette = object(vec![("source", Str(source.into()))]);
-    let idle = object(vec![
-        ("enabled", Bool(cfg.idle_enabled)),
-        ("ambientEnabled", Bool(cfg.ambient_enabled)),
-        ("ambientTimeoutSeconds", uint(cfg.ambient_timeout)),
-        ("screensaverEnabled", Bool(cfg.screensaver_enabled)),
-        ("screensaverTimeoutSeconds", uint(cfg.screensaver_timeout)),
-        ("logoPath", path(&cfg.idle_logo_path)),
-    ]);
     let mut displays = vec![
         ("defaultOsd".to_string(), Bool(cfg.default_osd)),
         ("defaultNotifications".to_string(), Bool(cfg.default_notifications)),
         ("defaultWallpaper".to_string(), Bool(cfg.default_wallpaper)),
         ("defaultLock".to_string(), Bool(cfg.default_lock)),
-        ("idle".to_string(), idle),
     ];
     for (name, ov) in &cfg.monitor_overrides {
         let mo = object(vec![
@@ -596,10 +534,6 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
             ("barOverride", Bool(ov.bar_override)),
             ("barDisabled", Bool(ov.bar_disabled)),
             ("expandWidgets", Bool(ov.expand_widgets)),
-            ("ambientEnabled", Bool(ov.ambient_enabled)),
-            ("ambientTimeoutSeconds", uint(ov.ambient_timeout)),
-            ("screensaverEnabled", Bool(ov.screensaver_enabled)),
-            ("screensaverTimeoutSeconds", uint(ov.screensaver_timeout)),
             ("lock", Bool(ov.lock)),
         ]);
         // A monitor named like a reserved key replaces it, as `Json::set` does.
@@ -661,9 +595,8 @@ mod tests {
     "defaultNotifications": true,
     "defaultOsd": false,
     "defaultWallpaper": false,
-    "eDP-1": {"_enabled": true, "osd": true, "lock": false, "ambientTimeoutSeconds": 90}
+    "eDP-1": {"_enabled": true, "osd": true, "lock": false}
   },
-  "idle": {"ambientEnabled": true, "ambientTimeoutSeconds": 150, "enabled": false, "screensaverEnabled": true, "screensaverTimeoutSeconds": 300},
   "rain": {"asyncSpeed": true, "mode": "stiletto"},
   "visualizer": {"fps": 30, "fractalComplexity": 3, "glowDirections": 16.0, "glowQuality": 6.0, "particleSize": 8, "particleThin": 0.11999999731779099, "visualizerShape": "sphere"},
   "wallpaper": {
@@ -701,7 +634,6 @@ mod tests {
         assert!(!cfg.default_osd && !cfg.default_wallpaper && cfg.default_lock, "display defaults");
         let edp = &cfg.monitor_overrides["eDP-1"];
         assert!(edp.enabled && edp.osd && !edp.lock, "monitor override fields");
-        assert!(edp.ambient_timeout == 90 && edp.screensaver_timeout == 300, "override seconds keep defaults when absent");
         assert!(
             edp.bar_override && !edp.bar_disabled && edp.expand_widgets,
             "an override without bar keys follows `_enabled` and the global expand"
@@ -709,7 +641,6 @@ mod tests {
         let split = parse(r#"{"bar": {"disabled": true}, "displays": {"DP-1": {"_enabled": true, "barOverride": false, "expandWidgets": false}}}"#);
         let dp = &split.monitor_overrides["DP-1"];
         assert!(split.bar_disabled && !dp.bar_override && !dp.expand_widgets, "explicit bar keys win");
-        assert!(!cfg.idle_enabled, "idle disabled");
         assert_eq!(cfg.wallpaper_columns["eDP-1"], strings(&["/home/tester/Pictures/a.jpg", "/abs/b.png"]), "home is expanded in columns");
         assert_eq!(cfg.wallpaper_dir, "/home/tester/Pictures", "home is expanded in directories");
         assert!(
@@ -743,10 +674,9 @@ mod tests {
         "ambient": {"rain": {"mode": "stiletto"}, "visualizer": {"fps": 30}}}"#,
         );
         assert!(grouped.animations_disabled, "the general section loads");
-        assert!(!grouped.idle_enabled && grouped.ambient_timeout == 20, "idle loads from the displays section");
+        assert!(!grouped.monitor_overrides.contains_key("idle"), "a retired idle block is not read as a monitor");
         assert!(
-            parse(r#"{"animation": {"disabled": true}, "idle": {"enabled": false}, "rain": {"mode": "stiletto"}}"#).animations_disabled
-                && !parse(r#"{"idle": {"enabled": false}}"#).idle_enabled,
+            parse(r#"{"animation": {"disabled": true}, "rain": {"mode": "stiletto"}}"#).animations_disabled,
             "the previous top-level sections still load"
         );
         assert!(!parse(r#"{"bar": {"autohideEnabled": "yes"}}"#).autohide, "a wrongly typed value keeps the default");
@@ -788,10 +718,7 @@ mod tests {
         assert!(text.contains("~/Pictures/a.jpg"), "home is collapsed when saving");
         assert!(text.contains("\"lockCustom\": true") && text.contains("~/Locks/a.jpg"), "lock wallpaper keys are written");
         assert!(text.contains("\"particleThin\": 0.12"), "floats are written in their shortest form");
-        let grouped = parse(
-            r#"{"general": {"animationsDisabled": true}, "displays": {"idle": {"enabled": false, "ambientTimeoutSeconds": 20}},
-            "ambient": {"rain": {"mode": "stiletto"}, "visualizer": {"fps": 30}}}"#,
-        );
+        let grouped = parse(r#"{"general": {"animationsDisabled": true}, "ambient": {"rain": {"mode": "stiletto"}, "visualizer": {"fps": 30}}}"#);
         assert_eq!(parse(&serialize(&grouped)), grouped, "the grouped layout round-trips");
 
         // The expected file for the same fixture, byte for byte.
@@ -817,9 +744,8 @@ mod tests {
         assert_eq!(parse_config("not json"), Config::default());
         let c = parse(r#"{"bar": {"autohideEnabled": "yes"}, "general": {"animationsDisabled": true}, "displays": 7}"#);
         assert!(!c.autohide && c.animations_disabled && c.monitor_overrides.is_empty());
-        let c = parse(r#"{"displays": {"eDP-1": {"_enabled": 1, "ambientTimeoutSeconds": -5}}, "wallpaper": {"columns": {"a": [1, "x"]}, "columnCounts": {"a": "2"}}}"#);
-        let edp = &c.monitor_overrides["eDP-1"];
-        assert!(!edp.enabled && edp.ambient_timeout == 0);
+        let c = parse(r#"{"displays": {"eDP-1": {"_enabled": 1}}, "wallpaper": {"columns": {"a": [1, "x"]}, "columnCounts": {"a": "2"}}}"#);
+        assert!(!c.monitor_overrides["eDP-1"].enabled);
         assert!(c.wallpaper_columns["a"] == strings(&["x"]) && c.wallpaper_column_counts.is_empty());
     }
 
@@ -856,18 +782,6 @@ mod tests {
         assert_eq!(lock_enabled_for(&cfg, "HDMI-1"), cfg.default_lock, "default lock");
         cfg.monitor_overrides.get_mut("DP-1").unwrap().lock = false;
         assert!(!lock_enabled_for(&cfg, "DP-1"), "lock override");
-        cfg.idle_enabled = false;
-        assert!(
-            !ambient_enabled_for(&cfg, "HDMI-1") && !screensaver_enabled_for(&cfg, "DP-1"),
-            "idle management off disables ambient and screensaver everywhere"
-        );
-        cfg.idle_enabled = true;
-        cfg.monitor_overrides.get_mut("DP-1").unwrap().ambient_timeout = 42;
-        assert!(
-            ambient_timeout_for(&cfg, "DP-1") == 42 && ambient_timeout_for(&cfg, "HDMI-1") == cfg.ambient_timeout,
-            "ambient timeout override"
-        );
-        assert_eq!(screensaver_timeout_for(&cfg, "HDMI-1"), cfg.screensaver_timeout);
     }
 
     #[test]

@@ -9,7 +9,6 @@ use calloop::ping::{Ping, make_ping};
 use wayland_client::protocol::wl_output::WlOutput;
 
 use crate::modules::bar::wayland::bar::Bar;
-use crate::modules::idle::wayland::IdleOverlay;
 use crate::modules::notification::wayland::Notifications;
 use crate::modules::osd::wayland::{Osd, OsdShow};
 use crate::modules::wallpaper::wayland::Wallpaper;
@@ -145,8 +144,6 @@ pub struct Monitor {
     pub osd: Option<Osd>,
     /// Only on outputs where notifications are enabled.
     pub notifications: Option<Notifications>,
-    /// With the idle capability, on every output but the headless one.
-    pub idle: Option<IdleOverlay>,
 }
 
 #[cfg(test)]

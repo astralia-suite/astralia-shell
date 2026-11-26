@@ -12,4 +12,3 @@ pub mod polkit;
 pub mod visualizer;
 pub mod rain;
 pub mod bamboo;
-pub mod idle;

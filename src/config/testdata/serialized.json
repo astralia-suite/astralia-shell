@@ -25,14 +25,6 @@
     "defaultNotifications": true,
     "defaultWallpaper": false,
     "defaultLock": true,
-    "idle": {
-      "enabled": false,
-      "ambientEnabled": true,
-      "ambientTimeoutSeconds": 150,
-      "screensaverEnabled": true,
-      "screensaverTimeoutSeconds": 300,
-      "logoPath": ""
-    },
     "eDP-1": {
       "_enabled": true,
       "osd": true,
@@ -41,10 +33,6 @@
       "barOverride": true,
       "barDisabled": false,
       "expandWidgets": true,
-      "ambientEnabled": true,
-      "ambientTimeoutSeconds": 90,
-      "screensaverEnabled": true,
-      "screensaverTimeoutSeconds": 300,
       "lock": false
     }
   },
