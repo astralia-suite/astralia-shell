@@ -147,20 +147,25 @@ fn section_label(pane: &mut Pane, label: &str, x: f32, y: f32) -> f32 {
     cfg::SECTION_HEIGHT
 }
 
-fn displays_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32) {
+/// The display dropdown and, for a monitor, its override switch; the `y` below them, or `None`
+/// when the monitor is not overridden and the page stops there.
+#[allow(clippy::too_many_arguments)]
+fn monitor_scope(pane: &mut Pane, x: f32, mut y: f32, w: f32, selected: &str, pick: Act, toggle: Act, overridden: bool) -> Option<f32> {
+    monitor_row(pane, x, y, w, selected, pick, 2);
+    y += cfg::TILE_HEIGHT + cfg::ROW_GAP;
+    if selected.is_empty() {
+        return Some(y);
+    }
+    y += toggle_row(pane, x, y, w, "Override default settings", overridden, toggle, 0, 0, false) + cfg::ROW_GAP;
+    overridden.then_some(y)
+}
+
+fn displays_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     let config = pane.config;
     let selected = pane.model.displays_monitor().to_string();
-    monitor_row(pane, x, y, w, &selected, Act::DisplaysMonitor, 2);
-    y += cfg::TILE_HEIGHT + cfg::ROW_GAP;
     let is_default = selected.is_empty();
     let o: Option<&MonitorOverride> = if is_default { None } else { config.monitor_overrides.get(&selected) };
-    let overridden = o.is_some_and(|o| o.enabled);
-    if !is_default {
-        y += toggle_row(pane, x, y, w, "Override default settings", overridden, Act::ToggleOverride, 0, 0, false) + cfg::ROW_GAP;
-    }
-    if !is_default && !overridden {
-        return;
-    }
+    let Some(mut y) = monitor_scope(pane, x, y, w, &selected, Act::DisplaysMonitor, Act::ToggleOverride, o.is_some_and(|o| o.enabled)) else { return };
     // Shown only for the defaults or an enabled override, so `o` is present when not default.
     let value = |defaults: bool, field: fn(&MonitorOverride) -> bool| match o {
         Some(o) if !is_default => field(o),

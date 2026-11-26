@@ -770,14 +770,7 @@ impl Model {
             *value = !*value;
         };
         match region.act {
-            Act::ToggleOverride => self.edit(|config| {
-                let defaults = config.clone();
-                let o = config.monitor_overrides.entry(target.clone()).or_default();
-                if !o.enabled {
-                    enable_defaults(o, &defaults);
-                }
-                o.enabled = !o.enabled;
-            }),
+            Act::ToggleOverride => self.toggle_override(&target, |o| &mut o.enabled, enable_defaults),
             Act::ToggleOsd | Act::ToggleNotifications | Act::ToggleAutohide | Act::IdleAmbient | Act::IdleScreensaver => self.edit(|config| {
                 if target.is_empty() {
                     flip(region.act, config, None);
@@ -823,6 +816,20 @@ impl Model {
             Act::AnimationDisable => self.edit(|config| config.animations_disabled = !config.animations_disabled),
             _ => self.dispatch_wallpaper(region),
         }
+    }
+
+    /// Flips the override switch picked by `switch` on `target`; turning it on first copies the
+    /// defaults it covers through `copy`.
+    fn toggle_override(&mut self, target: &str, switch: fn(&mut MonitorOverride) -> &mut bool, copy: fn(&mut MonitorOverride, &Config)) {
+        self.edit(|config| {
+            let defaults = config.clone();
+            let o = config.monitor_overrides.entry(target.to_string()).or_default();
+            if !*switch(o) {
+                copy(o, &defaults);
+            }
+            let on = switch(o);
+            *on = !*on;
+        });
     }
 
     fn dispatch_wallpaper(&mut self, region: Region) {
