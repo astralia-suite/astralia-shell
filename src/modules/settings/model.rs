@@ -107,6 +107,9 @@ pub enum Act {
     ToggleNotifications,
     ToggleAutohide,
     ToggleExpandWidgets,
+    BarMonitor,
+    ToggleBarOverride,
+    ToggleBarDisabled,
     IdleEnable,
     IdleAmbient,
     IdleScreensaver,
@@ -237,11 +240,16 @@ fn parse_float(text: &str) -> Option<f32> {
 fn enable_defaults(o: &mut MonitorOverride, config: &Config) {
     o.osd = config.default_osd;
     o.notifications = config.default_notifications;
-    o.autohide = config.autohide;
     o.ambient_enabled = config.ambient_enabled;
     o.ambient_timeout = config.ambient_timeout;
     o.screensaver_enabled = config.screensaver_enabled;
     o.screensaver_timeout = config.screensaver_timeout;
+}
+
+fn enable_bar_defaults(o: &mut MonitorOverride, config: &Config) {
+    o.autohide = config.autohide;
+    o.bar_disabled = config.bar_disabled;
+    o.expand_widgets = config.expand_widgets;
 }
 
 /// The text a field starts editing with.
@@ -347,6 +355,7 @@ pub struct Model {
     field_anim: TextFieldTypeAnim,
     monitors: Vec<String>,
     displays_monitor: String,
+    bar_monitor: String,
     static_picker: WallpaperPicker,
     animated_picker: WallpaperPicker,
     lock_picker: WallpaperPicker,
@@ -380,6 +389,7 @@ impl Model {
             field_anim: TextFieldTypeAnim::default(),
             monitors: Vec::new(),
             displays_monitor: String::new(),
+            bar_monitor: String::new(),
             static_picker: WallpaperPicker::default(),
             animated_picker: WallpaperPicker::default(),
             lock_picker: WallpaperPicker::default(),
@@ -502,8 +512,10 @@ impl Model {
         self.monitors = (self.hooks.monitors)().into_iter().filter(|n| !n.is_empty()).collect();
         self.monitors.sort();
         let known = |monitors: &[String], name: &str| monitors.iter().any(|m| m == name);
-        if !self.displays_monitor.is_empty() && !known(&self.monitors, &self.displays_monitor) {
-            self.displays_monitor.clear();
+        for selected in [&mut self.displays_monitor, &mut self.bar_monitor] {
+            if !selected.is_empty() && !known(&self.monitors, selected) {
+                selected.clear();
+            }
         }
         let focused = (self.hooks.focused_monitor)();
         let store = self.hooks.store.clone();
@@ -750,10 +762,15 @@ impl Model {
                 self.displays_monitor = self.monitor(region.a);
                 return;
             }
+            Act::BarMonitor => {
+                self.bar_monitor = self.monitor(region.a);
+                return;
+            }
             _ => {}
         }
         self.commit_field();
-        let target = self.displays_monitor.clone();
+        let bar = matches!(region.act, Act::ToggleAutohide | Act::ToggleExpandWidgets | Act::ToggleBarDisabled | Act::ToggleBarOverride);
+        let target = if bar { self.bar_monitor.clone() } else { self.displays_monitor.clone() };
         let flip = |act: Act, config: &mut Config, o: Option<&mut MonitorOverride>| {
             let value = match (act, o) {
                 (Act::ToggleOsd, Some(o)) => &mut o.osd,
@@ -762,6 +779,10 @@ impl Model {
                 (Act::ToggleNotifications, None) => &mut config.default_notifications,
                 (Act::ToggleAutohide, Some(o)) => &mut o.autohide,
                 (Act::ToggleAutohide, None) => &mut config.autohide,
+                (Act::ToggleExpandWidgets, Some(o)) => &mut o.expand_widgets,
+                (Act::ToggleExpandWidgets, None) => &mut config.expand_widgets,
+                (Act::ToggleBarDisabled, Some(o)) => &mut o.bar_disabled,
+                (Act::ToggleBarDisabled, None) => &mut config.bar_disabled,
                 (Act::IdleAmbient, Some(o)) => &mut o.ambient_enabled,
                 (Act::IdleAmbient, None) => &mut config.ambient_enabled,
                 (_, Some(o)) => &mut o.screensaver_enabled,
@@ -771,7 +792,14 @@ impl Model {
         };
         match region.act {
             Act::ToggleOverride => self.toggle_override(&target, |o| &mut o.enabled, enable_defaults),
-            Act::ToggleOsd | Act::ToggleNotifications | Act::ToggleAutohide | Act::IdleAmbient | Act::IdleScreensaver => self.edit(|config| {
+            Act::ToggleBarOverride => self.toggle_override(&target, |o| &mut o.bar_override, enable_bar_defaults),
+            Act::ToggleOsd
+            | Act::ToggleNotifications
+            | Act::ToggleAutohide
+            | Act::ToggleExpandWidgets
+            | Act::ToggleBarDisabled
+            | Act::IdleAmbient
+            | Act::IdleScreensaver => self.edit(|config| {
                 if target.is_empty() {
                     flip(region.act, config, None);
                 } else {
@@ -781,7 +809,6 @@ impl Model {
                 }
             }),
             Act::IdleEnable => self.edit(|config| config.idle_enabled = !config.idle_enabled),
-            Act::ToggleExpandWidgets => self.edit(|config| config.expand_widgets = !config.expand_widgets),
             Act::IdleAmbientReset => self.edit(|config| {
                 let timeout = config.ambient_timeout;
                 config.monitor_overrides.entry(target.clone()).or_default().ambient_timeout = timeout;
@@ -925,6 +952,10 @@ impl Model {
 
     pub fn displays_monitor(&self) -> &str {
         &self.displays_monitor
+    }
+
+    pub fn bar_monitor(&self) -> &str {
+        &self.bar_monitor
     }
 
     pub fn picker(&self, slot: WallpaperSlot) -> &WallpaperPicker {

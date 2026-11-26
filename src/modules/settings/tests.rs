@@ -316,6 +316,23 @@ fn settings_actions() {
     assert!(env.cfg().expand_widgets, "expand widgets switches on");
     env.click(Act::ToggleExpandWidgets, 0, 0);
     assert!(!env.cfg().expand_widgets, "expand widgets switches off");
+    env.click(Act::ToggleAutohide, 0, 0);
+    env.click(Act::BarMonitor, 0, 0);
+    assert!(env.model.bar_monitor() == "DP-1" && env.model.displays_monitor().is_empty(), "the bar tab keeps its own selection");
+    env.click(Act::ToggleBarOverride, 0, 0);
+    let dp = env.cfg().monitor_overrides["DP-1"].clone();
+    assert!(dp.bar_override && !dp.enabled && dp.autohide, "the bar override starts from the bar defaults, apart from the display override");
+    env.click(Act::ToggleBarDisabled, 0, 0);
+    env.click(Act::ToggleExpandWidgets, 0, 0);
+    let dp = env.cfg().monitor_overrides["DP-1"].clone();
+    assert!(dp.bar_disabled && dp.expand_widgets && !env.cfg().bar_disabled && !env.cfg().expand_widgets, "bar toggles write the override");
+    env.click(Act::ToggleBarOverride, 0, 0);
+    assert!(!env.cfg().monitor_overrides["DP-1"].bar_override, "the bar override switches off");
+    env.click(Act::BarMonitor, -1, 0);
+    env.click(Act::ToggleBarDisabled, 0, 0);
+    assert!(env.cfg().bar_disabled, "with Default selected the toggle flips the default");
+    env.click(Act::ToggleBarDisabled, 0, 0);
+    env.click(Act::ToggleAutohide, 0, 0);
 
     env.click(Act::ToggleOsd, 0, 0);
     assert!(!env.cfg().default_osd, "default toggles flip the default");
@@ -513,6 +530,33 @@ fn settings_lock_view() {
     env.click(Act::LockWallpaperMode, 1, 0);
     let custom = env.texts(1920.0, 1200.0);
     assert!(has(&custom, "Display") && has(&custom, "Dir") && has(&custom, "Crop"), "Custom mode shows the column controls");
+}
+
+#[test]
+fn settings_bar_view() {
+    let _snap = Snap::on();
+    let mut env = Env::new();
+    env.model.open();
+    env.click(Act::Tab, Tab::Bar as i32, 0);
+    let has = |texts: &[String], wanted: &str| texts.iter().any(|t| t == wanted);
+
+    let default = env.texts(1920.0, 1200.0);
+    assert!(
+        has(&default, "Display") && has(&default, "Disable Bar") && has(&default, "Autohide") && has(&default, "Expand Widgets") && has(&default, "Okinami"),
+        "Default shows every bar setting"
+    );
+    assert!(!has(&default, "Override default settings"), "Default has no override switch");
+    env.click(Act::BarMonitor, 0, 0);
+    let plain = env.texts(1920.0, 1200.0);
+    assert!(has(&plain, "Override default settings") && !has(&plain, "Disable Bar"), "a monitor without the override stops at the switch");
+    env.click(Act::ToggleBarOverride, 0, 0);
+    assert!(has(&env.texts(1920.0, 1200.0), "Autohide"), "an overridden monitor shows its settings");
+    env.click(Act::ToggleBarDisabled, 0, 0);
+    let disabled = env.texts(1920.0, 1200.0);
+    assert!(has(&disabled, "Disable Bar") && !has(&disabled, "Autohide") && !has(&disabled, "Okinami"), "a disabled bar hides the rest");
+
+    env.click(Act::Tab, Tab::Displays as i32, 0);
+    assert!(!has(&env.texts(1920.0, 1200.0), "Bar Autohide"), "autohide left the Displays tab");
 }
 
 #[test]

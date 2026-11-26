@@ -115,12 +115,26 @@ fn reset_icon(pane: &mut Pane, x: f32, y_center: f32, act: Act, a: i32, b: i32) 
 }
 
 fn bar_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
-    let current = pane.config.bar_style;
+    let config = pane.config;
+    let selected = pane.model.bar_monitor().to_string();
+    let o = if selected.is_empty() { None } else { config.monitor_overrides.get(&selected) };
+    let Some(mut y) = monitor_scope(pane, x, y, w, &selected, Act::BarMonitor, Act::ToggleBarOverride, o.is_some_and(|o| o.bar_override)) else { return };
+    // Past `monitor_scope` a selected monitor is overridden, so `o` holds its values.
+    let value = |default: bool, field: fn(&MonitorOverride) -> bool| o.map_or(default, field);
+    let mut row = |pane: &mut Pane, label: &str, on: bool, act: Act| {
+        y += toggle_row(pane, x, y, w, label, on, act, 0, 0, true) + cfg::GROUP_SPACING;
+    };
+    let disabled = value(config.bar_disabled, |o| o.bar_disabled);
+    row(pane, "Disable Bar", disabled, Act::ToggleBarDisabled);
+    if disabled {
+        return;
+    }
+    row(pane, "Autohide", value(config.autohide, |o| o.autohide), Act::ToggleAutohide);
+    row(pane, "Expand Widgets", value(config.expand_widgets, |o| o.expand_widgets), Act::ToggleExpandWidgets);
+    y += section_label(pane, "Style", x, y);
     let labels: Vec<&str> = BarStyle::ALL.iter().map(|s| s.label()).collect();
-    let active = BarStyle::ALL.iter().position(|&s| s == current).unwrap_or(0);
+    let active = BarStyle::ALL.iter().position(|&s| s == config.bar_style).unwrap_or(0);
     tiles(pane, x, y, w, &labels, active, Act::BarStyle, 0);
-    let expand = pane.config.expand_widgets;
-    toggle_row(pane, x, y + cfg::SELECTOR_HEIGHT + cfg::ROW_GAP, w, "Expand Widgets", expand, Act::ToggleExpandWidgets, 0, 0, true);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -177,7 +191,6 @@ fn displays_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     };
     row(pane, "OSD", value(config.default_osd, |o| o.osd), Act::ToggleOsd);
     row(pane, "Notifications", value(config.default_notifications, |o| o.notifications), Act::ToggleNotifications);
-    row(pane, "Bar Autohide", value(config.autohide, |o| o.autohide), Act::ToggleAutohide);
     y += section_label(pane, "Idle", x, y);
     y += toggle_row(pane, x, y, w, "Enable Idle Management", config.idle_enabled, Act::IdleEnable, 0, 1, true) + cfg::GROUP_SPACING;
     if !config.idle_enabled {
@@ -373,6 +386,7 @@ fn tab_summary(model: &Model, config: &Config, tab: Tab) -> String {
             let shape = if config.visualizer.visualizer_shape == VisualizerShape::Bar { "Bars" } else { "Sphere" };
             format!("{rain} / {shape}")
         }
+        Tab::Bar if config.bar_disabled => "Disabled".into(),
         Tab::Bar => config.bar_style.label().into(),
         Tab::Displays => format!("{} connected", model.monitors().len()),
         Tab::General => (if config.animations_disabled { "Animations off" } else { "Animations on" }).into(),
