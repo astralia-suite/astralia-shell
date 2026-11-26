@@ -21,7 +21,7 @@ use crate::wayland::render::layer_window::LayerWindow;
 use crate::wayland::render::renderer::Renderer;
 use crate::base::animation::{self, AnimationManager, Easing, Value};
 use crate::config::bar_layout;
-use crate::config::settings::{BarStyle, Config, autohide_enabled_for};
+use crate::config::settings::{BarStyle, Config, autohide_enabled_for, expand_widgets_for};
 use crate::modules::bar::model::{ActionKind, Item, Model, Sources};
 use crate::modules::bar::panel::content::PanelSources;
 use crate::modules::bar::paint::frame::{frame_base, frame_overlay};
@@ -274,7 +274,7 @@ impl Bar {
         }
         let style = style_spec(cfg.bar_style, true);
         self.model.set_style(&style);
-        self.model.set_expand_all(cfg.expand_widgets);
+        self.model.set_expand_all(expand_widgets_for(cfg, &self.output));
         self.model.set_open(open, now);
         if self.autohide.enabled {
             let want_shown = self.pointer.is_some() || open.is_some() || keep_shown;

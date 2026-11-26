@@ -16,6 +16,7 @@
   },
   "bar": {
     "autohideEnabled": true,
+    "disabled": false,
     "expandWidgets": true,
     "style": "continuous"
   },
@@ -37,6 +38,9 @@
       "osd": true,
       "notifications": true,
       "autohide": false,
+      "barOverride": true,
+      "barDisabled": false,
+      "expandWidgets": true,
       "ambientEnabled": true,
       "ambientTimeoutSeconds": 90,
       "screensaverEnabled": true,

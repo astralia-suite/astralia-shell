@@ -48,6 +48,10 @@ pub struct MonitorOverride {
     pub osd: bool,
     pub notifications: bool,
     pub autohide: bool,
+    /// Whether `autohide`, `bar_disabled` and `expand_widgets` apply; separate from `enabled`.
+    pub bar_override: bool,
+    pub bar_disabled: bool,
+    pub expand_widgets: bool,
     pub ambient_enabled: bool,
     pub ambient_timeout: u32,
     pub screensaver_enabled: bool,
@@ -62,6 +66,9 @@ impl Default for MonitorOverride {
             osd: true,
             notifications: true,
             autohide: false,
+            bar_override: false,
+            bar_disabled: false,
+            expand_widgets: false,
             ambient_enabled: true,
             ambient_timeout: 150,
             screensaver_enabled: true,
@@ -144,6 +151,7 @@ pub struct Config {
     pub capture_column: i32,
 
     pub autohide: bool,
+    pub bar_disabled: bool,
     pub expand_widgets: bool,
     pub bar_style: BarStyle,
     pub default_osd: bool,
@@ -195,6 +203,7 @@ impl Config {
             capture_monitor: String::new(),
             capture_column: 0,
             autohide: false,
+            bar_disabled: false,
             expand_widgets: false,
             bar_style: BarStyle::Continuous,
             default_osd: true,
@@ -247,8 +256,20 @@ pub fn notifications_enabled_for(cfg: &Config, monitor: &str) -> bool {
     active_override(cfg, monitor).map_or(cfg.default_notifications, |o| o.notifications)
 }
 
+fn bar_override<'a>(cfg: &'a Config, monitor: &str) -> Option<&'a MonitorOverride> {
+    cfg.monitor_overrides.get(monitor).filter(|o| o.bar_override)
+}
+
 pub fn autohide_enabled_for(cfg: &Config, monitor: &str) -> bool {
-    active_override(cfg, monitor).map_or(cfg.autohide, |o| o.autohide)
+    bar_override(cfg, monitor).map_or(cfg.autohide, |o| o.autohide)
+}
+
+pub fn bar_disabled_for(cfg: &Config, monitor: &str) -> bool {
+    bar_override(cfg, monitor).map_or(cfg.bar_disabled, |o| o.bar_disabled)
+}
+
+pub fn expand_widgets_for(cfg: &Config, monitor: &str) -> bool {
+    bar_override(cfg, monitor).map_or(cfg.expand_widgets, |o| o.expand_widgets)
 }
 
 pub fn ambient_enabled_for(cfg: &Config, monitor: &str) -> bool {
@@ -364,6 +385,7 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
 
     let bar = section(root, "bar", "qixing");
     cfg.autohide = flag(bar, "autohideEnabled", cfg.autohide);
+    cfg.bar_disabled = flag(bar, "disabled", cfg.bar_disabled);
     cfg.expand_widgets = flag(bar, "expandWidgets", cfg.expand_widgets);
     let style = text(bar, "style", BarStyle::Continuous.name());
     if let Some(style) = BarStyle::ALL.into_iter().find(|s| s.name() == style) {
@@ -403,11 +425,16 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
         let Some(value) = value.as_object().filter(|_| !RESERVED_DISPLAYS_KEYS.contains(&name.as_str())) else { continue };
         let value = Some(value);
         let d = MonitorOverride::default();
+        let enabled = flag(value, "_enabled", d.enabled);
         let mo = MonitorOverride {
-            enabled: flag(value, "_enabled", d.enabled),
+            enabled,
             osd: flag_or_legacy(value, "osd", "spark", d.osd),
             notifications: flag_or_legacy(value, "notifications", "heralds", d.notifications),
             autohide: flag(value, "autohide", d.autohide),
+            // Written before the bar had its own switch, the display override covered autohide.
+            bar_override: flag(value, "barOverride", enabled),
+            bar_disabled: flag(value, "barDisabled", d.bar_disabled),
+            expand_widgets: flag(value, "expandWidgets", cfg.expand_widgets),
             ambient_enabled: flag(value, "ambientEnabled", d.ambient_enabled),
             ambient_timeout: seconds(value, "ambientTimeoutSeconds", d.ambient_timeout),
             screensaver_enabled: flag(value, "screensaverEnabled", d.screensaver_enabled),
@@ -590,6 +617,9 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
             ("osd", Bool(ov.osd)),
             ("notifications", Bool(ov.notifications)),
             ("autohide", Bool(ov.autohide)),
+            ("barOverride", Bool(ov.bar_override)),
+            ("barDisabled", Bool(ov.bar_disabled)),
+            ("expandWidgets", Bool(ov.expand_widgets)),
             ("ambientEnabled", Bool(ov.ambient_enabled)),
             ("ambientTimeoutSeconds", uint(ov.ambient_timeout)),
             ("screensaverEnabled", Bool(ov.screensaver_enabled)),
@@ -615,7 +645,12 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
     ]);
     let mode = if cfg.rain.mode == RainMode::Stiletto { "stiletto" } else { "matrix" };
     let rain = object(vec![("mode", Str(mode.into())), ("asyncSpeed", Bool(cfg.rain.async_speed))]);
-    let bar = object(vec![("autohideEnabled", Bool(cfg.autohide)), ("expandWidgets", Bool(cfg.expand_widgets)), ("style", Str(cfg.bar_style.name().into()))]);
+    let bar = object(vec![
+        ("autohideEnabled", Bool(cfg.autohide)),
+        ("disabled", Bool(cfg.bar_disabled)),
+        ("expandWidgets", Bool(cfg.expand_widgets)),
+        ("style", Str(cfg.bar_style.name().into())),
+    ]);
     let general = object(vec![
         ("animationsDisabled", Bool(cfg.animations_disabled)),
         ("logoutLogoPath", path(&cfg.logout_logo_path)),
@@ -696,6 +731,13 @@ mod tests {
         let edp = &cfg.monitor_overrides["eDP-1"];
         assert!(edp.enabled && edp.osd && !edp.lock, "monitor override fields");
         assert!(edp.ambient_timeout == 90 && edp.screensaver_timeout == 300, "override seconds keep defaults when absent");
+        assert!(
+            edp.bar_override && !edp.bar_disabled && edp.expand_widgets,
+            "an override without bar keys follows `_enabled` and the global expand"
+        );
+        let split = parse(r#"{"bar": {"disabled": true}, "displays": {"DP-1": {"_enabled": true, "barOverride": false, "expandWidgets": false}}}"#);
+        let dp = &split.monitor_overrides["DP-1"];
+        assert!(split.bar_disabled && !dp.bar_override && !dp.expand_widgets, "explicit bar keys win");
         assert!(!cfg.idle_enabled, "idle disabled");
         assert_eq!(cfg.wallpaper_columns["eDP-1"], strings(&["/home/tester/Pictures/a.jpg", "/abs/b.png"]), "home is expanded in columns");
         assert!(
@@ -825,10 +867,23 @@ mod tests {
         );
         assert_eq!(osd_enabled_for(&cfg, "DP-1"), cfg.default_osd, "a disabled override is ignored");
         cfg.monitor_overrides.get_mut("DP-1").unwrap().enabled = true;
+        assert!(!osd_enabled_for(&cfg, "DP-1") && !notifications_enabled_for(&cfg, "DP-1"), "an enabled override wins");
+        assert_eq!(autohide_enabled_for(&cfg, "DP-1"), cfg.autohide, "the display override does not cover the bar");
+        let o = cfg.monitor_overrides.get_mut("DP-1").unwrap();
+        o.bar_override = true;
+        o.bar_disabled = true;
+        o.expand_widgets = true;
         assert!(
-            !osd_enabled_for(&cfg, "DP-1") && !notifications_enabled_for(&cfg, "DP-1") && autohide_enabled_for(&cfg, "DP-1"),
-            "an enabled override wins"
+            autohide_enabled_for(&cfg, "DP-1") && bar_disabled_for(&cfg, "DP-1") && expand_widgets_for(&cfg, "DP-1"),
+            "the bar override wins"
         );
+        assert!(
+            !bar_disabled_for(&cfg, "HDMI-1") && expand_widgets_for(&cfg, "HDMI-1") == cfg.expand_widgets,
+            "other outputs keep the bar defaults"
+        );
+        cfg.monitor_overrides.get_mut("DP-1").unwrap().enabled = false;
+        assert!(bar_disabled_for(&cfg, "DP-1"), "the bar override stands without the display override");
+        cfg.monitor_overrides.get_mut("DP-1").unwrap().enabled = true;
         assert_eq!(osd_enabled_for(&cfg, "HDMI-1"), cfg.default_osd, "other outputs keep the default");
         assert_eq!(lock_enabled_for(&cfg, "HDMI-1"), cfg.default_lock, "default lock");
         cfg.monitor_overrides.get_mut("DP-1").unwrap().lock = false;
