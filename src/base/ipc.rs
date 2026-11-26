@@ -93,7 +93,7 @@ fn set_timeouts(stream: &UnixStream) -> io::Result<()> {
     stream.set_write_timeout(Some(IO_TIMEOUT))
 }
 
-// ponytail: blocking read per client, move to a per-client nonblocking source if a slow client ever stalls frames
+// Blocking read per client; move to a per-client nonblocking source if a slow client ever stalls frames
 fn serve<D: Host + AsMut<App>>(mut stream: UnixStream, data: &mut D) {
     if let Err(e) = stream.set_nonblocking(false).and_then(|_| set_timeouts(&stream)) {
         ::log::error!("ipc: client setup: {e}");

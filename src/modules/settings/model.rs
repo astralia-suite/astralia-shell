@@ -7,6 +7,7 @@ use std::time::Instant;
 
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 use crate::base::input::{KeyEvent, KeyKind};
+use crate::base::paths::home;
 use crate::config::file::{collapse_home, expand_home};
 use crate::config::settings::{
     BarStyle, Config, MonitorOverride, PaletteSource, RainMode, VisualizerParams, VisualizerShape, ambient_timeout_for,
@@ -197,10 +198,6 @@ fn slot_from(value: i32) -> WallpaperSlot {
         2 => WallpaperSlot::Lock,
         _ => WallpaperSlot::Still,
     }
-}
-
-fn home() -> String {
-    std::env::var("HOME").unwrap_or_default()
 }
 
 /// `value` with three decimals, trailing zeros and point dropped.

@@ -8,6 +8,11 @@ fn var(name: &str) -> String {
     env::var(name).unwrap_or_default()
 }
 
+/// `$HOME`, empty when unset.
+pub fn home() -> String {
+    var("HOME")
+}
+
 pub fn runtime_path_in(session: &str, runtime_dir: &str, suffix: &str) -> PathBuf {
     let dir = if runtime_dir.is_empty() { "/tmp" } else { runtime_dir };
     let id: String = session.chars().filter(|&c| c != ':').map(|c| if c == '/' { '_' } else { c }).collect();

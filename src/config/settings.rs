@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
+use crate::base::paths::home;
 use crate::config::file::{collapse_home, expand_home, user_config_path};
 use crate::config::visualizer_config;
 
@@ -174,10 +175,6 @@ pub struct Config {
 
     pub visualizer: VisualizerParams,
     pub rain: RainParams,
-}
-
-fn home() -> String {
-    std::env::var("HOME").unwrap_or_default()
 }
 
 impl Config {

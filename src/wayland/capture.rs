@@ -110,7 +110,7 @@ impl Capture {
     }
 
     /// Copies the shm contents out as upright RGBA.
-    // ponytail: CPU swizzle of every frame; upload BGRA directly (EXT_texture_format_BGRA8888) if capture shows in profiles.
+    // CPU swizzle of every frame; upload BGRA directly (EXT_texture_format_BGRA8888) if capture shows in profiles.
     fn read(&mut self) {
         let (Some(pool), Some(spec)) = (&mut self.pool, self.spec) else { return };
         let (w, h, stride) = (spec.width as usize, spec.height as usize, spec.stride as usize);

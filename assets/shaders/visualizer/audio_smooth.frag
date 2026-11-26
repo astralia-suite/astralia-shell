@@ -22,7 +22,7 @@ vec4 fetch_sample(in sampler2D tex, int tex_sz, float s) {
     float coord = floor(s + 0.5);
     return texture2D(tex, vec2((coord + 0.5) / float(tex_sz), 0.5));
 }
-// ponytail: ES 1.00 forbids a non-constant loop bound (smax-smin is uniform-
+// ES 1.00 forbids a non-constant loop bound (smax-smin is uniform-
 // derived); cap at a fixed trip count and break early instead. 512 is >>
 // the ~60-sample window the current sample_range/sample_scale/smooth_factor
 // config actually produces at kVisualizerSampleSize=1024 — raise if those

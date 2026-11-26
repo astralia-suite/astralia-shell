@@ -92,7 +92,7 @@ pub fn wallpaper_picker_less(a: &str, b: &str) -> bool {
 
 /// Matching files in `dir` and its direct subfolders, in picker order, at most `limit`.
 pub fn wallpaper_list_files(dir: &str, animated: bool, limit: usize) -> Vec<String> {
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = crate::base::paths::home();
     let root = if home.is_empty() { dir.to_string() } else { expand_home(dir, &home) };
     let wanted = |p: &str| if animated { wallpaper_is_video(p) } else { wallpaper_is_image(p) };
     let mut found = Vec::new();

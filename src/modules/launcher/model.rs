@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 use crate::base::input::{Clipboard, KeyEvent, KeyKind};
+use crate::base::paths::home;
 use crate::base::process::AsyncProcess;
 use crate::config::launcher_config as cfg;
 use crate::render::icons;
@@ -90,10 +91,6 @@ fn submenu_glyph(entry: &SubmenuEntry) -> &'static str {
         SubmenuIcon::None if entry.is_dir => icons::FOLDER,
         SubmenuIcon::None => icons::EDIT,
     }
-}
-
-fn home() -> Option<String> {
-    std::env::var("HOME").ok()
 }
 
 /// The card's height with `visible_rows` rows under the field.
@@ -330,10 +327,7 @@ impl Model {
     /// Searches from home, or from `/` when `global`; reloads the apps when their files changed.
     pub fn open(&mut self, global: bool) {
         let home = home();
-        self.search_root = match &home {
-            Some(home) if !global => home.clone(),
-            _ => "/".into(),
-        };
+        self.search_root = if global || home.is_empty() { "/".into() } else { home };
         let stamp = desktop_entry_stamp();
         if !self.apps_loaded || stamp != self.apps_stamp {
             self.apps = scan_desktop_entries();
@@ -824,7 +818,7 @@ impl Model {
     }
 
     pub fn rows(&mut self) -> Vec<Row> {
-        let home = home().unwrap_or_default();
+        let home = home();
         if self.submenu.screen == SubmenuScreen::Search {
             let results = self.results.clone();
             return results

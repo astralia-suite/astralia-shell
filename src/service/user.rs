@@ -52,7 +52,7 @@ pub fn login_name_of(uid: u32) -> Option<String> {
 /// The first readable of `~/.face`, `~/.face.icon` and the AccountsService icon; empty when none.
 pub fn face_path() -> String {
     let mut candidates = Vec::new();
-    if let Some(home) = std::env::var("HOME").ok().filter(|h| !h.is_empty()) {
+    if let Some(home) = Some(crate::base::paths::home()).filter(|h| !h.is_empty()) {
         candidates.push(format!("{home}/.face"));
         candidates.push(format!("{home}/.face.icon"));
     }

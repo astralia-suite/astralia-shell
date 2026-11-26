@@ -37,7 +37,7 @@ void main()
     float dMax = glow.maxAngle / 360. * TWOPI;
     float dStep = TWOPI / (glow.directions);
     float iStep = 1.0 / (glow.quality);
-    // ponytail: ES 1.00 forbids a non-constant loop bound (glow.directions/
+    // ES 1.00 forbids a non-constant loop bound (glow.directions/
     // quality are uniforms clamped in [4,32]/[2,8] host-side); cap at those
     // maxima and break early instead. Raise if the clamp range widens.
     for (int di = 0; di < 32; di++) {

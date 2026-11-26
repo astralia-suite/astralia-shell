@@ -100,8 +100,7 @@ pub fn wallpaper_columns_panel(pane: &mut Pane, slot: WallpaperSlot, x: f32, mut
         pane.caret = draw_field_input(pane.canvas, &model.field().text, model.field(), model.field_anim(), &draw, None);
     } else {
         let clipped = crate::render::canvas::TextStyle { max_width: input_w as i32, ..TEXT_STYLE };
-        let home = std::env::var("HOME").unwrap_or_default();
-        let shown = collapse_home(wallpaper_slot_dir(config, slot), &home);
+        let shown = collapse_home(wallpaper_slot_dir(config, slot), &crate::base::paths::home());
         let size = pane.canvas.measure(&shown, &clipped);
         pane.text(&shown, &clipped, input_x, y + (cfg::DIR_BAR_HEIGHT - size.h) / 2.0, p.text);
     }

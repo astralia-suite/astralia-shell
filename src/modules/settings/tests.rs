@@ -8,6 +8,7 @@ use super::model::{Act, Field, Hooks, Model, Tab, apply_field, field_text};
 use super::view::{Art, paint};
 use crate::base::animation::set_instant;
 use crate::base::input::{KeyEvent, KeyKind};
+use crate::base::paths::home;
 use crate::config::file::collapse_home;
 use crate::config::settings::{BarStyle, Config, PaletteSource, RainMode, VisualizerShape};
 use crate::config::settings_config as cfg;
@@ -130,10 +131,6 @@ fn later(seconds: u64) -> Instant {
 
 fn count(canvas: &RecordingCanvas, kind: OpKind) -> usize {
     canvas.ops.iter().filter(|op| op.kind == kind).count()
-}
-
-fn home() -> String {
-    std::env::var("HOME").unwrap_or_default()
 }
 
 /// Runs this thread's loop, so scans finish and their results arrive.

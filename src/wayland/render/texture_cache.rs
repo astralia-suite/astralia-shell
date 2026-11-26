@@ -32,7 +32,7 @@ impl<T> TextureCache<T> {
         if !self.entries.contains_key(key) {
             let made = create()?;
             self.entries.insert(key.to_string(), (made, now));
-            // ponytail: O(n) scan per eviction over 512 entries; an ordered index if the cache grows.
+            // O(n) scan per eviction over 512 entries; an ordered index if the cache grows.
             while self.entries.len() > MAX_ENTRIES {
                 let Some(oldest) = self.entries.iter().min_by_key(|(_, (_, used))| *used).map(|(k, _)| k.clone()) else { break };
                 if let Some((t, _)) = self.entries.remove(&oldest) {
