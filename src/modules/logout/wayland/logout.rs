@@ -147,8 +147,7 @@ impl Logout {
 
     /// Asks for a frame while open, and once more after closing to clear the surface; true when the caller draws now.
     pub fn request_frame(&mut self, qh: &wayland_client::QueueHandle<crate::wayland::State>) -> bool {
-        let wanted = self.overlay.is_open() || self.stale;
-        wanted && self.overlay.window_mut().is_some_and(|w| w.request_frame(qh))
+        self.overlay.request_frame(self.stale, qh)
     }
 
     pub fn wants_hand(&self) -> bool {

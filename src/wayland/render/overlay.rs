@@ -275,9 +275,10 @@ impl Overlay {
         }
     }
 
-    /// Asks for a frame while open; true when the caller draws now.
-    pub fn request_frame(&mut self, qh: &QueueHandle<State>) -> bool {
-        self.state.open && self.window.as_mut().is_some_and(|w| w.request_frame(qh))
+    /// Asks for a frame while open or while `keep` holds (a close still drawing, a surface to clear);
+    /// true when the caller draws now.
+    pub fn request_frame(&mut self, keep: bool, qh: &QueueHandle<State>) -> bool {
+        (self.state.open || keep) && self.window.as_mut().is_some_and(|w| w.request_frame(qh))
     }
 
     /// Frame callback done; true when a draw is due.

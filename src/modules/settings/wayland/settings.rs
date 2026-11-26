@@ -182,8 +182,7 @@ impl Settings {
 
     /// Asks for a frame while open, and once more after closing to clear the surface; true when the caller draws now.
     pub fn request_frame(&mut self, qh: &QueueHandle<State>) -> bool {
-        let wanted = self.overlay.is_open() || self.stale;
-        wanted && self.overlay.window_mut().is_some_and(|w| w.request_frame(qh))
+        self.overlay.request_frame(self.stale, qh)
     }
 
     /// Paints one frame; true while a tween or an image fade runs, so the caller asks for another.

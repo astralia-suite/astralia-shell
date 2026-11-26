@@ -254,8 +254,7 @@ impl Launcher {
 
     /// Asks for a frame while open or fading out; true when the caller draws now.
     pub fn request_frame(&mut self, qh: &QueueHandle<State>) -> bool {
-        let wanted = self.overlay.is_open() || self.closing;
-        wanted && self.overlay.window_mut().is_some_and(|w| w.request_frame(qh))
+        self.overlay.request_frame(self.closing, qh)
     }
 
     /// Paints one frame; true while something animates, so the caller asks for another.
