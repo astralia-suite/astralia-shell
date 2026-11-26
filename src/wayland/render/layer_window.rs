@@ -10,8 +10,8 @@ use wayland_egl::WlEglSurface;
 use super::buffer_size;
 use super::egl::Egl;
 use super::renderer::Renderer;
-use crate::backend::wayland::State;
-use crate::backend::wayland::frame::{FrameAction, FrameClock};
+use crate::wayland::State;
+use crate::wayland::frame::{FrameAction, FrameClock};
 
 /// Dropping the role destroys the role object, then the `wl_surface`.
 pub struct LayerWindow<R: WaylandSurface = LayerSurface> {

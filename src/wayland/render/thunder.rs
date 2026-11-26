@@ -206,7 +206,7 @@ impl ThunderBurst {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::wayland::render::renderer::{offscreen, read_pixel};
+    use crate::wayland::render::renderer::{offscreen, read_pixel};
 
     const W: i32 = 128;
     const H: i32 = 64;

@@ -12,7 +12,7 @@ use super::audio_stages::AudioStages;
 use super::bars::Bars;
 use super::shaders::Colors;
 use super::sphere::Sphere;
-use crate::backend::wayland::render::egl::{Egl, load_gl};
+use crate::wayland::render::egl::{Egl, load_gl};
 use crate::config::settings::{VisualizerParams, VisualizerShape};
 use crate::config::visualizer_config::{BAR_FPS, FFT_CUT_OFF, FFT_SCALE, FPS_MAX, FPS_MIN, FRAGMENT_SIZE};
 use crate::modules::visualizer::audio_capture::{Accumulator, AudioCapture};
@@ -285,7 +285,7 @@ fn render_thread_main(h: ThreadEgl, signal: Signal, size: Arc<AtomicU64>, source
 #[cfg(test)]
 mod tests {
     use super::Visualizer;
-    use crate::backend::wayland::render::egl::Egl;
+    use crate::wayland::render::egl::Egl;
     use crate::config::settings::{VisualizerParams, VisualizerShape};
     use crate::modules::visualizer::wayland::shaders::Colors;
     use khronos_egl as egl;

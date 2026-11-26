@@ -35,12 +35,10 @@ fn owner_gate(i: usize) -> u64 {
     80 + i as u64
 }
 
-/// The commands of the ring, with the lock command in its slot when the session can lock.
-pub fn commands(with_lock: bool) -> [String; COUNT] {
+/// The commands of the ring, with the lock command in its slot.
+pub fn commands() -> [String; COUNT] {
     let mut commands: [String; COUNT] = std::array::from_fn(|i| cfg::ACTIONS[i].command.to_string());
-    if with_lock {
-        commands[cfg::LOCK_INDEX as usize] = cfg::LOCK_COMMAND.to_string();
-    }
+    commands[cfg::LOCK_INDEX as usize] = cfg::LOCK_COMMAND.to_string();
     commands
 }
 

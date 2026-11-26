@@ -323,7 +323,7 @@ fn bind_target(gl: &glow::Context, target: &mut Target, c: usize, size: i32) {
 #[cfg(test)]
 mod tests {
     use super::AudioStages;
-    use crate::backend::wayland::render::egl::Egl;
+    use crate::wayland::render::egl::Egl;
     use crate::modules::visualizer::cpu_stages::CpuStages;
     use glow::HasContext;
 

@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn column_draws_clipped() {
-        use crate::backend::wayland::render::renderer::{offscreen, read_pixel};
+        use crate::wayland::render::renderer::{offscreen, read_pixel};
         let Some((_egl, mut r)) = offscreen(64, 32) else { return };
         let spread = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/shaders/wallpaper/spread.frag"));
         let program = r.compile_program(spread, "wallpaper_spread").expect("the spread shader builds");

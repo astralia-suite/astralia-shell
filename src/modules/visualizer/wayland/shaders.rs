@@ -6,7 +6,7 @@
 
 use glow::HasContext;
 
-use crate::backend::wayland::render::renderer::compile_with;
+use crate::wayland::render::renderer::compile_with;
 
 macro_rules! src {
     ($name:literal) => {

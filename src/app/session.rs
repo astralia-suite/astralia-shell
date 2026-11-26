@@ -3,7 +3,6 @@ use std::env;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionKind {
     Wayland,
-    X11,
     None,
 }
 
@@ -11,10 +10,8 @@ pub enum SessionKind {
 pub struct SessionEnv {
     pub override_name: String,
     pub hyprland_signature: String,
-    pub i3_socket: String,
     pub session_type: String,
     pub wayland_display: String,
-    pub display: String,
 }
 
 impl SessionEnv {
@@ -23,38 +20,18 @@ impl SessionEnv {
         SessionEnv {
             override_name: var("ASTRALIA_BACKEND"),
             hyprland_signature: var("HYPRLAND_INSTANCE_SIGNATURE"),
-            i3_socket: var("I3SOCK"),
             session_type: var("XDG_SESSION_TYPE"),
             wayland_display: var("WAYLAND_DISPLAY"),
-            display: var("DISPLAY"),
         }
     }
 }
 
 pub fn detect(env: &SessionEnv) -> SessionKind {
-    match env.override_name.as_str() {
-        "wayland" => return SessionKind::Wayland,
-        "x11" => return SessionKind::X11,
-        _ => {}
-    }
-    if !env.hyprland_signature.is_empty() {
-        return SessionKind::Wayland;
-    }
-    if !env.i3_socket.is_empty() {
-        return SessionKind::X11;
-    }
-    match env.session_type.as_str() {
-        "wayland" => return SessionKind::Wayland,
-        "x11" => return SessionKind::X11,
-        _ => {}
-    }
-    if !env.wayland_display.is_empty() {
-        return SessionKind::Wayland;
-    }
-    if !env.display.is_empty() {
-        return SessionKind::X11;
-    }
-    SessionKind::None
+    let wayland = env.override_name == "wayland"
+        || !env.hyprland_signature.is_empty()
+        || env.session_type == "wayland"
+        || !env.wayland_display.is_empty();
+    if wayland { SessionKind::Wayland } else { SessionKind::None }
 }
 
 /// Only `ASTRALIA_START_LOCKED=1` locks at startup.
@@ -110,27 +87,18 @@ mod tests {
     fn detect_order() {
         let mut env = SessionEnv::default();
         assert_eq!(detect(&env), SessionKind::None, "an empty environment has no session");
-        env.display = ":0".into();
-        assert_eq!(detect(&env), SessionKind::X11, "DISPLAY alone means x11");
-        env.wayland_display = "wayland-1".into();
-        assert_eq!(detect(&env), SessionKind::Wayland, "WAYLAND_DISPLAY wins over DISPLAY");
-        env.session_type = "x11".into();
-        assert_eq!(detect(&env), SessionKind::X11, "XDG_SESSION_TYPE wins over the display variables");
-        env.i3_socket = "/run/user/1000/i3/ipc-socket.1".into();
-        env.session_type = "wayland".into();
-        assert_eq!(detect(&env), SessionKind::X11, "I3SOCK wins over XDG_SESSION_TYPE");
-        env.hyprland_signature = "abc_123".into();
-        assert_eq!(detect(&env), SessionKind::Wayland, "the Hyprland signature wins over I3SOCK");
         env.override_name = "x11".into();
-        assert_eq!(detect(&env), SessionKind::X11, "the override wins over everything");
-        env.override_name = "wayland".into();
-        env.hyprland_signature.clear();
-        assert_eq!(detect(&env), SessionKind::Wayland, "the override can force wayland");
-        env.override_name = "bogus".into();
-        env.i3_socket.clear();
-        env.session_type.clear();
+        assert_eq!(detect(&env), SessionKind::None, "an unknown override is ignored");
+        env.wayland_display = "wayland-1".into();
+        assert_eq!(detect(&env), SessionKind::Wayland, "WAYLAND_DISPLAY means wayland");
         env.wayland_display.clear();
-        env.display = ":1".into();
-        assert_eq!(detect(&env), SessionKind::X11, "an unknown override is ignored");
+        env.session_type = "wayland".into();
+        assert_eq!(detect(&env), SessionKind::Wayland, "XDG_SESSION_TYPE=wayland means wayland");
+        env.session_type.clear();
+        env.hyprland_signature = "abc_123".into();
+        assert_eq!(detect(&env), SessionKind::Wayland, "the Hyprland signature means wayland");
+        env.hyprland_signature.clear();
+        env.override_name = "wayland".into();
+        assert_eq!(detect(&env), SessionKind::Wayland, "the override can force wayland");
     }
 }

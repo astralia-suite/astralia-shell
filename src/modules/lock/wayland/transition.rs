@@ -8,11 +8,11 @@ use wayland_client::Proxy;
 use wayland_client::protocol::wl_output::WlOutput;
 use wayland_client::protocol::wl_surface::WlSurface;
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::gl_canvas::{GlCanvas, GlFrame};
-use crate::backend::wayland::render::layer_window::LayerWindow;
-use crate::backend::wayland::render::overlay::set_input_region;
-use crate::backend::wayland::render::thunder::{ThunderBurst, ThunderParams, ThunderShockParams};
+use crate::wayland::State;
+use crate::wayland::render::gl_canvas::{GlCanvas, GlFrame};
+use crate::wayland::render::layer_window::LayerWindow;
+use crate::wayland::render::overlay::set_input_region;
+use crate::wayland::render::thunder::{ThunderBurst, ThunderParams, ThunderShockParams};
 use crate::config::lock_config as cfg;
 use crate::config::settings::{Config, lock_enabled_for};
 use crate::modules::lock::layout::{card_height, card_width};
@@ -215,7 +215,7 @@ impl Thunder<GlFrame<'_>> for Bolts<'_> {
 
 /// The wallpaper the lock shows on `name`: the custom lock wallpaper when loaded, else the desktop one.
 #[allow(clippy::too_many_arguments)]
-fn draw_wallpaper(frame: &mut GlFrame, wallpaper: &mut Wallpaper, monitors: &[crate::backend::wayland::monitor::Monitor], cfg: &Config, name: &str, w: i32, h: i32, scale: i32) {
+fn draw_wallpaper(frame: &mut GlFrame, wallpaper: &mut Wallpaper, monitors: &[crate::wayland::monitor::Monitor], cfg: &Config, name: &str, w: i32, h: i32, scale: i32) {
     if wallpaper.loaded() {
         wallpaper.draw(cfg, frame.renderer(), name, w, h, scale);
     } else if let Some(desktop) = monitors.iter().find(|m| m.name == name).and_then(|m| m.wallpaper.as_ref()) {

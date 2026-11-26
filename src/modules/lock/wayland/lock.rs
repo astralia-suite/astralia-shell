@@ -11,9 +11,9 @@ use wayland_client::protocol::wl_output::WlOutput;
 use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_client::{Connection, Dispatch, Proxy, QueueHandle};
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::layer_window::LayerWindow;
+use crate::wayland::State;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::layer_window::LayerWindow;
 use crate::base::input::KeyEvent;
 use crate::base::wall_clock::{format_tm, now_tm};
 use crate::config::settings::lock_enabled_for;

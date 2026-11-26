@@ -9,11 +9,11 @@ use wayland_client::protocol::wl_output::WlOutput;
 use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_client::{Proxy, QueueHandle};
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::layer_window::LayerWindow;
-use crate::backend::wayland::render::renderer::Renderer;
+use crate::wayland::State;
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::layer_window::LayerWindow;
+use crate::wayland::render::renderer::Renderer;
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 use crate::config::idle_config::{AMBIENT_FADE_OWNER, IDLE_FADE_MS, IDLE_LAYER_NAMESPACE, LOGO_ASSET, LOGO_SIZE, LOGO_SPEED, SCREENSAVER_FADE_OWNER};
 use crate::modules::idle::bounce::{Bounce, bounce_step};

@@ -6,11 +6,11 @@ use std::time::Instant;
 use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::overlay::Overlay;
-use crate::backend::wayland::render::renderer::Renderer;
+use crate::wayland::State;
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::overlay::Overlay;
+use crate::wayland::render::renderer::Renderer;
 use crate::base::input::KeyEvent;
 use crate::config::wallpaper_select_config as cfg;
 use crate::modules::wallpaper_select::model::{Hooks, Model};
@@ -31,8 +31,8 @@ pub struct WallpaperSelect {
 
 impl WallpaperSelect {
     /// `wake` runs when a scan lands or a thumbnail decodes, so the host polls and repaints.
-    pub fn new(hooks: Hooks, animated_wallpaper: bool, wake: Rc<dyn Fn()>) -> WallpaperSelect {
-        let mut model = Model::new(hooks, animated_wallpaper);
+    pub fn new(hooks: Hooks, wake: Rc<dyn Fn()>) -> WallpaperSelect {
+        let mut model = Model::new(hooks);
         model.set_wake(wake.clone());
         let mut canvas = GlCanvas::new();
         canvas.set_on_image_ready(wake);
@@ -50,7 +50,7 @@ impl WallpaperSelect {
 
     /// Opens on `column` of `monitor`; the overlay must be bound to that monitor first.
     pub fn open(&mut self, wl: &CompositorState, monitor: &str, column: i32) {
-        if self.overlay.is_open() || !self.model.available() {
+        if self.overlay.is_open() {
             return;
         }
         // A picker whose output went away is still open in the model.

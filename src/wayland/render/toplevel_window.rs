@@ -9,7 +9,7 @@ use wayland_client::QueueHandle;
 use super::egl::Egl;
 use super::layer_window::LayerWindow;
 use super::overlay::{OVERLAY_FADE_MS, OVERLAY_FADE_OWNER};
-use crate::backend::wayland::State;
+use crate::wayland::State;
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 use crate::base::input::{KeyEvent, KeyKind};
 

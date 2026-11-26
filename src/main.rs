@@ -1,5 +1,4 @@
 mod app;
-mod backend;
 mod base;
 mod config;
 mod modules;
@@ -7,6 +6,7 @@ mod modules;
 mod render;
 #[allow(dead_code)]
 mod service;
+mod wayland;
 
 use std::io::Write;
 use std::process::ExitCode;
@@ -37,12 +37,8 @@ fn main() -> ExitCode {
     render::app_fonts::register();
     match session::detect(&SessionEnv::from_env()) {
         SessionKind::Wayland => {}
-        SessionKind::X11 => {
-            ::log::error!("the x11 backend is not ported yet");
-            return ExitCode::FAILURE;
-        }
         SessionKind::None => {
-            ::log::error!("no graphical session found: set WAYLAND_DISPLAY or DISPLAY, or ASTRALIA_BACKEND=wayland|x11");
+            ::log::error!("no wayland session found: set WAYLAND_DISPLAY or ASTRALIA_BACKEND=wayland");
             return ExitCode::FAILURE;
         }
     }
@@ -59,7 +55,7 @@ fn main() -> ExitCode {
     }
     process::tune_allocator(2);
     ::log::info!("starting the wayland backend");
-    match app::run("wayland", shell::wayland_capabilities()) {
+    match app::run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             ::log::error!("{e}");

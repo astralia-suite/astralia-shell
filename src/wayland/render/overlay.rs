@@ -16,7 +16,7 @@ use wayland_client::{Proxy, QueueHandle};
 
 use super::egl::Egl;
 use super::layer_window::LayerWindow;
-use crate::backend::wayland::State;
+use crate::wayland::State;
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 
 pub const OVERLAY_FADE_MS: f32 = 220.0;

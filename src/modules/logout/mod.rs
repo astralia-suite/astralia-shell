@@ -43,7 +43,7 @@ mod tests {
     }
 
     fn harness() -> Harness {
-        let mut model = Model::new(commands(true));
+        let mut model = Model::new(commands());
         let executed = Rc::new(RefCell::new(Vec::new()));
         let closed = Rc::new(RefCell::new(0));
         let (e, c) = (executed.clone(), closed.clone());
@@ -66,10 +66,9 @@ mod tests {
 
     #[test]
     fn logout_commands() {
-        let (plain, lock) = (commands(false), commands(true));
-        assert!(plain[0] == "systemctl poweroff" && plain[1] == "systemctl reboot", "default commands come from the config");
-        let li = cfg::LOCK_INDEX as usize;
-        assert!(plain[li].is_empty() && lock[li] == "astralia lock", "the lock command exists only where lock does");
+        let commands = commands();
+        assert!(commands[0] == "systemctl poweroff" && commands[1] == "systemctl reboot", "default commands come from the config");
+        assert_eq!(commands[cfg::LOCK_INDEX as usize], "astralia lock", "the lock command sits in its slot");
     }
 
     #[test]

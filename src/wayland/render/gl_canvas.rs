@@ -490,7 +490,7 @@ impl Canvas for GlFrame<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::wayland::render::renderer::{offscreen, read_pixel};
+    use crate::wayland::render::renderer::{offscreen, read_pixel};
     use crate::render::canvas::{GroupOptions, TextStyle};
     use calloop::EventLoop;
     use std::cell::Cell;

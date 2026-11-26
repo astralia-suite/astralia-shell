@@ -7,11 +7,11 @@ use std::time::Instant;
 use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::overlay::Overlay;
-use crate::backend::wayland::render::renderer::Renderer;
+use crate::wayland::State;
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::overlay::Overlay;
+use crate::wayland::render::renderer::Renderer;
 use crate::base::input::KeyEvent;
 use crate::config::polkit_config as cfg;
 use crate::modules::polkit::model::{Key, Model, prompt};

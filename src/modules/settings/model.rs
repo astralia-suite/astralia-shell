@@ -5,7 +5,6 @@ use std::cell::{Cell, Ref, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Instant;
 
-use crate::app::shell::Capabilities;
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 use crate::base::input::{KeyEvent, KeyKind};
 use crate::config::file::{collapse_home, expand_home};
@@ -25,7 +24,7 @@ use crate::render::text_field::{
 use crate::service::runtime;
 use crate::service::settings::ConfigStore;
 use crate::service::wallpaper::{
-    WallpaperSlot, wallpaper_clear_image, wallpaper_column_count, wallpaper_list_files, wallpaper_set_column, wallpaper_set_column_count,
+    WallpaperSlot, wallpaper_column_count, wallpaper_list_files, wallpaper_set_column, wallpaper_set_column_count,
     wallpaper_set_fill_mode, wallpaper_slot_dir,
 };
 
@@ -57,50 +56,6 @@ pub struct TabInfo {
     pub tab: Tab,
     pub label: &'static str,
     pub icon: &'static str,
-}
-
-/// What the backend can do, which decides the tabs and controls shown.
-#[derive(Clone, Debug)]
-pub struct Caps {
-    pub animation: bool,
-    pub idle: bool,
-    pub rain: bool,
-    pub visualizer: bool,
-    pub animated_wallpaper: bool,
-    pub lock_wallpaper: bool,
-    pub wallpaper_columns: bool,
-    pub default_wallpaper: bool,
-    pub autohide: bool,
-    pub bar_styles: Vec<BarStyle>,
-}
-
-impl Default for Caps {
-    fn default() -> Self {
-        Caps {
-            animation: false,
-            idle: false,
-            rain: false,
-            visualizer: false,
-            animated_wallpaper: false,
-            lock_wallpaper: false,
-            wallpaper_columns: false,
-            default_wallpaper: false,
-            autohide: false,
-            bar_styles: BarStyle::ALL.to_vec(),
-        }
-    }
-}
-
-pub fn caps(capabilities: &Capabilities) -> Caps {
-    Caps {
-        animation: capabilities.animations,
-        idle: capabilities.idle,
-        rain: capabilities.rain,
-        visualizer: capabilities.visualizer,
-        animated_wallpaper: capabilities.animated_wallpaper,
-        lock_wallpaper: capabilities.lock,
-        ..Caps::default()
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -371,7 +326,6 @@ fn deliver(inbox: &Weak<Inbox>, slot: WallpaperSlot, generation: u64, found: Vec
 }
 
 pub struct Model {
-    caps: Caps,
     hooks: Hooks,
     inbox: Rc<Inbox>,
     animations: AnimationManager,
@@ -403,19 +357,9 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(caps: Caps, hooks: Hooks) -> Model {
-        let tabs = all_tabs()
-            .iter()
-            .filter(|info| match info.tab {
-                Tab::Ambient => caps.rain || caps.visualizer,
-                Tab::General => caps.animation,
-                Tab::Lock => caps.lock_wallpaper,
-                _ => true,
-            })
-            .copied()
-            .collect();
+    pub fn new(hooks: Hooks) -> Model {
+        let tabs = all_tabs().to_vec();
         Model {
-            caps,
             hooks,
             inbox: Rc::default(),
             animations: AnimationManager::default(),
@@ -547,18 +491,9 @@ impl Model {
         self.panel = panel;
     }
 
-    pub fn effective_bar_style(&self) -> BarStyle {
-        let style = self.config().bar_style;
-        let styles = &self.caps.bar_styles;
-        if styles.contains(&style) {
-            return style;
-        }
-        if styles.contains(&BarStyle::Continuous) { BarStyle::Continuous } else { styles.first().copied().unwrap_or_default() }
-    }
-
     /// The slot the wallpaper tab edits now.
     fn desktop_slot(&self) -> WallpaperSlot {
-        if self.caps.animated_wallpaper && self.config().wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }
+        if self.config().wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }
     }
 
     /// Re-reads the monitors, keeps each picker on a monitor and column that exist, and scans the
@@ -588,7 +523,7 @@ impl Model {
             return;
         }
         let slot = match self.active {
-            Tab::Wallpaper => Some(if self.caps.animated_wallpaper && current.wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }),
+            Tab::Wallpaper => Some(if current.wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }),
             Tab::Lock if current.lock_wallpaper_custom => Some(WallpaperSlot::Lock),
             _ => None,
         };
@@ -863,7 +798,7 @@ impl Model {
                 config.monitor_overrides.entry(target.clone()).or_default().screensaver_timeout = timeout;
             }),
             Act::BarStyle => {
-                if let Some(&style) = usize::try_from(region.a).ok().and_then(|i| self.caps.bar_styles.get(i)) {
+                if let Some(&style) = usize::try_from(region.a).ok().and_then(|i| BarStyle::ALL.get(i)) {
                     self.edit(|config| config.bar_style = style);
                 }
             }
@@ -893,7 +828,6 @@ impl Model {
     fn dispatch_wallpaper(&mut self, region: Region) {
         let slot = slot_from(region.b);
         let (picker_region, picker_column) = (self.picker(slot).region.clone(), self.picker(slot).column);
-        let columns = self.caps.wallpaper_columns;
         match region.act {
             Act::WallpaperDefault => self.edit(|config| config.default_wallpaper = !config.default_wallpaper),
             Act::WallpaperAnimated => self.edit(|config| config.wallpaper_animated_enabled = !config.wallpaper_animated_enabled),
@@ -911,13 +845,7 @@ impl Model {
                     self.edit(|config| wallpaper_set_column(config, &picker_region, picker_column, &path, slot));
                 }
             }
-            Act::WallpaperRemove => self.edit(|config| {
-                if columns || slot == WallpaperSlot::Lock {
-                    wallpaper_set_column(config, &picker_region, picker_column, "", slot);
-                } else {
-                    wallpaper_clear_image(config, &picker_region);
-                }
-            }),
+            Act::WallpaperRemove => self.edit(|config| wallpaper_set_column(config, &picker_region, picker_column, "", slot)),
             Act::WallpaperFill => self.edit(|config| wallpaper_set_fill_mode(config, &picker_region, picker_column, if region.a == 1 { "fit" } else { "crop" }, slot)),
             Act::WallpaperCount => self.edit(|config| {
                 let count = (wallpaper_column_count(config, &picker_region, slot) + region.a).clamp(1, cfg::MAX_COLUMNS);
@@ -938,10 +866,6 @@ impl Model {
             }
             _ => {}
         }
-    }
-
-    pub fn caps(&self) -> &Caps {
-        &self.caps
     }
 
     pub fn tabs(&self) -> &[TabInfo] {

@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use calloop::EventLoop;
 
-use super::model::{Act, Caps, Field, Hooks, Model, Tab, apply_field, field_text};
+use super::model::{Act, Field, Hooks, Model, Tab, apply_field, field_text};
 use super::view::{Art, paint};
 use crate::base::animation::set_instant;
 use crate::base::input::{KeyEvent, KeyKind};
@@ -56,7 +56,7 @@ struct Env {
 }
 
 impl Env {
-    fn new(caps: Caps) -> Env {
+    fn new() -> Env {
         let store = Rc::new(Store::default());
         let hooks = Hooks {
             store: store.clone(),
@@ -64,7 +64,7 @@ impl Env {
             focused_monitor: Box::new(|| "HDMI-1".to_string()),
             cpu_fallback: Box::new(|_, _| false),
         };
-        Env { model: Model::new(caps, hooks), store, closes: 0, closed: 0 }
+        Env { model: Model::new(hooks), store, closes: 0, closed: 0 }
     }
 
     fn config(&self) -> RefMut<'_, Config> {
@@ -189,22 +189,12 @@ fn settings_fields() {
 fn settings_tabs() {
     let _snap = Snap::on();
     let tabs = |env: &Env| env.model.tabs().iter().map(|t| t.tab).collect::<Vec<_>>();
-    let mut minimal = Env::new(Caps::default());
-    assert_eq!(tabs(&minimal), [Tab::Bar, Tab::Palette, Tab::Displays, Tab::Wallpaper], "a minimal backend has four tabs");
-
-    let full = Caps { animation: true, idle: true, rain: true, visualizer: true, ..Caps::default() };
-    let rich = Env::new(full.clone());
-    assert!(rich.model.tabs().len() == 6 && rich.model.tabs()[0].tab == Tab::General, "capabilities add the extra tabs in order");
-    assert_eq!(rich.model.tabs()[1].tab, Tab::Ambient, "the remaining tabs follow alphabetically after general");
-
-    let locking = Env::new(Caps { lock_wallpaper: true, ..full });
+    let mut minimal = Env::new();
     assert_eq!(
-        tabs(&locking),
+        tabs(&minimal),
         [Tab::General, Tab::Ambient, Tab::Bar, Tab::Palette, Tab::Displays, Tab::Lock, Tab::Wallpaper],
-        "the lock screen tab sits between displays and wallpaper"
+        "general leads, and the lock screen tab sits between displays and wallpaper"
     );
-    let lock_minimal = Env::new(Caps { lock_wallpaper: true, ..Caps::default() });
-    assert!(lock_minimal.model.tabs().len() == 5 && lock_minimal.model.tabs()[3].tab == Tab::Lock, "a backend that can lock gains the tab on its own");
 
     minimal.model.open();
     assert!(minimal.model.in_menu(), "the overlay opens on the tile menu");
@@ -218,7 +208,7 @@ fn settings_tabs() {
     minimal.model.open();
     assert!(minimal.model.in_menu() && minimal.model.active_tab() == Tab::Wallpaper, "reopening starts over");
 
-    let mut keeper = Env::new(Caps::default());
+    let mut keeper = Env::new();
     keeper.model.open();
     keeper.key(KeyKind::Down, "");
     assert!(keeper.model.in_menu(), "arrows do nothing on the menu");
@@ -226,7 +216,7 @@ fn settings_tabs() {
     keeper.key(KeyKind::Down, "");
     assert_eq!(keeper.model.active_tab(), Tab::Wallpaper, "down stops at the last tab");
     keeper.key(KeyKind::Up, "");
-    assert_eq!(keeper.model.active_tab(), Tab::Displays, "up moves to the previous tab");
+    assert_eq!(keeper.model.active_tab(), Tab::Lock, "up moves to the previous tab");
     keeper.key(KeyKind::Down, "");
     assert_eq!(keeper.model.active_tab(), Tab::Wallpaper, "down moves to the next tab");
     keeper.click(Act::Tab, Tab::Palette as i32, 0);
@@ -259,7 +249,7 @@ fn settings_tabs() {
 
 #[test]
 fn settings_tab_fade() {
-    let mut animated = Env::new(Caps::default());
+    let mut animated = Env::new();
     animated.model.open();
     animated.tick(later(1));
     animated.tick(later(2));
@@ -273,7 +263,7 @@ fn settings_tab_fade() {
 
 #[test]
 fn settings_scroll_stages() {
-    let mut env = Env::new(Caps::default());
+    let mut env = Env::new();
     env.model.open();
     assert!(env.model.is_open() && env.model.sequence().slide() == 1.0 && env.model.animating(), "the closed scroll starts below the screen");
     let mut rising = RecordingCanvas::default();
@@ -317,15 +307,11 @@ fn settings_scroll_stages() {
 #[test]
 fn settings_actions() {
     let _snap = Snap::on();
-    let caps = Caps { rain: true, visualizer: true, animation: true, idle: true, ..Caps::default() };
-    let mut env = Env::new(caps);
+    let mut env = Env::new();
     env.model.open();
 
     env.click(Act::BarStyle, 1, 0);
     assert_eq!(env.cfg().bar_style, BarStyle::Okinami, "the bar style tile applies");
-    let x11 = Env::new(Caps { bar_styles: vec![BarStyle::Continuous, BarStyle::Okinami], ..Caps::default() });
-    x11.config().bar_style = BarStyle::Pop;
-    assert_eq!(x11.model.effective_bar_style(), BarStyle::Continuous, "an unsupported style shows as continuous");
     env.click(Act::ToggleExpandWidgets, 0, 0);
     assert!(env.cfg().expand_widgets, "expand widgets switches on");
     env.click(Act::ToggleExpandWidgets, 0, 0);
@@ -380,7 +366,7 @@ fn settings_wallpaper() {
         std::fs::write(root.path().join(name), "x").unwrap();
     }
 
-    let mut env = Env::new(Caps { wallpaper_columns: true, ..Caps::default() });
+    let mut env = Env::new();
     env.config().wallpaper_dir = root_str.clone();
     env.model.open();
     env.click(Act::Tab, Tab::Wallpaper as i32, 0);
@@ -458,7 +444,7 @@ fn settings_lock_wallpaper() {
     }
 
     let lock_flag = WallpaperSlot::Lock as i32;
-    let mut env = Env::new(Caps { wallpaper_columns: true, lock_wallpaper: true, ..Caps::default() });
+    let mut env = Env::new();
     env.config().lock_wallpaper_dir = root_str.clone();
     env.model.open();
     env.click(Act::Tab, Tab::Lock as i32, 0);
@@ -517,7 +503,7 @@ fn settings_lock_wallpaper() {
 #[test]
 fn settings_lock_view() {
     let _snap = Snap::on();
-    let mut env = Env::new(Caps { lock_wallpaper: true, wallpaper_columns: true, ..Caps::default() });
+    let mut env = Env::new();
     env.model.open();
     env.click(Act::Tab, Tab::Lock as i32, 0);
     let has = |texts: &[String], wanted: &str| texts.iter().any(|t| t == wanted);
@@ -532,7 +518,7 @@ fn settings_lock_view() {
 #[test]
 fn settings_view() {
     let _snap = Snap::on();
-    let mut env = Env::new(Caps::default());
+    let mut env = Env::new();
     env.model.open();
     let mut canvas = RecordingCanvas::default();
     let frame = paint(&mut canvas, &mut env.model, &art(), 1920.0, 1200.0);
@@ -562,7 +548,7 @@ fn settings_view() {
         paint(&mut canvas, &mut env.model, &art(), 1920.0, 1200.0);
         if env.model.clickable(f64::from(tile_x), f64::from(y)) && y > frame.panel.y + 150.0 {
             env.click_at(f64::from(tile_x), f64::from(y));
-            found_tab = matches!(env.model.active_tab(), Tab::Bar | Tab::Wallpaper | Tab::Palette | Tab::Displays);
+            found_tab = !env.model.in_menu();
             break;
         }
         y += 4.0;

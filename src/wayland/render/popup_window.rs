@@ -12,7 +12,7 @@ use smithay_client_toolkit::reexports::protocols::xdg::shell::client::xdg_positi
 
 use super::egl::Egl;
 use super::layer_window::LayerWindow;
-use crate::backend::wayland::State;
+use crate::wayland::State;
 use crate::render::geometry::Rect;
 
 /// The popup as a `WaylandSurface`; dropping it destroys the `xdg_popup`, `xdg_surface` and `wl_surface`.

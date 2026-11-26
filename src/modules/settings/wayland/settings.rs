@@ -1,6 +1,6 @@
 //! The settings overlay surface: the card, its edits written to `config.json`, and the field the input method types into.
 
-use crate::backend::wayland::render::wallpaper_column::DecodeStatus;
+use crate::wayland::render::wallpaper_column::DecodeStatus;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
@@ -9,16 +9,15 @@ use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
 use wayland_client::protocol::wl_surface::WlSurface;
 
-use crate::app::shell::Capabilities;
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::overlay::Overlay;
-use crate::backend::wayland::render::renderer::Renderer;
-use crate::backend::wayland::text_input::{EditTarget, TextInputPurpose, TextInputState};
+use crate::wayland::State;
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::overlay::Overlay;
+use crate::wayland::render::renderer::Renderer;
+use crate::wayland::text_input::{EditTarget, TextInputPurpose, TextInputState};
 use crate::base::input::KeyEvent;
 use crate::config::settings_config as cfg;
-use crate::modules::settings::model::{Caps, Field, Hooks, Model, caps};
+use crate::modules::settings::model::{Field, Hooks, Model};
 use crate::modules::settings::view::{self, Art, Frame};
 use crate::render::canvas::Canvas;
 use crate::service::settings::ConfigStore;
@@ -36,11 +35,6 @@ impl EditTarget for Model {
     fn set_preedit(&mut self, text: &str) {
         Model::set_preedit(self, text);
     }
-}
-
-/// What the settings can do on Wayland.
-pub fn wayland_caps(capabilities: &Capabilities) -> Caps {
-    Caps { wallpaper_columns: true, default_wallpaper: true, autohide: true, ..caps(capabilities) }
 }
 
 /// The store edits go through, the outputs as they come and go, and the compositor's focused monitor.
@@ -75,8 +69,8 @@ pub struct Settings {
 
 impl Settings {
     /// `wake` runs when a scan lands or a thumbnail decodes, so the host polls and repaints.
-    pub fn new(caps: Caps, hooks: Hooks, wake: Rc<dyn Fn()>) -> Settings {
-        let mut model = Model::new(caps, hooks);
+    pub fn new(hooks: Hooks, wake: Rc<dyn Fn()>) -> Settings {
+        let mut model = Model::new(hooks);
         model.set_wake(wake.clone());
         let mut canvas = GlCanvas::new();
         canvas.set_on_image_ready(wake);
@@ -252,7 +246,7 @@ mod tests {
         let service = SettingsService::start_with(path.to_str().unwrap().to_string());
         let outputs = Rc::new(RefCell::new(vec!["DP-2".to_string(), "DP-1".to_string()]));
         let statuses = DecodeStatuses::default();
-        let mut model = Model::new(Caps::default(), hooks(service.clone(), outputs.clone(), Box::new(|| "DP-2".to_string()), statuses.clone()));
+        let mut model = Model::new(hooks(service.clone(), outputs.clone(), Box::new(|| "DP-2".to_string()), statuses.clone()));
         let store: Rc<dyn ConfigStore> = service.clone();
         store.update(&mut |c| c.bar_style = BarStyle::Okinami);
         assert_eq!(model.config().bar_style, BarStyle::Okinami, "the model sees the edit at once");

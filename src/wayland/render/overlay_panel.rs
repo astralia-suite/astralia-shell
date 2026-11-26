@@ -10,7 +10,7 @@ use wayland_client::protocol::wl_surface::WlSurface;
 
 use super::egl::Egl;
 use super::layer_window::LayerWindow;
-use crate::backend::wayland::State;
+use crate::wayland::State;
 
 pub struct OverlayPanel {
     pub window: LayerWindow,

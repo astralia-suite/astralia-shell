@@ -25,11 +25,11 @@ pub mod protocol {
     pub mod __interfaces {
         use smithay_client_toolkit::reexports::protocols_wlr::foreign_toplevel::v1::client::__interfaces::*;
         use wayland_client::protocol::__interfaces::*;
-        wayland_scanner::generate_interfaces!("src/backend/wayland/protocols/hyprland-toplevel-export-v1.xml");
+        wayland_scanner::generate_interfaces!("src/wayland/protocols/hyprland-toplevel-export-v1.xml");
     }
     use self::__interfaces::*;
 
-    wayland_scanner::generate_client_code!("src/backend/wayland/protocols/hyprland-toplevel-export-v1.xml");
+    wayland_scanner::generate_client_code!("src/wayland/protocols/hyprland-toplevel-export-v1.xml");
 }
 
 use protocol::hyprland_toplevel_export_frame_v1::{self, HyprlandToplevelExportFrameV1};

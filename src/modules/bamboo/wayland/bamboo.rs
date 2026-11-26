@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use crate::backend::wayland::render::renderer::Renderer;
+use crate::wayland::render::renderer::Renderer;
 use crate::config::bamboo_config::TICK_INTERVAL_MS;
 use crate::modules::bamboo::grow::Grow;
 use crate::modules::rain::wayland::rain::FrameTexture;

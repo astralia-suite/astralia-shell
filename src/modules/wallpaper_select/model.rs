@@ -58,7 +58,6 @@ struct Inbox {
 
 pub struct Model {
     hooks: Hooks,
-    animated_wallpaper: bool,
     animated: bool,
     animations: AnimationManager,
     inbox: Rc<Inbox>,
@@ -85,10 +84,9 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(hooks: Hooks, animated_wallpaper: bool) -> Model {
+    pub fn new(hooks: Hooks) -> Model {
         Model {
             hooks,
-            animated_wallpaper,
             animated: false,
             animations: AnimationManager::default(),
             inbox: Rc::default(),
@@ -119,12 +117,8 @@ impl Model {
         *self.inbox.wake.borrow_mut() = Some(wake);
     }
 
-    pub fn available(&self) -> bool {
-        true
-    }
-
     fn wants_animated(&self) -> bool {
-        self.animated_wallpaper && self.hooks.config().wallpaper_animated_enabled
+        self.hooks.config().wallpaper_animated_enabled
     }
 
     /// The column of `monitor` under a point of a `width` by `height` monitor; 0 off the monitor.

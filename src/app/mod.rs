@@ -6,14 +6,11 @@ use calloop::{EventLoop, LoopSignal};
 pub mod session;
 pub mod shell;
 
-use crate::backend::wayland;
 use crate::base::{ipc, paths};
 use crate::service::Services;
-use shell::Capabilities;
+use crate::wayland;
 
 pub struct App {
-    pub backend: &'static str,
-    pub capabilities: Capabilities,
     pub signal: LoopSignal,
     pub services: Option<Services>,
 }
@@ -28,17 +25,17 @@ impl AsMut<App> for App {
 
 /// Runs the daemon loop until `kill`, `SIGINT` or `SIGTERM`. The IPC socket is unlinked when the loop drops.
 /// `ASTRALIA_HEADLESS=1` skips Wayland and serves IPC only.
-pub fn run(backend: &'static str, capabilities: Capabilities) -> io::Result<()> {
+pub fn run() -> io::Result<()> {
     if std::env::var("ASTRALIA_HEADLESS").as_deref() == Ok("1") {
         ::log::info!("wayland: headless");
         let event_loop: EventLoop<App> = EventLoop::try_new().map_err(io::Error::other)?;
         let services = start(&event_loop)?;
-        let app = App { backend, capabilities, signal: event_loop.get_signal(), services: Some(services) };
+        let app = App { signal: event_loop.get_signal(), services: Some(services) };
         return serve(event_loop, app);
     }
     let event_loop: EventLoop<wayland::State> = EventLoop::try_new().map_err(io::Error::other)?;
     let services = start(&event_loop)?;
-    let core = App { backend, capabilities, signal: event_loop.get_signal(), services: Some(services) };
+    let core = App { signal: event_loop.get_signal(), services: Some(services) };
     // Connected before the socket is bound, so a failed start leaves no socket behind.
     let state = wayland::connect(core, &event_loop.handle()).map_err(|e| io::Error::other(format!("wayland: {e}")))?;
     serve(event_loop, state)

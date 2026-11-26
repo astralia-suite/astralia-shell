@@ -6,11 +6,11 @@ use std::time::Instant;
 
 use smithay_client_toolkit::compositor::CompositorState;
 
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::overlay::Overlay;
-use crate::backend::wayland::render::renderer::Renderer;
-use crate::backend::wayland::render::thunder::{ThunderBurst, ThunderParams, ThunderShockParams};
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::overlay::Overlay;
+use crate::wayland::render::renderer::Renderer;
+use crate::wayland::render::thunder::{ThunderBurst, ThunderParams, ThunderShockParams};
 use crate::base::input::KeyEvent;
 use crate::base::process::spawn_detached;
 use crate::config::logout_config as cfg;
@@ -63,8 +63,8 @@ pub struct Logout {
 }
 
 impl Logout {
-    pub fn new(with_lock: bool) -> Logout {
-        let mut model = Model::new(commands(with_lock));
+    pub fn new() -> Logout {
+        let mut model = Model::new(commands());
         let closed = Rc::new(Cell::new(false));
         let flag = closed.clone();
         model.on_execute = Some(Box::new(|command: &str| spawn_detached(command)));
@@ -146,7 +146,7 @@ impl Logout {
     }
 
     /// Asks for a frame while open, and once more after closing to clear the surface; true when the caller draws now.
-    pub fn request_frame(&mut self, qh: &wayland_client::QueueHandle<crate::backend::wayland::State>) -> bool {
+    pub fn request_frame(&mut self, qh: &wayland_client::QueueHandle<crate::wayland::State>) -> bool {
         let wanted = self.overlay.is_open() || self.stale;
         wanted && self.overlay.window_mut().is_some_and(|w| w.request_frame(qh))
     }

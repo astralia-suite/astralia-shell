@@ -29,13 +29,9 @@ pub fn dispatch<D: Host + AsMut<App>>(data: &mut D, command: &str) -> String {
             String::new()
         }
         "status" => {
-            let backend = data.as_mut().backend;
             match data.shell() {
-                Some(s) => s.status(data, backend),
-                None => {
-                    let app = data.as_mut();
-                    shell::status(app.backend, &app.capabilities, &[])
-                }
+                Some(s) => s.status(data),
+                None => shell::status(&[]),
             }
         }
         _ => match bound.into_iter().find(|v| v.name() == command) {
@@ -157,12 +153,11 @@ pub fn run_client(path: &Path, command: &str) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::shell::wayland_capabilities;
     use calloop::EventLoop;
 
     fn app() -> App {
         let event_loop: EventLoop<App> = EventLoop::try_new().unwrap();
-        App { backend: "wayland", capabilities: wayland_capabilities(), signal: event_loop.get_signal(), services: None }
+        App { signal: event_loop.get_signal(), services: None }
     }
 
     #[test]
@@ -193,7 +188,7 @@ mod tests {
 
     #[test]
     fn shell_verbs_over_ipc() {
-        let mut shell = Shell::new(wayland_capabilities());
+        let mut shell = Shell::new();
         shell.bind(crate::app::shell::ShellVerb::LauncherGlobal, |d: &mut WithShell| d.open = !d.open);
         shell.track("launcher", |d: &WithShell| d.open);
         let mut data = WithShell { app: app(), shell, open: false };

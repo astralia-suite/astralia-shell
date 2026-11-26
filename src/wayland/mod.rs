@@ -266,12 +266,7 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
     if let Some(services) = &core.services {
         wire_services(services, &redraw);
     }
-    let core_lock = core.capabilities.lock;
-    let rain_capability = core.capabilities.rain;
-    let idle_capability = core.capabilities.idle;
-    let animated_wallpaper = core.capabilities.animated_wallpaper;
-    let settings_caps = settings_host::wayland_caps(&core.capabilities);
-    let mut shell = crate::app::shell::Shell::new(core.capabilities);
+    let mut shell = crate::app::shell::Shell::new();
     shell.track("bar", |state: &State| state.monitors.iter().any(|m| m.bar.panels.is_open()));
     shell.track("logout", |state: &State| state.overlays.logout.as_ref().is_some_and(Logout::is_open));
     shell.bind(ShellVerb::Logout, |state: &mut State| state.toggle_logout(false));
@@ -328,7 +323,7 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         xdg_shell: XdgShell::bind(&globals, &qh).map_err(|e| ::log::warn!("panel: no xdg_wm_base, no popups: {e}")).ok(),
         wl_seat: None,
         shell,
-        overlays: Overlays { logout: Some(Logout::new(core_lock)), ..Overlays::default() },
+        overlays: Overlays { logout: Some(Logout::new()), ..Overlays::default() },
         keyboard_focus: None,
         pointer_output: None,
         notification_model: NotificationModel::default(),
@@ -352,11 +347,9 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         session_locked: false,
         windows: Windows::default(),
         decode_statuses: Rc::default(),
-        idle: idle_capability.then(|| idle::Idle::new(globals.bind(&qh, 1..=1, ()).ok())),
+        idle: Some(idle::Idle::new(globals.bind(&qh, 1..=1, ()).ok())),
     };
-    if rain_capability {
-        state.windows.rain = Some(Rain::new(&state.config().rain));
-    }
+    state.windows.rain = Some(Rain::new(&state.config().rain));
     let cfg = state.config();
     state.idle_apply_config(&cfg);
     let wake = state.redraw.clone();
@@ -369,11 +362,11 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         });
         state.overlays.overview = Some(Overview::new(services.compositor.clone(), notify));
         let wake = state.redraw.clone();
-        state.overlays.wallpaper_select = Some(WallpaperSelect::new(services.settings.clone(), animated_wallpaper, Rc::new(move || wake.wallpaper_select())));
+        state.overlays.wallpaper_select = Some(WallpaperSelect::new(services.settings.clone(), Rc::new(move || wake.wallpaper_select())));
         let compositor = services.compositor.clone();
         let hooks = settings_host::hooks(services.settings.clone(), state.output_names.clone(), Box::new(move || compositor.state().focused_monitor.clone()), state.decode_statuses.clone());
         let wake = state.redraw.clone();
-        state.overlays.settings = Some(Settings::new(settings_caps, hooks, Rc::new(move || wake.settings())));
+        state.overlays.settings = Some(Settings::new(hooks, Rc::new(move || wake.settings())));
         if services.polkit.is_some() {
             let wake = state.redraw.clone();
             state.overlays.polkit = Some(Polkit::new(Rc::new(move || wake.polkit())));

@@ -55,9 +55,9 @@ struct Env {
 }
 
 impl Env {
-    fn new(animated_wallpaper: bool) -> Env {
+    fn new() -> Env {
         let store = Rc::new(Store::default());
-        Env { model: Model::new(store.clone(), animated_wallpaper), store, closed: 0 }
+        Env { model: Model::new(store.clone()), store, closed: 0 }
     }
 
     fn config(&self) -> std::cell::RefMut<'_, Config> {
@@ -154,7 +154,7 @@ fn wallpaper_select_listing() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     assert!(opened(&mut pump, &mut env, &folder), "the scan finishes");
     assert_eq!(
         env.model.files(),
@@ -185,7 +185,7 @@ fn wallpaper_select_stepping() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     opened(&mut pump, &mut env, &folder);
     env.model.step(1);
     assert!(env.model.selected() == 1 && env.model.position() == 1.0, "stepping moves the selection and the scroller");
@@ -218,7 +218,7 @@ fn wallpaper_select_apply() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     opened(&mut pump, &mut env, &folder);
     env.model.step(1);
     env.key(KeyKind::Enter);
@@ -245,7 +245,7 @@ fn wallpaper_select_clicks() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     opened(&mut pump, &mut env, &folder);
     env.model.begin_frame();
     env.model.add_card(Rect { x: 0.0, y: 0.0, w: 10.0, h: 10.0 }, 0);
@@ -264,22 +264,13 @@ fn wallpaper_select_clicks() {
 }
 
 #[test]
-fn wallpaper_select_availability() {
-    let plain = Env::new(false);
-    assert!(plain.model.available(), "the selector is available");
-    let x11 = Env::new(false);
-    x11.config().wallpaper_animated_enabled = true;
-    assert!(x11.model.available(), "a backend without animated wallpapers ignores the setting");
-}
-
-#[test]
 fn wallpaper_select_animated() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
     std::fs::write(folder.root().join("y.mp4"), "x").unwrap();
     std::fs::write(folder.root().join("x.webm"), "x").unwrap();
-    let mut env = Env::new(true);
+    let mut env = Env::new();
     {
         let mut c = env.config();
         c.wallpaper_animated_enabled = true;
@@ -301,7 +292,7 @@ fn wallpaper_select_animated() {
 
 #[test]
 fn wallpaper_select_column_at() {
-    let still = Env::new(false);
+    let still = Env::new();
     still.config().wallpaper_column_counts.insert("DP-1".into(), 3);
     assert!(
         still.model.column_at("DP-1", 0.0, 0.0, 900.0, 500.0) == 0
@@ -317,7 +308,7 @@ fn wallpaper_select_column_at() {
     );
     assert_eq!(still.model.column_at("HDMI-1", 899.0, 10.0, 900.0, 500.0), 0, "a single column monitor always resolves to the first column");
 
-    let animated = Env::new(true);
+    let animated = Env::new();
     {
         let mut c = animated.config();
         c.wallpaper_animated_enabled = true;
@@ -332,7 +323,7 @@ fn wallpaper_select_view() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     opened(&mut pump, &mut env, &folder);
     let mut canvas = RecordingCanvas::default();
     paint(&mut canvas, &mut env.model, 1920.0, 1080.0);
@@ -349,7 +340,7 @@ fn wallpaper_select_view() {
 fn wallpaper_select_appear() {
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     env.config().wallpaper_dir = folder.root().to_string_lossy().into_owned();
     env.config().wallpaper_columns.insert("DP-1".into(), vec![folder.file("b.jpg")]);
     env.model.open("DP-1", 0);
@@ -371,7 +362,7 @@ fn wallpaper_select_target_resolution() {
     let _snap = Snap::on();
     let mut pump = Pump::new();
     let folder = Folder::new();
-    let mut env = Env::new(false);
+    let mut env = Env::new();
     opened(&mut pump, &mut env, &folder);
     env.model.step(1);
     let mut canvas = RecordingCanvas::default();

@@ -10,12 +10,12 @@ use wayland_client::protocol::wl_output::WlOutput;
 use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_client::{Proxy, QueueHandle};
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::layer_window::LayerWindow;
-use crate::backend::wayland::render::renderer::Renderer;
-use crate::backend::wayland::render::wallpaper_column::{DecodeStatus, FillMode, WallpaperColumn};
+use crate::wayland::State;
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::layer_window::LayerWindow;
+use crate::wayland::render::renderer::Renderer;
+use crate::wayland::render::wallpaper_column::{DecodeStatus, FillMode, WallpaperColumn};
 use crate::base::input::Button;
 use crate::config::settings::Config;
 use crate::modules::wallpaper::model::{DesktopMenuAction, DesktopMenuModel};

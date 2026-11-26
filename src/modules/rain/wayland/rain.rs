@@ -2,8 +2,8 @@
 
 use std::time::Instant;
 
-use crate::backend::wayland::render::renderer::{Renderer, Texture};
-use crate::backend::wayland::render::text::unpremultiply_bgra;
+use crate::wayland::render::renderer::{Renderer, Texture};
+use crate::wayland::render::text::unpremultiply_bgra;
 use crate::config::rain_config::FALL_INTERVAL_MS;
 use crate::config::settings::{RainMode, RainParams};
 use crate::modules::rain::Frame;

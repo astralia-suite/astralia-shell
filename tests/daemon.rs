@@ -78,7 +78,7 @@ fn status_help_kill() {
     let mut daemon = start(dir.path());
     let (code, out, _) = client(dir.path(), &["status"]);
     assert_eq!(code, 0);
-    assert!(out.starts_with("backend: wayland\ncapabilities: lock idle rain"), "{out}");
+    assert_eq!(out, "backend: wayland\nopen: none\n");
     let (_, out, _) = client(dir.path(), &["help"]);
     for verb in ["help", "kill", "status"] {
         assert!(out.contains(&format!("  {verb} ")), "{out}");

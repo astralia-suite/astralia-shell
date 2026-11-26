@@ -37,7 +37,7 @@ pub fn wallpaper_chips(model: &Model, slot: WallpaperSlot) -> Vec<WallpaperChip>
     let config = model.config();
     let mut chips = Vec::new();
     for (m, name) in model.monitors().iter().enumerate() {
-        let count = if model.caps().wallpaper_columns { wallpaper_column_count(&config, name, slot) } else { 1 };
+        let count = wallpaper_column_count(&config, name, slot);
         for column in 0..count {
             let label = if count > 1 { format!("{name}-{}", column + 1) } else { name.clone() };
             chips.push(WallpaperChip { monitor: m, column, label });
@@ -115,39 +115,36 @@ pub fn wallpaper_columns_panel(pane: &mut Pane, slot: WallpaperSlot, x: f32, mut
 
     let own = wallpaper_column_override(config, &region, column, slot);
     let control_y = y;
-    let columns_cap = pane.model.caps().wallpaper_columns;
-    if columns_cap {
-        let count = if region.is_empty() { 1 } else { wallpaper_column_count(config, &region, slot) };
-        let minus = Rect { x, y: control_y, w: cfg::STEPPER_BUTTON, h: cfg::FIELD_HEIGHT };
-        pane.selectable(minus, false, p.surface);
-        pane.centered("-", &TEXT_STYLE, minus, p.text);
-        pane.region(minus, Act::WallpaperCount, -1, slot_flag);
-        let count_text = count.to_string();
-        let count_w = pane.canvas.measure(&count_text, &TEXT_STYLE).w + 12.0;
-        pane.centered(&count_text, &TEXT_STYLE, Rect { x: x + cfg::STEPPER_BUTTON, y: control_y, w: count_w, h: cfg::FIELD_HEIGHT }, p.text);
-        let plus = Rect { x: x + cfg::STEPPER_BUTTON + count_w, y: control_y, w: cfg::STEPPER_BUTTON, h: cfg::FIELD_HEIGHT };
-        pane.selectable(plus, false, p.surface);
-        pane.centered("+", &TEXT_STYLE, plus, p.text);
-        pane.region(plus, Act::WallpaperCount, 1, slot_flag);
+    let count = if region.is_empty() { 1 } else { wallpaper_column_count(config, &region, slot) };
+    let minus = Rect { x, y: control_y, w: cfg::STEPPER_BUTTON, h: cfg::FIELD_HEIGHT };
+    pane.selectable(minus, false, p.surface);
+    pane.centered("-", &TEXT_STYLE, minus, p.text);
+    pane.region(minus, Act::WallpaperCount, -1, slot_flag);
+    let count_text = count.to_string();
+    let count_w = pane.canvas.measure(&count_text, &TEXT_STYLE).w + 12.0;
+    pane.centered(&count_text, &TEXT_STYLE, Rect { x: x + cfg::STEPPER_BUTTON, y: control_y, w: count_w, h: cfg::FIELD_HEIGHT }, p.text);
+    let plus = Rect { x: x + cfg::STEPPER_BUTTON + count_w, y: control_y, w: cfg::STEPPER_BUTTON, h: cfg::FIELD_HEIGHT };
+    pane.selectable(plus, false, p.surface);
+    pane.centered("+", &TEXT_STYLE, plus, p.text);
+    pane.region(plus, Act::WallpaperCount, 1, slot_flag);
 
-        let mode = wallpaper_fill_mode(config, &region, column, slot);
-        let labels = ["Crop", "Fit"];
-        let widths = labels.map(|l| pane.canvas.measure(l, &TEXT_STYLE).w + 20.0);
-        let pair = widths[0] + widths[1] + 6.0;
-        let mut fx = x + w - pair;
-        for (i, label) in labels.iter().enumerate() {
-            let active = mode == if i == 0 { "crop" } else { "fit" };
-            let r = Rect { x: fx, y: control_y, w: widths[i], h: cfg::FIELD_HEIGHT };
-            pane.selectable(r, active, p.surface);
-            pane.centered(label, &TEXT_STYLE, r, p.text);
-            pane.region(r, Act::WallpaperFill, i as i32, slot_flag);
-            fx += widths[i] + 6.0;
-        }
+    let mode = wallpaper_fill_mode(config, &region, column, slot);
+    let labels = ["Crop", "Fit"];
+    let widths = labels.map(|l| pane.canvas.measure(l, &TEXT_STYLE).w + 20.0);
+    let pair = widths[0] + widths[1] + 6.0;
+    let mut fx = x + w - pair;
+    for (i, label) in labels.iter().enumerate() {
+        let active = mode == if i == 0 { "crop" } else { "fit" };
+        let r = Rect { x: fx, y: control_y, w: widths[i], h: cfg::FIELD_HEIGHT };
+        pane.selectable(r, active, p.surface);
+        pane.centered(label, &TEXT_STYLE, r, p.text);
+        pane.region(r, Act::WallpaperFill, i as i32, slot_flag);
+        fx += widths[i] + 6.0;
     }
     if !own.is_empty() {
-        let label = if columns_cap { "Remove" } else { "Reset" };
+        let label = "Remove";
         let rw = pane.canvas.measure(label, &TEXT_STYLE).w + 20.0;
-        let rx = if columns_cap { x + (w - rw) / 2.0 } else { x + w - rw };
+        let rx = x + (w - rw) / 2.0;
         let r = Rect { x: rx, y: control_y, w: rw, h: cfg::FIELD_HEIGHT };
         pane.chip(r, p.critical_container);
         pane.centered(label, &TEXT_STYLE, r, p.text);

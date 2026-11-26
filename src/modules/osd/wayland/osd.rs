@@ -9,11 +9,11 @@ use wayland_client::protocol::wl_output::WlOutput;
 use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_client::{Proxy, QueueHandle};
 
-use crate::backend::wayland::State;
-use crate::backend::wayland::render::egl::Egl;
-use crate::backend::wayland::render::gl_canvas::GlCanvas;
-use crate::backend::wayland::render::layer_window::LayerWindow;
-use crate::backend::wayland::render::renderer::Renderer;
+use crate::wayland::State;
+use crate::wayland::render::egl::Egl;
+use crate::wayland::render::gl_canvas::GlCanvas;
+use crate::wayland::render::layer_window::LayerWindow;
+use crate::wayland::render::renderer::Renderer;
 use crate::config::osd_config as cfg;
 use crate::modules::osd::model::{Kind, Model};
 use crate::modules::osd::view;

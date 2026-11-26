@@ -1,50 +1,5 @@
 use std::rc::Rc;
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Capabilities {
-    pub lock: bool,
-    pub idle: bool,
-    pub rain: bool,
-    pub visualizer: bool,
-    pub animated_wallpaper: bool,
-    pub resource_panel: bool,
-    pub animations: bool,
-    pub lock_transition: bool,
-}
-
-impl Capabilities {
-    /// Names in struct order, as `status` and `report` print them.
-    fn named(&self) -> [(&'static str, bool); 8] {
-        [
-            ("lock", self.lock),
-            ("idle", self.idle),
-            ("rain", self.rain),
-            ("visualizer", self.visualizer),
-            ("animated_wallpaper", self.animated_wallpaper),
-            ("resource_panel", self.resource_panel),
-            ("animations", self.animations),
-            ("lock_transition", self.lock_transition),
-        ]
-    }
-}
-
-pub fn wayland_capabilities() -> Capabilities {
-    Capabilities {
-        lock: true,
-        idle: true,
-        rain: true,
-        visualizer: true,
-        animated_wallpaper: true,
-        resource_panel: true,
-        animations: true,
-        lock_transition: true,
-    }
-}
-
-pub fn x11_capabilities() -> Capabilities {
-    Capabilities { lock: true, idle: true, rain: true, visualizer: true, resource_panel: true, ..Capabilities::default() }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShellVerb {
     Launcher,
@@ -102,15 +57,6 @@ impl ShellVerb {
             ShellVerb::Lock => "lock the session",
         }
     }
-
-    pub fn available(self, caps: &Capabilities) -> bool {
-        match self {
-            ShellVerb::Rain => caps.rain,
-            ShellVerb::Visualizer => caps.visualizer,
-            ShellVerb::Lock => caps.lock,
-            _ => true,
-        }
-    }
 }
 
 type Binding<C> = Rc<dyn Fn(&mut C)>;
@@ -119,7 +65,6 @@ type IsOpen<C> = Box<dyn Fn(&C) -> bool>;
 
 /// The verb table of a running shell, over the loop data `C` the modules live in.
 pub struct Shell<C> {
-    capabilities: Capabilities,
     bindings: [Option<Binding<C>>; ShellVerb::ALL.len()],
     tracked: Vec<(String, IsOpen<C>)>,
     after: Option<AfterHook<C>>,
@@ -133,17 +78,12 @@ pub trait Host: Sized {
 }
 
 impl<C> Shell<C> {
-    pub fn new(capabilities: Capabilities) -> Shell<C> {
-        Shell { capabilities, bindings: Default::default(), tracked: Vec::new(), after: None }
+    pub fn new() -> Shell<C> {
+        Shell { bindings: Default::default(), tracked: Vec::new(), after: None }
     }
 
-    /// Binds `run` to `verb`; refused when the backend lacks the verb's capability.
-    pub fn bind(&mut self, verb: ShellVerb, run: impl Fn(&mut C) + 'static) -> bool {
-        if !verb.available(&self.capabilities) {
-            return false;
-        }
+    pub fn bind(&mut self, verb: ShellVerb, run: impl Fn(&mut C) + 'static) {
         self.bindings[verb as usize] = Some(Rc::new(run));
-        true
     }
 
     pub fn bound(&self, verb: ShellVerb) -> bool {
@@ -172,10 +112,10 @@ impl<C> Shell<C> {
         self.tracked.iter().filter(|(_, is_open)| is_open(ctx)).map(|(name, _)| name.clone()).collect()
     }
 
-    /// The `status` answer: the backend, its capabilities and the tracked modules open now.
-    pub fn status(&self, ctx: &C, backend: &str) -> String {
+    /// The `status` answer: the backend and the tracked modules open now.
+    pub fn status(&self, ctx: &C) -> String {
         let open = self.open_modules(ctx);
-        status(backend, &self.capabilities, &open.iter().map(String::as_str).collect::<Vec<_>>())
+        status(&open.iter().map(String::as_str).collect::<Vec<_>>())
     }
 }
 
@@ -193,29 +133,18 @@ impl<C: Host> Shell<C> {
     }
 }
 
-fn mark(value: bool) -> &'static str {
-    if value { "yes" } else { "no" }
-}
-
 /// The `astralia modules` tables.
 pub fn report() -> String {
-    let (wayland, x11) = (wayland_capabilities(), x11_capabilities());
-    let mut text = String::from("| Module or feature | Wayland | X11 |\n| --- | --- | --- |\n");
-    for name in ["bar", "launcher", "logout", "overview", "settings", "notification", "osd", "polkit", "wallpaper", "bamboo"] {
-        text += &format!("| `{name}` | yes | yes |\n");
+    let mut text = String::from("| Module |\n| --- |\n");
+    for name in [
+        "bar", "launcher", "logout", "overview", "settings", "notification", "osd", "polkit", "wallpaper", "bamboo", "lock", "idle", "rain",
+        "visualizer",
+    ] {
+        text += &format!("| `{name}` |\n");
     }
-    for ((name, w), (_, x)) in wayland.named().into_iter().zip(x11.named()) {
-        text += &format!("| `{name}` | {} | {} |\n", mark(w), mark(x));
-    }
-    text += "\n| Verb | Description | Wayland | X11 |\n| --- | --- | --- | --- |\n";
+    text += "\n| Verb | Description |\n| --- | --- |\n";
     for verb in ShellVerb::ALL {
-        text += &format!(
-            "| `{}` | {} | {} | {} |\n",
-            verb.name(),
-            verb.description(),
-            mark(verb.available(&wayland)),
-            mark(verb.available(&x11))
-        );
+        text += &format!("| `{}` | {} |\n", verb.name(), verb.description());
     }
     text
 }
@@ -224,9 +153,8 @@ fn list_or_none(names: &[&str]) -> String {
     if names.is_empty() { "none".into() } else { names.join(" ") }
 }
 
-pub fn status(backend: &str, caps: &Capabilities, open: &[&str]) -> String {
-    let enabled: Vec<&str> = caps.named().into_iter().filter(|&(_, on)| on).map(|(name, _)| name).collect();
-    format!("backend: {backend}\ncapabilities: {}\nopen: {}\n", list_or_none(&enabled), list_or_none(open))
+pub fn status(open: &[&str]) -> String {
+    format!("backend: wayland\nopen: {}\n", list_or_none(open))
 }
 
 pub struct Builtin {
@@ -237,7 +165,7 @@ pub struct Builtin {
 pub const BUILTINS: [Builtin; 3] = [
     Builtin { verb: "help", description: "list the available verbs" },
     Builtin { verb: "kill", description: "gracefully quit astralia" },
-    Builtin { verb: "status", description: "show the backend, its capabilities and the open modules" },
+    Builtin { verb: "status", description: "show the backend and the open modules" },
 ];
 
 pub fn help(entries: &[(&str, &str)]) -> String {
@@ -265,28 +193,16 @@ mod tests {
     }
 
     #[test]
-    fn availability() {
-        assert!(ShellVerb::Rain.available(&wayland_capabilities()));
-        assert!(ShellVerb::Rain.available(&x11_capabilities()));
-        assert!(!ShellVerb::Rain.available(&Capabilities::default()));
-        assert!(ShellVerb::Overview.available(&Capabilities::default()));
-        assert!(ShellVerb::Logout.available(&Capabilities::default()));
-    }
-
-    #[test]
     fn status_text() {
-        assert_eq!(
-            status("x11", &x11_capabilities(), &["overview", "launcher"]),
-            "backend: x11\ncapabilities: lock idle rain visualizer resource_panel\nopen: overview launcher\n"
-        );
-        assert!(status("wayland", &Capabilities::default(), &[]).ends_with("capabilities: none\nopen: none\n"));
+        assert_eq!(status(&["overview", "launcher"]), "backend: wayland\nopen: overview launcher\n");
+        assert_eq!(status(&[]), "backend: wayland\nopen: none\n");
     }
 
     #[test]
     fn report_rows() {
         let text = report();
-        assert!(text.contains("| `rain` | yes | yes |"));
-        assert!(text.contains("| `overview` | toggle the overview | yes | yes |"));
+        assert!(text.contains("| `rain` |"));
+        assert!(text.contains("| `overview` | toggle the overview |"));
     }
 
     struct Fake {
@@ -303,29 +219,19 @@ mod tests {
         }
     }
 
-    fn fake(caps: Capabilities) -> Fake {
-        Fake { shell: Shell::new(caps), calls: 0, after: 0, launcher_open: false, logout_open: false }
+    fn fake() -> Fake {
+        Fake { shell: Shell::new(), calls: 0, after: 0, launcher_open: false, logout_open: false }
     }
 
     #[test]
     fn shell_bindings() {
-        let mut f = fake(x11_capabilities());
+        let mut f = fake();
         f.shell.after_verb(|f: &mut Fake, _| f.after += 1);
-        assert!(f.shell.bind(ShellVerb::Overview, |f: &mut Fake| f.calls += 1), "a shared verb binds");
-        let mut limited = fake(Capabilities::default());
-        assert!(
-            !limited.shell.bind(ShellVerb::Rain, |f: &mut Fake| f.calls += 1) && !limited.shell.bound(ShellVerb::Rain),
-            "a verb the backend lacks is refused"
-        );
+        f.shell.bind(ShellVerb::Overview, |f: &mut Fake| f.calls += 1);
+        assert!(f.shell.bound(ShellVerb::Overview), "a verb binds");
         assert!(Shell::run(&mut f, ShellVerb::Overview) && f.calls == 1 && f.after == 1, "running calls the module and the hook");
         assert!(!Shell::run(&mut f, ShellVerb::Logout) && f.after == 1, "an unbound verb does nothing");
 
-        limited.shell.bind(ShellVerb::Logout, |f: &mut Fake| f.calls += 10);
-        limited.shell.bind(ShellVerb::Rain, |f: &mut Fake| f.calls += 100);
-        assert!(
-            limited.shell.bound(ShellVerb::Logout) && !limited.shell.bound(ShellVerb::Rain),
-            "a binding list is filtered by capability"
-        );
         f.shell.bind(ShellVerb::Logout, |f: &mut Fake| f.calls += 10);
         assert_eq!(f.shell.bound_verbs(), vec![ShellVerb::Logout, ShellVerb::Overview], "bound verbs come in verb order");
         assert!(Shell::run(&mut f, ShellVerb::Logout) && f.calls == 11, "a verb runs its binding");
@@ -339,7 +245,7 @@ mod tests {
 
     #[test]
     fn verbs_close_other_overlays() {
-        let mut f = fake(wayland_capabilities());
+        let mut f = fake();
         f.shell.bind(ShellVerb::Launcher, |f: &mut Fake| f.launcher_open = !f.launcher_open);
         f.shell.bind(ShellVerb::Logout, |f: &mut Fake| f.logout_open = !f.logout_open);
         f.shell.after_verb(|f: &mut Fake, verb| {
@@ -360,14 +266,14 @@ mod tests {
 
     #[test]
     fn status_lists_open_overlays() {
-        let mut f = fake(wayland_capabilities());
+        let mut f = fake();
         f.shell.track("settings", |f: &Fake| f.launcher_open);
         f.shell.track("logout", |f: &Fake| f.logout_open);
-        assert!(f.shell.status(&f, "wayland").ends_with("open: none\n"), "nothing open, nothing listed");
+        assert!(f.shell.status(&f).ends_with("open: none\n"), "nothing open, nothing listed");
         f.launcher_open = true;
-        assert!(f.shell.status(&f, "wayland").ends_with("open: settings\n"), "an open overlay is listed");
+        assert!(f.shell.status(&f).ends_with("open: settings\n"), "an open overlay is listed");
         f.logout_open = true;
-        assert_eq!(f.shell.status(&f, "wayland").lines().last(), Some("open: settings logout"), "in the order they were tracked");
+        assert_eq!(f.shell.status(&f).lines().last(), Some("open: settings logout"), "in the order they were tracked");
     }
 
     #[test]

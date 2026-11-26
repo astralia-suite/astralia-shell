@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::backend::wayland::render::renderer::Renderer;
-use crate::backend::wayland::render::wallpaper_column::{FillMode, WallpaperColumn};
+use crate::wayland::render::renderer::Renderer;
+use crate::wayland::render::wallpaper_column::{FillMode, WallpaperColumn};
 use crate::config::settings::Config;
 use crate::service::wallpaper::{WallpaperSlot, wallpaper_column_count, wallpaper_column_path, wallpaper_fill_mode};
 
