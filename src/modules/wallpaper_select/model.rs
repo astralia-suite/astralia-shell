@@ -12,10 +12,7 @@ use crate::config::wallpaper_select_config as cfg;
 use crate::render::geometry::Rect;
 use crate::service::runtime;
 use crate::service::settings::ConfigStore;
-use crate::service::wallpaper::{
-    wallpaper_column_count_animated, wallpaper_column_override_animated, wallpaper_column_path_animated, wallpaper_list_files,
-    wallpaper_set_column_animated,
-};
+use crate::service::wallpaper::{WallpaperSlot, wallpaper_column_count, wallpaper_column_path, wallpaper_list_files, wallpaper_set_column};
 
 const OWNER_APPEAR: u64 = 1;
 const OWNER_STEP: u64 = 2;
@@ -58,7 +55,6 @@ struct Inbox {
 
 pub struct Model {
     hooks: Hooks,
-    animated: bool,
     /// The time of the frame being drawn, from the last `tick`.
     now: Option<Instant>,
     animations: AnimationManager,
@@ -89,7 +85,6 @@ impl Model {
     pub fn new(hooks: Hooks) -> Model {
         Model {
             hooks,
-            animated: false,
             now: None,
             animations: AnimationManager::default(),
             inbox: Rc::default(),
@@ -120,16 +115,12 @@ impl Model {
         *self.inbox.wake.borrow_mut() = Some(wake);
     }
 
-    fn wants_animated(&self) -> bool {
-        self.hooks.config().wallpaper_animated_enabled
-    }
-
     /// The column of `monitor` under a point of a `width` by `height` monitor; 0 off the monitor.
     pub fn column_at(&self, monitor: &str, x: f64, y: f64, width: f64, height: f64) -> i32 {
         if x < 0.0 || y < 0.0 || x >= width || y >= height {
             return 0;
         }
-        let columns = wallpaper_column_count_animated(&self.hooks.config(), monitor, self.wants_animated());
+        let columns = wallpaper_column_count(&self.hooks.config(), monitor, WallpaperSlot::Still);
         ((x * f64::from(columns) / width) as i32).min(columns - 1)
     }
 
@@ -139,15 +130,10 @@ impl Model {
         }
         self.monitor = monitor.to_string();
         self.column = column;
-        self.animated = self.wants_animated();
         {
             let config = self.hooks.config();
-            self.current = if self.animated {
-                wallpaper_column_override_animated(&config, monitor, column, true)
-            } else {
-                wallpaper_column_path_animated(&config, monitor, column, false)
-            };
-            self.directory = if self.animated { config.wallpaper_animated_dir.clone() } else { config.wallpaper_dir.clone() };
+            self.current = wallpaper_column_path(&config, monitor, column, WallpaperSlot::Still);
+            self.directory = config.wallpaper_dir.clone();
         }
         self.files.clear();
         if !self.current.is_empty() {
@@ -261,10 +247,9 @@ impl Model {
         self.generation += 1;
         let generation = self.generation;
         let directory = self.directory.clone();
-        let animated = self.animated;
         let inbox = Rc::downgrade(&self.inbox);
         runtime::spawn(async move {
-            let found = blocking::unblock(move || wallpaper_list_files(&directory, animated, cfg::MAX_IMAGES)).await;
+            let found = blocking::unblock(move || wallpaper_list_files(&directory, cfg::MAX_IMAGES)).await;
             deliver(&inbox, generation, found);
         });
     }
@@ -330,8 +315,8 @@ impl Model {
         }
         let path = self.files[self.selected].clone();
         if !same_file(&path, &self.current) {
-            let (monitor, column, animated) = (self.monitor.clone(), self.column, self.animated);
-            self.hooks.update(&mut |config| wallpaper_set_column_animated(config, &monitor, column, &path, animated));
+            let (monitor, column) = (self.monitor.clone(), self.column);
+            self.hooks.update(&mut |config| wallpaper_set_column(config, &monitor, column, &path, WallpaperSlot::Still));
         }
         self.close_request = true;
     }
@@ -413,12 +398,8 @@ impl Model {
         self.column
     }
 
-    pub fn animated(&self) -> bool {
-        self.animated
-    }
-
     pub fn column_count(&self) -> i32 {
-        wallpaper_column_count_animated(&self.hooks.config(), &self.monitor, self.animated)
+        wallpaper_column_count(&self.hooks.config(), &self.monitor, WallpaperSlot::Still)
     }
 
     pub fn files(&self) -> &[String] {

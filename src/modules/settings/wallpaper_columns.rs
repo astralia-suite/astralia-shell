@@ -26,7 +26,6 @@ pub struct WallpaperChip {
 
 fn dir_field_for(slot: WallpaperSlot) -> Field {
     match slot {
-        WallpaperSlot::Animated => Field::WallpaperAnimatedDir,
         WallpaperSlot::Lock => Field::LockWallpaperDir,
         WallpaperSlot::Still => Field::WallpaperDir,
     }
@@ -52,7 +51,6 @@ pub fn wallpaper_chips(model: &Model, slot: WallpaperSlot) -> Vec<WallpaperChip>
 pub fn wallpaper_columns_panel(pane: &mut Pane, slot: WallpaperSlot, x: f32, mut y: f32, w: f32, bottom: f32, display: Option<Rect>) -> f32 {
     let p = palette();
     let config = pane.config;
-    let animated = slot == WallpaperSlot::Animated;
     let slot_flag = slot as i32;
     pane.model.picker_mut(slot).grid_width = w;
     let (region, column) = {
@@ -161,13 +159,7 @@ pub fn wallpaper_columns_panel(pane: &mut Pane, slot: WallpaperSlot, x: f32, mut
     let grid_height = available.min(content_h + cfg::GRID_INSET * 2.0);
     pane.model.picker_mut(slot).grid_height = grid_height;
     if files.is_empty() {
-        let text = if scanning {
-            "Scanning\u{2026}"
-        } else if animated {
-            "No videos found"
-        } else {
-            "No images found"
-        };
+        let text = if scanning { "Scanning\u{2026}" } else { "No images found" };
         let size = pane.text(text, &TEXT_STYLE, x, y, p.text_dim);
         return y + size.h;
     }

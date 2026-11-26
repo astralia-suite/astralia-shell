@@ -133,8 +133,6 @@ pub struct State {
     /// The compositor confirmed the session lock; every other surface stays hidden.
     pub session_locked: bool,
     pub windows: Windows,
-    /// The wallpaper columns' decode statuses, which the settings read.
-    pub decode_statuses: settings_host::DecodeStatuses,
     /// The activity clock and its pulse; present with the idle capability.
     pub idle: Option<idle::Idle>,
 }
@@ -262,10 +260,7 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
     if !egl.make_current(None) {
         return Err("egl: cannot make the context current".into());
     }
-    #[allow(unused_mut)]
-    let mut renderer = Renderer::new(egl.gl())?;
-    #[cfg(feature = "video")]
-    renderer.enable_video(&egl);
+    let renderer = Renderer::new(egl.gl())?;
     let redraw = Redraw::new(handle, |reasons, state: &mut State| state.repaint(reasons)).map_err(|e| e.to_string())?;
     if let Some(services) = &core.services {
         wire_services(services, &redraw);
@@ -350,7 +345,6 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         }),
         session_locked: false,
         windows: Windows::default(),
-        decode_statuses: Rc::default(),
         idle: Some(idle::Idle::new(globals.bind(&qh, 1..=1, ()).ok())),
     };
     state.windows.rain = Some(Rain::new(&state.config().rain));
@@ -368,7 +362,7 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         let wake = state.redraw.clone();
         state.overlays.wallpaper_select = Some(WallpaperSelect::new(services.settings.clone(), Rc::new(move || wake.wallpaper_select())));
         let compositor = services.compositor.clone();
-        let hooks = settings_host::hooks(services.settings.clone(), state.output_names.clone(), Box::new(move || compositor.state().focused_monitor.clone()), state.decode_statuses.clone());
+        let hooks = settings_host::hooks(services.settings.clone(), state.output_names.clone(), Box::new(move || compositor.state().focused_monitor.clone()));
         let wake = state.redraw.clone();
         state.overlays.settings = Some(Settings::new(hooks, Rc::new(move || wake.settings())));
         if services.polkit.is_some() {
@@ -646,15 +640,6 @@ impl State {
         if reasons.config {
             self.idle_apply_config(&cfg);
         }
-        if reasons.all || reasons.wallpaper {
-            let mut statuses = self.decode_statuses.borrow_mut();
-            statuses.clear();
-            for m in &self.monitors {
-                if let Some(wallpaper) = &m.wallpaper {
-                    statuses.insert(m.name.clone(), wallpaper.statuses());
-                }
-            }
-        }
         if reasons.notifications
             && let Some(services) = &self.core.services
         {
@@ -670,11 +655,11 @@ impl State {
                     wallpaper.sync_from_config(&self.renderer, &cfg);
                 }
             }
-            // A finished decode or a video frame repaints only the surface showing that wallpaper.
+            // A finished decode repaints only the surface showing that wallpaper.
             let pending = reasons.wallpaper && self.monitors[i].wallpaper.as_ref().is_some_and(Wallpaper::has_pending);
             match monitor::wallpaper_frame_target(self.lock.is_active(), reasons.config, pending) {
                 FrameTarget::Background => self.request_wallpaper_frame(i),
-                // A custom lock wallpaper hides the video; nothing to repaint.
+                // A custom lock wallpaper hides the desktop one; nothing to repaint.
                 FrameTarget::Lock if self.lock.wallpaper.loaded() => {}
                 FrameTarget::Lock => {
                     // The covered wallpaper surface may get no frame callbacks, so upload here.

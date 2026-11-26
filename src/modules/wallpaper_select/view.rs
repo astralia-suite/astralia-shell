@@ -70,8 +70,7 @@ pub fn paint(canvas: &mut dyn Canvas, model: &mut Model, width: f32, height: f32
     if model.files().is_empty() {
         if !model.scanning() {
             canvas.set_opacity(appear);
-            let what = if model.animated() { "No videos in " } else { "No images in " };
-            centred_text(canvas, &format!("{what}{}", model.directory()), x0 + width / 2.0, height / 2.0, palette().text);
+            centred_text(canvas, &format!("No images in {}", model.directory()), x0 + width / 2.0, height / 2.0, palette().text);
             canvas.set_opacity(1.0);
         }
         return;

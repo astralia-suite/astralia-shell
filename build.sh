@@ -36,11 +36,10 @@ ASSETS=(
 
 as_root() { if [[ -z "$DESTDIR" ]]; then sudo "$@"; else "$@"; fi; }
 cmd_setup() {
-    sudo pacman -Syu --needed rust clang pkgconf cairo pango libxkbcommon mesa libglvnd wayland wayland-protocols \
-        pipewire wireplumber pam ffmpeg polkit bluez networkmanager upower brightnessctl fd
+    sudo pacman -Syu --needed rust clang pkgconf cairo pango libxkbcommon mesa libglvnd wayland wayland-protocols pipewire wireplumber pam polkit bluez networkmanager upower brightnessctl fd
 }
 cmd_default() { cargo build --release; }
-cmd_test() { cargo test; cargo test --no-default-features; }
+cmd_test() { cargo test; }
 cmd_restart() { "$BIN" kill 2>/dev/null || true; "$BIN"; }
 cmd_install() {
     cmd_default

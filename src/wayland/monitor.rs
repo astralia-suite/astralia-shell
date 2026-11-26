@@ -123,8 +123,8 @@ pub enum FrameTarget {
     Lock,
 }
 
-/// A config change re-lays the wallpaper surface; a pending decode or video frame repaints whichever
-/// surface shows the wallpaper.
+/// A config change re-lays the wallpaper surface; a pending decode repaints whichever surface shows
+/// the wallpaper.
 pub fn wallpaper_frame_target(locked: bool, config: bool, pending: bool) -> FrameTarget {
     match (config, pending, locked) {
         (true, _, _) => FrameTarget::Background,

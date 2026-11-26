@@ -52,7 +52,6 @@ pub const THUMB_COLUMNS: i32 = 5;
 pub const THUMB_LABEL_PAD: f32 = 6.0;
 pub const GRID_INSET: f32 = 5.0;
 pub const SCROLL_SPEED: f32 = 3.0;
-pub const WARNING_PAD: f32 = 10.0;
 pub const DROPDOWN_PAD: f32 = 10.0;
 pub const DROPDOWN_GAP: f32 = 4.0;
 pub const DROPDOWN_MAX_WIDTH: f32 = 260.0;

@@ -63,7 +63,6 @@ pub struct TabInfo {
 pub enum Field {
     None,
     WallpaperDir,
-    WallpaperAnimatedDir,
     LockWallpaperDir,
     AmbientTimeout,
     ScreensaverTimeout,
@@ -76,10 +75,9 @@ pub enum Field {
 }
 
 impl Field {
-    const ALL: [Field; 12] = [
+    const ALL: [Field; 11] = [
         Field::None,
         Field::WallpaperDir,
-        Field::WallpaperAnimatedDir,
         Field::LockWallpaperDir,
         Field::AmbientTimeout,
         Field::ScreensaverTimeout,
@@ -123,7 +121,6 @@ pub enum Act {
     VisualizerReset,
     AnimationDisable,
     WallpaperDefault,
-    WallpaperAnimated,
     LockWallpaperMode,
     WallpaperRegion,
     WallpaperPick,
@@ -153,15 +150,11 @@ impl Region {
     }
 }
 
-/// Whether the animated wallpaper of a monitor column decodes on the CPU.
-pub type CpuFallback = Box<dyn Fn(&str, i32) -> bool>;
-
 /// Where the settings read and write the config, and what they ask the backend.
 pub struct Hooks {
     pub store: Rc<dyn ConfigStore>,
     pub monitors: Box<dyn Fn() -> Vec<String>>,
     pub focused_monitor: Box<dyn Fn() -> String>,
-    pub cpu_fallback: CpuFallback,
 }
 
 /// One wallpaper grid: the scanned folder, and the column it sets.
@@ -194,8 +187,7 @@ pub fn all_tabs() -> &'static [TabInfo] {
 
 fn slot_from(value: i32) -> WallpaperSlot {
     match value {
-        1 => WallpaperSlot::Animated,
-        2 => WallpaperSlot::Lock,
+        1 => WallpaperSlot::Lock,
         _ => WallpaperSlot::Still,
     }
 }
@@ -254,7 +246,6 @@ pub fn field_text(config: &Config, field: Field, monitor: &str) -> String {
     let v = &config.visualizer;
     match field {
         Field::WallpaperDir => collapse_home(&config.wallpaper_dir, &home()),
-        Field::WallpaperAnimatedDir => collapse_home(&config.wallpaper_animated_dir, &home()),
         Field::LockWallpaperDir => collapse_home(&config.lock_wallpaper_dir, &home()),
         Field::AmbientTimeout => ambient_timeout_for(config, monitor).to_string(),
         Field::ScreensaverTimeout => screensaver_timeout_for(config, monitor).to_string(),
@@ -276,7 +267,6 @@ pub fn apply_field(config: &mut Config, field: Field, text: &str, monitor: &str)
     let timeout = || int(cfg::IDLE_TIMEOUT_MIN, cfg::IDLE_TIMEOUT_MAX).map(|v| v as u32);
     match field {
         Field::WallpaperDir => config.wallpaper_dir = expand_home(text, &home()),
-        Field::WallpaperAnimatedDir => config.wallpaper_animated_dir = expand_home(text, &home()),
         Field::LockWallpaperDir => config.lock_wallpaper_dir = expand_home(text, &home()),
         Field::AmbientTimeout | Field::ScreensaverTimeout => {
             let Some(value) = timeout() else { return failed() };
@@ -354,7 +344,6 @@ pub struct Model {
     displays_monitor: String,
     bar_monitor: String,
     static_picker: WallpaperPicker,
-    animated_picker: WallpaperPicker,
     lock_picker: WallpaperPicker,
     /// Set when the close sequence ends.
     sequence_done: Rc<Cell<bool>>,
@@ -388,7 +377,6 @@ impl Model {
             displays_monitor: String::new(),
             bar_monitor: String::new(),
             static_picker: WallpaperPicker::default(),
-            animated_picker: WallpaperPicker::default(),
             lock_picker: WallpaperPicker::default(),
             sequence_done: Rc::default(),
             close_request: false,
@@ -456,7 +444,7 @@ impl Model {
             return;
         }
         self.open = false;
-        for slot in [WallpaperSlot::Still, WallpaperSlot::Animated, WallpaperSlot::Lock] {
+        for slot in [WallpaperSlot::Still, WallpaperSlot::Lock] {
             let picker = self.picker_mut(slot);
             picker.files.clear();
             picker.dir.clear();
@@ -498,11 +486,6 @@ impl Model {
         self.panel = panel;
     }
 
-    /// The slot the wallpaper tab edits now.
-    fn desktop_slot(&self) -> WallpaperSlot {
-        if self.config().wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }
-    }
-
     /// Re-reads the monitors, keeps each picker on a monitor and column that exist, and scans the
     /// shown picker's folder when it changed.
     pub fn sync(&mut self) {
@@ -517,7 +500,7 @@ impl Model {
         let focused = (self.hooks.focused_monitor)();
         let store = self.hooks.store.clone();
         let current = store.config();
-        for slot in [WallpaperSlot::Still, WallpaperSlot::Animated, WallpaperSlot::Lock] {
+        for slot in [WallpaperSlot::Still, WallpaperSlot::Lock] {
             let monitors = self.monitors.clone();
             let picker = self.picker_mut(slot);
             if monitors.len() == 1 {
@@ -532,7 +515,7 @@ impl Model {
             return;
         }
         let slot = match self.active {
-            Tab::Wallpaper => Some(if current.wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }),
+            Tab::Wallpaper => Some(WallpaperSlot::Still),
             Tab::Lock if current.lock_wallpaper_custom => Some(WallpaperSlot::Lock),
             _ => None,
         };
@@ -559,7 +542,7 @@ impl Model {
         let generation = picker.generation;
         let inbox = Rc::downgrade(&self.inbox);
         runtime::spawn(async move {
-            let found = blocking::unblock(move || wallpaper_list_files(&dir, slot == WallpaperSlot::Animated, cfg::MAX_IMAGES)).await;
+            let found = blocking::unblock(move || wallpaper_list_files(&dir, cfg::MAX_IMAGES)).await;
             deliver(&inbox, slot, generation, found);
         });
     }
@@ -720,7 +703,7 @@ impl Model {
         if self.menu || (self.active != Tab::Wallpaper && self.active != Tab::Lock) {
             return;
         }
-        let slot = if self.active == Tab::Wallpaper { self.desktop_slot() } else { WallpaperSlot::Lock };
+        let slot = if self.active == Tab::Wallpaper { WallpaperSlot::Still } else { WallpaperSlot::Lock };
         let picker = self.picker_mut(slot);
         let inset_h = picker.grid_height - cfg::GRID_INSET * 2.0;
         let columns = cfg::THUMB_COLUMNS as usize;
@@ -860,9 +843,7 @@ impl Model {
         let slot = slot_from(region.b);
         let (picker_region, picker_column) = (self.picker(slot).region.clone(), self.picker(slot).column);
         match region.act {
-            Act::WallpaperDefault => self.edit(|config| config.default_wallpaper = !config.default_wallpaper),
-            Act::WallpaperAnimated => self.edit(|config| config.wallpaper_animated_enabled = !config.wallpaper_animated_enabled),
-            Act::LockWallpaperMode => self.edit(|config| config.lock_wallpaper_custom = region.a == 1),
+            Act::WallpaperDefault => self.edit(|config| config.default_wallpaper = !config.default_wallpaper),            Act::LockWallpaperMode => self.edit(|config| config.lock_wallpaper_custom = region.a == 1),
             Act::WallpaperRegion => {
                 let monitor = self.monitor(region.a);
                 if !monitor.is_empty() {
@@ -958,7 +939,6 @@ impl Model {
     pub fn picker(&self, slot: WallpaperSlot) -> &WallpaperPicker {
         match slot {
             WallpaperSlot::Still => &self.static_picker,
-            WallpaperSlot::Animated => &self.animated_picker,
             WallpaperSlot::Lock => &self.lock_picker,
         }
     }
@@ -966,12 +946,7 @@ impl Model {
     pub fn picker_mut(&mut self, slot: WallpaperSlot) -> &mut WallpaperPicker {
         match slot {
             WallpaperSlot::Still => &mut self.static_picker,
-            WallpaperSlot::Animated => &mut self.animated_picker,
             WallpaperSlot::Lock => &mut self.lock_picker,
         }
-    }
-
-    pub fn cpu_fallback(&self, monitor: &str, column: i32) -> bool {
-        (self.hooks.cpu_fallback)(monitor, column)
     }
 }

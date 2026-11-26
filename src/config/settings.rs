@@ -135,12 +135,6 @@ pub struct Config {
     pub wallpaper_column_counts: Counts,
     pub wallpaper_fill_modes: Columns,
 
-    pub wallpaper_animated_enabled: bool,
-    pub wallpaper_animated_dir: String,
-    pub wallpaper_animated_columns: Columns,
-    pub wallpaper_animated_column_counts: Counts,
-    pub wallpaper_animated_fill_modes: Columns,
-
     pub lock_wallpaper_custom: bool,
     pub lock_wallpaper_dir: String,
     pub lock_wallpaper_columns: Columns,
@@ -186,11 +180,6 @@ impl Config {
             wallpaper_columns: Columns::new(),
             wallpaper_column_counts: Counts::new(),
             wallpaper_fill_modes: Columns::new(),
-            wallpaper_animated_enabled: false,
-            wallpaper_animated_dir: format!("{home}/Videos"),
-            wallpaper_animated_columns: Columns::new(),
-            wallpaper_animated_column_counts: Counts::new(),
-            wallpaper_animated_fill_modes: Columns::new(),
             lock_wallpaper_custom: false,
             lock_wallpaper_dir: format!("{home}/Pictures"),
             lock_wallpaper_columns: Columns::new(),
@@ -395,11 +384,6 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
     read_columns(wallpaper, "columns", &mut cfg.wallpaper_columns, Some(home));
     read_counts(wallpaper, "columnCounts", &mut cfg.wallpaper_column_counts);
     read_columns(wallpaper, "fillModes", &mut cfg.wallpaper_fill_modes, None);
-    cfg.wallpaper_animated_enabled = flag(wallpaper, "animatedEnabled", cfg.wallpaper_animated_enabled);
-    cfg.wallpaper_animated_dir = expand(text(wallpaper, "animatedDir", &cfg.wallpaper_animated_dir), home);
-    read_columns(wallpaper, "animatedColumns", &mut cfg.wallpaper_animated_columns, Some(home));
-    read_counts(wallpaper, "animatedColumnCounts", &mut cfg.wallpaper_animated_column_counts);
-    read_columns(wallpaper, "animatedFillModes", &mut cfg.wallpaper_animated_fill_modes, None);
     cfg.lock_wallpaper_custom = flag(wallpaper, "lockCustom", cfg.lock_wallpaper_custom);
     cfg.lock_wallpaper_dir = expand(text(wallpaper, "lockDir", &cfg.lock_wallpaper_dir), home);
     read_columns(wallpaper, "lockColumns", &mut cfg.lock_wallpaper_columns, Some(home));
@@ -578,11 +562,6 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
         ("columns", columns(&cfg.wallpaper_columns, true)),
         ("columnCounts", counts(&cfg.wallpaper_column_counts)),
         ("fillModes", columns(&cfg.wallpaper_fill_modes, false)),
-        ("animatedEnabled", Bool(cfg.wallpaper_animated_enabled)),
-        ("animatedDir", path(&cfg.wallpaper_animated_dir)),
-        ("animatedColumns", columns(&cfg.wallpaper_animated_columns, true)),
-        ("animatedColumnCounts", counts(&cfg.wallpaper_animated_column_counts)),
-        ("animatedFillModes", columns(&cfg.wallpaper_animated_fill_modes, false)),
         ("lockCustom", Bool(cfg.lock_wallpaper_custom)),
         ("lockDir", path(&cfg.lock_wallpaper_dir)),
         ("lockColumns", columns(&cfg.lock_wallpaper_columns, true)),
@@ -688,11 +667,6 @@ mod tests {
   "rain": {"asyncSpeed": true, "mode": "stiletto"},
   "visualizer": {"fps": 30, "fractalComplexity": 3, "glowDirections": 16.0, "glowQuality": 6.0, "particleSize": 8, "particleThin": 0.11999999731779099, "visualizerShape": "sphere"},
   "wallpaper": {
-    "animatedColumnCounts": {},
-    "animatedColumns": {"eDP-1": ["~/clips/a.mp4"]},
-    "animatedDir": "~/clips",
-    "animatedEnabled": false,
-    "animatedFillModes": {"eDP-1": ["crop"]},
     "columnCounts": {"eDP-1": 2},
     "columns": {"eDP-1": ["~/Pictures/a.jpg", "/abs/b.png"]},
     "dir": "~/Pictures",
@@ -737,10 +711,7 @@ mod tests {
         assert!(split.bar_disabled && !dp.bar_override && !dp.expand_widgets, "explicit bar keys win");
         assert!(!cfg.idle_enabled, "idle disabled");
         assert_eq!(cfg.wallpaper_columns["eDP-1"], strings(&["/home/tester/Pictures/a.jpg", "/abs/b.png"]), "home is expanded in columns");
-        assert!(
-            cfg.wallpaper_dir == "/home/tester/Pictures" && cfg.wallpaper_animated_dir == "/home/tester/clips",
-            "home is expanded in directories"
-        );
+        assert_eq!(cfg.wallpaper_dir, "/home/tester/Pictures", "home is expanded in directories");
         assert!(
             cfg.wallpaper_column_counts["eDP-1"] == 2 && cfg.wallpaper_fill_modes["eDP-1"] == strings(&["fit", "crop"]),
             "counts and fill modes"

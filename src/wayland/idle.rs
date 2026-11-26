@@ -96,16 +96,8 @@ impl State {
             if !idle.clock.known(&monitor.name) {
                 idle.clock.activity(&monitor.name, now);
             }
-            let (frame, pause) = overlay.update(verdict(&idle.clock, &cfg, &monitor.name, now), &cfg.idle_logo_path);
-            if frame {
+            if overlay.update(verdict(&idle.clock, &cfg, &monitor.name, now), &cfg.idle_logo_path) {
                 due.push(i);
-            }
-            if let (Some(paused), Some(wallpaper)) = (pause, &mut monitor.wallpaper) {
-                if paused {
-                    wallpaper.pause_animation();
-                } else {
-                    wallpaper.resume_animation();
-                }
             }
         }
         for i in due {

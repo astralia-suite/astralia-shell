@@ -12,8 +12,6 @@ pub mod wallpaper_column;
 pub mod text;
 pub mod thunder;
 pub mod toplevel_window;
-#[cfg(feature = "video")]
-pub mod video_texture;
 
 /// Device-pixel buffer size for a logical size at an integer scale (below 1 counts as 1).
 pub fn buffer_size(width: i32, height: i32, scale: i32) -> (i32, i32) {

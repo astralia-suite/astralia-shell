@@ -14,7 +14,7 @@ use crate::config::wallpaper_select_config as cfg;
 use crate::render::geometry::Rect;
 use crate::render::recording_canvas::{OpKind, RecordingCanvas};
 use crate::service::settings::ConfigStore;
-use crate::service::wallpaper::wallpaper_column_override_animated;
+use crate::service::wallpaper::{WallpaperSlot, wallpaper_column_override};
 
 struct Snap;
 
@@ -223,7 +223,7 @@ fn wallpaper_select_apply() {
     env.model.step(1);
     env.key(KeyKind::Enter);
     assert!(
-        env.updates() == 1 && wallpaper_column_override_animated(&env.store.config(), "DP-1", 0, false) == folder.file("a.png"),
+        env.updates() == 1 && wallpaper_column_override(&env.store.config(), "DP-1", 0, WallpaperSlot::Still) == folder.file("a.png"),
         "Enter sets the wallpaper of the opened column"
     );
     assert!(!env.model.is_open() && env.closed == 1, "applying closes the selector");
@@ -264,33 +264,6 @@ fn wallpaper_select_clicks() {
 }
 
 #[test]
-fn wallpaper_select_animated() {
-    let _snap = Snap::on();
-    let mut pump = Pump::new();
-    let folder = Folder::new();
-    std::fs::write(folder.root().join("y.mp4"), "x").unwrap();
-    std::fs::write(folder.root().join("x.webm"), "x").unwrap();
-    let mut env = Env::new();
-    {
-        let mut c = env.config();
-        c.wallpaper_animated_enabled = true;
-        c.wallpaper_animated_dir = folder.root().to_string_lossy().into_owned();
-        c.wallpaper_animated_columns.insert("DP-1".into(), vec![String::new(), folder.file("y.mp4")]);
-        c.wallpaper_animated_column_counts.insert("DP-1".into(), 2);
-    }
-    env.model.open("DP-1", 1);
-    assert!(pump.scanned(&mut env.model), "the animated scan finishes");
-    assert!(env.model.animated() && env.model.column_count() == 2, "the animated column count is used");
-    assert_eq!(env.model.files(), [folder.file("y.mp4"), folder.file("x.webm")], "only videos are listed, starting from the current one");
-    env.model.step(1);
-    env.key(KeyKind::Enter);
-    assert!(
-        wallpaper_column_override_animated(&env.store.config(), "DP-1", 1, true) == folder.file("x.webm") && env.store.config().wallpaper_columns.is_empty(),
-        "applying sets the animated column and leaves the static ones alone"
-    );
-}
-
-#[test]
 fn wallpaper_select_column_at() {
     let still = Env::new();
     still.config().wallpaper_column_counts.insert("DP-1".into(), 3);
@@ -307,15 +280,6 @@ fn wallpaper_select_column_at() {
         "a pointer off the monitor falls back to the first column"
     );
     assert_eq!(still.model.column_at("HDMI-1", 899.0, 10.0, 900.0, 500.0), 0, "a single column monitor always resolves to the first column");
-
-    let animated = Env::new();
-    {
-        let mut c = animated.config();
-        c.wallpaper_animated_enabled = true;
-        c.wallpaper_column_counts.insert("DP-1".into(), 4);
-        c.wallpaper_animated_column_counts.insert("DP-1".into(), 2);
-    }
-    assert_eq!(animated.model.column_at("DP-1", 600.0, 10.0, 900.0, 500.0), 1, "the animated column count divides the monitor when animated is on");
 }
 
 #[test]

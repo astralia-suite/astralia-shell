@@ -276,20 +276,11 @@ fn general_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     toggle_row(pane, x, y, w, "Disable Animations", pane.config.animations_disabled, Act::AnimationDisable, 0, 0, true);
 }
 
-fn desktop_slot(pane: &Pane) -> WallpaperSlot {
-    if pane.config.wallpaper_animated_enabled { WallpaperSlot::Animated } else { WallpaperSlot::Still }
-}
-
 fn wallpaper_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32, bottom: f32) {
-    let p = palette();
     let config = pane.config;
-    let slot = desktop_slot(pane);
-    let animated = slot == WallpaperSlot::Animated;
+    let slot = WallpaperSlot::Still;
 
-    let toggles: Vec<(&str, bool, Act)> = vec![
-        ("Use Default Wallpaper", config.default_wallpaper, Act::WallpaperDefault),
-        ("Enable animated wallpaper", config.wallpaper_animated_enabled, Act::WallpaperAnimated),
-    ];
+    let toggles: Vec<(&str, bool, Act)> = vec![("Use Default Wallpaper", config.default_wallpaper, Act::WallpaperDefault)];
 
     let count = (toggles.len() + 1) as f32;
     let share = (w - cfg::TILE_SPACING * (count - 1.0)) / count;
@@ -308,7 +299,7 @@ fn wallpaper_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32, bottom: f32) {
         for (label, value, act) in &toggles {
             y += toggle_row(pane, x, y, w, label, *value, *act, 0, 0, true) + cfg::ROW_GAP;
         }
-        y = wallpaper_columns_panel(pane, slot, x, y, w, bottom, None);
+        wallpaper_columns_panel(pane, slot, x, y, w, bottom, None);
     } else {
         let mut cx = x;
         for (i, (label, value, act)) in toggles.iter().enumerate() {
@@ -317,16 +308,7 @@ fn wallpaper_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32, bottom: f32) {
             cx += tile_w + cfg::TILE_SPACING;
         }
         let display = Rect { x: cx, y, w: x + w - cx, h: cfg::TILE_HEIGHT };
-        y = wallpaper_columns_panel(pane, slot, x, y + cfg::TILE_HEIGHT + cfg::ROW_GAP, w, bottom, Some(display));
-    }
-    let picker = pane.model.picker(slot);
-    if animated && !picker.files.is_empty() && pane.model.cpu_fallback(&picker.region, picker.column) {
-        y += cfg::ROW_GAP;
-        let warning = "Warning: Animated wallpaper is running on CPU.";
-        let size = pane.canvas.measure(warning, &TEXT_STYLE);
-        let h = size.h + cfg::WARNING_PAD * 2.0;
-        pane.chip(Rect { x, y, w, h }, p.critical_container);
-        pane.text(warning, &TEXT_STYLE, x + cfg::WARNING_PAD, y + (h - size.h) / 2.0, p.text);
+        wallpaper_columns_panel(pane, slot, x, y + cfg::TILE_HEIGHT + cfg::ROW_GAP, w, bottom, Some(display));
     }
 }
 
@@ -341,7 +323,7 @@ fn palette_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32) {
         return;
     }
     y += cfg::TILE_HEIGHT + cfg::ROW_GAP;
-    let slot = desktop_slot(pane);
+    let slot = WallpaperSlot::Still;
     let mut entries = vec![DropEntry { label: "Auto".into(), a: -1, b: 0 }];
     let mut selected = 0;
     for chip in wallpaper_chips(pane.model, slot) {
@@ -391,7 +373,7 @@ fn tab_summary(model: &Model, config: &Config, tab: Tab) -> String {
         Tab::Displays => format!("{} connected", model.monitors().len()),
         Tab::General => (if config.animations_disabled { "Animations off" } else { "Animations on" }).into(),
         Tab::Lock => (if config.lock_wallpaper_custom { "Custom" } else { "Auto" }).into(),
-        Tab::Wallpaper => (if config.wallpaper_animated_enabled { "Animated" } else { "Static" }).into(),
+        Tab::Wallpaper => "Static".into(),
         Tab::Palette => (if config.palette_source == PaletteSource::RegionCapture { "Region capture" } else { "Default" }).into(),
     }
 }

@@ -77,9 +77,6 @@ pub struct Renderer {
     quad_vbo: glow::Buffer,
     polygon_vbo: glow::Buffer,
     viewport: [f32; 2],
-    /// The external-texture program and the import entry points, when dma-buf import works.
-    #[cfg(feature = "video")]
-    video: Option<(glow::Program, super::video_texture::VideoCaps)>,
     scale: i32,
     opacity: f32,
     model_stack: Vec<Affine2D>,
@@ -165,8 +162,6 @@ impl Renderer {
             quad_vbo,
             polygon_vbo,
             viewport: [1.0, 1.0],
-            #[cfg(feature = "video")]
-            video: None,
             scale: 1,
             opacity: 1.0,
             model_stack: vec![Affine2D::default()],
@@ -174,44 +169,9 @@ impl Renderer {
         })
     }
 
-    #[cfg_attr(not(any(test, feature = "video")), expect(dead_code))]
+    #[cfg_attr(not(test), expect(dead_code))]
     pub fn gl(&self) -> &glow::Context {
         &self.gl
-    }
-
-    /// Detects dma-buf import and builds the external-texture program; once, at startup.
-    #[cfg(feature = "video")]
-    pub fn enable_video(&mut self, egl: &super::egl::Egl) {
-        let Some(caps) = super::video_texture::video_texture_detect_caps(egl, &self.gl) else {
-            ::log::info!("video_texture: dma-buf import unavailable, animated wallpapers upload frames");
-            return;
-        };
-        match compile(&self.gl, shader!("video.frag"), "video") {
-            Ok(program) => self.video = Some((program, caps)),
-            Err(e) => ::log::error!("{e}"),
-        }
-    }
-
-    #[cfg(feature = "video")]
-    pub fn video_caps(&self) -> Option<super::video_texture::VideoCaps> {
-        self.video.map(|(_, caps)| caps)
-    }
-
-    /// Draws an imported video surface over `(x, y, w, h)`.
-    #[cfg(feature = "video")]
-    pub fn draw_video_texture_rect(&self, x: f32, y: f32, w: f32, h: f32, tex: &super::video_texture::VideoTexture) {
-        let Some((p, _)) = self.video else { return };
-        self.bind(p, x.round(), y.round(), w, h);
-        // SAFETY: the context is current; `tex` is a live external texture.
-        unsafe {
-            self.gl.active_texture(glow::TEXTURE0);
-            self.gl.bind_texture(super::video_texture::TEXTURE_EXTERNAL_OES, Some(tex.tex));
-            self.gl.uniform_1_i32(self.gl.get_uniform_location(p, "u_tex").as_ref(), 0);
-        }
-        self.set_f32(p, "u_opacity", self.opacity);
-        self.draw_quad();
-        // SAFETY: the context is current.
-        unsafe { self.gl.bind_texture(super::video_texture::TEXTURE_EXTERNAL_OES, None) };
     }
 
     pub fn begin_frame(&mut self, logical_w: i32, logical_h: i32, scale: i32) {

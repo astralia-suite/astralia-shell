@@ -1,6 +1,5 @@
 //! The wallpaper surface of one output: its columns on the `Background` layer and the desktop menu.
 
-use std::cell::Cell;
 use std::rc::Rc;
 
 use smithay_client_toolkit::compositor::CompositorState;
@@ -15,15 +14,13 @@ use crate::wayland::render::egl::Egl;
 use crate::wayland::render::gl_canvas::GlCanvas;
 use crate::wayland::render::layer_window::LayerWindow;
 use crate::wayland::render::renderer::Renderer;
-use crate::wayland::render::wallpaper_column::{DecodeStatus, FillMode, WallpaperColumn};
+use crate::wayland::render::wallpaper_column::{FillMode, WallpaperColumn};
 use crate::base::input::Button;
 use crate::config::settings::Config;
 use crate::modules::wallpaper::model::{DesktopMenuAction, DesktopMenuModel};
 use crate::modules::wallpaper::view;
 use crate::render::theme::palette;
-#[cfg(feature = "video")]
-use crate::service::media_decode::{ANIMATE_MAX_DECODE_DIM, animate_decode_size};
-use crate::service::wallpaper::{wallpaper_column_count_animated, wallpaper_column_path_animated, wallpaper_fill_mode_animated};
+use crate::service::wallpaper::{WallpaperSlot, wallpaper_column_count, wallpaper_column_path, wallpaper_fill_mode};
 
 pub const LAYER_NAMESPACE: &str = "astralia-shell-wallpaper";
 
@@ -45,7 +42,6 @@ pub struct Wallpaper {
     /// Compiled on the first spread; `Some(None)` after a failed build, which is not retried.
     spread: Option<Option<glow::Program>>,
     notify: Rc<dyn Fn()>,
-    animated_logged: Cell<bool>,
 }
 
 impl Wallpaper {
@@ -65,7 +61,6 @@ impl Wallpaper {
             canvas: GlCanvas::new(),
             spread: None,
             notify,
-            animated_logged: Cell::new(false),
         }
     }
 
@@ -95,24 +90,13 @@ impl Wallpaper {
         self.sync_from_config(renderer, cfg);
     }
 
-    /// Matches the columns to the config: count, paths and fill modes. With animated wallpapers on,
-    /// the animated slot's columns stream; without the video feature they show the still slot.
+    /// Matches the columns to the config: count, paths and fill modes.
     pub fn sync_from_config(&mut self, renderer: &Renderer, cfg: &Config) {
         if self.window.width <= 0 || self.window.height <= 0 {
             return;
         }
-        let animated = cfg!(feature = "video") && cfg.wallpaper_animated_enabled;
-        if cfg.wallpaper_animated_enabled && !animated && !self.animated_logged.replace(true) {
-            ::log::info!("wallpaper: animated column on {} needs the video feature", self.output_name);
-        }
         let monitor = self.output_name.as_str();
-        #[cfg(feature = "video")]
-        if !animated && self.columns.iter().any(WallpaperColumn::is_animated) {
-            for column in &mut self.columns {
-                column.clear(renderer);
-            }
-        }
-        let count = wallpaper_column_count_animated(cfg, monitor, animated).max(0) as usize;
+        let count = wallpaper_column_count(cfg, monitor, WallpaperSlot::Still).max(0) as usize;
         for mut column in self.columns.drain(count.min(self.columns.len())..) {
             column.clear(renderer);
         }
@@ -120,20 +104,11 @@ impl Wallpaper {
         let scale = self.window.scale.max(1);
         let target_w = self.window.width / count.max(1) as i32 * scale;
         let target_h = self.window.height * scale;
-        #[cfg(feature = "video")]
-        let (target_w, target_h) = if animated { animate_decode_size(target_w, target_h, ANIMATE_MAX_DECODE_DIM) } else { (target_w, target_h) };
         for (i, column) in self.columns.iter_mut().enumerate() {
-            let path = wallpaper_column_path_animated(cfg, monitor, i as i32, animated);
-            let mode = if wallpaper_fill_mode_animated(cfg, monitor, i as i32, animated) == "fit" { FillMode::Fit } else { FillMode::Crop };
+            let path = wallpaper_column_path(cfg, monitor, i as i32, WallpaperSlot::Still);
+            let mode = if wallpaper_fill_mode(cfg, monitor, i as i32, WallpaperSlot::Still) == "fit" { FillMode::Fit } else { FillMode::Crop };
             if path.is_empty() {
                 column.clear(renderer);
-                continue;
-            }
-            #[cfg(feature = "video")]
-            if animated {
-                if !column.plays(&path, target_w, target_h, mode) {
-                    column.set_animated(renderer, &path, target_w, target_h, mode, self.notify.clone());
-                }
                 continue;
             }
             column.set_static(&path, target_w, target_h, mode, self.notify.clone());
@@ -144,25 +119,9 @@ impl Wallpaper {
         *self.spread.get_or_insert_with(|| renderer.compile_program(SPREAD_FRAG, "wallpaper_spread").ok())
     }
 
-    /// Holds animated columns on their current frame while the screensaver covers them.
-    pub fn pause_animation(&mut self) {
-        #[cfg(feature = "video")]
-        self.columns.iter().for_each(WallpaperColumn::pause);
-    }
-
-    pub fn resume_animation(&mut self) {
-        #[cfg(feature = "video")]
-        self.columns.iter().for_each(WallpaperColumn::resume);
-    }
-
-    /// A column has a decode or a video frame to upload.
+    /// A column has a decode to upload.
     pub fn has_pending(&self) -> bool {
         self.columns.iter().any(WallpaperColumn::has_pending)
-    }
-
-    /// Each column's decode status, for the settings warning.
-    pub fn statuses(&self) -> Vec<DecodeStatus> {
-        self.columns.iter().map(WallpaperColumn::status).collect()
     }
 
     /// The columns side by side over `width` by `height`, for any surface that shows the wallpaper.
@@ -173,17 +132,12 @@ impl Wallpaper {
         }
     }
 
-    /// Uploads finished decodes and the latest video frames; the context must be current. True when
-    /// a column changed.
+    /// Uploads finished decodes; the context must be current. True when a column changed.
     pub fn upload(&mut self, renderer: &Renderer) -> bool {
         let program = if self.columns.iter().any(|c| !c.is_empty()) { self.spread_program(renderer) } else { None };
         let mut uploaded = false;
         for column in &mut self.columns {
             uploaded |= column.upload_pending(renderer, program);
-            #[cfg(feature = "video")]
-            {
-                uploaded |= column.upload_video(renderer);
-            }
         }
         uploaded
     }

@@ -26,49 +26,6 @@ pub enum FillMode {
     Fit,
 }
 
-/// How a column's frames arrive; still columns are always `Idle`. Read by the settings overlay.
-pub use crate::service::media_decode::MediaDecodeStatus as DecodeStatus;
-
-/// A frame from the decode worker, waiting for the next paint.
-#[cfg(feature = "video")]
-pub enum Incoming {
-    Rgba(crate::service::media_decode::RgbaFrame),
-    Drm(crate::service::media_decode::MediaDrmFrame),
-}
-
-/// Where a column's stream leaves its latest frame; the stream holds it weakly.
-#[cfg(feature = "video")]
-#[derive(Default)]
-pub struct VideoInbox {
-    generation: Cell<u64>,
-    latest: RefCell<Option<Incoming>>,
-}
-
-/// Hands `frame` to the column if it still exists and still plays stream `generation`; otherwise the
-/// frame is dropped, which releases a pinned surface.
-#[cfg(feature = "video")]
-pub fn deliver(inbox: &std::rc::Weak<VideoInbox>, generation: u64, frame: Incoming) -> bool {
-    let Some(inbox) = inbox.upgrade() else { return false };
-    if inbox.generation.get() != generation {
-        return false;
-    }
-    *inbox.latest.borrow_mut() = Some(frame);
-    true
-}
-
-/// The playing stream of an animated column and what it has put on screen.
-#[cfg(feature = "video")]
-#[derive(Default)]
-struct Video {
-    inbox: Rc<VideoInbox>,
-    playback: Option<crate::service::media_decode::MediaDecodePlayback>,
-    textures: std::collections::HashMap<u64, super::video_texture::VideoTexture>,
-    surface: Option<u64>,
-    /// The surface on screen and the one before it, held until the next import replaces them.
-    pinned: Option<crate::service::media_decode::MediaDrmFrame>,
-    pinned_prev: Option<crate::service::media_decode::MediaDrmFrame>,
-}
-
 struct Decoded {
     pixels: Pixels,
     spread: Option<SpreadMap>,
@@ -93,8 +50,6 @@ pub struct WallpaperColumn {
     mode: FillMode,
     target_w: i32,
     target_h: i32,
-    #[cfg(feature = "video")]
-    video: Video,
 }
 
 /// A seed that differs per call; the spread pattern only needs to vary, not to be unpredictable.
@@ -186,10 +141,8 @@ impl WallpaperColumn {
         }
     }
 
-    /// Drops the image and any decode in flight; a playing stream stops without the loop waiting.
+    /// Drops the image and any decode in flight.
     pub fn clear(&mut self, renderer: &Renderer) {
-        #[cfg(feature = "video")]
-        self.clear_video(renderer);
         self.generation.set(self.generation.get() + 1);
         self.pending.borrow_mut().take();
         self.path.clear();
@@ -199,20 +152,12 @@ impl WallpaperColumn {
         }
     }
 
-    /// A decode or a stream frame waits for the next paint.
+    /// A decode waits for the next paint.
     pub fn has_pending(&self) -> bool {
-        #[cfg(feature = "video")]
-        if self.video.inbox.latest.borrow().is_some() {
-            return true;
-        }
         self.pending.borrow().is_some()
     }
 
     pub fn is_empty(&self) -> bool {
-        #[cfg(feature = "video")]
-        if self.video.surface.is_some() {
-            return false;
-        }
         self.tex.is_none()
     }
 
@@ -221,27 +166,15 @@ impl WallpaperColumn {
         self.path.is_empty() || self.tex.is_some()
     }
 
-    /// Draws the image (or the imported video surface) filling or fitting the column at `x`, clipped to it.
+    /// Draws the image filling or fitting the column at `x`, clipped to it.
     pub fn draw(&self, renderer: &mut Renderer, x: f32, column_w: f32, height: f32) {
-        #[cfg(feature = "video")]
-        let video = self.video.surface.and_then(|id| self.video.textures.get(&id));
-        #[cfg(not(feature = "video"))]
-        let video: Option<&Texture> = None;
-        let (tw, th) = match (video, &self.tex) {
-            (Some(v), _) => (v.width as f32, v.height as f32),
-            (None, Some(tex)) => (tex.width as f32, tex.height as f32),
-            (None, None) => return,
-        };
+        let Some(tex) = &self.tex else { return };
+        let (tw, th) = (tex.width as f32, tex.height as f32);
         let scale = if self.mode == FillMode::Fit { (column_w / tw).min(height / th) } else { (column_w / tw).max(height / th) };
         let (draw_w, draw_h) = (tw * scale, th * scale);
         let (dx, dy) = (x + (column_w - draw_w) / 2.0, (height - draw_h) / 2.0);
         renderer.set_clip(x, 0.0, column_w, height);
-        match (video, &self.tex) {
-            #[cfg(feature = "video")]
-            (Some(v), _) => renderer.draw_video_texture_rect(dx, dy, draw_w, draw_h, v),
-            (_, Some(tex)) => renderer.draw_texture_rect(dx, dy, draw_w, draw_h, tex, [1.0; 4]),
-            _ => {}
-        }
+        renderer.draw_texture_rect(dx, dy, draw_w, draw_h, tex, [1.0; 4]);
         renderer.clear_clip();
     }
 
@@ -281,162 +214,11 @@ impl WallpaperColumn {
         });
         true
     }
-
-    pub fn status(&self) -> DecodeStatus {
-        #[cfg(feature = "video")]
-        if let Some(playback) = &self.video.playback {
-            return playback.status();
-        }
-        DecodeStatus::Idle
-    }
-}
-
-#[cfg(feature = "video")]
-impl WallpaperColumn {
-    pub fn is_animated(&self) -> bool {
-        self.video.playback.is_some()
-    }
-
-    /// Whether this column already plays exactly `path` at this size and mode.
-    pub fn plays(&self, path: &str, target_w: i32, target_h: i32, mode: FillMode) -> bool {
-        self.is_animated() && self.path == path && self.mode == mode && self.target_w == target_w && self.target_h == target_h
-    }
-
-    /// Streams `path` scaled for a `target_w` by `target_h` column; `notify` asks for a paint per frame.
-    pub fn set_animated(&mut self, renderer: &Renderer, path: &str, target_w: i32, target_h: i32, mode: FillMode, notify: Rc<dyn Fn()>) {
-        use crate::service::media_decode::{ANIMATE_WALLPAPER_FPS, AnimateFit, animate_scale_filter, media_decode_stream};
-        self.clear(renderer);
-        (self.path, self.mode, self.target_w, self.target_h) = (path.to_string(), mode, target_w, target_h);
-        if target_w <= 0 || target_h <= 0 {
-            return;
-        }
-        let generation = self.video.inbox.generation.get() + 1;
-        self.video.inbox.generation.set(generation);
-        let zero_copy = renderer.video_caps().is_some();
-        ::log::info!("wallpaper: animated column start '{path}' zero_copy_supported={} surface=1", i32::from(zero_copy));
-        let filter = animate_scale_filter(target_w, target_h, if mode == FillMode::Fit { AnimateFit::Fit } else { AnimateFit::Crop });
-        // Two frames in flight at most; a busy loop drops frames rather than queueing them.
-        let (tx, rx) = async_channel::bounded::<Incoming>(2);
-        let drm_tx = tx.clone();
-        let on_frame = Box::new(move |f| {
-            let _ = tx.try_send(Incoming::Rgba(f));
-        });
-        let on_drm = zero_copy.then(|| {
-            Box::new(move |f| {
-                let _ = drm_tx.try_send(Incoming::Drm(f));
-            }) as Box<dyn FnMut(_) + Send>
-        });
-        self.video.playback = Some(media_decode_stream(path, &filter, ANIMATE_WALLPAPER_FPS, on_frame, on_drm));
-        let inbox = Rc::downgrade(&self.video.inbox);
-        runtime::spawn(async move {
-            while let Ok(frame) = rx.recv().await {
-                if deliver(&inbox, generation, frame) {
-                    notify();
-                } else if inbox.upgrade().is_none_or(|i| i.generation.get() != generation) {
-                    return;
-                }
-            }
-        });
-    }
-
-    /// Puts the stream's latest frame on screen; true when the column changed.
-    pub fn upload_video(&mut self, renderer: &Renderer) -> bool {
-        let Some(frame) = self.video.inbox.latest.borrow_mut().take() else { return false };
-        match frame {
-            Incoming::Rgba(f) => {
-                match self.tex.as_ref().filter(|t| t.width == f.width && t.height == f.height) {
-                    Some(tex) => renderer.update_rgba(tex, &f.rgba),
-                    None => {
-                        if let Some(old) = self.tex.take() {
-                            renderer.delete_texture(old);
-                        }
-                        self.tex = renderer.upload_rgba(f.width, f.height, 1, &f.rgba);
-                    }
-                }
-                self.video.surface = None;
-                true
-            }
-            Incoming::Drm(frame) => {
-                let Some(caps) = renderer.video_caps() else { return false };
-                if let std::collections::hash_map::Entry::Vacant(slot) = self.video.textures.entry(frame.surface_id) {
-                    match caps.import(renderer.gl(), &frame) {
-                        Some(tex) => {
-                            slot.insert(tex);
-                        }
-                        None => {
-                            ::log::info!("wallpaper: video_texture_import failed ({}x{} planes=2), falling back to CPU upload", frame.width, frame.height);
-                            if let Some(playback) = &self.video.playback {
-                                playback.egl_import_failed();
-                            }
-                            return false;
-                        }
-                    }
-                }
-                self.video.surface = Some(frame.surface_id);
-                self.video.pinned_prev = self.video.pinned.replace(frame);
-                true
-            }
-        }
-    }
-
-    pub fn pause(&self) {
-        if let Some(playback) = &self.video.playback {
-            playback.pause();
-        }
-    }
-
-    pub fn resume(&self) {
-        if let Some(playback) = &self.video.playback {
-            playback.resume();
-        }
-    }
-
-    fn clear_video(&mut self, renderer: &Renderer) {
-        self.video.inbox.generation.set(self.video.inbox.generation.get() + 1);
-        self.video.inbox.latest.borrow_mut().take();
-        if let Some(playback) = self.video.playback.take() {
-            playback.stop_detached();
-        }
-        if let Some(caps) = renderer.video_caps() {
-            for (_, tex) in self.video.textures.drain() {
-                caps.release(renderer.gl(), tex);
-            }
-        }
-        self.video.surface = None;
-        self.video.pinned = None;
-        self.video.pinned_prev = None;
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[cfg(feature = "video")]
-    #[test]
-    fn column_decode_dropped() {
-        use crate::service::media_decode::RgbaFrame;
-        let frame = || Incoming::Rgba(RgbaFrame { rgba: vec![0; 4], width: 1, height: 1 });
-        let inbox = Rc::new(VideoInbox::default());
-        inbox.generation.set(3);
-        let weak = Rc::downgrade(&inbox);
-        assert!(deliver(&weak, 3, frame()), "a live column takes its stream's frame");
-        assert!(inbox.latest.borrow().is_some());
-        assert!(!deliver(&weak, 2, frame()), "a frame from a replaced stream is dropped");
-        drop(inbox);
-        assert!(!deliver(&weak, 3, frame()), "a frame after the column dropped is released, not uploaded");
-    }
-
-    #[cfg(feature = "video")]
-    #[test]
-    fn column_pending_only_with_a_frame() {
-        use crate::service::media_decode::RgbaFrame;
-        let column = WallpaperColumn::default();
-        assert!(!column.has_pending(), "an idle column asks for no paint");
-        column.video.inbox.generation.set(1);
-        assert!(deliver(&Rc::downgrade(&column.video.inbox), 1, Incoming::Rgba(RgbaFrame { rgba: vec![0; 4], width: 1, height: 1 })));
-        assert!(column.has_pending(), "a delivered frame asks for one");
-    }
 
     #[test]
     fn transition_uv_fill() {

@@ -7,7 +7,6 @@ use crate::config::settings::Config;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WallpaperSlot {
     Still,
-    Animated,
     Lock,
 }
 
@@ -16,7 +15,6 @@ type Columns = BTreeMap<String, Vec<String>>;
 fn column_map(cfg: &Config, slot: WallpaperSlot) -> &Columns {
     match slot {
         WallpaperSlot::Still => &cfg.wallpaper_columns,
-        WallpaperSlot::Animated => &cfg.wallpaper_animated_columns,
         WallpaperSlot::Lock => &cfg.lock_wallpaper_columns,
     }
 }
@@ -24,7 +22,6 @@ fn column_map(cfg: &Config, slot: WallpaperSlot) -> &Columns {
 fn column_map_mut(cfg: &mut Config, slot: WallpaperSlot) -> &mut Columns {
     match slot {
         WallpaperSlot::Still => &mut cfg.wallpaper_columns,
-        WallpaperSlot::Animated => &mut cfg.wallpaper_animated_columns,
         WallpaperSlot::Lock => &mut cfg.lock_wallpaper_columns,
     }
 }
@@ -32,7 +29,6 @@ fn column_map_mut(cfg: &mut Config, slot: WallpaperSlot) -> &mut Columns {
 fn fill_mode_map(cfg: &Config, slot: WallpaperSlot) -> &Columns {
     match slot {
         WallpaperSlot::Still => &cfg.wallpaper_fill_modes,
-        WallpaperSlot::Animated => &cfg.wallpaper_animated_fill_modes,
         WallpaperSlot::Lock => &cfg.lock_wallpaper_fill_modes,
     }
 }
@@ -40,7 +36,6 @@ fn fill_mode_map(cfg: &Config, slot: WallpaperSlot) -> &Columns {
 fn fill_mode_map_mut(cfg: &mut Config, slot: WallpaperSlot) -> &mut Columns {
     match slot {
         WallpaperSlot::Still => &mut cfg.wallpaper_fill_modes,
-        WallpaperSlot::Animated => &mut cfg.wallpaper_animated_fill_modes,
         WallpaperSlot::Lock => &mut cfg.lock_wallpaper_fill_modes,
     }
 }
@@ -48,13 +43,8 @@ fn fill_mode_map_mut(cfg: &mut Config, slot: WallpaperSlot) -> &mut Columns {
 fn count_map_mut(cfg: &mut Config, slot: WallpaperSlot) -> &mut BTreeMap<String, i32> {
     match slot {
         WallpaperSlot::Still => &mut cfg.wallpaper_column_counts,
-        WallpaperSlot::Animated => &mut cfg.wallpaper_animated_column_counts,
         WallpaperSlot::Lock => &mut cfg.lock_wallpaper_column_counts,
     }
-}
-
-pub fn wallpaper_slot_of(animated: bool) -> WallpaperSlot {
-    if animated { WallpaperSlot::Animated } else { WallpaperSlot::Still }
 }
 
 #[cfg(test)]
@@ -65,7 +55,6 @@ pub fn wallpaper_lock_slot(cfg: &Config) -> WallpaperSlot {
 pub fn wallpaper_slot_dir(cfg: &Config, slot: WallpaperSlot) -> &str {
     match slot {
         WallpaperSlot::Still => &cfg.wallpaper_dir,
-        WallpaperSlot::Animated => &cfg.wallpaper_animated_dir,
         WallpaperSlot::Lock => &cfg.lock_wallpaper_dir,
     }
 }
@@ -78,10 +67,6 @@ pub fn wallpaper_is_image(path: &str) -> bool {
     matches!(extension(path).as_str(), ".png" | ".jpg" | ".jpeg" | ".jfif" | ".bmp" | ".svg")
 }
 
-pub fn wallpaper_is_video(path: &str) -> bool {
-    matches!(extension(path).as_str(), ".mp4" | ".webm" | ".mkv")
-}
-
 /// By extension, then by file name, ignoring case.
 fn picker_key(path: &str) -> (String, String) {
     (extension(path), Path::new(path).file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default())
@@ -92,11 +77,10 @@ pub fn wallpaper_picker_less(a: &str, b: &str) -> bool {
     picker_key(a) < picker_key(b)
 }
 
-/// Matching files in `dir` and its direct subfolders, in picker order, at most `limit`.
-pub fn wallpaper_list_files(dir: &str, animated: bool, limit: usize) -> Vec<String> {
+/// Images in `dir` and its direct subfolders, in picker order, at most `limit`.
+pub fn wallpaper_list_files(dir: &str, limit: usize) -> Vec<String> {
     let home = crate::base::paths::home();
     let root = if home.is_empty() { dir.to_string() } else { expand_home(dir, &home) };
-    let wanted = |p: &str| if animated { wallpaper_is_video(p) } else { wallpaper_is_image(p) };
     let mut found = Vec::new();
     let mut folders = vec![(std::path::PathBuf::from(root), 0)];
     while let Some((folder, depth)) = folders.pop() {
@@ -106,7 +90,7 @@ pub fn wallpaper_list_files(dir: &str, animated: bool, limit: usize) -> Vec<Stri
             let path = entry.path().to_string_lossy().into_owned();
             if kind.is_dir() && depth == 0 {
                 folders.push((entry.path(), 1));
-            } else if (kind.is_file() || (kind.is_symlink() && entry.path().is_file())) && wanted(&path) {
+            } else if (kind.is_file() || (kind.is_symlink() && entry.path().is_file())) && wallpaper_is_image(&path) {
                 found.push(path);
             }
         }
@@ -119,7 +103,6 @@ pub fn wallpaper_list_files(dir: &str, animated: bool, limit: usize) -> Vec<Stri
 pub fn wallpaper_column_count(cfg: &Config, monitor: &str, slot: WallpaperSlot) -> i32 {
     let counts = match slot {
         WallpaperSlot::Still => &cfg.wallpaper_column_counts,
-        WallpaperSlot::Animated => &cfg.wallpaper_animated_column_counts,
         WallpaperSlot::Lock => &cfg.lock_wallpaper_column_counts,
     };
     counts.get(monitor).copied().filter(|&c| c > 0).unwrap_or(1)
@@ -167,26 +150,6 @@ pub fn wallpaper_set_column_count(cfg: &mut Config, monitor: &str, count: i32, s
     count_map_mut(cfg, slot).insert(monitor.into(), count);
 }
 
-pub fn wallpaper_column_count_animated(cfg: &Config, monitor: &str, animated: bool) -> i32 {
-    wallpaper_column_count(cfg, monitor, wallpaper_slot_of(animated))
-}
-
-pub fn wallpaper_column_override_animated(cfg: &Config, monitor: &str, column: i32, animated: bool) -> String {
-    wallpaper_column_override(cfg, monitor, column, wallpaper_slot_of(animated))
-}
-
-pub fn wallpaper_column_path_animated(cfg: &Config, monitor: &str, column: i32, animated: bool) -> String {
-    wallpaper_column_path(cfg, monitor, column, wallpaper_slot_of(animated))
-}
-
-pub fn wallpaper_fill_mode_animated(cfg: &Config, monitor: &str, column: i32, animated: bool) -> String {
-    wallpaper_fill_mode(cfg, monitor, column, wallpaper_slot_of(animated))
-}
-
-pub fn wallpaper_set_column_animated(cfg: &mut Config, monitor: &str, column: i32, path: &str, animated: bool) {
-    wallpaper_set_column(cfg, monitor, column, path, wallpaper_slot_of(animated));
-}
-
 pub fn wallpaper_image_for(cfg: &Config, monitor: &str) -> String {
     wallpaper_column_path(cfg, monitor, 0, WallpaperSlot::Still)
 }
@@ -226,41 +189,27 @@ mod tests {
         let mut cfg = base();
         cfg.wallpaper_columns.insert("DP-1".into(), cols(&["/dp1.png"]));
         cfg.wallpaper_fill_modes.insert("DP-1".into(), cols(&["fit", "tile"]));
-        assert_eq!(wallpaper_column_path_animated(&cfg, "DP-1", 0, false), "/dp1.png");
-        assert_eq!(wallpaper_column_path_animated(&cfg, "HDMI-1", 0, false), "/global.png");
-        assert_eq!(wallpaper_fill_mode_animated(&cfg, "DP-1", 0, false), "fit");
-        assert_eq!(wallpaper_fill_mode_animated(&cfg, "DP-1", 1, false), "tile");
-        assert_eq!(wallpaper_fill_mode_animated(&cfg, "DP-1", 2, false), "crop");
-        assert_eq!(wallpaper_fill_mode_animated(&cfg, "HDMI-1", 0, false), "crop");
-        assert_eq!(wallpaper_column_path_animated(&cfg, "DP-1", 1, false), "/global.png");
-        assert_eq!(wallpaper_column_path_animated(&cfg, "HDMI-1", 3, false), "/global.png");
-        assert_eq!(wallpaper_column_count_animated(&cfg, "DP-1", false), 1);
+        use WallpaperSlot::Still;
+        assert_eq!(wallpaper_column_path(&cfg, "DP-1", 0, Still), "/dp1.png");
+        assert_eq!(wallpaper_column_path(&cfg, "HDMI-1", 0, Still), "/global.png");
+        assert_eq!(wallpaper_fill_mode(&cfg, "DP-1", 0, Still), "fit");
+        assert_eq!(wallpaper_fill_mode(&cfg, "DP-1", 1, Still), "tile");
+        assert_eq!(wallpaper_fill_mode(&cfg, "DP-1", 2, Still), "crop");
+        assert_eq!(wallpaper_fill_mode(&cfg, "HDMI-1", 0, Still), "crop");
+        assert_eq!(wallpaper_column_path(&cfg, "DP-1", 1, Still), "/global.png");
+        assert_eq!(wallpaper_column_path(&cfg, "HDMI-1", 3, Still), "/global.png");
+        assert_eq!(wallpaper_column_count(&cfg, "DP-1", Still), 1);
         cfg.wallpaper_column_counts.insert("DP-1".into(), 2);
-        assert_eq!(wallpaper_column_count_animated(&cfg, "DP-1", false), 2);
+        assert_eq!(wallpaper_column_count(&cfg, "DP-1", Still), 2);
 
         cfg.default_wallpaper = false;
-        assert!(wallpaper_column_path_animated(&cfg, "HDMI-1", 0, false).is_empty());
-        assert!(wallpaper_column_path_animated(&cfg, "DP-1", 1, false).is_empty());
-        assert_eq!(wallpaper_column_path_animated(&cfg, "DP-1", 0, false), "/dp1.png");
-        assert!(wallpaper_column_override_animated(&cfg, "HDMI-1", 0, false).is_empty());
-        assert_eq!(wallpaper_column_override_animated(&cfg, "DP-1", 0, false), "/dp1.png");
+        assert!(wallpaper_column_path(&cfg, "HDMI-1", 0, Still).is_empty());
+        assert!(wallpaper_column_path(&cfg, "DP-1", 1, Still).is_empty());
+        assert_eq!(wallpaper_column_path(&cfg, "DP-1", 0, Still), "/dp1.png");
+        assert!(wallpaper_column_override(&cfg, "HDMI-1", 0, Still).is_empty());
+        assert_eq!(wallpaper_column_override(&cfg, "DP-1", 0, Still), "/dp1.png");
         cfg.default_wallpaper = true;
-        assert!(wallpaper_column_override_animated(&cfg, "HDMI-1", 0, false).is_empty());
-
-        cfg.wallpaper_animated_columns.insert("DP-1".into(), cols(&["/dp1.mp4"]));
-        cfg.wallpaper_animated_fill_modes.insert("DP-1".into(), cols(&["fit"]));
-        assert_eq!(wallpaper_column_path_animated(&cfg, "DP-1", 0, true), "/dp1.mp4");
-        assert_eq!(wallpaper_column_path_animated(&cfg, "HDMI-1", 0, true), "/global.png");
-        assert!(wallpaper_column_override_animated(&cfg, "HDMI-1", 0, true).is_empty());
-        assert_eq!(wallpaper_column_override_animated(&cfg, "DP-1", 0, true), "/dp1.mp4");
-        assert_eq!(wallpaper_fill_mode_animated(&cfg, "DP-1", 0, true), "fit");
-        assert_eq!(wallpaper_fill_mode_animated(&cfg, "HDMI-1", 0, true), "crop");
-        assert_eq!(wallpaper_column_count_animated(&cfg, "DP-1", true), 1);
-        cfg.wallpaper_animated_column_counts.insert("DP-1".into(), 3);
-        assert_eq!(wallpaper_column_count_animated(&cfg, "DP-1", true), 3);
-        cfg.default_wallpaper = false;
-        assert!(wallpaper_column_path_animated(&cfg, "HDMI-1", 0, true).is_empty());
-        assert_eq!(wallpaper_column_path_animated(&cfg, "DP-1", 0, true), "/dp1.mp4");
+        assert!(wallpaper_column_override(&cfg, "HDMI-1", 0, Still).is_empty());
     }
 
     #[test]
@@ -296,10 +245,8 @@ mod tests {
         cfg.lock_wallpaper_custom = true;
         assert_eq!(wallpaper_lock_slot(&cfg), Lock, "Custom mode draws the lock slot");
         cfg.wallpaper_dir = "/pictures".into();
-        cfg.wallpaper_animated_dir = "/videos".into();
         cfg.lock_wallpaper_dir = "/locks".into();
-        assert!(wallpaper_slot_dir(&cfg, Still) == "/pictures" && wallpaper_slot_dir(&cfg, WallpaperSlot::Animated) == "/videos" && wallpaper_slot_dir(&cfg, Lock) == "/locks");
-        assert!(wallpaper_slot_of(false) == Still && wallpaper_slot_of(true) == WallpaperSlot::Animated);
+        assert!(wallpaper_slot_dir(&cfg, Still) == "/pictures" && wallpaper_slot_dir(&cfg, Lock) == "/locks");
     }
 
     #[test]
@@ -312,13 +259,12 @@ mod tests {
         assert!(wallpaper_image_for(&cfg, "eDP-1") == "/global.png" && !cfg.wallpaper_columns.contains_key("eDP-1"));
         cfg.wallpaper_columns.insert("DP-1".into(), cols(&["/a.png", "/b.png"]));
         wallpaper_clear_image(&mut cfg, "DP-1");
-        assert!(wallpaper_column_override_animated(&cfg, "DP-1", 0, false).is_empty() && wallpaper_column_override_animated(&cfg, "DP-1", 1, false) == "/b.png");
+        assert!(wallpaper_column_override(&cfg, "DP-1", 0, WallpaperSlot::Still).is_empty() && wallpaper_column_override(&cfg, "DP-1", 1, WallpaperSlot::Still) == "/b.png");
     }
 
     #[test]
     fn wallpaper_listing() {
         assert!(wallpaper_is_image("/x/A.PNG") && wallpaper_is_image("b.jpeg") && !wallpaper_is_image("c.mp4") && !wallpaper_is_image("d.txt"));
-        assert!(wallpaper_is_video("/x/a.MKV") && wallpaper_is_video("b.webm") && !wallpaper_is_video("c.png"));
         assert!(wallpaper_picker_less("/x/b.jpg", "/x/a.png") && wallpaper_picker_less("/x/a.png", "/x/B.png"));
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
@@ -327,11 +273,9 @@ mod tests {
             std::fs::write(root.join(f), "x").unwrap();
         }
         let root = root.to_str().unwrap();
-        let images = wallpaper_list_files(root, false, 100);
+        let images = wallpaper_list_files(root, 100);
         assert!(images.len() == 3 && images[0].ends_with("a.jpg") && images[1].ends_with("b.png") && images[2].ends_with("c.png"), "{images:?}");
-        assert_eq!(wallpaper_list_files(root, false, 2).len(), 2, "the listing is capped");
-        let videos = wallpaper_list_files(root, true, 100);
-        assert!(videos.len() == 1 && videos[0].ends_with("clip.mp4"));
-        assert!(wallpaper_list_files(&format!("{root}/missing"), false, 100).is_empty());
+        assert_eq!(wallpaper_list_files(root, 2).len(), 2, "the listing is capped");
+        assert!(wallpaper_list_files(&format!("{root}/missing"), 100).is_empty());
     }
 }

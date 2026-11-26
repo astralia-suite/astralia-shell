@@ -59,27 +59,10 @@ impl IdleFade {
     }
 }
 
-/// Turns the screensaver state into pause and resume edges for the wallpaper.
-#[derive(Default)]
-pub struct ScreensaverEdge {
-    was: bool,
-}
-
-impl ScreensaverEdge {
-    /// `Some(paused)` when the screensaver just started or ended.
-    pub fn update(&mut self, screensaver: bool) -> Option<bool> {
-        (screensaver != self.was).then(|| {
-            self.was = screensaver;
-            screensaver
-        })
-    }
-}
-
 pub struct IdleOverlay {
     pub window: LayerWindow,
     canvas: GlCanvas,
     pub fade: IdleFade,
-    edge: ScreensaverEdge,
     logo_path: String,
     bounce: Bounce,
     last_tick: Instant,
@@ -101,7 +84,6 @@ impl IdleOverlay {
             window: LayerWindow::new(layer, 0),
             canvas: GlCanvas::new(),
             fade: IdleFade::default(),
-            edge: ScreensaverEdge::default(),
             logo_path: String::new(),
             bounce: Bounce { x: 40.0, y: 40.0, vx: LOGO_SPEED, vy: LOGO_SPEED * 0.75 },
             last_tick: Instant::now(),
@@ -121,13 +103,12 @@ impl IdleOverlay {
         self.window.configure(egl, width);
     }
 
-    /// Applies the verdict; returns whether a frame is due and the wallpaper pause edge.
-    pub fn update(&mut self, verdict: Verdict, logo_path: &str) -> (bool, Option<bool>) {
+    /// Applies the verdict; returns whether a frame is due.
+    pub fn update(&mut self, verdict: Verdict, logo_path: &str) -> bool {
         if self.logo_path != logo_path {
             self.logo_path = logo_path.to_string();
         }
-        let due = self.fade.set_active(verdict.ambient, verdict.screensaver);
-        (due, self.edge.update(verdict.screensaver))
+        self.fade.set_active(verdict.ambient, verdict.screensaver)
     }
 
     /// Paints one frame; true while a fade runs or the logo bounces.
@@ -181,7 +162,7 @@ impl IdleOverlay {
 
 #[cfg(test)]
 mod tests {
-    use super::{IdleFade, ScreensaverEdge};
+    use super::IdleFade;
     use std::time::{Duration, Instant};
 
     fn settle(fade: &mut IdleFade) -> (f32, f32) {
@@ -201,15 +182,5 @@ mod tests {
         assert!(!fade.animations.has_active());
         assert!(fade.set_active(false, false));
         assert_eq!(settle(&mut fade), (0.0, 0.0), "activity fades both out");
-    }
-
-    #[test]
-    fn idle_pause_hook() {
-        let mut edge = ScreensaverEdge::default();
-        assert_eq!(edge.update(false), None, "ambient alone never pauses");
-        assert_eq!(edge.update(true), Some(true), "the screensaver starting pauses");
-        assert_eq!(edge.update(true), None, "once per edge");
-        assert_eq!(edge.update(false), Some(false), "and resumes when it ends");
-        assert_eq!(edge.update(false), None);
     }
 }

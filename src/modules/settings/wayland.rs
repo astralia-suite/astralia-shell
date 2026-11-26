@@ -1,6 +1,5 @@
 //! The settings overlay surface: the card, its edits written to `config.json`, and the field the input method types into.
 
-use crate::wayland::render::wallpaper_column::DecodeStatus;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -37,18 +36,8 @@ impl EditTarget for Model {
 }
 
 /// The store edits go through, the outputs as they come and go, and the compositor's focused monitor.
-/// Each monitor's wallpaper column decode statuses, refreshed by the host.
-pub type DecodeStatuses = Rc<RefCell<std::collections::HashMap<String, Vec<DecodeStatus>>>>;
-
-pub fn hooks(store: Rc<dyn ConfigStore>, outputs: Rc<RefCell<Vec<String>>>, focused_monitor: Box<dyn Fn() -> String>, statuses: DecodeStatuses) -> Hooks {
-    Hooks {
-        store,
-        monitors: Box::new(move || outputs.borrow().clone()),
-        focused_monitor,
-        cpu_fallback: Box::new(move |monitor, column| {
-            statuses.borrow().get(monitor).and_then(|s| s.get(usize::try_from(column).ok()?).copied()) == Some(DecodeStatus::CpuFallback)
-        }),
-    }
+pub fn hooks(store: Rc<dyn ConfigStore>, outputs: Rc<RefCell<Vec<String>>>, focused_monitor: Box<dyn Fn() -> String>) -> Hooks {
+    Hooks { store, monitors: Box::new(move || outputs.borrow().clone()), focused_monitor }
 }
 
 pub struct Settings {
@@ -243,8 +232,7 @@ mod tests {
         runtime::attach(&event_loop.handle()).unwrap();
         let service = SettingsService::start_with(path.to_str().unwrap().to_string());
         let outputs = Rc::new(RefCell::new(vec!["DP-2".to_string(), "DP-1".to_string()]));
-        let statuses = DecodeStatuses::default();
-        let mut model = Model::new(hooks(service.clone(), outputs.clone(), Box::new(|| "DP-2".to_string()), statuses.clone()));
+        let mut model = Model::new(hooks(service.clone(), outputs.clone(), Box::new(|| "DP-2".to_string())));
         let store: Rc<dyn ConfigStore> = service.clone();
         store.update(&mut |c| c.bar_style = BarStyle::Okinami);
         assert_eq!(model.config().bar_style, BarStyle::Okinami, "the model sees the edit at once");
@@ -253,9 +241,5 @@ mod tests {
         outputs.borrow_mut().push("HDMI-A-1".into());
         model.sync();
         assert_eq!(model.monitors(), ["DP-1", "DP-2", "HDMI-A-1"], "the monitors follow the outputs, sorted");
-
-        statuses.borrow_mut().insert("DP-2".into(), vec![DecodeStatus::ZeroCopy, DecodeStatus::CpuFallback]);
-        assert!(model.cpu_fallback("DP-2", 1), "a column decoding on the CPU warns");
-        assert!(!model.cpu_fallback("DP-2", 0) && !model.cpu_fallback("DP-1", 0) && !model.cpu_fallback("DP-2", -1), "zero-copy, unknown and out-of-range columns do not");
     }
 }

@@ -74,19 +74,6 @@
         "crop"
       ]
     },
-    "animatedEnabled": false,
-    "animatedDir": "~/clips",
-    "animatedColumns": {
-      "eDP-1": [
-        "~/clips/a.mp4"
-      ]
-    },
-    "animatedColumnCounts": {},
-    "animatedFillModes": {
-      "eDP-1": [
-        "crop"
-      ]
-    },
     "lockCustom": true,
     "lockDir": "~/Locks",
     "lockColumns": {

@@ -14,7 +14,7 @@ use crate::service::compositor::Compositor;
 use crate::service::palette_export::{export_palette, palette_export_path};
 use crate::service::runtime;
 use crate::service::settings::SettingsService;
-use crate::service::wallpaper::{wallpaper_column_count_animated, wallpaper_column_override_animated, wallpaper_column_path_animated, wallpaper_image_for, wallpaper_is_video};
+use crate::service::wallpaper::{WallpaperSlot, wallpaper_column_count, wallpaper_column_path, wallpaper_image_for};
 
 const SAMPLE_SIDE: u32 = 256;
 const SAME_HUE_EPSILON: f32 = 0.5;
@@ -33,25 +33,13 @@ pub struct ThemeSource {
 /// The wallpaper the theme is drawn from: the region-capture column when set, else the monitor's
 /// first column, else the first configured column, else the global wallpaper.
 pub fn theme_wallpaper_path(cfg: &Config, monitor: &str) -> String {
-    let animated = cfg.wallpaper_animated_enabled;
-    if !cfg.capture_monitor.is_empty() && cfg.capture_column >= 0 && cfg.capture_column < wallpaper_column_count_animated(cfg, &cfg.capture_monitor, animated) {
-        return if animated {
-            wallpaper_column_override_animated(cfg, &cfg.capture_monitor, cfg.capture_column, true)
-        } else {
-            wallpaper_column_path_animated(cfg, &cfg.capture_monitor, cfg.capture_column, false)
-        };
-    }
-    let first_column = |columns: &std::collections::BTreeMap<String, Vec<String>>| columns.values().filter_map(|c| c.first()).find(|p| !p.is_empty()).cloned();
-    if animated {
-        if !monitor.is_empty() {
-            return wallpaper_column_override_animated(cfg, monitor, 0, true);
-        }
-        return first_column(&cfg.wallpaper_animated_columns).unwrap_or_default();
+    if !cfg.capture_monitor.is_empty() && cfg.capture_column >= 0 && cfg.capture_column < wallpaper_column_count(cfg, &cfg.capture_monitor, WallpaperSlot::Still) {
+        return wallpaper_column_path(cfg, &cfg.capture_monitor, cfg.capture_column, WallpaperSlot::Still);
     }
     if !monitor.is_empty() {
         return wallpaper_image_for(cfg, monitor);
     }
-    first_column(&cfg.wallpaper_columns).unwrap_or_else(|| if cfg.default_wallpaper { cfg.wallpaper_path.clone() } else { String::new() })
+    cfg.wallpaper_columns.values().filter_map(|c| c.first()).find(|p| !p.is_empty()).cloned().unwrap_or_else(|| if cfg.default_wallpaper { cfg.wallpaper_path.clone() } else { String::new() })
 }
 
 /// The fixed lavender palette used when the theme does not follow the wallpaper.
@@ -99,37 +87,14 @@ fn extract_from_file(path: &str) -> Option<Extraction> {
 }
 
 /// Decodes off the loop thread; an unreadable wallpaper falls back to the bundled default, then to
-/// nothing. A video themes from its first frame.
+/// nothing.
 pub async fn resolve_theme(path: &str) -> Option<Extraction> {
-    resolve_with(path, extract_from_file, extract_from_video).await
+    resolve_with(path, extract_from_file).await
 }
 
-/// The first frame of a video, sampled at the theme's size.
-fn extract_from_video(path: &str) -> Option<Extraction> {
-    #[cfg(feature = "video")]
-    {
-        let Some(frame) = crate::service::media_decode::animate_decode_scaled(path, SAMPLE_SIDE as i32, SAMPLE_SIDE as i32) else {
-            ::log::info!("theme: could not decode a frame of {path}");
-            return None;
-        };
-        let extraction = extract_seeds(&frame.rgba, frame.width, frame.height, false);
-        extraction.found.then_some(extraction)
-    }
-    #[cfg(not(feature = "video"))]
-    {
-        let _ = path;
-        None
-    }
-}
-
-async fn resolve_with(path: &str, extract: fn(&str) -> Option<Extraction>, video: fn(&str) -> Option<Extraction>) -> Option<Extraction> {
+async fn resolve_with(path: &str, extract: fn(&str) -> Option<Extraction>) -> Option<Extraction> {
     let path = path.to_string();
-    if wallpaper_is_video(&path) && !cfg!(feature = "video") {
-        ::log::info!("theme: {path} is a video; keeping the current palette");
-        return None;
-    }
     blocking::unblock(move || {
-        let extract = |p: &str| if wallpaper_is_video(p) { video(p) } else { extract(p) };
         // A decoder panic on a hostile file must not reach the awaiting task on the loop thread.
         let extraction = std::panic::catch_unwind(|| extract(&path).or_else(|| extract(&default_wallpaper_path()))).unwrap_or_else(|_| {
             ::log::error!("theme: decoding {path} panicked");
@@ -256,12 +221,6 @@ mod tests {
         assert_eq!(theme_wallpaper_path(&cfg, "DP-1"), "", "a monitor with a blank column falls back to the blank global path");
         cfg.wallpaper_columns.insert("DP-1".into(), cols(&["/dp1.png"]));
         assert_eq!(theme_wallpaper_path(&cfg, "DP-1"), "/dp1.png");
-        let mut animated = cfg.clone();
-        animated.wallpaper_animated_enabled = true;
-        animated.wallpaper_animated_columns.insert("DP-1".into(), cols(&["/clip.mp4", "/second.mp4"]));
-        assert_eq!(theme_wallpaper_path(&animated, "DP-1"), "/clip.mp4");
-        assert!(theme_wallpaper_path(&animated, "DP-2").is_empty());
-        assert_eq!(theme_wallpaper_path(&animated, ""), "/clip.mp4");
         cfg.wallpaper_columns.insert("DP-1".into(), cols(&["/dp1.png", "/dp1b.png"]));
         cfg.wallpaper_column_counts.insert("DP-1".into(), 2);
         cfg.capture_monitor = "DP-1".into();
@@ -318,7 +277,7 @@ mod tests {
 
     #[test]
     fn theme_decode_panic_stays_off_the_loop() {
-        let got = futures_lite::future::block_on(resolve_with("/x/hostile.png", |_| panic!("decoder bug"), |_| None));
+        let got = futures_lite::future::block_on(resolve_with("/x/hostile.png", |_| panic!("decoder bug")));
         assert!(got.is_none(), "a panicking decoder reads as no theme");
     }
 
@@ -329,12 +288,5 @@ mod tests {
         std::fs::write(&corrupt, b"\xFF\xD8 not really a jpeg").unwrap();
         let got = futures_lite::future::block_on(resolve_theme(corrupt.to_str().unwrap()));
         assert!(got.is_some_and(|e| e.found)); // the bundled default wallpaper has colour
-        let first_frame = |_: &str| Some(default_palette_extraction());
-        let video = futures_lite::future::block_on(resolve_with("/x/clip.mp4", extract_from_file, first_frame));
-        if cfg!(feature = "video") {
-            assert_eq!(video, Some(default_palette_extraction()), "a video themes from its first frame");
-        } else {
-            assert!(video.is_none(), "without video decoding a video path has no theme");
-        }
     }
 }

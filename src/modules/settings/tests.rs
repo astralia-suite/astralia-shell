@@ -63,7 +63,6 @@ impl Env {
             store: store.clone(),
             monitors: Box::new(|| vec!["DP-1".to_string(), "HDMI-1".to_string()]),
             focused_monitor: Box::new(|| "HDMI-1".to_string()),
-            cpu_fallback: Box::new(|_, _| false),
         };
         Env { model: Model::new(hooks), store, closes: 0, closed: 0 }
     }
@@ -365,8 +364,7 @@ fn settings_actions() {
     env.click(Act::AnimationDisable, 0, 0);
     assert!(env.cfg().animations_disabled, "single toggles flip");
     env.click(Act::WallpaperDefault, 0, 0);
-    env.click(Act::WallpaperAnimated, 0, 0);
-    assert!(!env.cfg().default_wallpaper && env.cfg().wallpaper_animated_enabled, "wallpaper mode toggles flip");
+    assert!(!env.cfg().default_wallpaper, "the default wallpaper toggle flips");
 }
 
 #[test]
