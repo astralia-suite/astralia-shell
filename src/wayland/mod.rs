@@ -1407,37 +1407,8 @@ impl CompositorHandler for State {
             return;
         }
         if let Some(id) = self.overlays.owner_of(surface) {
-            match id {
-                OverlayId::Launcher => {
-                    if let Some(launcher) = &mut self.overlays.launcher {
-                        launcher.overlay.set_scale(new_factor);
-                    }
-                }
-                OverlayId::Logout => {
-                    if let Some(logout) = &mut self.overlays.logout {
-                        logout.overlay.set_scale(new_factor);
-                    }
-                }
-                OverlayId::Overview => {
-                    if let Some(overview) = &mut self.overlays.overview {
-                        overview.overlay.set_scale(new_factor);
-                    }
-                }
-                OverlayId::WallpaperSelect => {
-                    if let Some(picker) = &mut self.overlays.wallpaper_select {
-                        picker.overlay.set_scale(new_factor);
-                    }
-                }
-                OverlayId::Settings => {
-                    if let Some(settings) = &mut self.overlays.settings {
-                        settings.overlay.set_scale(new_factor);
-                    }
-                }
-                OverlayId::Polkit => {
-                    if let Some(card) = &mut self.overlays.polkit {
-                        card.overlay.set_scale(new_factor);
-                    }
-                }
+            if let Some(overlay) = self.overlays.get_mut(id) {
+                overlay.set_scale(new_factor);
             }
             self.request_overlay_frame(id);
             return;
@@ -1491,15 +1462,7 @@ impl CompositorHandler for State {
         }
         // A late `done` for a removed output or popup finds no surface and is ignored.
         if let Some(id) = self.overlays.owner_of(surface) {
-            let due = match id {
-                OverlayId::Launcher => self.overlays.launcher.as_mut().is_some_and(|l| l.overlay.frame_done(qh)),
-                OverlayId::Logout => self.overlays.logout.as_mut().is_some_and(|l| l.overlay.frame_done(qh)),
-                OverlayId::Overview => self.overlays.overview.as_mut().is_some_and(|o| o.overlay.frame_done(qh)),
-                OverlayId::WallpaperSelect => self.overlays.wallpaper_select.as_mut().is_some_and(|p| p.overlay.frame_done(qh)),
-                OverlayId::Settings => self.overlays.settings.as_mut().is_some_and(|s| s.overlay.frame_done(qh)),
-                OverlayId::Polkit => self.overlays.polkit.as_mut().is_some_and(|p| p.overlay.frame_done(qh)),
-            };
-            if due {
+            if self.overlays.get_mut(id).is_some_and(|o| o.frame_done(qh)) {
                 self.draw_overlay(id);
             }
             return;

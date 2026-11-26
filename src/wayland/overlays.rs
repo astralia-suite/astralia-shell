@@ -61,6 +61,11 @@ impl Overlays {
         all
     }
 
+    /// The overlay `id` names, when it exists.
+    pub fn get_mut(&mut self, id: OverlayId) -> Option<&mut Overlay> {
+        self.all_mut().into_iter().find(|(i, _)| *i == id).map(|(_, o)| o)
+    }
+
     pub fn all(&self) -> Vec<(OverlayId, &Overlay)> {
         let mut all = Vec::new();
         if let Some(l) = &self.launcher {
