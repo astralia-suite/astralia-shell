@@ -9,10 +9,10 @@ use calloop::ping::{Ping, make_ping};
 use wayland_client::protocol::wl_output::WlOutput;
 
 use crate::modules::bar::wayland::bar::Bar;
-use crate::modules::idle::wayland::idle::IdleOverlay;
-use crate::modules::notification::wayland::notification::Notifications;
-use crate::modules::osd::wayland::osd::{Osd, OsdShow};
-use crate::modules::wallpaper::wayland::wallpaper::Wallpaper;
+use crate::modules::idle::wayland::IdleOverlay;
+use crate::modules::notification::wayland::Notifications;
+use crate::modules::osd::wayland::{Osd, OsdShow};
+use crate::modules::wallpaper::wayland::Wallpaper;
 
 /// What changed since the last repaint pass.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

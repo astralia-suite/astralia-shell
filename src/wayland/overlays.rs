@@ -7,12 +7,12 @@ use wayland_client::protocol::wl_surface::WlSurface;
 use super::render::egl::Egl;
 use super::render::overlay::Overlay;
 use super::render::renderer::Renderer;
-use crate::modules::launcher::wayland::launcher::Launcher;
-use crate::modules::logout::wayland::logout::Logout;
-use crate::modules::overview::wayland::overview::Overview;
-use crate::modules::polkit::wayland::polkit::Polkit;
-use crate::modules::settings::wayland::settings::Settings;
-use crate::modules::wallpaper_select::wayland::wallpaper_select::WallpaperSelect;
+use crate::modules::launcher::wayland::Launcher;
+use crate::modules::logout::wayland::Logout;
+use crate::modules::overview::wayland::Overview;
+use crate::modules::polkit::wayland::Polkit;
+use crate::modules::settings::wayland::Settings;
+use crate::modules::wallpaper_select::wayland::WallpaperSelect;
 
 /// One app-wide overlay; each gets a variant with its module.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

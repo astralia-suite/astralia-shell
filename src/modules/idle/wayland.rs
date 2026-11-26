@@ -18,7 +18,7 @@ use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 use crate::config::idle_config::{AMBIENT_FADE_OWNER, IDLE_FADE_MS, IDLE_LAYER_NAMESPACE, LOGO_ASSET, LOGO_SIZE, LOGO_SPEED, SCREENSAVER_FADE_OWNER};
 use crate::modules::idle::bounce::{Bounce, bounce_step};
 use crate::modules::idle::clock::Verdict;
-use crate::modules::wallpaper::wayland::wallpaper::Wallpaper;
+use crate::modules::wallpaper::wayland::Wallpaper;
 use crate::render::canvas::{Canvas, NO_IMAGE};
 use crate::render::geometry::Rect;
 use crate::render::tokens::{Color, WHITE, with_alpha};

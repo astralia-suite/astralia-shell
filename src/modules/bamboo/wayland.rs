@@ -5,7 +5,7 @@ use std::time::Instant;
 use crate::wayland::render::renderer::Renderer;
 use crate::config::bamboo_config::TICK_INTERVAL_MS;
 use crate::modules::bamboo::grow::Grow;
-use crate::modules::rain::wayland::rain::FrameTexture;
+use crate::modules::rain::wayland::FrameTexture;
 use crate::render::theme::palette;
 
 pub struct Bamboo {
