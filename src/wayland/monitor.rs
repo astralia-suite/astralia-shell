@@ -139,7 +139,8 @@ pub struct Monitor {
     pub output: WlOutput,
     pub name: String,
     pub scale: i32,
-    pub bar: Bar,
+    /// Absent while the bar is disabled on this output.
+    pub bar: Option<Bar>,
     pub wallpaper: Option<Wallpaper>,
     pub osd: Option<Osd>,
     /// Only on outputs where notifications are enabled.

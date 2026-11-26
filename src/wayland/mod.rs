@@ -44,7 +44,7 @@ use crate::app::App;
 use crate::app::shell::ShellVerb;
 use crate::base::input::KeyEvent;
 use crate::base::wall_clock::until_next_second;
-use crate::config::settings::{Config, notifications_enabled_for, osd_enabled_for};
+use crate::config::settings::{Config, bar_disabled_for, notifications_enabled_for, osd_enabled_for};
 use crate::modules::bar::model::Sources;
 use crate::modules::bar::panel::content::PanelSources;
 use crate::modules::bar::wayland::bar::{Bar, BarPress, Controls};
@@ -182,7 +182,9 @@ impl Drop for State {
             if let Some(wallpaper) = monitor.wallpaper {
                 wallpaper.destroy(&self.egl, &self.renderer);
             }
-            monitor.bar.destroy(&self.egl, &self.renderer);
+            if let Some(bar) = monitor.bar {
+                bar.destroy(&self.egl, &self.renderer);
+            }
         }
     }
 }
@@ -269,7 +271,7 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         wire_services(services, &redraw);
     }
     let mut shell = crate::app::shell::Shell::new();
-    shell.track("bar", |state: &State| state.monitors.iter().any(|m| m.bar.panels.is_open()));
+    shell.track("bar", |state: &State| state.monitors.iter().any(|m| m.bar.as_ref().is_some_and(|b| b.panels.is_open())));
     shell.track("logout", |state: &State| state.overlays.logout.as_ref().is_some_and(Logout::is_open));
     shell.bind(ShellVerb::Logout, |state: &mut State| state.toggle_logout(false));
     shell.track("launcher", |state: &State| state.overlays.launcher.as_ref().is_some_and(Launcher::is_open));
@@ -297,8 +299,8 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         state.close_overlays_except(overlay_of(verb));
         if verb == ShellVerb::Lock {
             let (monitors, mut ctx) = state.split();
-            for monitor in monitors {
-                monitor.bar.panels.close_all(&mut ctx);
+            for bar in monitors.iter_mut().filter_map(|m| m.bar.as_mut()) {
+                bar.panels.close_all(&mut ctx);
             }
         } else {
             state.close_panels_under_overlay();
@@ -411,8 +413,7 @@ impl State {
     /// The monitor whose surfaces include `surface`.
     pub fn monitor_for_surface(&self, surface: &WlSurface) -> Option<usize> {
         self.monitors.iter().position(|m| {
-            m.bar.window.owns(surface)
-                || m.bar.panels.owns(surface)
+            m.bar.as_ref().is_some_and(|b| b.window.owns(surface) || b.panels.owns(surface))
                 || m.wallpaper.as_ref().is_some_and(|w| w.owns(surface))
                 || m.osd.as_ref().is_some_and(|o| o.owns(surface))
                 || m.notifications.as_ref().is_some_and(|n| n.owns(surface))
@@ -436,7 +437,7 @@ impl State {
         let name = &self.monitors[index].name;
         let overview_here = self.overlays.overview.as_ref().is_some_and(|o| o.shown_on(name));
         let logout_here = self.overlays.logout.as_ref().is_some_and(|l| l.shown_on(name));
-        let bar = &mut self.monitors[index].bar;
+        let Some(bar) = &mut self.monitors[index].bar else { return };
         let (open, clock_open) = bar.panels.open_item();
         use crate::modules::bar::model::Item;
         let open = open.or(logout_here.then_some(Item::Logout)).or(overview_here.then_some(Item::WorkspaceInfo));
@@ -447,7 +448,9 @@ impl State {
 
     fn request_panel_frame(&mut self, index: usize) {
         let (monitors, mut ctx) = self.split();
-        monitors[index].bar.panels.request_frame(&mut ctx);
+        if let Some(bar) = &mut monitors[index].bar {
+            bar.panels.request_frame(&mut ctx);
+        }
     }
 
     fn draw_wallpaper(&mut self, index: usize) {
@@ -491,6 +494,31 @@ impl State {
     }
 
     /// Creates or removes the notification surface as the config enables it on this output.
+    /// Creates or destroys monitor `i`'s bar, with its panels, to follow "disable bar".
+    fn sync_bar_surface(&mut self, i: usize, cfg: &Config) {
+        let name = self.monitors[i].name.clone();
+        match (!bar_disabled_for(cfg, &name), self.monitors[i].bar.is_some()) {
+            (true, false) => {
+                let Some((sources, controls, panels)) = self.bar_sources(&name) else { return };
+                let monitor = &self.monitors[i];
+                let mut bar = Bar::new(&self.compositor, &self.layer_shell, &self.qh, &monitor.output, &name, cfg, sources, controls, &panels, &self.redraw);
+                let redraw = self.redraw.clone();
+                bar.set_on_image_ready(Rc::new(move || redraw.all()));
+                bar.window.set_scale(monitor.scale);
+                ::log::info!("bar: created on '{name}'");
+                self.monitors[i].bar = Some(bar);
+            }
+            (false, true) => {
+                if let Some(bar) = self.monitors[i].bar.take() {
+                    self.forget_surfaces(&bar.surface_ids());
+                    bar.destroy(&self.egl, &self.renderer);
+                    ::log::info!("bar: disabled on '{name}'");
+                }
+            }
+            _ => {}
+        }
+    }
+
     fn sync_notification_surface(&mut self, i: usize, cfg: &Config) {
         let want = notifications_enabled_for(cfg, &self.monitors[i].name);
         match (want, self.monitors[i].notifications.is_some()) {
@@ -583,7 +611,7 @@ impl State {
     }
 
     fn request_frame(&mut self, index: usize) {
-        if self.monitors[index].bar.window.request_frame(&self.qh) {
+        if self.monitors[index].bar.as_mut().is_some_and(|b| b.window.request_frame(&self.qh)) {
             self.draw(index);
         }
     }
@@ -634,7 +662,10 @@ impl State {
         }
         for i in 0..self.monitors.len() {
             if reasons.config {
-                self.monitors[i].bar.apply_config(&cfg);
+                self.sync_bar_surface(i, &cfg);
+                if let Some(bar) = &mut self.monitors[i].bar {
+                    bar.apply_config(&cfg);
+                }
                 if let Some(wallpaper) = &mut self.monitors[i].wallpaper {
                     wallpaper.sync_from_config(&self.renderer, &cfg);
                 }
@@ -670,7 +701,9 @@ impl State {
                 self.request_osd_frame(i);
             }
             if reasons.all || reasons.config {
-                self.monitors[i].bar.tick(&cfg);
+                if let Some(bar) = &mut self.monitors[i].bar {
+                    bar.tick(&cfg);
+                }
                 self.request_frame(i);
             }
             if reasons.panels {
@@ -708,7 +741,7 @@ impl State {
 
     /// A translated key press or repeat: to the overlay holding the keyboard, else to the first open panel.
     fn key(&mut self, event: KeyEvent) {
-        let open: Vec<bool> = self.monitors.iter().map(|m| m.bar.panels.is_open()).collect();
+        let open: Vec<bool> = self.monitors.iter().map(|m| m.bar.as_ref().is_some_and(|b| b.panels.is_open())).collect();
         match route_key(self.lock.is_active(), self.keyboard_focus.as_ref(), |s| self.windows.owner_of(s), |s| self.overlays.owner_of(s), &open) {
             KeyRoute::Lock => self.lock_handle_key(&event),
             KeyRoute::Window(id) => self.window_request(id, Request::Key(&event)),
@@ -753,7 +786,9 @@ impl State {
             }
             KeyRoute::Monitor(i) => {
                 let (monitors, mut ctx) = self.split();
-                monitors[i].bar.panels.key(&mut ctx, &event);
+                if let Some(bar) = &mut monitors[i].bar {
+                    bar.panels.key(&mut ctx, &event);
+                }
             }
             KeyRoute::Nowhere => {}
         }
@@ -765,7 +800,8 @@ impl State {
         let (x, y) = event.position;
         let surface = &event.surface;
         let (monitors, mut ctx) = self.split();
-        let panels = &mut monitors[i].bar.panels;
+        let Some(bar) = &mut monitors[i].bar else { return None };
+        let panels = &mut bar.panels;
         match event.kind {
             PointerEventKind::Enter { .. } | PointerEventKind::Motion { .. } => panels.move_to(surface, x, y),
             PointerEventKind::Press { button, serial, .. } => panels.press(&mut ctx, surface, button_from_code(button), x, y, serial),
@@ -781,7 +817,7 @@ impl State {
     fn bar_pointer(&mut self, i: usize, event: &PointerEvent) -> Option<Option<bool>> {
         let (x, y) = event.position;
         let (monitors, mut ctx) = self.split();
-        let bar = &mut monitors[i].bar;
+        let Some(bar) = &mut monitors[i].bar else { return None };
         match event.kind {
             PointerEventKind::Enter { .. } | PointerEventKind::Motion { .. } => bar.set_pointer(Some((x, y))),
             PointerEventKind::Leave { .. } => {
@@ -982,8 +1018,8 @@ impl State {
             return;
         }
         let (monitors, mut ctx) = self.split();
-        for monitor in monitors {
-            monitor.bar.panels.close_all(&mut ctx);
+        for bar in monitors.iter_mut().filter_map(|m| m.bar.as_mut()) {
+            bar.panels.close_all(&mut ctx);
         }
     }
 
@@ -1315,7 +1351,7 @@ impl PointerHandler for State {
                 self.notification_pointer(i, event);
                 continue;
             }
-            if !self.monitors[i].bar.window.owns(&event.surface) {
+            if !self.monitors[i].bar.as_ref().is_some_and(|b| b.window.owns(&event.surface)) {
                 if let Some(hand) = self.panel_pointer(i, event) {
                     self.pointer.set_cursor(hand);
                 }
@@ -1429,14 +1465,16 @@ impl CompositorHandler for State {
             self.request_wallpaper_frame(i);
             return;
         }
-        if !self.monitors[i].bar.window.owns(surface) {
-            let (monitors, mut ctx) = self.split();
-            monitors[i].bar.panels.set_scale(&mut ctx, surface, new_factor);
+        let (monitors, mut ctx) = self.split();
+        let Some(bar) = &mut monitors[i].bar else { return };
+        if !bar.window.owns(surface) {
+            bar.panels.set_scale(&mut ctx, surface, new_factor);
             return;
         }
+        bar.window.set_scale(new_factor);
+        let due = bar.window.request_frame(qh);
         self.monitors[i].scale = new_factor;
-        self.monitors[i].bar.window.set_scale(new_factor);
-        if self.monitors[i].bar.window.request_frame(qh) {
+        if due {
             self.draw(i);
         }
     }
@@ -1491,12 +1529,13 @@ impl CompositorHandler for State {
             }
             return;
         }
-        if !self.monitors[i].bar.window.owns(surface) {
-            let (monitors, mut ctx) = self.split();
-            monitors[i].bar.panels.frame_done(&mut ctx, surface);
+        let (monitors, mut ctx) = self.split();
+        let Some(bar) = &mut monitors[i].bar else { return };
+        if !bar.window.owns(surface) {
+            bar.panels.frame_done(&mut ctx, surface);
             return;
         }
-        if self.monitors[i].bar.window.frame_done(qh) {
+        if bar.window.frame_done(qh) {
             self.draw(i);
         }
     }
@@ -1515,26 +1554,24 @@ impl OutputHandler for State {
         let info = self.outputs.info(&output);
         let name = info.as_ref().and_then(|i| i.name.clone()).unwrap_or_else(|| "?".into());
         let scale = info.as_ref().map_or(1, |i| i.scale_factor);
-        let Some((sources, controls, panels)) = self.bar_sources(&name) else { return };
+        if self.core.services.is_none() {
+            return;
+        }
         let cfg = self.config();
         let redraw = self.redraw.clone();
         let mut wallpaper = Wallpaper::new(&self.compositor, &self.layer_shell, qh, &output, &name, Rc::new(move || redraw.wallpaper()));
         wallpaper.window.set_scale(scale);
         let mut osd = Osd::new(&self.compositor, &self.layer_shell, qh, &output);
         osd.window.set_scale(scale);
-        let mut bar = Bar::new(&self.compositor, &self.layer_shell, qh, &output, &name, &cfg, sources, controls, &panels, &self.redraw);
-        let redraw = self.redraw.clone();
-        bar.set_on_image_ready(Rc::new(move || redraw.all()));
-        bar.window.set_scale(scale);
-        ::log::info!("bar: created on '{name}'");
         self.output_names.borrow_mut().push(name.clone());
         let idle = (self.idle.is_some() && name != "HEADLESS").then(|| {
             let mut overlay = IdleOverlay::new(&self.compositor, &self.layer_shell, qh, &output);
             overlay.window.set_scale(scale);
             overlay
         });
-        self.monitors.push(Monitor { output, name, scale, bar, wallpaper: Some(wallpaper), osd: Some(osd), notifications: None, idle });
+        self.monitors.push(Monitor { output, name, scale, bar: None, wallpaper: Some(wallpaper), osd: Some(osd), notifications: None, idle });
         let index = self.monitors.len() - 1;
+        self.sync_bar_surface(index, &cfg);
         self.sync_notification_surface(index, &cfg);
         let output = self.monitors[index].output.clone();
         let name = self.monitors[index].name.clone();
@@ -1581,8 +1618,10 @@ impl OutputHandler for State {
             self.forget_surfaces(&[osd.surface_id()]);
             osd.destroy(&self.egl, &self.renderer);
         }
-        self.forget_surfaces(&monitor.bar.surface_ids());
-        monitor.bar.destroy(&self.egl, &self.renderer);
+        if let Some(bar) = monitor.bar {
+            self.forget_surfaces(&bar.surface_ids());
+            bar.destroy(&self.egl, &self.renderer);
+        }
     }
 }
 
@@ -1658,11 +1697,12 @@ impl LayerShellHandler for State {
             self.request_wallpaper_frame(i);
             return;
         }
-        if self.monitors[i].bar.panels.owns_overlay(layer.wl_surface()) {
-            self.monitors[i].bar.panels.configure(&self.egl, width, height);
+        let Some(bar) = &mut self.monitors[i].bar else { return };
+        if bar.panels.owns_overlay(layer.wl_surface()) {
+            bar.panels.configure(&self.egl, width, height);
             return;
         }
-        self.monitors[i].bar.configure(&self.egl, width);
+        bar.configure(&self.egl, width);
         let _ = qh;
         self.request_frame(i);
     }
@@ -1671,8 +1711,8 @@ impl LayerShellHandler for State {
 impl PopupHandler for State {
     fn configure(&mut self, _: &Connection, _: &QueueHandle<Self>, popup: &Popup, config: PopupConfigure) {
         let (monitors, mut ctx) = self.split();
-        for monitor in monitors {
-            if monitor.bar.panels.popup_configure(&mut ctx, popup, config.width, config.height) {
+        for bar in monitors.iter_mut().filter_map(|m| m.bar.as_mut()) {
+            if bar.panels.popup_configure(&mut ctx, popup, config.width, config.height) {
                 return;
             }
         }
@@ -1681,8 +1721,8 @@ impl PopupHandler for State {
     fn done(&mut self, _: &Connection, _: &QueueHandle<Self>, popup: &Popup) {
         let gone = popup.wl_surface().id();
         let (monitors, mut ctx) = self.split();
-        for monitor in monitors {
-            if monitor.bar.panels.popup_done(&mut ctx, popup) {
+        for bar in monitors.iter_mut().filter_map(|m| m.bar.as_mut()) {
+            if bar.panels.popup_done(&mut ctx, popup) {
                 break;
             }
         }
