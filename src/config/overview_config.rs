@@ -2,8 +2,6 @@
 
 // Grid
 pub const COLUMNS: i32 = 5;
-pub const ROWS: i32 = 1;
-pub const PER_PAGE: i32 = COLUMNS * ROWS;
 pub const SCALE: f32 = 0.15;
 pub const GLOBAL_SCALE: f32 = 0.08;
 pub const SPACING: f32 = 5.0;
@@ -11,7 +9,6 @@ pub const PADDING: f32 = 10.0;
 pub const MARGIN: f32 = 10.0;
 pub const GLOBAL_BLOCK_SPACING: f32 = 10.0;
 // Rounding and borders
-pub const BACKGROUND_BORDER_WIDTH: f32 = 2.0;
 pub const WORKSPACE_BORDER_WIDTH: f32 = 2.0;
 pub const WINDOW_BORDER_WIDTH: f32 = 2.0;
 pub const INDICATOR_BORDER_WIDTH: f32 = 4.0;
@@ -29,5 +26,4 @@ pub const BANNER_PX: i32 = 17;
 // Animation
 pub const ANIM_MS: f32 = 200.0;
 // Interaction
-pub const FOCUS_GRACE_MS: i32 = 300;
 pub const CAPTURE_INTERVAL_MS: i32 = 33;

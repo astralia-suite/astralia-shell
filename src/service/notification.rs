@@ -37,6 +37,7 @@ pub struct Notification {
 }
 
 impl Notification {
+    #[cfg(test)]
     pub fn new(id: u32, now: Instant) -> Notification {
         Notification {
             id,
@@ -51,6 +52,7 @@ impl Notification {
         }
     }
 
+    #[cfg(test)]
     pub fn critical(&self) -> bool {
         self.urgency == NOTIFICATION_URGENCY_CRITICAL
     }
@@ -153,6 +155,7 @@ impl NotificationService {
         service
     }
 
+    #[cfg(test)]
     pub async fn start_on(bus: &zbus::Connection) -> Rc<NotificationService> {
         let service = NotificationService::new();
         service.serve(bus.clone()).await;
@@ -193,6 +196,7 @@ impl NotificationService {
         });
     }
 
+    #[cfg(test)]
     pub fn owns_name(&self) -> bool {
         self.owns_name.get()
     }
@@ -201,6 +205,7 @@ impl NotificationService {
         self.list.borrow()
     }
 
+    #[cfg(test)]
     pub fn dismiss(&self, id: u32) {
         self.close(id, REASON_DISMISSED);
     }

@@ -51,7 +51,6 @@ impl Compositor for FakeCompositor {
     fn refresh_clients(&self) -> bool {
         false
     }
-    fn watch_client_order(&self, _: bool) {}
     fn focus_workspace(&self, id: i32, global: bool) {
         self.call(format!("focus {id}{}", global_suffix(global)));
     }

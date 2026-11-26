@@ -313,6 +313,7 @@ pub(crate) fn parse_proc_net_dev(text: &str) -> Option<NetBytes> {
     any.then_some(total)
 }
 
+#[cfg(test)]
 pub(crate) fn format_speed(bytes_per_sec: f64) -> String {
     const UNITS: [&str; 3] = ["KiB", "MiB", "GiB"];
     let mut v = bytes_per_sec / 1024.0;

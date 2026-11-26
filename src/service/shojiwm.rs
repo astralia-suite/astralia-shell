@@ -375,13 +375,12 @@ impl Compositor for ShojiCompositor {
         }
     }
 
+    #[cfg(test)]
     fn refresh_clients(&self) -> bool {
         let before = self.state.borrow().clients.clone();
         self.refresh();
         before != self.state.borrow().clients
     }
-
-    fn watch_client_order(&self, _watch: bool) {}
 
     fn workspaces_per_monitor(&self) -> i32 {
         shoji_per_monitor(&self.state.borrow())

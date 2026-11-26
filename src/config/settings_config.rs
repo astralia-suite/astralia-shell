@@ -1,7 +1,5 @@
 //! Settings card geometry, rows, typography and timings.
 
-use std::time::Duration;
-
 // Window
 pub const CARD_MARGIN: f32 = 40.0;
 pub const CARD_MAX_WIDTH: f32 = 920.0;
@@ -33,9 +31,7 @@ pub const ROW_GAP: f32 = 6.0;
 pub const ROW_HEIGHT: f32 = 40.0;
 pub const SELECTOR_HEIGHT: f32 = 35.0;
 pub const SELECTOR_SPACING: f32 = 6.0;
-pub const SELECTOR_BORDER: f32 = 2.0;
 pub const TILE_HEIGHT: f32 = 48.0;
-pub const TILE_BORDER: f32 = 2.0;
 pub const TILE_MARGIN: f32 = 12.0;
 pub const TILE_SPACING: f32 = 10.0;
 pub const GROUP_SPACING: f32 = 8.0;
@@ -61,8 +57,6 @@ pub const DROPDOWN_PAD: f32 = 10.0;
 pub const DROPDOWN_GAP: f32 = 4.0;
 pub const DROPDOWN_MAX_WIDTH: f32 = 260.0;
 pub const DISPLAY_TILE_MIN_WIDTH: f32 = 220.0;
-pub const REGION_CHIP_HEIGHT: f32 = 35.0;
-pub const REGION_CHIP_GAP: f32 = 6.0;
 pub const STEPPER_BUTTON: f32 = 28.0;
 pub const DIR_BAR_HEIGHT: f32 = 40.0;
 pub const DIR_BAR_LABEL_MARGIN: f32 = 14.0;
@@ -71,7 +65,6 @@ pub const DIR_BAR_EDGE_MARGIN: f32 = 8.0;
 pub const DIR_BAR_BUTTON_WIDTH: f32 = 72.0;
 pub const DIR_BAR_BUTTON_HEIGHT: f32 = 28.0;
 pub const MAX_IMAGES: usize = 400;
-pub const MAX_IN_FLIGHT: usize = 2;
 pub const MAX_COLUMNS: i32 = 6;
 // Idle
 pub const IDLE_TIMEOUT_MIN: i32 = 10;
@@ -85,5 +78,3 @@ pub const SMALL_PX: i32 = 13;
 pub const ICON_PX: i32 = 18;
 // Opacity
 pub const LABEL_OPACITY: f32 = 0.85;
-// Focus
-pub const RELAYOUT_GRACE: Duration = Duration::from_millis(500);

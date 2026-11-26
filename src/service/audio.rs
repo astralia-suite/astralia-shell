@@ -168,14 +168,6 @@ impl AudioService {
         }
     }
 
-    pub fn set_sink_volume(&self, percent: i32) {
-        self.set_volume(self.sink_id(), percent);
-    }
-
-    pub fn set_sink_mute(&self, muted: bool) {
-        self.set_mute(self.sink_id(), muted);
-    }
-
     pub fn set_volume(&self, id: u32, percent: i32) {
         self.send(Command::Volume(id, percent));
     }

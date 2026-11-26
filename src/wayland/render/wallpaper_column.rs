@@ -326,7 +326,7 @@ impl WallpaperColumn {
                 let _ = drm_tx.try_send(Incoming::Drm(f));
             }) as Box<dyn FnMut(_) + Send>
         });
-        self.video.playback = Some(media_decode_stream(path, &filter, ANIMATE_WALLPAPER_FPS, false, on_frame, on_drm));
+        self.video.playback = Some(media_decode_stream(path, &filter, ANIMATE_WALLPAPER_FPS, on_frame, on_drm));
         let inbox = Rc::downgrade(&self.video.inbox);
         runtime::spawn(async move {
             while let Ok(frame) = rx.recv().await {
@@ -416,7 +416,7 @@ mod tests {
     #[test]
     fn column_decode_dropped() {
         use crate::service::media_decode::RgbaFrame;
-        let frame = || Incoming::Rgba(RgbaFrame { rgba: vec![0; 4], width: 1, height: 1, stride_px: 0 });
+        let frame = || Incoming::Rgba(RgbaFrame { rgba: vec![0; 4], width: 1, height: 1 });
         let inbox = Rc::new(VideoInbox::default());
         inbox.generation.set(3);
         let weak = Rc::downgrade(&inbox);
@@ -434,7 +434,7 @@ mod tests {
         let column = WallpaperColumn::default();
         assert!(!column.has_pending(), "an idle column asks for no paint");
         column.video.inbox.generation.set(1);
-        assert!(deliver(&Rc::downgrade(&column.video.inbox), 1, Incoming::Rgba(RgbaFrame { rgba: vec![0; 4], width: 1, height: 1, stride_px: 0 })));
+        assert!(deliver(&Rc::downgrade(&column.video.inbox), 1, Incoming::Rgba(RgbaFrame { rgba: vec![0; 4], width: 1, height: 1 })));
         assert!(column.has_pending(), "a delivered frame asks for one");
     }
 

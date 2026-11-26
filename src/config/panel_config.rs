@@ -46,7 +46,6 @@ pub const SCROLL_CAP: f32 = 6.0;
 pub const SCROLL_BAND: f32 = 4.0;
 // Typography
 pub const TEXT_PX: i32 = 17;
-pub const SMALL_PX: i32 = 13;
 pub const TITLE_PX: i32 = 17;
 pub const ICON_PX: i32 = 18;
 // Brightness
@@ -80,7 +79,6 @@ pub const TIME_BIG_ROW: f32 = 76.0;
 pub const TIME_LINE: f32 = 26.0;
 pub const TIME_ZONE_LINE: f32 = 18.0;
 pub const TIME_GAP: f32 = 6.0;
-pub const TIME_BIG_PX: i32 = 64;
 pub const TIME_SECONDS_PX: i32 = 22;
 // Date
 pub const DATE_WIDTH: f32 = 504.0;
@@ -118,7 +116,6 @@ pub const VOLUME_LABEL_CAP: f32 = 180.0;
 pub const VOLUME_BUTTON: f32 = 22.0;
 pub const VOLUME_INDICATOR: f32 = 14.0;
 pub const VOLUME_INDICATOR_DOT: f32 = 6.0;
-pub const VOLUME_WHEEL_STEP: i32 = 5;
 // Tray
 pub const TRAY_CELL: f32 = 40.0;
 pub const TRAY_ICON: f32 = 20.0;
@@ -129,7 +126,6 @@ pub const TRAY_MENU_SEPARATOR: f32 = 8.0;
 pub const TRAY_MENU_SEPARATOR_INSET: f32 = 6.0;
 pub const TRAY_MENU_PAD: f32 = 4.0;
 pub const TRAY_MENU_GAP: f32 = 5.0;
-pub const TRAY_MENU_BORDER: f32 = 1.0;
 pub const TRAY_MENU_ROW_PAD: f32 = 8.0;
 pub const TRAY_MENU_LABEL_OFFSET: f32 = 24.0;
 pub const TRAY_EMPTY_HEIGHT: f32 = 40.0;
@@ -144,7 +140,6 @@ pub const NETWORK_SCANNING: f32 = 48.0;
 pub const NETWORK_SECTION_FIRST: f32 = 20.0;
 pub const NETWORK_SECTION: f32 = 24.0;
 pub const NETWORK_FIELD_HEIGHT: f32 = 34.0;
-pub const NETWORK_ACTION_BUTTON: f32 = 22.0;
 pub const NETWORK_PASSWORD_MIN: i32 = 8;
 pub const NETWORK_ERROR_CHARS: i32 = 48;
 // Resource

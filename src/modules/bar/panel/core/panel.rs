@@ -126,10 +126,6 @@ impl ContentBase {
         let changed = self.changed.clone();
         self.guarded(move || changed.call())
     }
-
-    pub fn changed(&self) {
-        self.changed.call();
-    }
 }
 
 pub trait PanelContent {
@@ -178,9 +174,6 @@ pub trait PanelContent {
     fn wants_text(&self) -> bool {
         false
     }
-    fn cursor(&self) -> Rect {
-        Rect::default()
-    }
     fn paint_header(&mut self, _canvas: &mut dyn Canvas, _r: Rect, _paint: &mut PanelPaint) {}
     fn dialog_height(&mut self) -> f32 {
         0.0
@@ -218,6 +211,7 @@ fn entry_of(anchor: PanelAnchor) -> ScrollEntry {
 }
 
 /// How far the rollers reach out from the card.
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Inset {
     pub x: f32,
@@ -316,10 +310,6 @@ impl Panel {
         self.changed();
     }
 
-    pub fn toggle(&mut self) {
-        if self.is_open() { self.close() } else { self.open() }
-    }
-
     pub fn set_anchor(&mut self, anchor: Option<PanelAnchor>) {
         self.anchor_override = anchor;
     }
@@ -375,6 +365,7 @@ impl Panel {
         self.regions.iter().find(|r| r.rect.contains(lx, ly)).copied()
     }
 
+    #[cfg(test)]
     pub fn contains(&self, x: f64, y: f64) -> bool {
         self.open && (self.card.contains(x, y) || self.dialog.contains(x, y))
     }
@@ -493,6 +484,7 @@ impl Panel {
         self.animations.has_active() || self.content.base().animations.has_active()
     }
 
+    #[cfg(test)]
     pub fn dragging(&self) -> bool {
         self.dragging
     }
@@ -501,18 +493,7 @@ impl Panel {
         self.sequence.closing()
     }
 
-    pub fn dialog(&self) -> Rect {
-        self.dialog
-    }
-
-    pub fn content(&self) -> &dyn PanelContent {
-        self.content.as_ref()
-    }
-
-    pub fn content_mut(&mut self) -> &mut dyn PanelContent {
-        self.content.as_mut()
-    }
-
+    #[cfg(test)]
     pub fn card(&self) -> Rect {
         self.card
     }
@@ -586,11 +567,13 @@ impl Panel {
         }
     }
 
+    #[cfg(test)]
     pub fn inset() -> Inset {
         Inset { x: SCROLL_STYLE.overhang, y: SCROLL_STYLE.reach() }
     }
 
     /// The card, both rollers and the dialog card.
+    #[cfg(test)]
     pub fn extent(&self) -> Rect {
         let room = Panel::inset();
         let (c, d) = (self.card, self.dialog);

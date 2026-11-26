@@ -19,7 +19,6 @@ pub mod theme;
 pub mod tray;
 pub mod user;
 pub mod wallpaper;
-#[allow(dead_code)]
 pub mod media_decode;
 
 use std::cell::RefCell;
@@ -52,7 +51,10 @@ const BUS_CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
 pub struct Services {
     pub settings: Rc<SettingsService>,
     pub compositor: Rc<dyn Compositor>,
+    // Only tests read these; they hold the app's bus connections open for the life of the loop.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub system_bus: Option<zbus::Connection>,
+    #[cfg_attr(not(test), allow(dead_code))]
     pub session_bus: Option<zbus::Connection>,
     pub battery: Option<Rc<BatteryService>>,
     pub bluetooth: Option<Rc<BluetoothService>>,

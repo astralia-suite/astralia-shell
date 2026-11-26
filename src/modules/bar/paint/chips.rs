@@ -63,6 +63,7 @@ pub fn paint_icon_label(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, gly
 }
 
 /// The workspace info: an optional lead number and dot, then name over title.
+#[allow(clippy::too_many_arguments)]
 pub fn paint_two_lines(canvas: &mut dyn Canvas, style: &StyleSpec, r: Rect, glyph: &str, lead: &str, title: &str, detail: &str, amount: f32) {
     let p = palette();
     let pad = r.h * style.pad_ratio;

@@ -91,15 +91,15 @@ impl<R: WaylandSurface> LayerWindow<R> {
     pub fn frame_time(&self) -> Instant {
         let now = Instant::now();
         let time = self.present.lock().map_or(now, |mut clock| clock.target(now));
-        if presentation::debug() {
-            if let Some(previous) = self.last_frame_time.replace(Some(time)) {
-                ::log::info!(
-                    "frame: stride {:.2} ms, ahead {:.2} ms, surface {}",
-                    time.saturating_duration_since(previous).as_secs_f64() * 1000.0,
-                    time.saturating_duration_since(now).as_secs_f64() * 1000.0,
-                    self.layer.wl_surface().id()
-                );
-            }
+        if presentation::debug()
+            && let Some(previous) = self.last_frame_time.replace(Some(time))
+        {
+            ::log::info!(
+                "frame: stride {:.2} ms, ahead {:.2} ms, surface {}",
+                time.saturating_duration_since(previous).as_secs_f64() * 1000.0,
+                time.saturating_duration_since(now).as_secs_f64() * 1000.0,
+                self.layer.wl_surface().id()
+            );
         }
         time
     }

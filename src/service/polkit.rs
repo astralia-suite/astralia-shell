@@ -424,20 +424,13 @@ impl PolkitService {
         self.ready.emit(&(false, reason));
     }
 
+    #[cfg(test)]
     pub fn registered(&self) -> bool {
         self.subject.borrow().is_some()
     }
 
     pub fn pending(&self) -> bool {
         self.pending.borrow().is_some()
-    }
-
-    /// The request's message, else its action id; empty when nothing is pending.
-    pub fn message(&self) -> String {
-        self.pending.borrow().as_ref().map_or_else(String::new, |p| {
-            let r = &p.request;
-            if r.message.is_empty() { r.action_id.clone() } else { r.message.clone() }
-        })
     }
 
     pub fn request(&self) -> PolkitRequest {
@@ -448,10 +441,7 @@ impl PolkitService {
         self.conversation.borrow().response_required
     }
 
-    pub fn response_visible(&self) -> bool {
-        self.conversation.borrow().response_visible
-    }
-
+    #[cfg(test)]
     pub fn input_prompt(&self) -> String {
         self.conversation.borrow().prompt.clone()
     }

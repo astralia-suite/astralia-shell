@@ -19,6 +19,7 @@ pub fn brightness_threshold(percent: i32) -> &'static str {
 }
 
 /// A `0..=1` level as a whole percent, nudged so `0.01` reads as 1.
+#[cfg(test)]
 pub fn level_percent(level: f32) -> i32 {
     (level * 100.0 + 1e-4) as i32
 }

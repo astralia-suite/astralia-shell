@@ -164,8 +164,4 @@ impl PanelSet {
     pub fn clickable(&self, x: f64, y: f64) -> bool {
         self.panels.iter().flatten().any(|p| p.clickable(x, y))
     }
-
-    pub fn contains(&self, x: f64, y: f64) -> bool {
-        self.panels.iter().flatten().any(|p| p.contains(x, y))
-    }
 }

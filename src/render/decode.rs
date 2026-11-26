@@ -22,6 +22,7 @@ pub struct Pixels {
     pub premultiplied: bool,
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Placement {
     pub scale: f64,
@@ -29,17 +30,20 @@ pub struct Placement {
     pub y: f64,
 }
 
+#[cfg(test)]
 fn place(scale: f64, image_width: i32, image_height: i32, area_width: i32, area_height: i32) -> Placement {
     Placement { scale, x: (f64::from(area_width) - f64::from(image_width) * scale) / 2.0, y: (f64::from(area_height) - f64::from(image_height) * scale) / 2.0 }
 }
 
 /// Fills the area, cropping the overflow evenly.
+#[cfg(test)]
 pub fn cover(image_width: i32, image_height: i32, area_width: i32, area_height: i32) -> Placement {
     let scale = (f64::from(area_width) / f64::from(image_width)).max(f64::from(area_height) / f64::from(image_height));
     place(scale, image_width, image_height, area_width, area_height)
 }
 
 /// Fits inside the area, centred.
+#[cfg(test)]
 pub fn contain(image_width: i32, image_height: i32, area_width: i32, area_height: i32) -> Placement {
     let scale = (f64::from(area_width) / f64::from(image_width)).min(f64::from(area_height) / f64::from(image_height));
     place(scale, image_width, image_height, area_width, area_height)

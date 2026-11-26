@@ -1,7 +1,5 @@
 //! The host of an app-wide overlay: a full-output layer surface on the `Overlay` layer, bound to one
 //! output at a time, that fades in and out and takes the keyboard and input only while open.
-// The fade, the reveal and `request_frame` serve the launcher and settings cards.
-#![allow(dead_code)]
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -21,6 +19,7 @@ use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
 
 pub const OVERLAY_FADE_MS: f32 = 220.0;
 pub const OVERLAY_FADE_OWNER: u64 = 1;
+#[cfg(test)]
 pub const PANEL_HEIGHT_ANIM_OWNER: u64 = 2;
 
 /// Whether an overlay is open, its fade and the output it is bound to, apart from its surface.
@@ -87,6 +86,7 @@ impl<O: PartialEq> OverlayState<O> {
 }
 
 /// The animated height of a card that grows open and shrinks closed.
+#[cfg(test)]
 pub struct PanelHeightReveal {
     visible: Value,
     target: f32,
@@ -94,12 +94,14 @@ pub struct PanelHeightReveal {
     closed: Rc<Cell<bool>>,
 }
 
+#[cfg(test)]
 impl Default for PanelHeightReveal {
     fn default() -> Self {
         PanelHeightReveal { visible: value(-1.0), target: -1.0, closing: false, closed: Rc::default() }
     }
 }
 
+#[cfg(test)]
 impl PanelHeightReveal {
     pub fn open(&mut self) {
         self.visible.set(-1.0);

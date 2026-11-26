@@ -199,6 +199,7 @@ impl TrayService {
         service
     }
 
+    #[cfg(test)]
     pub async fn start_on(bus: &zbus::Connection) -> Rc<TrayService> {
         let service = TrayService::new(bus);
         service.serve().await;
@@ -234,6 +235,7 @@ impl TrayService {
         runtime::spawn(watch_owners(self.bus.clone(), self.this.clone()));
     }
 
+    #[cfg(test)]
     pub fn owns_name(&self) -> bool {
         self.owns_name.get()
     }

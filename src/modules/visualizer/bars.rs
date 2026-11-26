@@ -1,18 +1,22 @@
 //! Bar layout over the smoothed spectrum.
 
-use crate::config::visualizer_config::{BAR_HEIGHT_RATIO, BAR_MIN_HEIGHT, BAR_SPACING, BAR_WIDTH};
+use crate::config::visualizer_config::{BAR_SPACING, BAR_WIDTH};
+#[cfg(test)]
+use crate::config::visualizer_config::{BAR_HEIGHT_RATIO, BAR_MIN_HEIGHT};
 
 pub fn bar_count(width: f32) -> i32 {
     let slot = BAR_WIDTH + BAR_SPACING;
     (((width - BAR_SPACING) / slot) as i32).max(1)
 }
 
+#[cfg(test)]
 pub fn bar_texel(index: i32, count: i32, size: i32) -> i32 {
     let position = (index as f32 + 0.5) / count.max(1) as f32;
     let coordinate = position.max(1e-4).powf(1.8) * 0.5;
     ((coordinate * size as f32).floor() as i32).clamp(0, (size - 1).max(0))
 }
 
+#[cfg(test)]
 pub fn bar_height(magnitude: f32, area_height: f32) -> f32 {
     BAR_MIN_HEIGHT.max(magnitude.clamp(0.0, 1.0) * BAR_HEIGHT_RATIO * area_height)
 }

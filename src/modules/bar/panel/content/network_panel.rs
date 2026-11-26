@@ -386,9 +386,6 @@ impl PanelContent for NetworkPanel {
     fn wants_text(&self) -> bool {
         self.dialog == Dialog::Password
     }
-    fn cursor(&self) -> Rect {
-        Rect { x: self.width() / 2.0, y: cfg::PADDING + cfg::DIALOG_SPACER + (cfg::NETWORK_FIELD_HEIGHT - 14.0) / 2.0, w: 1.5, h: 14.0 }
-    }
     fn activate(&mut self, region: &PanelRegion, _x: f64, _y: f64) -> bool {
         match region.id {
             WIFI => self.network.set_wifi_enabled(!self.network.wifi_enabled()),

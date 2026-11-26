@@ -26,12 +26,11 @@ const DRM_FORMAT_R8: u32 = fourcc(b'R', b'8', b' ', b' ');
 const DRM_FORMAT_GR88: u32 = fourcc(b'G', b'R', b'8', b'8');
 const DRM_FORMAT_RG88: u32 = fourcc(b'R', b'G', b'8', b'8');
 
-/// A decoded RGBA frame; `stride_px` is the row length in pixels, 0 when rows are packed.
+/// A decoded RGBA frame with packed rows.
 pub struct RgbaFrame {
     pub rgba: Vec<u8>,
     pub width: i32,
     pub height: i32,
-    pub stride_px: i32,
 }
 
 /// One plane of a DRM PRIME surface; the fd is shared with the decoder's export cache.
@@ -138,6 +137,7 @@ impl MediaDecodePlayback {
         self.flags.egl_import_failed.store(true, Ordering::Relaxed);
     }
 
+    #[cfg(test)]
     pub fn finished(&self) -> bool {
         self.worker.as_ref().is_none_or(JoinHandle::is_finished)
     }
@@ -150,13 +150,13 @@ impl Drop for MediaDecodePlayback {
 }
 
 /// Streams `path` through `filter_desc` at `fps` on a worker thread, looping at the end.
-pub fn media_decode_stream(path: &str, filter_desc: &str, fps: i32, supports_row_length: bool, on_frame: FrameSink, on_drm_frame: Option<DrmSink>) -> MediaDecodePlayback {
+pub fn media_decode_stream(path: &str, filter_desc: &str, fps: i32, on_frame: FrameSink, on_drm_frame: Option<DrmSink>) -> MediaDecodePlayback {
     let flags = Arc::new(Flags::default());
     let (path, filter_desc, worker_flags) = (path.to_string(), filter_desc.to_string(), flags.clone());
     let worker = std::thread::Builder::new()
         .name("astralia-shell-media".into())
         .spawn(move || {
-            let mut sinks = Sinks { on_frame, on_drm_frame, supports_row_length };
+            let mut sinks = Sinks { on_frame, on_drm_frame };
             decode_loop(&path, &filter_desc, fps, &mut sinks, &worker_flags);
         })
         .inspect_err(|e| ::log::error!("media_decode: cannot start the decode worker: {e}"))
@@ -167,7 +167,6 @@ pub fn media_decode_stream(path: &str, filter_desc: &str, fps: i32, supports_row
 struct Sinks {
     on_frame: FrameSink,
     on_drm_frame: Option<DrmSink>,
-    supports_row_length: bool,
 }
 
 fn av_error(code: c_int) -> String {
@@ -520,18 +519,12 @@ fn decode_loop(path: &str, filter_desc: &str, fps: i32, sinks: &mut Sinks, flags
             while ff::av_buffersink_get_frame(fg.sink, filtered.0) >= 0 {
                 let f = &*filtered.0;
                 let (w, h, linesize) = (f.width, f.height, f.linesize[0]);
-                let frame = if sinks.supports_row_length {
-                    let bytes = std::slice::from_raw_parts(f.data[0], linesize as usize * h as usize);
-                    RgbaFrame { rgba: bytes.to_vec(), width: w, height: h, stride_px: linesize / 4 }
-                } else {
-                    let row = w as usize * 4;
-                    let mut rgba = Vec::with_capacity(row * h as usize);
-                    for y in 0..h as usize {
-                        rgba.extend_from_slice(std::slice::from_raw_parts(f.data[0].add(y * linesize as usize), row));
-                    }
-                    RgbaFrame { rgba, width: w, height: h, stride_px: 0 }
-                };
-                (sinks.on_frame)(frame);
+                let row = w as usize * 4;
+                let mut rgba = Vec::with_capacity(row * h as usize);
+                for y in 0..h as usize {
+                    rgba.extend_from_slice(std::slice::from_raw_parts(f.data[0].add(y * linesize as usize), row));
+                }
+                (sinks.on_frame)(RgbaFrame { rgba, width: w, height: h });
                 ff::av_frame_unref(filtered.0);
             }
         };

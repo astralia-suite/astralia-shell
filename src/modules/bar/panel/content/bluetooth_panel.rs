@@ -230,9 +230,6 @@ impl PanelContent for BluetoothPanel {
     fn wants_text(&self) -> bool {
         self.bluetooth.agent_request().is_some_and(|r| input_kind(r.kind))
     }
-    fn cursor(&self) -> Rect {
-        Rect { x: self.width() / 2.0, y: cfg::PADDING + cfg::DIALOG_SPACER + (cfg::NETWORK_FIELD_HEIGHT - 14.0) / 2.0, w: 1.5, h: 14.0 }
-    }
     fn dialog_height(&mut self) -> f32 {
         if let Some(request) = self.bluetooth.agent_request() {
             return if input_kind(request.kind) { cfg::FIELD_DIALOG_HEIGHT } else { cfg::PAIRING_DIALOG_HEIGHT };

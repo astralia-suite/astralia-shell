@@ -248,10 +248,12 @@ impl Grow {
         self.start_cycle();
     }
 
+    #[cfg(test)]
     pub fn phase(&self) -> Phase {
         self.phase
     }
 
+    #[cfg(test)]
     pub fn cycles(&self) -> i32 {
         self.cycles
     }
@@ -260,6 +262,7 @@ impl Grow {
         (!self.buffer.is_empty()).then_some(Frame { pixels: &self.buffer, width: self.width, height: self.height, stride: self.stride })
     }
 
+    #[cfg(test)]
     pub fn text(&self) -> String {
         let mut out = String::new();
         for y in 0..self.grid.rows {

@@ -98,10 +98,6 @@ impl Visualizer {
         self.thread.as_ref().map(|t| t.context)
     }
 
-    pub fn is_running(&self) -> bool {
-        self.thread.is_some()
-    }
-
     /// Hands new params and colours to the thread; unchanged ones wake nothing.
     pub fn apply_params(&mut self, params: &VisualizerParams, colors: Colors) {
         let Some(thread) = &self.thread else { return };

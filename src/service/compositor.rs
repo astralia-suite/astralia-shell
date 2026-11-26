@@ -236,8 +236,8 @@ pub trait Compositor {
     fn state(&self) -> Ref<'_, CompositorState>;
 
     fn refresh(&self);
+    #[cfg(test)]
     fn refresh_clients(&self) -> bool;
-    fn watch_client_order(&self, watch: bool);
 
     fn focus_workspace(&self, id: i32, global: bool);
     fn move_window(&self, address: &str, id: i32, global: bool);
@@ -283,10 +283,10 @@ impl Compositor for NullCompositor {
         self.state.borrow()
     }
     fn refresh(&self) {}
+    #[cfg(test)]
     fn refresh_clients(&self) -> bool {
         false
     }
-    fn watch_client_order(&self, _watch: bool) {}
     fn focus_workspace(&self, _id: i32, _global: bool) {}
     fn move_window(&self, _address: &str, _id: i32, _global: bool) {}
     fn close_window(&self, _address: &str) {}

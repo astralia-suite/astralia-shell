@@ -57,6 +57,7 @@ pub fn wallpaper_slot_of(animated: bool) -> WallpaperSlot {
     if animated { WallpaperSlot::Animated } else { WallpaperSlot::Still }
 }
 
+#[cfg(test)]
 pub fn wallpaper_lock_slot(cfg: &Config) -> WallpaperSlot {
     if cfg.lock_wallpaper_custom { WallpaperSlot::Lock } else { WallpaperSlot::Still }
 }
@@ -86,6 +87,7 @@ fn picker_key(path: &str) -> (String, String) {
     (extension(path), Path::new(path).file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default())
 }
 
+#[cfg(test)]
 pub fn wallpaper_picker_less(a: &str, b: &str) -> bool {
     picker_key(a) < picker_key(b)
 }
@@ -185,23 +187,17 @@ pub fn wallpaper_set_column_animated(cfg: &mut Config, monitor: &str, column: i3
     wallpaper_set_column(cfg, monitor, column, path, wallpaper_slot_of(animated));
 }
 
-pub fn wallpaper_set_fill_mode_animated(cfg: &mut Config, monitor: &str, column: i32, mode: &str, animated: bool) {
-    wallpaper_set_fill_mode(cfg, monitor, column, mode, wallpaper_slot_of(animated));
-}
-
-pub fn wallpaper_set_column_count_animated(cfg: &mut Config, monitor: &str, count: i32, animated: bool) {
-    wallpaper_set_column_count(cfg, monitor, count, wallpaper_slot_of(animated));
-}
-
 pub fn wallpaper_image_for(cfg: &Config, monitor: &str) -> String {
     wallpaper_column_path(cfg, monitor, 0, WallpaperSlot::Still)
 }
 
+#[cfg(test)]
 pub fn wallpaper_set_image(cfg: &mut Config, monitor: &str, path: &str) {
     set_entry(&mut cfg.wallpaper_columns, monitor, 0, path);
 }
 
 /// Clears column 0; drops the output's entry when it has no other column.
+#[cfg(test)]
 pub fn wallpaper_clear_image(cfg: &mut Config, monitor: &str) {
     let Some(columns) = cfg.wallpaper_columns.get_mut(monitor) else { return };
     if columns.len() > 1 {

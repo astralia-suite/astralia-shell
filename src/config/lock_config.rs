@@ -4,9 +4,6 @@
 pub const DEV_UNLOCK_WIDTH: f32 = 140.0;
 pub const DEV_UNLOCK_HEIGHT: f32 = 48.0;
 
-// Layer namespace
-pub const LAYER_NAMESPACE: &str = "astralia-shell-lock";
-
 // Background & dot
 pub const BG_BORDER_WIDTH: f32 = 5.0;
 
@@ -57,7 +54,6 @@ pub const FETCH_COLOR_BOX: f32 = 26.0;
 pub const FETCH_COLOR_GAP: f32 = 10.0;
 
 // Card chrome
-pub const CARD_BORDER_WIDTH: f32 = 2.0;
 pub const CARD_HEADER_GAP: f32 = 12.0;
 pub const CARD_TAG_PAD: f32 = 6.0;
 pub const BATTERY_ROW_GAP: f32 = 8.0;
@@ -87,11 +83,7 @@ pub const NOTIF_CARD_PAD: f32 = 12.0;
 pub const NOTIF_MAX_CARDS: i32 = 6;
 
 // Scale state
-pub const SCALE_HIDDEN: f32 = 0.0;
 pub const SCALE_FULL: f32 = 1.0;
-
-// Animation durations
-pub const ANIM_FAST_MS: f32 = 100.0;
 
 // Transition timeline in milliseconds
 pub const SLASH_MS: f32 = 2800.0;
@@ -237,10 +229,6 @@ pub const LOADING_TEXT: &str = "Loading...";
 // Assets
 pub const ECHO_ASSET: &str = "polkit/electro.png";
 
-// Tick
-pub const TICK_MS: i32 = 1000;
-
 // Animation owners
 pub const OWNER_DOT_ROW_X: u64 = 8;
-pub const OWNER_AVATAR_FRAME: u64 = 10;
 pub const OWNER_DOT_BASE: u64 = 1000;

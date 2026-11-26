@@ -2,9 +2,7 @@ mod app;
 mod base;
 mod config;
 mod modules;
-#[allow(dead_code)]
 mod render;
-#[allow(dead_code)]
 mod service;
 mod wayland;
 

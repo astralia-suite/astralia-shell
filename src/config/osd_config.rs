@@ -14,7 +14,6 @@ pub const LABEL_WIDTH: i32 = 44;
 pub const ICON_PX: i32 = 18;
 pub const LABEL_PX: i32 = 20;
 pub const TRACK_HEIGHT: f32 = 6.0;
-pub const BORDER_WIDTH: f32 = 2.0;
 // Timing
 pub const ANIM_NORMAL_MS: f32 = 220.0;
 pub const ANIM_FAST_MS: f32 = 150.0;

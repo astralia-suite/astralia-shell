@@ -24,6 +24,7 @@ pub fn icon_theme_order(active: &str) -> Vec<String> {
 }
 
 /// An absolute PNG path is used as is; anything else needs a lookup.
+#[cfg(test)]
 pub fn icon_direct_path(field: &str) -> String {
     if field.starts_with('/') && field.ends_with(".png") { field.to_string() } else { String::new() }
 }

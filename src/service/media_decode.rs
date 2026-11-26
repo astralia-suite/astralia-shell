@@ -5,10 +5,13 @@ use std::time::SystemTime;
 
 use crate::render::decode::Pixels;
 
+#[cfg(feature = "video")]
 pub const ANIMATE_WALLPAPER_FPS: i32 = 15;
+#[cfg(any(feature = "video", test))]
 pub const ANIMATE_MAX_DECODE_DIM: i32 = 1440;
 const RGBA_CACHE_MAX_BYTES: u64 = 512 * 1024 * 1024;
 
+#[cfg(any(feature = "video", test))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AnimateFit {
     Crop,
@@ -19,6 +22,8 @@ pub enum AnimateFit {
 pub enum MediaDecodeStatus {
     #[default]
     Idle,
+    // Only the `video` decoder reports zero-copy playback.
+    #[cfg_attr(not(feature = "video"), allow(dead_code))]
     ZeroCopy,
     CpuFallback,
 }
@@ -39,6 +44,7 @@ pub fn animate_cache_home_dir() -> PathBuf {
 }
 
 /// The target size, scaled down to `max_height` rows when taller.
+#[cfg(any(feature = "video", test))]
 pub fn animate_decode_size(target_w: i32, target_h: i32, max_height: i32) -> (i32, i32) {
     if target_w <= 0 || target_h <= 0 || max_height <= 0 || target_h <= max_height {
         return (target_w.max(0), target_h.max(0));
@@ -47,6 +53,7 @@ pub fn animate_decode_size(target_w: i32, target_h: i32, max_height: i32) -> (i3
     (((f64::from(target_w) * ratio).round() as i32).max(1), max_height)
 }
 
+#[cfg(any(feature = "video", test))]
 pub fn animate_scale_filter(w: i32, h: i32, fit: AnimateFit) -> String {
     match fit {
         AnimateFit::Fit => format!("scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:color=black,format=rgba"),
@@ -328,7 +335,7 @@ mod tests {
             assert!(media_decode_frames("/nonexistent/clip.mkv", "format=rgba", 1).is_empty());
             let frames = Arc::new(AtomicUsize::new(0));
             let seen = frames.clone();
-            let mut playback = media_decode_stream("/nonexistent/clip.mkv", "format=rgba", 15, false, Box::new(move |_| {
+            let mut playback = media_decode_stream("/nonexistent/clip.mkv", "format=rgba", 15, Box::new(move |_| {
                 seen.fetch_add(1, Ordering::Relaxed);
             }), None);
             let deadline = Instant::now() + Duration::from_secs(2);
@@ -347,7 +354,7 @@ mod tests {
             let Some(path) = clip(dir.path()) else { return };
             let frames = Arc::new(AtomicUsize::new(0));
             let seen = frames.clone();
-            let playback = media_decode_stream(&path, "format=rgba", 15, false, Box::new(move |_| {
+            let playback = media_decode_stream(&path, "format=rgba", 15, Box::new(move |_| {
                 seen.fetch_add(1, Ordering::Relaxed);
             }), None);
             std::thread::sleep(Duration::from_millis(400));

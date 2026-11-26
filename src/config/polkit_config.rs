@@ -3,7 +3,6 @@
 // Card geometry
 pub const CARD_WIDTH: f64 = 480.0;
 pub const CARD_PAD: f64 = 30.0;
-pub const BORDER_WIDTH: f64 = 5.0;
 pub const SPACING: f64 = 16.0;
 pub const TITLE_TAG_PAD: f64 = 8.0;
 pub const FIELD_HEIGHT: f64 = 55.0;

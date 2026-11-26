@@ -24,7 +24,6 @@ pub const PAD: f32 = 10.0;
 pub const MENU_PAD: f32 = 14.0;
 pub const BORDER_WIDTH: f32 = 2.0;
 pub const MENU_BORDER_WIDTH: f32 = 4.0;
-pub const HIGHLIGHT_BORDER_WIDTH: f32 = 2.0;
 pub const BULLET_SIZE: f32 = 25.0;
 pub const BULLET_GAP: f32 = PAD;
 pub const SEARCH_HEIGHT: f32 = 40.0;

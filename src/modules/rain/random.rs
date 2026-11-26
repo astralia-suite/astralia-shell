@@ -8,6 +8,7 @@ thread_local! {
     );
 }
 
+#[cfg(test)]
 pub fn seed(seed: u32) {
     STATE.with(|s| s.set(u64::from(seed)));
 }

@@ -1,36 +1,20 @@
 pub mod bar_layout;
 pub mod file;
-#[allow(dead_code)]
 pub mod panel_config;
-#[cfg_attr(not(test), allow(dead_code))]
 pub mod settings;
-#[allow(dead_code)]
 pub mod visualizer_config;
-#[allow(dead_code)]
 pub mod rain_config;
-#[allow(dead_code)]
 pub mod bamboo_config;
-#[allow(dead_code)]
 pub mod idle_config;
-#[allow(dead_code)]
 pub mod launcher_config;
-#[allow(dead_code)]
 pub mod logout_config;
-#[allow(dead_code)]
 pub mod notification_config;
-#[allow(dead_code)]
 pub mod osd_config;
-#[allow(dead_code)]
 pub mod overview_config;
-#[allow(dead_code)]
 pub mod settings_config;
-#[allow(dead_code)]
 pub mod wallpaper_config;
-#[allow(dead_code)]
 pub mod wallpaper_select_config;
-#[allow(dead_code)]
 pub mod lock_config;
-#[allow(dead_code)]
 pub mod polkit_config;
 
 #[cfg(test)]

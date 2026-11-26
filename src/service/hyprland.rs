@@ -1,4 +1,4 @@
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::{Ref, RefCell};
 use std::io::{Read, Write};
 use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
@@ -19,7 +19,6 @@ use crate::service::runtime;
 const REQUEST_TIMEOUT: Duration = Duration::from_millis(100);
 const WORKSPACES_PER_MONITOR: i32 = 5;
 const SWAP_TEMP_WORKSPACE: &str = "special:__tmp_swp";
-const CLIENT_POLL_INTERVAL: Duration = Duration::from_millis(1000);
 const LOAD_RETRY_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,6 +92,7 @@ pub fn hypr_parse_clients(reply: &str) -> Vec<CompositorClient> {
         .collect()
 }
 
+#[cfg(test)]
 pub fn hypr_order_differs(a: &[CompositorClient], b: &[CompositorClient]) -> bool {
     a.len() != b.len()
         || a.iter().zip(b).any(|(a, b)| {
@@ -234,23 +234,15 @@ pub fn hypr_lua_border(active: Color, inactive: Color) -> String {
 }
 
 pub struct HyprlandCompositor {
-    this: Weak<HyprlandCompositor>,
     state: RefCell<CompositorState>,
     request_path: RefCell<String>,
     clients_reply: RefCell<String>,
     border_lua: RefCell<String>,
-    /// Bumped on every `watch_client_order` change; a poll task runs while its generation is current.
-    watch_generation: Cell<u64>,
-    watching: Cell<bool>,
     active_changed: Signal,
     structure_changed: Signal,
 }
 
 impl HyprlandCompositor {
-    pub fn available() -> bool {
-        hypr_socket_paths().is_some()
-    }
-
     pub fn new() -> Option<Rc<HyprlandCompositor>> {
         let (request, events) = hypr_socket_paths()?;
         Some(HyprlandCompositor::with_paths(request, events))
@@ -258,14 +250,11 @@ impl HyprlandCompositor {
 
     /// Empty paths leave that side unconnected.
     pub fn with_paths(request_path: String, event_path: String) -> Rc<HyprlandCompositor> {
-        let compositor = Rc::new_cyclic(|this| HyprlandCompositor {
-            this: this.clone(),
+        let compositor = Rc::new(HyprlandCompositor {
             state: RefCell::default(),
             request_path: RefCell::new(request_path),
             clients_reply: RefCell::default(),
             border_lua: RefCell::default(),
-            watch_generation: Cell::new(0),
-            watching: Cell::new(false),
             active_changed: Signal::default(),
             structure_changed: Signal::default(),
         });
@@ -310,6 +299,7 @@ impl HyprlandCompositor {
         true
     }
 
+    #[cfg(test)]
     pub fn set_request_socket(&self, path: String) {
         *self.request_path.borrow_mut() = path;
     }
@@ -398,19 +388,6 @@ async fn retry_load(compositor: Weak<HyprlandCompositor>) {
     }
 }
 
-async fn poll_clients(compositor: Weak<HyprlandCompositor>, generation: u64) {
-    loop {
-        Timer::after(CLIENT_POLL_INTERVAL).await;
-        let Some(compositor) = compositor.upgrade() else { return };
-        if compositor.watch_generation.get() != generation {
-            return;
-        }
-        if compositor.refresh_clients() {
-            compositor.structure_changed.emit(&());
-        }
-    }
-}
-
 impl Compositor for HyprlandCompositor {
     fn name(&self) -> &'static str {
         "Hyprland"
@@ -425,6 +402,7 @@ impl Compositor for HyprlandCompositor {
     }
 
     /// True when the client order changed; an empty or identical reply is no change.
+    #[cfg(test)]
     fn refresh_clients(&self) -> bool {
         let reply = self.request("j/clients");
         if reply.is_empty() || reply == *self.clients_reply.borrow() {
@@ -438,17 +416,6 @@ impl Compositor for HyprlandCompositor {
         }
         state.clients = fresh;
         true
-    }
-
-    fn watch_client_order(&self, watch: bool) {
-        if self.watching.replace(watch) == watch {
-            return;
-        }
-        let generation = self.watch_generation.get() + 1;
-        self.watch_generation.set(generation);
-        if watch {
-            runtime::spawn(poll_clients(self.this.clone(), generation));
-        }
     }
 
     fn focus_workspace(&self, id: i32, global: bool) {

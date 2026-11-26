@@ -209,6 +209,7 @@ pub fn network_parse_device_status(text: &str) -> NetworkDeviceStatus {
     status
 }
 
+#[cfg(test)]
 pub fn network_parse_wifi_device(text: &str) -> bool {
     network_parse_device_status(text).wifi
 }
@@ -356,9 +357,6 @@ impl NetworkService {
     }
     pub fn ethernet_connected(&self) -> bool {
         self.device.borrow().ethernet_connected
-    }
-    pub fn ethernet_name(&self) -> String {
-        self.device.borrow().ethernet_name.clone()
     }
     pub fn connectivity(&self) -> String {
         self.connectivity.borrow().clone()
