@@ -266,7 +266,7 @@ impl Bar {
 
     /// Draws one frame; true when another frame is wanted (a tween is running).
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, cfg: &Config, open: Option<Item>, keep_shown: bool) -> bool {
-        let now = Instant::now();
+        let now = self.window.frame_time();
         self.animations.tick(now);
         if self.autohide.faded.take() && self.autohide.hidden && !self.autohide.collapsed {
             self.autohide.collapsed = true;

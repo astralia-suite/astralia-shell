@@ -2,7 +2,6 @@
 
 use std::cell::Cell;
 use std::rc::Rc;
-use std::time::Instant;
 
 use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
@@ -110,7 +109,7 @@ impl Polkit {
 
     /// Paints one frame; true while the card animates, so the caller asks for another.
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, compositor: &CompositorState, service: Option<&PolkitService>) -> bool {
-        self.model.tick(Instant::now());
+        self.model.tick(self.overlay.frame_time());
         self.settle(compositor);
         self.stale = false;
         let (width, height) = (self.overlay.width() as f32, self.overlay.height() as f32);

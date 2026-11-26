@@ -135,7 +135,7 @@ impl IdleOverlay {
         if !self.window.begin(egl, renderer) {
             return false;
         }
-        let now = Instant::now();
+        let now = self.window.frame_time();
         self.fade.animations.tick(now);
         let dt = now.saturating_duration_since(self.last_tick).as_secs_f32();
         self.last_tick = now;

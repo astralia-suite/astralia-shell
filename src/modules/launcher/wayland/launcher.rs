@@ -260,7 +260,7 @@ impl Launcher {
 
     /// Paints one frame; true while something animates, so the caller asks for another.
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, compositor: &CompositorState) -> bool {
-        let now = Instant::now();
+        let now = self.overlay.frame_time();
         self.overlay.tick(compositor, now);
         if !self.overlay.is_open() {
             if self.closing {

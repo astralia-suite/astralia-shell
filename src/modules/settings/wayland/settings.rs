@@ -3,7 +3,6 @@
 use crate::wayland::render::wallpaper_column::DecodeStatus;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Instant;
 
 use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
@@ -189,7 +188,7 @@ impl Settings {
 
     /// Paints one frame; true while a tween or an image fade runs, so the caller asks for another.
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, wl: &CompositorState) -> bool {
-        let now = Instant::now();
+        let now = self.overlay.frame_time();
         self.overlay.tick(wl, now);
         self.model.tick(now);
         self.settle(wl);

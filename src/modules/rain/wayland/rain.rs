@@ -95,13 +95,13 @@ impl Rain {
         self.built = (0, 0);
     }
 
-    pub fn paint(&mut self, renderer: &Renderer, size: (i32, i32)) {
+    /// `now` is the time the frame is drawn for.
+    pub fn paint(&mut self, renderer: &Renderer, size: (i32, i32), now: Instant) {
         let (w, h) = (size.0 as f32, size.1 as f32);
         renderer.draw_rect(0.0, 0.0, w, h, palette().window_backdrop.rgba());
         if size != self.built {
             self.rebuild(renderer, size);
         }
-        let now = Instant::now();
         if now.saturating_duration_since(self.last_tick).as_secs_f32() * 1000.0 >= FALL_INTERVAL_MS {
             let frame = match self.params.mode {
                 RainMode::Matrix => {

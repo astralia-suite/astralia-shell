@@ -285,6 +285,11 @@ impl Overlay {
         self.window.as_mut().is_some_and(|w| w.frame_done(qh))
     }
 
+    /// See `LayerWindow::frame_time`; now while there is no window.
+    pub fn frame_time(&self) -> Instant {
+        self.window.as_ref().map_or_else(Instant::now, LayerWindow::frame_time)
+    }
+
     pub fn window_mut(&mut self) -> Option<&mut LayerWindow> {
         self.window.as_mut()
     }

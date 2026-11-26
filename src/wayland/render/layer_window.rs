@@ -12,6 +12,8 @@ use super::egl::Egl;
 use super::renderer::Renderer;
 use crate::wayland::State;
 use crate::wayland::frame::{FrameAction, FrameClock};
+use crate::wayland::presentation::{self, SharedClock};
+use std::time::Instant;
 
 /// Dropping the role destroys the role object, then the `wl_surface`.
 pub struct LayerWindow<R: WaylandSurface = LayerSurface> {
@@ -24,11 +26,15 @@ pub struct LayerWindow<R: WaylandSurface = LayerSurface> {
     pub scale: i32,
     /// Buffer scale last sent to the compositor; a new one is sent with the next drawn buffer.
     applied_scale: i32,
+    /// When this surface's frames reach the screen; see `frame_time`.
+    present: SharedClock,
+    /// The previous `frame_time`, for `ASTRALIA_FRAME_DEBUG`.
+    last_frame_time: std::cell::Cell<Option<Instant>>,
 }
 
 impl<R: WaylandSurface> LayerWindow<R> {
     pub fn new(layer: R, height: i32) -> LayerWindow<R> {
-        LayerWindow { layer, egl_window: None, egl_surface: None, frame: FrameClock::default(), width: 0, height, scale: 1, applied_scale: 1 }
+        LayerWindow { layer, egl_window: None, egl_surface: None, frame: FrameClock::default(), width: 0, height, scale: 1, applied_scale: 1, present: SharedClock::default(), last_frame_time: std::cell::Cell::new(None) }
     }
 
     /// First configure creates the `wl_egl_window` and `EGLSurface`; later ones resize.
@@ -77,6 +83,25 @@ impl<R: WaylandSurface> LayerWindow<R> {
     fn arm(&self, qh: &QueueHandle<State>) {
         let surface = self.layer.wl_surface();
         surface.frame(qh, surface.clone());
+        presentation::request(surface, qh, &self.present);
+    }
+
+    /// The time the frame being drawn now is for: on the compositor's refresh grid when it reports
+    /// presentation times, else now. Animations tick at it so every frame advances them evenly.
+    pub fn frame_time(&self) -> Instant {
+        let now = Instant::now();
+        let time = self.present.lock().map_or(now, |mut clock| clock.target(now));
+        if presentation::debug() {
+            if let Some(previous) = self.last_frame_time.replace(Some(time)) {
+                ::log::info!(
+                    "frame: stride {:.2} ms, ahead {:.2} ms, surface {}",
+                    time.saturating_duration_since(previous).as_secs_f64() * 1000.0,
+                    time.saturating_duration_since(now).as_secs_f64() * 1000.0,
+                    self.layer.wl_surface().id()
+                );
+            }
+        }
+        time
     }
 
     /// Asks for a frame; true when the caller draws now.

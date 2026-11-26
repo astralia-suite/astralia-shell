@@ -560,10 +560,10 @@ impl State {
         }
         if !t.running {
             t.running = true;
-            t.started = Instant::now();
+            t.started = surface.window.frame_time();
             ::log::info!("lock: transition first frame ({})", if t.mode == TransitionMode::Unlock { "unlock" } else { "lock" });
         }
-        let elapsed = Instant::now().saturating_duration_since(t.started).as_secs_f32() * 1000.0;
+        let elapsed = surface.window.frame_time().saturating_duration_since(t.started).as_secs_f32() * 1000.0;
         let progress = slash_run_progress(elapsed);
         if !surface.window.begin(&self.egl, &mut self.renderer) {
             return;

@@ -150,14 +150,15 @@ impl State {
 
     fn draw_window(&mut self, id: WindowId) {
         let Some(window) = self.windows.get_mut(id) else { return };
-        window.state.animations.tick(std::time::Instant::now());
+        let now = window.window.frame_time();
+        window.state.animations.tick(now);
         if !window.window.begin(&self.egl, &mut self.renderer) {
             return;
         }
         let opacity = window.state.opacity.get();
         let size = (window.window.width, window.window.height);
         self.renderer.set_opacity(opacity);
-        self.paint_window(id, size);
+        self.paint_window(id, size, now);
         self.renderer.set_opacity(1.0);
         let Some(window) = self.windows.get_mut(id) else { return };
         window.window.end(&self.egl);
@@ -167,14 +168,14 @@ impl State {
     }
 
     /// Draws the window's content into the current frame.
-    fn paint_window(&mut self, id: WindowId, size: (i32, i32)) {
+    fn paint_window(&mut self, id: WindowId, size: (i32, i32), now: std::time::Instant) {
         match id {
             WindowId::Rain => {
                 if let Some(rain) = &mut self.windows.rain {
-                    rain.paint(&self.renderer, size);
+                    rain.paint(&self.renderer, size, now);
                 }
             }
-            WindowId::Bamboo => self.windows.bamboo.paint(&self.renderer, size),
+            WindowId::Bamboo => self.windows.bamboo.paint(&self.renderer, size, now),
             WindowId::Visualizer => {}
         }
     }

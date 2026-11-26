@@ -87,7 +87,7 @@ impl Osd {
         if !self.window.begin(egl, renderer) {
             return false;
         }
-        self.model.tick(Instant::now());
+        self.model.tick(self.window.frame_time());
         let mut frame = self.canvas.begin(renderer, self.window.scale);
         view::paint(&mut frame, &self.model);
         frame.flush();

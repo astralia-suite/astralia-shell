@@ -1,7 +1,6 @@
 //! The notification surface of one output: the card stack in the bottom-right corner. It takes input
 //! only over close buttons and clickable cards.
 
-use std::time::Instant;
 
 use smithay_client_toolkit::compositor::{CompositorState, Region};
 use smithay_client_toolkit::shell::WaylandSurface;
@@ -84,7 +83,7 @@ impl Notifications {
 
     /// Paints the stack and updates the input region; true while anything animates.
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, compositor: &CompositorState, model: &mut Model) -> bool {
-        let now = Instant::now();
+        let now = self.window.frame_time();
         model.tick(now);
         self.view.tick(now);
         self.view.forget_missing(model.entries());

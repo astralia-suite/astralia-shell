@@ -1,7 +1,6 @@
 //! One output's bar panels: an overlay layer surface for the open card and an `xdg_popup` for its menu.
 
 use std::rc::Rc;
-use std::time::Instant;
 
 use smithay_client_toolkit::compositor::CompositorState as WlCompositorState;
 use smithay_client_toolkit::shell::WaylandSurface;
@@ -148,7 +147,7 @@ impl PanelSurface {
     }
 
     fn paint(&mut self, ctx: &mut Ctx) {
-        self.set.tick(Instant::now());
+        self.set.tick(self.overlay.window.frame_time());
         // A close that finished in this tick gives back the keyboard and input before the cleared frame.
         self.sync_open(ctx);
         if self.overlay.window.begin(ctx.egl, ctx.renderer) {

@@ -3,7 +3,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Easing {
@@ -88,10 +88,16 @@ struct Entry {
     on_complete: Option<OnComplete>,
 }
 
+/// How far ahead of the wall clock a tick time may sit and still start new tweens: frames are drawn
+/// for a refresh or two ahead, while a tick much further out is a test jumping time.
+const MAX_LEAD: Duration = Duration::from_millis(100);
+
 #[derive(Default)]
 pub struct AnimationManager {
     entries: Vec<Entry>,
     next_id: u32,
+    /// The time of the last `tick`, which is the time of the frame being drawn.
+    last_tick: Option<Instant>,
 }
 
 impl AnimationManager {
@@ -121,12 +127,22 @@ impl AnimationManager {
             from,
             to,
             duration_ms,
-            started_at: Instant::now(),
+            started_at: self.start_time(),
             easing,
             setter: Box::new(setter),
             on_complete,
         });
         self.next_id
+    }
+
+    /// When a tween started now begins: the frame time of the last tick when it is ahead of the
+    /// wall clock, so the first frame drawn after the start shows progress 0 rather than a head start.
+    fn start_time(&self) -> Instant {
+        let now = Instant::now();
+        match self.last_tick {
+            Some(tick) if tick > now && tick - now <= MAX_LEAD => tick,
+            _ => now,
+        }
     }
 
     /// Drops every tween of `owner` without writing or completing it. Owner 0 is never cancelled.
@@ -137,6 +153,8 @@ impl AnimationManager {
     }
 
     pub fn tick(&mut self, now: Instant) {
+        // Set first, so tweens that completions start begin at this frame's time.
+        self.last_tick = Some(now);
         let mut completed = Vec::new();
         self.entries.retain_mut(|e| {
             let elapsed_ms = now.saturating_duration_since(e.started_at).as_secs_f32() * 1000.0;
@@ -208,6 +226,26 @@ mod tests {
         m.tick(now + Duration::from_millis(150));
         assert!((v.get() - 10.0).abs() < 1e-3);
         assert!(done.get() == 1 && !m.has_active());
+    }
+
+    #[test]
+    fn starts_at_the_frame_time() {
+        let mut m = AnimationManager::default();
+        let v = value(-1.0);
+        let frame = Instant::now() + Duration::from_millis(12);
+        m.tick(frame);
+        m.animate(0.0, 10.0, 100.0, Easing::Linear, writer(&v), None, 0);
+        m.tick(frame);
+        assert_eq!(v.get(), 0.0, "a tween started between frames begins at the next frame's time");
+        m.tick(frame + Duration::from_millis(50));
+        assert!((v.get() - 5.0).abs() < 1e-3, "and advances from there {}", v.get());
+
+        let mut jumped = AnimationManager::default();
+        let late = value(-1.0);
+        jumped.tick(Instant::now() + Duration::from_secs(5));
+        jumped.animate(0.0, 10.0, 100.0, Easing::Linear, writer(&late), None, 0);
+        jumped.tick(Instant::now() + Duration::from_secs(1));
+        assert_eq!(late.get(), 10.0, "a tick far ahead of the wall clock does not delay new tweens");
     }
 
     #[test]

@@ -157,7 +157,7 @@ impl Logout {
 
     /// Paints one frame; true while the choreography runs, so the caller asks for another.
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, compositor: &CompositorState) -> bool {
-        let now = Instant::now();
+        let now = self.overlay.frame_time();
         self.model.tick(now);
         self.settle(compositor);
         let opacity = self.overlay.opacity();

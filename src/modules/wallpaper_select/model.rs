@@ -59,6 +59,8 @@ struct Inbox {
 pub struct Model {
     hooks: Hooks,
     animated: bool,
+    /// The time of the frame being drawn, from the last `tick`.
+    now: Option<Instant>,
     animations: AnimationManager,
     inbox: Rc<Inbox>,
     cards: Vec<WallpaperCard>,
@@ -88,6 +90,7 @@ impl Model {
         Model {
             hooks,
             animated: false,
+            now: None,
             animations: AnimationManager::default(),
             inbox: Rc::default(),
             cards: Vec::new(),
@@ -163,6 +166,7 @@ impl Model {
     }
 
     pub fn tick(&mut self, now: Instant) {
+        self.now = Some(now);
         self.animations.tick(now);
         self.finish_if_faded();
     }
@@ -185,7 +189,7 @@ impl Model {
         if !ready {
             return 0.0;
         }
-        let now = Instant::now();
+        let now = self.now.unwrap_or_else(Instant::now);
         let at = *self.seen.entry(path.to_string()).or_insert(now);
         let t = now.saturating_duration_since(at).as_secs_f32() * 1000.0 / cfg::FADE_IN_MS;
         if t >= 1.0 {

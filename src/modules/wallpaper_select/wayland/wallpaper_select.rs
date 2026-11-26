@@ -1,7 +1,6 @@
 //! The wallpaper picker overlay surface: the carousel over one wallpaper column.
 
 use std::rc::Rc;
-use std::time::Instant;
 
 use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
@@ -135,7 +134,7 @@ impl WallpaperSelect {
 
     /// Paints one frame; true while a tween or an image fade runs, so the caller asks for another.
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, wl: &CompositorState) -> bool {
-        self.model.tick(Instant::now());
+        self.model.tick(self.overlay.frame_time());
         self.settle(wl);
         let open = self.overlay.is_open() && self.model.is_open();
         self.stale = false;

@@ -1,7 +1,7 @@
 //! The overview overlay surface: the grid with live window thumbnails.
 
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use smithay_client_toolkit::compositor::CompositorState;
 use wayland_client::QueueHandle;
@@ -148,7 +148,7 @@ impl Overview {
     /// drag runs, so the caller asks for another.
     #[allow(clippy::too_many_arguments)]
     pub fn draw(&mut self, egl: &Egl, renderer: &mut Renderer, wl: &CompositorState, capture: &mut ToplevelExportState, toplevels: &ToplevelList, qh: &QueueHandle<State>) -> bool {
-        self.model.tick(Instant::now());
+        self.model.tick(self.overlay.frame_time());
         self.settle(wl);
         let open = self.overlay.is_open() && self.available();
         self.stale = false;

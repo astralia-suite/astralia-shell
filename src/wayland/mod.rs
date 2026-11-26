@@ -6,6 +6,7 @@ pub mod capture;
 pub mod clipboard;
 pub mod monitor;
 pub mod overlays;
+pub mod presentation;
 pub mod render;
 pub mod text_input;
 pub mod toplevel;
@@ -254,6 +255,7 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
     let qh = queue.handle();
     let compositor = CompositorState::bind(&globals, &qh).map_err(|_| "no wl_compositor")?;
     let layer_shell = LayerShell::bind(&globals, &qh).map_err(|_| "no zwlr_layer_shell_v1")?;
+    presentation::bind(&globals, &qh);
     let egl = Egl::from_wayland(conn.backend().display_ptr() as *mut c_void)?;
     if !egl.make_current(None) {
         return Err("egl: cannot make the context current".into());
