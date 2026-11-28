@@ -6,14 +6,15 @@ use super::wallpaper_columns::{wallpaper_chips, wallpaper_columns_panel};
 use crate::config::settings::{BarStyle, Config, MonitorOverride, PaletteSource, RainMode, VisualizerShape};
 use crate::config::settings_config as cfg;
 use crate::render::canvas::{Canvas, FontFamily, GroupOptions, NO_IMAGE, TextStyle};
-use crate::render::field_view::{FieldDraw, draw_field_input};
+use crate::render::field_view::FieldDraw;
+use crate::render::text_input::InputFrame;
 use crate::render::geometry::Rect;
 use crate::render::icons;
 use crate::render::scroll::{ScrollEntry, ScrollMetrics, paint_scroll, scroll_bounds, scroll_geometry, scroll_slide_offset};
 use crate::render::sticker::{StickerStyle, selectable, sticker};
 use crate::render::theme::palette;
 use crate::render::tokens::{WHITE, metrics, with_alpha};
-use crate::service::wallpaper::WallpaperSlot;
+use crate::service::wallpaper::{WallpaperSlot, wallpaper_profiles};
 
 const TITLE_STYLE: TextStyle = TextStyle { family: FontFamily::Text, px: cfg::TITLE_PX, bold: true, max_width: 0, wrap: false };
 const BIG_ICON_STYLE: TextStyle = TextStyle { family: FontFamily::Icon, px: cfg::MENU_ICON_PX, bold: false, max_width: 0, wrap: false };
@@ -30,6 +31,8 @@ pub struct Art {
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Frame {
     pub caret: Rect,
+    /// The focused field: its hit rect and where its text sits.
+    pub input: Option<(Rect, InputFrame)>,
     pub panel: Rect,
 }
 
@@ -98,8 +101,8 @@ fn number_field(pane: &mut Pane, r: Rect, field: Field, value: &str) {
             color: pane.fade(p.text),
             ..FieldDraw::new(TEXT_STYLE)
         };
-        let model = &*pane.model;
-        pane.caret = draw_field_input(pane.canvas, &model.field().text, model.field(), model.field_anim(), &draw, None);
+        let chars = ((r.w - 2.0 * cfg::FIELD_INSET) / pane.canvas.advance(&TEXT_STYLE)).max(1.0) as usize;
+        pane.input = Some((r, pane.model.input_mut().draw(pane.canvas, draw, chars)));
     } else {
         pane.left(value, &TEXT_STYLE, r.x + cfg::FIELD_INSET, r, p.text);
     }
@@ -230,9 +233,44 @@ fn general_tab(pane: &mut Pane, x: f32, y: f32, w: f32) {
     toggle_row(pane, x, y, w, "Disable Animations", pane.config.animations_disabled, Act::AnimationDisable, 0, 0, true);
 }
 
+/// The saved-profile drop-down, then the name field with Save and Delete; returns the height used.
+fn profile_rows(pane: &mut Pane, slot: WallpaperSlot, x: f32, y: f32, w: f32) -> f32 {
+    let p = palette();
+    let slot_flag = slot as i32;
+    let name = pane.model.profile_name(slot).to_string();
+    let names: Vec<String> = wallpaper_profiles(pane.config, slot).keys().cloned().collect();
+    let saved = names.iter().position(|n| *n == name);
+    let entries = names.iter().enumerate().map(|(i, n)| DropEntry { label: n.clone(), a: i as i32, b: slot_flag }).collect();
+    let current = if names.is_empty() { "None saved" } else if saved.is_some() { &name } else { "\u{2014}" };
+    pane.dropdown(Rect { x, y, w, h: cfg::TILE_HEIGHT }, 5 + slot_flag, "Profile", current, entries, saved, Act::ProfileLoad);
+
+    let row_y = y + cfg::TILE_HEIGHT + cfg::ROW_GAP;
+    let button_w = |pane: &mut Pane, label: &str| pane.canvas.measure(label, &TEXT_STYLE).w + 20.0;
+    let save_w = button_w(pane, "Save");
+    let delete_w = if saved.is_some() { button_w(pane, "Delete") + 6.0 } else { 0.0 };
+    let field = if slot == WallpaperSlot::Lock { Field::LockProfileName } else { Field::ProfileName };
+    let field_rect = Rect { x, y: row_y, w: w - save_w - delete_w - 6.0, h: cfg::FIELD_HEIGHT };
+    number_field(pane, field_rect, field, &name);
+    if name.is_empty() && pane.model.focused() != field {
+        pane.left("Profile name", &TEXT_STYLE, field_rect.x + cfg::FIELD_INSET, field_rect, p.text_dim);
+    }
+    let save = Rect { x: field_rect.x + field_rect.w + 6.0, y: row_y, w: save_w, h: cfg::FIELD_HEIGHT };
+    pane.selectable(save, false, p.pop_b);
+    pane.centered("Save", &TEXT_STYLE, save, p.text);
+    pane.region(save, Act::ProfileSave, 0, slot_flag);
+    if saved.is_some() {
+        let delete = Rect { x: save.x + save.w + 6.0, y: row_y, w: delete_w - 6.0, h: cfg::FIELD_HEIGHT };
+        pane.chip(delete, p.critical_container);
+        pane.centered("Delete", &TEXT_STYLE, delete, p.text);
+        pane.region(delete, Act::ProfileDelete, 0, slot_flag);
+    }
+    cfg::TILE_HEIGHT + cfg::ROW_GAP + cfg::ROW_HEIGHT
+}
+
 fn wallpaper_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32, bottom: f32) {
     let config = pane.config;
     let slot = WallpaperSlot::Still;
+    y += profile_rows(pane, slot, x, y, w);
 
     let toggles: Vec<(&str, bool, Act)> = vec![("Use Default Wallpaper", config.default_wallpaper, Act::WallpaperDefault)];
 
@@ -297,6 +335,7 @@ fn lock_tab(pane: &mut Pane, x: f32, mut y: f32, w: f32, bottom: f32) {
     if !config.lock_wallpaper_custom {
         return;
     }
+    y += profile_rows(pane, WallpaperSlot::Lock, x, y, w);
     y += toggle_row(pane, x, y, w, "Use Default Wallpaper", config.default_wallpaper, Act::WallpaperDefault, 0, 0, true) + cfg::ROW_GAP;
     wallpaper_columns_panel(pane, WallpaperSlot::Lock, x, y, w, bottom, None);
 }
@@ -452,7 +491,8 @@ pub fn paint(canvas: &mut dyn Canvas, model: &mut Model, art: &Art, width: f32, 
     } else {
         tab_content(&mut pane, active, content_x, content_y, content_w, bottom);
     }
-    frame.caret = pane.caret;
+    frame.input = pane.input;
+    frame.caret = pane.input.map(|(_, f)| f.caret).unwrap_or_default();
     canvas.set_opacity(1.0);
     frame
 }

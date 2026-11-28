@@ -119,6 +119,17 @@ pub struct RainParams {
 type Columns = BTreeMap<String, Vec<String>>;
 type Counts = BTreeMap<String, i32>;
 
+/// A saved wallpaper slot: its folder, columns, column counts and fill modes.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct WallpaperProfile {
+    pub dir: String,
+    pub columns: Columns,
+    pub column_counts: Counts,
+    pub fill_modes: Columns,
+}
+
+pub type Profiles = BTreeMap<String, WallpaperProfile>;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Config {
     pub wallpaper_path: String,
@@ -132,6 +143,9 @@ pub struct Config {
     pub lock_wallpaper_columns: Columns,
     pub lock_wallpaper_column_counts: Counts,
     pub lock_wallpaper_fill_modes: Columns,
+
+    pub wallpaper_profiles: Profiles,
+    pub lock_wallpaper_profiles: Profiles,
 
     pub palette_source: PaletteSource,
     pub capture_monitor: String,
@@ -170,6 +184,8 @@ impl Config {
             lock_wallpaper_columns: Columns::new(),
             lock_wallpaper_column_counts: Counts::new(),
             lock_wallpaper_fill_modes: Columns::new(),
+            wallpaper_profiles: Profiles::new(),
+            lock_wallpaper_profiles: Profiles::new(),
             palette_source: PaletteSource::DefaultPalette,
             capture_monitor: String::new(),
             capture_column: 0,
@@ -305,6 +321,19 @@ fn read_counts(wallpaper: Option<&Object>, key: &str, out: &mut Counts) {
     }
 }
 
+fn read_profiles(wallpaper: Option<&Object>, key: &str, out: &mut Profiles, home: &str) {
+    let Some(map) = object_in(wallpaper, key) else { return };
+    for (name, value) in map {
+        let Some(value) = value.as_object() else { continue };
+        let value = Some(value);
+        let mut p = WallpaperProfile { dir: expand(text(value, "dir", ""), home), ..WallpaperProfile::default() };
+        read_columns(value, "columns", &mut p.columns, Some(home));
+        read_counts(value, "columnCounts", &mut p.column_counts);
+        read_columns(value, "fillModes", &mut p.fill_modes, None);
+        out.insert(name.clone(), p);
+    }
+}
+
 const RESERVED_DISPLAYS_KEYS: [&str; 10] = [
     "defaultBar",
     "defaultOsd",
@@ -348,6 +377,8 @@ pub fn parse_config_in(source: &str, home: &str) -> Config {
     read_columns(wallpaper, "lockColumns", &mut cfg.lock_wallpaper_columns, Some(home));
     read_counts(wallpaper, "lockColumnCounts", &mut cfg.lock_wallpaper_column_counts);
     read_columns(wallpaper, "lockFillModes", &mut cfg.lock_wallpaper_fill_modes, None);
+    read_profiles(wallpaper, "profiles", &mut cfg.wallpaper_profiles, home);
+    read_profiles(wallpaper, "lockProfiles", &mut cfg.lock_wallpaper_profiles, home);
     cfg.palette_source = if text(object_in(Some(root), "palette"), "source", "") == "region" {
         PaletteSource::RegionCapture
     } else {
@@ -503,7 +534,22 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
     let float = |f: f32| Number(f.to_string().parse().unwrap_or(f64::from(f)));
     let int = |n: i32| Number(f64::from(n));
 
-    let wallpaper = object(vec![
+    let profiles = |p: &Profiles| {
+        Json::Object(
+            p.iter()
+                .map(|(name, p)| {
+                    let saved = object(vec![
+                        ("dir", path(&p.dir)),
+                        ("columns", columns(&p.columns, true)),
+                        ("columnCounts", counts(&p.column_counts)),
+                        ("fillModes", columns(&p.fill_modes, false)),
+                    ]);
+                    (name.clone(), saved)
+                })
+                .collect(),
+        )
+    };
+    let mut wallpaper = vec![
         ("path", path(&cfg.wallpaper_path)),
         ("dir", path(&cfg.wallpaper_dir)),
         ("columns", columns(&cfg.wallpaper_columns, true)),
@@ -516,7 +562,15 @@ pub fn serialize_config_in(cfg: &Config, home: &str) -> String {
         ("lockFillModes", columns(&cfg.lock_wallpaper_fill_modes, false)),
         ("captureMonitor", Str(cfg.capture_monitor.clone())),
         ("captureColumn", int(cfg.capture_column)),
-    ]);
+    ];
+    // Written only when present, so a config without profiles keeps its old shape.
+    if !cfg.wallpaper_profiles.is_empty() {
+        wallpaper.push(("profiles", profiles(&cfg.wallpaper_profiles)));
+    }
+    if !cfg.lock_wallpaper_profiles.is_empty() {
+        wallpaper.push(("lockProfiles", profiles(&cfg.lock_wallpaper_profiles)));
+    }
+    let wallpaper = object(wallpaper);
     let source = if cfg.palette_source == PaletteSource::RegionCapture { "region" } else { "default" };
     let palette = object(vec![("source", Str(source.into()))]);
     let mut displays = vec![
@@ -706,7 +760,19 @@ mod tests {
         cfg.palette_source = PaletteSource::RegionCapture;
         cfg.capture_monitor = "eDP-1".into();
         cfg.capture_column = 1;
+        let plain = serialize(&cfg);
+        assert!(!plain.contains("profiles") && !plain.contains("lockProfiles"), "empty profile lists are not written");
+        let saved = WallpaperProfile {
+            dir: format!("{HOME}/Pictures/Night"),
+            columns: [("eDP-1".to_string(), strings(&[&format!("{HOME}/Pictures/Night/a.png")]))].into(),
+            column_counts: [("eDP-1".to_string(), 2)].into(),
+            fill_modes: [("eDP-1".to_string(), strings(&["fit"]))].into(),
+        };
+        cfg.wallpaper_profiles.insert("Night".into(), saved.clone());
+        cfg.lock_wallpaper_profiles.insert("Calm".into(), WallpaperProfile { dir: "/locks".into(), ..WallpaperProfile::default() });
+        assert!(serialize(&cfg).contains("~/Pictures/Night/a.png"), "profile paths collapse home");
         let round = parse(&serialize(&cfg));
+        assert!(round.wallpaper_profiles["Night"] == saved && round.lock_wallpaper_profiles["Calm"].dir == "/locks", "profiles round-trip");
         let legacy = parse(r#"{"palette": {"source": "region", "scheme": "dark"}}"#);
         assert!(!serialize(&legacy).contains("scheme"), "the retired scheme key is not written back");
         assert_eq!(round.palette_source, PaletteSource::RegionCapture, "the palette source round-trips");

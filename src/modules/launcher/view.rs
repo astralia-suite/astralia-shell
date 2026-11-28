@@ -2,11 +2,11 @@
 
 use crate::config::launcher_config as cfg;
 use crate::render::canvas::{Canvas, FontFamily, GroupOptions, NO_IMAGE, TextStyle};
-use crate::render::field_view::{FieldCursor, FieldDraw, draw_field_input};
+use crate::render::field_view::FieldDraw;
 use crate::render::geometry::Rect;
 use crate::render::icons;
 use crate::render::sticker::{StickerStyle, selectable, sticker};
-use crate::render::text_field::{text_field_byte_offset, text_field_char_index, text_field_utf8_len};
+use crate::render::text_input::InputFrame;
 use crate::render::theme::palette;
 use crate::render::tokens::{WHITE, metrics, with_alpha};
 
@@ -28,9 +28,7 @@ pub struct Frame {
     pub rows: Vec<(Rect, usize)>,
     pub entrance: EntranceFrame,
     pub field: Rect,
-    pub text_x: f32,
-    pub cell_w: f32,
-    pub first_column: usize,
+    pub input: InputFrame,
 }
 
 fn mode_icon(mode: LauncherMode) -> &'static str {
@@ -50,10 +48,7 @@ pub fn field_hit(frame: &Frame, x: f32, y: f32) -> bool {
 
 /// The character column under `x` in the field, from its first shown character.
 pub fn field_column(frame: &Frame, x: f32) -> f32 {
-    if frame.cell_w <= 0.0 {
-        return 0.0;
-    }
-    (frame.first_column as f32 + (x - frame.text_x) / frame.cell_w).max(0.0)
+    frame.input.column(x)
 }
 
 pub fn paint(canvas: &mut dyn Canvas, model: &mut Model, width: f32, height: f32, entrance: Option<&EntranceState>) -> Frame {
@@ -99,28 +94,16 @@ pub fn paint(canvas: &mut dyn Canvas, model: &mut Model, width: f32, height: f32
     let text_x = field_x + cfg::PAD;
     let center_y = field_top + cfg::SEARCH_HEIGHT / 2.0;
 
-    let first = model.field_window(cfg::MAX_ROW_CHARS);
-    let text = &model.field().text;
-    let total = text_field_utf8_len(text);
-    let last = total.min(first + cfg::MAX_ROW_CHARS);
-    let display = &text[text_field_byte_offset(text, first)..text_field_byte_offset(text, last)];
-    let cursor = model.cursor();
-    let column_of = |byte: usize| text_field_char_index(text, byte).clamp(first, last) - first;
-    let field_cursor = FieldCursor { column: column_of(cursor.pos), selection_from: column_of(cursor.begin()), selection_to: column_of(cursor.end()) };
     let draw = FieldDraw {
         x: text_x - ox,
         center_y: center_y - oy,
         caret_height: cfg::SEARCH_HEIGHT - 2.0 * cfg::PAD,
         caret_width: cfg::CARET_WIDTH,
-        first_index: first,
         ..FieldDraw::new(LABEL_STYLE)
     };
-    let caret = draw_field_input(canvas, display, model.field(), model.query_anim(), &draw, Some(&field_cursor));
-    frame.caret = Rect { x: caret.x + ox, y: caret.y + oy, ..caret };
+    frame.input = model.input_mut().draw(canvas, draw, cfg::MAX_ROW_CHARS).shifted(ox, oy);
+    frame.caret = frame.input.caret;
     frame.field = Rect { x: field_x, y: field_top, w: field_w, h: cfg::SEARCH_HEIGHT };
-    frame.text_x = text_x;
-    frame.cell_w = canvas.advance(&LABEL_STYLE);
-    frame.first_column = first;
 
     let content_x = mode_x + cfg::SEARCH_HEIGHT + cfg::BULLET_GAP;
     let list_top = box_y + cfg::LIST_TOP;
@@ -258,7 +241,7 @@ mod tests {
         let frame = paint(&mut plain, &mut model, 1920.0, 1200.0, None);
         assert!(frame.field.w > 0.0 && field_hit(&frame, frame.field.x + 1.0, frame.field.y + 1.0), "the field is reported for pointer hits");
         assert!(!field_hit(&frame, frame.field.x - 1.0, frame.field.y + 1.0), "points outside the field miss");
-        assert!(field_column(&frame, frame.text_x) == 0.0 && field_column(&frame, frame.text_x - 50.0) == 0.0, "columns start at the text origin");
+        assert!(field_column(&frame, frame.input.text_x) == 0.0 && field_column(&frame, frame.input.text_x - 50.0) == 0.0, "columns start at the text origin");
         let caret_at_end = frame.caret.x;
 
         model.key(&key(KeyKind::Left, ""));

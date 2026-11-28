@@ -422,8 +422,70 @@ fn settings_wallpaper() {
     env.key(KeyKind::Enter, "");
     assert!(env.model.focused() == Field::None && env.cfg().wallpaper_dir == format!("{root_str}/"), "enter commits the edit");
 
+    env.click(Act::FieldFocus, Field::WallpaperDir as i32, 0);
+    env.model.key(&KeyEvent { kind: KeyKind::Text, ctrl: true, base_sym: 'a' as u32, ..KeyEvent::default() });
+    env.key(KeyKind::Text, "/srv");
+    env.key(KeyKind::Home, "");
+    env.model.pointer_down(1.0, Instant::now());
+    env.model.pointer_drag(4.0);
+    env.model.pointer_up();
+    env.key(KeyKind::Text, "opt");
+    assert_eq!(env.model.field().text, "/opt", "select all, typing, and a drag selection edit like the launcher");
+    env.key(KeyKind::Escape, "");
+
     env.close();
     assert!(env.model.picker(WallpaperSlot::Still).files.is_empty(), "closing drops the scanned files");
+}
+
+#[test]
+fn settings_wallpaper_profiles() {
+    let _snap = Snap::on();
+    let (still, lock) = (WallpaperSlot::Still as i32, WallpaperSlot::Lock as i32);
+    let mut env = Env::new();
+    env.config().wallpaper_dir = "/night".into();
+    env.config().wallpaper_columns.insert("DP-1".into(), vec!["/night/a.png".into()]);
+    env.model.open();
+    env.click(Act::Tab, Tab::Wallpaper as i32, 0);
+
+    env.click(Act::ProfileSave, 0, still);
+    assert!(env.cfg().wallpaper_profiles.is_empty(), "save without a name does nothing");
+    env.click(Act::FieldFocus, Field::ProfileName as i32, 0);
+    env.key(KeyKind::Text, "Night");
+    env.key(KeyKind::Enter, "");
+    assert!(
+        env.model.profile_name(WallpaperSlot::Still) == "Night" && env.cfg().wallpaper_profiles["Night"].dir == "/night",
+        "enter in the name field saves the desktop slot"
+    );
+    assert!(env.cfg().lock_wallpaper_profiles.is_empty(), "the lock list is separate");
+    assert!(env.texts(900.0, 700.0).iter().any(|t| t == "Delete"), "a saved profile shows Delete");
+
+    env.config().wallpaper_dir = "/day".into();
+    env.config().wallpaper_columns.clear();
+    env.click(Act::FieldFocus, Field::ProfileName as i32, 0);
+    env.key(KeyKind::Text, "Day");
+    env.click(Act::ProfileSave, 0, still);
+    assert!(env.model.focused() == Field::None && env.cfg().wallpaper_profiles.len() == 2, "Save commits the typed name first");
+    assert_eq!(env.model.profile_name(WallpaperSlot::Still), "NightDay", "focusing starts from the shown name");
+
+    env.click(Act::ProfileLoad, 0, still);
+    assert!(
+        env.cfg().wallpaper_dir == "/night" && env.cfg().wallpaper_columns["DP-1"] == ["/night/a.png"] && env.model.profile_name(WallpaperSlot::Still) == "Night",
+        "picking a profile loads it; entries follow name order, so index 0 is Night"
+    );
+    env.click(Act::ProfileLoad, 9, still);
+    assert_eq!(env.cfg().wallpaper_dir, "/night", "an unknown index does nothing");
+
+    env.config().lock_wallpaper_dir = "/locks".into();
+    env.click(Act::FieldFocus, Field::LockProfileName as i32, 0);
+    env.key(KeyKind::Text, "Calm");
+    env.click(Act::ProfileSave, 0, lock);
+    assert!(env.cfg().lock_wallpaper_profiles["Calm"].dir == "/locks" && env.cfg().wallpaper_profiles.len() == 2, "the lock slot saves its own profile");
+
+    env.click(Act::ProfileDelete, 0, still);
+    assert!(
+        !env.cfg().wallpaper_profiles.contains_key("Night") && env.model.profile_name(WallpaperSlot::Still).is_empty() && env.cfg().lock_wallpaper_profiles.len() == 1,
+        "Delete removes the shown desktop profile only"
+    );
 }
 
 #[test]

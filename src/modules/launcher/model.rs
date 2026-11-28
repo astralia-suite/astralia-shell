@@ -8,18 +8,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
-use crate::base::input::{Clipboard, KeyEvent, KeyKind};
+use crate::base::input::{Clipboard, KeyEvent};
 use crate::base::paths::home;
 use crate::base::process::AsyncProcess;
 use crate::config::launcher_config as cfg;
 use crate::render::icons;
-use crate::render::text_field::{
-    CursorDir, TextCursor, TextFieldState, TextFieldTypeAnim, text_cursor_backspace, text_cursor_clamp, text_cursor_delete,
-    text_cursor_delete_selection, text_cursor_end, text_cursor_home, text_cursor_insert, text_cursor_move, text_cursor_move_word,
-    text_cursor_select_all, text_cursor_select_word, text_cursor_selected_text, text_cursor_set, text_field_byte_offset,
-    text_field_char_index, text_field_idle_toggle, text_field_type_anim_clear, text_field_type_anim_settle, text_field_type_anim_sync,
-    text_field_utf8_len,
-};
+#[cfg(test)]
+use crate::render::text_field::{TextCursor, TextFieldState, TextFieldTypeAnim};
+use crate::render::text_input::{InputKey, TextInput};
 use crate::service::runtime;
 
 use super::apps::search_apps;
@@ -51,7 +47,6 @@ pub enum Done {
     Index { generation: u64, index: Arc<FileIndex>, ms: u128 },
     Search { generation: u64, files: Vec<FileEntry> },
     Fd { generation: u64, dirs: bool, output: Option<String> },
-    Paste { session: u64, text: String },
 }
 
 /// Where finished work waits for the loop; `wake` tells the host to poll.
@@ -106,8 +101,6 @@ pub fn content_height(visible_rows: usize) -> f32 {
 pub struct Model {
     animations: AnimationManager,
     inbox: Rc<Inbox>,
-    /// Bumped on every close, so a paste that arrives later is dropped.
-    session: u64,
     /// The file search program; tests point it elsewhere.
     pub(crate) fd_program: &'static str,
 
@@ -116,13 +109,7 @@ pub struct Model {
     apps: Vec<DesktopEntry>,
     apps_stamp: Vec<i64>,
     apps_loaded: bool,
-    field: TextFieldState,
-    cursor: TextCursor,
-    clipboard: Option<Rc<dyn Clipboard>>,
-    field_first: usize,
-    dragging: bool,
-    last_click: Option<(Instant, usize)>,
-    query_anim: TextFieldTypeAnim,
+    input: TextInput,
     mode: LauncherMode,
     effective_query: String,
     search_query: String,
@@ -167,20 +154,13 @@ impl Default for Model {
         Model {
             animations: AnimationManager::default(),
             inbox: Rc::default(),
-            session: 0,
             fd_program: "fd",
             open: false,
             search_root: String::new(),
             apps: Vec::new(),
             apps_stamp: Vec::new(),
             apps_loaded: false,
-            field: TextFieldState::default(),
-            cursor: TextCursor::default(),
-            clipboard: None,
-            field_first: 0,
-            dragging: false,
-            last_click: None,
-            query_anim: TextFieldTypeAnim::default(),
+            input: TextInput::new(OWNER_QUERY),
             mode: LauncherMode::Drun,
             effective_query: String::new(),
             search_query: String::new(),
@@ -229,11 +209,12 @@ impl Drop for Model {
 impl Model {
     /// Called whenever finished work waits in the inbox.
     pub fn set_wake(&mut self, wake: Rc<dyn Fn()>) {
-        *self.inbox.wake.borrow_mut() = Some(wake);
+        *self.inbox.wake.borrow_mut() = Some(wake.clone());
+        self.input.set_wake(wake);
     }
 
     pub fn set_clipboard(&mut self, clipboard: Option<Rc<dyn Clipboard>>) {
-        self.clipboard = clipboard;
+        self.input.set_clipboard(clipboard);
     }
 
     #[cfg(test)]
@@ -263,16 +244,23 @@ impl Model {
         self.mode
     }
 
+    #[cfg(test)]
     pub fn field(&self) -> &TextFieldState {
-        &self.field
+        self.input.field()
     }
 
+    #[cfg(test)]
     pub fn cursor(&self) -> &TextCursor {
-        &self.cursor
+        self.input.cursor()
     }
 
+    #[cfg(test)]
     pub fn query_anim(&self) -> &TextFieldTypeAnim {
-        &self.query_anim
+        self.input.anim()
+    }
+
+    pub fn input_mut(&mut self) -> &mut TextInput {
+        &mut self.input
     }
 
     #[cfg(test)]
@@ -315,7 +303,7 @@ impl Model {
     }
 
     pub fn clear_preedit(&mut self) {
-        self.field.preedit.clear();
+        self.input.clear_preedit();
     }
 
     fn changed(&mut self) {
@@ -336,7 +324,6 @@ impl Model {
         }
         self.visits = VisitStore::load_default();
         self.open = true;
-        self.field.cursor_idle_visible = true;
         self.start_index();
         ::log::info!("launcher: open, searching from {}", self.search_root);
     }
@@ -374,15 +361,8 @@ impl Model {
     pub fn close(&mut self) {
         self.stop_search();
         self.debounce_pending = false;
-        self.session += 1;
         self.open = false;
-        self.field.text.clear();
-        self.field.preedit.clear();
-        self.cursor = TextCursor::default();
-        self.field_first = 0;
-        self.dragging = false;
-        self.last_click = None;
-        text_field_type_anim_clear(&mut self.query_anim, &mut self.animations, OWNER_QUERY);
+        self.input.clear(&mut self.animations);
         self.mode = LauncherMode::Drun;
         self.effective_query.clear();
         self.search_query.clear();
@@ -415,16 +395,9 @@ impl Model {
     }
 
     fn query_changed(&mut self) {
-        let mq = detect_mode_and_query(&self.field.text);
+        let mq = detect_mode_and_query(self.input.text());
         self.mode = mq.mode;
         self.effective_query = mq.query;
-        self.field.cursor_idle_visible = true;
-        text_cursor_clamp(&self.field.text, &mut self.cursor);
-        if self.cursor.pos == self.field.text.len() {
-            text_field_type_anim_sync(&mut self.query_anim, &mut self.animations, OWNER_QUERY, &self.field.text);
-        } else {
-            text_field_type_anim_settle(&mut self.query_anim, &mut self.animations, OWNER_QUERY, &self.field.text);
-        }
         self.arm_debounce();
     }
 
@@ -432,81 +405,7 @@ impl Model {
         if self.submenu.screen != SubmenuScreen::Search {
             self.submenu.close();
         }
-        self.field.preedit.clear();
         self.query_changed();
-    }
-
-    fn paste(&mut self, text: &str) {
-        let line: String = text
-            .chars()
-            .map(|c| if matches!(c, '\n' | '\r' | '\t') { ' ' } else { c })
-            .filter(|&c| c >= ' ' && c != '\u{7f}')
-            .collect();
-        if line.is_empty() {
-            return;
-        }
-        self.hovered = None;
-        text_cursor_insert(&mut self.field.text, &mut self.cursor, &line);
-        self.text_edited();
-        self.changed();
-    }
-
-    fn key_text(&mut self, event: &KeyEvent) {
-        if event.alt {
-            return;
-        }
-        if !event.ctrl {
-            if event.text.is_empty() {
-                return;
-            }
-            text_cursor_insert(&mut self.field.text, &mut self.cursor, &event.text);
-            self.text_edited();
-            return;
-        }
-        match char::from_u32(event.base_sym).map(|c| c.to_ascii_lowercase()) {
-            Some('a') => {
-                text_cursor_select_all(&self.field.text, &mut self.cursor);
-                self.field.cursor_idle_visible = true;
-            }
-            Some(sym @ ('c' | 'x')) => {
-                if self.cursor.has_selection()
-                    && let Some(clipboard) = &self.clipboard
-                {
-                    clipboard.set(text_cursor_selected_text(&self.field.text, &self.cursor));
-                }
-                if sym == 'x' && text_cursor_delete_selection(&mut self.field.text, &mut self.cursor) {
-                    self.text_edited();
-                }
-            }
-            Some('v') => {
-                if let Some(clipboard) = &self.clipboard {
-                    let (inbox, session) = (Rc::downgrade(&self.inbox), self.session);
-                    clipboard.request(Box::new(move |text| post(&inbox, Done::Paste { session, text })));
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn byte_at_column(&self, column: f32) -> usize {
-        text_field_byte_offset(&self.field.text, (column.max(0.0) + 0.5) as usize)
-    }
-
-    /// The first character shown in a field `width` characters wide, scrolled to keep the caret in view.
-    pub fn field_window(&mut self, width: usize) -> usize {
-        let total = text_field_utf8_len(&self.field.text);
-        if total <= width {
-            self.field_first = 0;
-            return 0;
-        }
-        let column = text_field_char_index(&self.field.text, self.cursor.pos);
-        if column < self.field_first {
-            self.field_first = column;
-        } else if column > self.field_first + width {
-            self.field_first = column - width;
-        }
-        self.field_first = self.field_first.min(total - width);
-        self.field_first
     }
 
     /// A press on the field at a character `column`; a second press on the same spot soon after selects the word.
@@ -514,41 +413,23 @@ impl Model {
         if !self.open {
             return;
         }
-        let byte = self.byte_at_column(column);
-        let double_click = self
-            .last_click
-            .is_some_and(|(at, at_byte)| at_byte == byte && now.saturating_duration_since(at) <= Duration::from_millis(cfg::DOUBLE_CLICK_MS as u64));
-        self.field.cursor_idle_visible = true;
+        self.input.pointer_down(column, now);
         self.hovered = None;
-        if double_click {
-            let word = text_field_byte_offset(&self.field.text, column.max(0.0) as usize);
-            text_cursor_select_word(&self.field.text, &mut self.cursor, word);
-            self.last_click = None;
-            self.dragging = false;
-        } else {
-            text_cursor_set(&self.field.text, &mut self.cursor, byte, false);
-            self.last_click = Some((now, byte));
-            self.dragging = true;
-        }
         self.changed();
     }
 
     pub fn pointer_drag(&mut self, column: f32) {
-        if !self.open || !self.dragging {
-            return;
+        if self.open && self.input.pointer_drag(column) {
+            self.changed();
         }
-        let byte = self.byte_at_column(column);
-        text_cursor_set(&self.field.text, &mut self.cursor, byte, true);
-        self.field.cursor_idle_visible = true;
-        self.changed();
     }
 
     pub fn dragging(&self) -> bool {
-        self.dragging
+        self.input.dragging()
     }
 
     pub fn pointer_up(&mut self) {
-        self.dragging = false;
+        self.input.pointer_up();
     }
 
     fn arm_debounce(&mut self) {
@@ -669,9 +550,14 @@ impl Model {
                         self.finish_search();
                     }
                 }
-                Done::Paste { session, text } if session == self.session && self.open => self.paste(&text),
                 _ => {}
             }
+        }
+        if self.open && self.input.poll(&mut self.animations) {
+            self.hovered = None;
+            self.text_edited();
+            self.changed();
+            return true;
         }
         any
     }
@@ -713,45 +599,15 @@ impl Model {
 
     pub fn key(&mut self, event: &KeyEvent) {
         self.hovered = None;
-        match event.kind {
-            KeyKind::Text => self.key_text(event),
-            KeyKind::Preedit => {
-                self.field.preedit.clone_from(&event.text);
-                self.field.cursor_idle_visible = true;
-            }
-            KeyKind::Backspace => {
-                text_cursor_backspace(&mut self.field.text, &mut self.cursor);
-                self.text_edited();
-            }
-            KeyKind::Delete => {
-                if text_cursor_delete(&mut self.field.text, &mut self.cursor) {
-                    self.text_edited();
-                }
-            }
-            KeyKind::Left | KeyKind::Right => {
-                let dir = if event.kind == KeyKind::Left { CursorDir::Left } else { CursorDir::Right };
-                if event.ctrl {
-                    text_cursor_move_word(&self.field.text, &mut self.cursor, dir, event.shift);
-                } else {
-                    text_cursor_move(&self.field.text, &mut self.cursor, dir, event.shift);
-                }
-                self.field.cursor_idle_visible = true;
-            }
-            KeyKind::Home => {
-                text_cursor_home(&mut self.cursor, event.shift);
-                self.field.cursor_idle_visible = true;
-            }
-            KeyKind::End => {
-                text_cursor_end(&self.field.text, &mut self.cursor, event.shift);
-                self.field.cursor_idle_visible = true;
-            }
-            KeyKind::Up | KeyKind::Down => {
+        match self.input.key(&mut self.animations, event) {
+            InputKey::Edited => self.text_edited(),
+            step @ (InputKey::Up | InputKey::Down) => {
                 let count = self.item_count() as i64;
-                let step = if event.kind == KeyKind::Down { 1 } else { -1 };
+                let step = if step == InputKey::Down { 1 } else { -1 };
                 let from = self.selected.map_or(-1, |s| s as i64);
                 self.selected = if count == 0 { None } else { Some((from + step).clamp(0, count - 1) as usize) };
             }
-            KeyKind::Escape => {
+            InputKey::Escape => {
                 if self.submenu.screen == SubmenuScreen::Search {
                     self.close_requested = true;
                     self.poll();
@@ -760,8 +616,8 @@ impl Model {
                 self.submenu.go_back(&list_dir);
                 self.reset_selection();
             }
-            KeyKind::Enter => self.launch_selected(),
-            KeyKind::Tab => {}
+            InputKey::Enter => self.launch_selected(),
+            InputKey::Moved | InputKey::Tab | InputKey::Ignored => {}
         }
         self.changed();
         // A clipboard that answers at once has queued its paste.
@@ -769,25 +625,19 @@ impl Model {
     }
 
     pub fn commit_text(&mut self, text: &str) {
-        text_cursor_insert(&mut self.field.text, &mut self.cursor, text);
-        self.field.preedit.clear();
+        self.input.commit_text(&mut self.animations, text);
         self.query_changed();
         self.changed();
     }
 
     pub fn delete_before(&mut self, count: u32) {
-        text_cursor_clamp(&self.field.text, &mut self.cursor);
-        self.cursor.anchor = self.cursor.pos;
-        for _ in 0..count {
-            text_cursor_backspace(&mut self.field.text, &mut self.cursor);
-        }
+        self.input.delete_before(&mut self.animations, count);
         self.query_changed();
         self.changed();
     }
 
     pub fn set_preedit(&mut self, text: &str) {
-        self.field.preedit = text.to_string();
-        self.field.cursor_idle_visible = true;
+        self.input.set_preedit(text);
         self.changed();
     }
 
@@ -809,7 +659,7 @@ impl Model {
     }
 
     pub fn toggle_caret(&mut self) {
-        text_field_idle_toggle(&mut self.field);
+        self.input.toggle_caret();
     }
 
     fn icon_path_for(&mut self, app: usize) -> String {
@@ -1342,14 +1192,14 @@ pub(crate) mod tests {
         model.pointer_down(7.1, t1 + Duration::from_secs(5) + Duration::from_millis(900));
         assert!(!model.cursor().has_selection(), "slow clicks are not a double click");
 
-        assert_eq!(model.field_window(20), 0, "short text needs no scrolling");
+        assert_eq!(model.input.window(20), 0, "short text needs no scrolling");
         model.key(&key(KeyKind::End, ""));
-        assert_eq!(model.field_window(5), 6, "long text scrolls to keep the caret visible");
+        assert_eq!(model.input.window(5), 6, "long text scrolls to keep the caret visible");
         model.key(&key(KeyKind::Home, ""));
-        assert_eq!(model.field_window(5), 0, "moving the caret back scrolls back");
+        assert_eq!(model.input.window(5), 0, "moving the caret back scrolls back");
         model.key(&key(KeyKind::End, ""));
-        assert_eq!(model.field_window(5), 6, "the end scrolls forward again");
+        assert_eq!(model.input.window(5), 6, "the end scrolls forward again");
         model.key(&key(KeyKind::Left, ""));
-        assert_eq!(model.field_window(5), 6, "the window stays while the caret is inside it");
+        assert_eq!(model.input.window(5), 6, "the window stays while the caret is inside it");
     }
 }

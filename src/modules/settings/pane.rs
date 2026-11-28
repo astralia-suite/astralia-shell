@@ -1,6 +1,7 @@
 //! Drawing helpers for a settings page: every colour fades with the page, every control registers
 //! its click region.
 
+use crate::render::text_input::InputFrame;
 use super::model::{Act, Model};
 use crate::config::settings::Config;
 use crate::config::settings_config as cfg;
@@ -37,13 +38,14 @@ pub struct Pane<'a> {
     /// The config as of this frame.
     pub config: &'a Config,
     pub alpha: f32,
-    pub caret: Rect,
+    /// The focused field as drawn: its hit rect and where its text sits.
+    pub input: Option<(Rect, InputFrame)>,
     overlay: Option<DropList>,
 }
 
 impl<'a> Pane<'a> {
     pub fn new(canvas: &'a mut dyn Canvas, model: &'a mut Model, config: &'a Config, alpha: f32) -> Pane<'a> {
-        Pane { canvas, model, config, alpha, caret: Rect::default(), overlay: None }
+        Pane { canvas, model, config, alpha, input: None, overlay: None }
     }
 
     pub fn fade(&self, c: Color) -> Color {

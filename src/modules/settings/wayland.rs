@@ -13,7 +13,7 @@ use crate::wayland::render::gl_canvas::GlCanvas;
 use crate::wayland::render::overlay::Overlay;
 use crate::wayland::render::renderer::Renderer;
 use crate::wayland::text_input::{EditTarget, TextInputPurpose, TextInputState};
-use crate::base::input::KeyEvent;
+use crate::base::input::{Clipboard, KeyEvent};
 use crate::config::settings_config as cfg;
 use crate::modules::settings::model::{Field, Hooks, Model};
 use crate::modules::settings::view::{self, Art, Frame};
@@ -56,10 +56,11 @@ pub struct Settings {
 }
 
 impl Settings {
-    /// `wake` runs when a scan lands or a thumbnail decodes, so the host polls and repaints.
-    pub fn new(hooks: Hooks, wake: Rc<dyn Fn()>) -> Settings {
+    /// `wake` runs when a scan, paste or thumbnail lands, so the host polls and repaints.
+    pub fn new(hooks: Hooks, wake: Rc<dyn Fn()>, clipboard: Option<Rc<dyn Clipboard>>) -> Settings {
         let mut model = Model::new(hooks);
         model.set_wake(wake.clone());
+        model.set_clipboard(clipboard);
         let mut canvas = GlCanvas::new();
         canvas.set_on_image_ready(wake);
         let art = Art { user_name: user::user_name(), ..Art::default() };
@@ -125,9 +126,20 @@ impl Settings {
         }
     }
 
+    /// A left press: inside the focused field it places the caret, elsewhere it runs what was hit.
     pub fn press(&mut self, wl: &CompositorState, x: f64, y: f64) {
-        self.model.click(x, y);
+        let (fx, fy) = (x as f32, y as f32);
+        match self.frame.input {
+            Some((r, input)) if fx >= r.x && fx < r.x + r.w && fy >= r.y && fy < r.y + r.h => {
+                self.model.pointer_down(input.column(fx), std::time::Instant::now());
+            }
+            _ => self.model.click(x, y),
+        }
         self.settle(wl);
+    }
+
+    pub fn release(&mut self) {
+        self.model.pointer_up();
     }
 
     /// Wheel motion in surface units.
@@ -137,6 +149,11 @@ impl Settings {
 
     /// The pointer over the overlay (`Some`) or gone (`None`).
     pub fn pointer(&mut self, at: Option<(f64, f64)>) {
+        if let (Some((x, _)), Some((_, input))) = (at, self.frame.input)
+            && self.model.dragging()
+        {
+            self.model.pointer_drag(input.column(x as f32));
+        }
         self.hover_clickable = at.is_some_and(|(x, y)| self.overlay.is_open() && self.model.clickable(x, y));
     }
 

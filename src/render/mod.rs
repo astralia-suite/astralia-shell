@@ -16,6 +16,7 @@ pub mod scroll;
 pub mod scroll_sequence;
 pub mod spread_map;
 pub mod text_field;
+pub mod text_input;
 pub mod sticker;
 pub mod theme;
 pub mod tokens;

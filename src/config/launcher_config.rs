@@ -12,7 +12,6 @@ pub const DUCKDUCKGO_URL: &str = "https://duckduckgo.com/?q=";
 pub const YOUTUBE_URL: &str = "https://www.youtube.com/results?search_query=";
 // Search
 pub const DEBOUNCE_MS: i32 = 30;
-pub const DOUBLE_CLICK_MS: i32 = 400;
 pub const MAX_RESULTS: i32 = 20;
 pub const LISTING_MAX_RESULTS: i32 = 50;
 pub const INDEX_REFRESH_S: i32 = 60;

@@ -354,7 +354,8 @@ pub fn connect(core: App, handle: &LoopHandle<'static, State>) -> Result<State, 
         let compositor = services.compositor.clone();
         let hooks = settings_host::hooks(services.settings.clone(), state.output_names.clone(), Box::new(move || compositor.state().focused_monitor.clone()));
         let wake = state.redraw.clone();
-        state.overlays.settings = Some(Settings::new(hooks, Rc::new(move || wake.settings())));
+        let clipboard = state.clipboard.clone().map(|c| c as Rc<dyn crate::base::input::Clipboard>);
+        state.overlays.settings = Some(Settings::new(hooks, Rc::new(move || wake.settings()), clipboard));
         if services.polkit.is_some() {
             let wake = state.redraw.clone();
             state.overlays.polkit = Some(Polkit::new(Rc::new(move || wake.polkit())));
@@ -1163,6 +1164,7 @@ impl State {
                     PointerEventKind::Enter { .. } | PointerEventKind::Motion { .. } => settings.pointer(Some((x, y))),
                     PointerEventKind::Leave { .. } => settings.pointer(None),
                     PointerEventKind::Press { button, .. } if button_from_code(button) == Button::Left => settings.press(&self.compositor, x, y),
+                    PointerEventKind::Release { .. } => settings.release(),
                     PointerEventKind::Axis { vertical, .. } if vertical.absolute != 0.0 => settings.wheel(vertical.absolute),
                     _ => return,
                 }

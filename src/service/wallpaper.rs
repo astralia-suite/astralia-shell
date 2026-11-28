@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use crate::config::file::expand_home;
-use crate::config::settings::Config;
+use crate::config::settings::{Config, Profiles, WallpaperProfile};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WallpaperSlot {
@@ -150,6 +150,53 @@ pub fn wallpaper_set_column_count(cfg: &mut Config, monitor: &str, count: i32, s
     count_map_mut(cfg, slot).insert(monitor.into(), count);
 }
 
+pub fn wallpaper_profiles(cfg: &Config, slot: WallpaperSlot) -> &Profiles {
+    match slot {
+        WallpaperSlot::Still => &cfg.wallpaper_profiles,
+        WallpaperSlot::Lock => &cfg.lock_wallpaper_profiles,
+    }
+}
+
+fn profiles_mut(cfg: &mut Config, slot: WallpaperSlot) -> &mut Profiles {
+    match slot {
+        WallpaperSlot::Still => &mut cfg.wallpaper_profiles,
+        WallpaperSlot::Lock => &mut cfg.lock_wallpaper_profiles,
+    }
+}
+
+/// The slot's live folder, columns, counts and fill modes.
+fn live_parts(cfg: &mut Config, slot: WallpaperSlot) -> (&mut String, &mut Columns, &mut BTreeMap<String, i32>, &mut Columns) {
+    match slot {
+        WallpaperSlot::Still => (&mut cfg.wallpaper_dir, &mut cfg.wallpaper_columns, &mut cfg.wallpaper_column_counts, &mut cfg.wallpaper_fill_modes),
+        WallpaperSlot::Lock => {
+            (&mut cfg.lock_wallpaper_dir, &mut cfg.lock_wallpaper_columns, &mut cfg.lock_wallpaper_column_counts, &mut cfg.lock_wallpaper_fill_modes)
+        }
+    }
+}
+
+/// Saves the slot's live settings as `name`, replacing a profile of that name; a blank name is ignored.
+pub fn wallpaper_profile_save(cfg: &mut Config, slot: WallpaperSlot, name: &str) {
+    let name = name.trim();
+    if name.is_empty() {
+        return;
+    }
+    let (dir, columns, column_counts, fill_modes) = live_parts(cfg, slot);
+    let profile = WallpaperProfile { dir: dir.clone(), columns: columns.clone(), column_counts: column_counts.clone(), fill_modes: fill_modes.clone() };
+    profiles_mut(cfg, slot).insert(name.into(), profile);
+}
+
+/// Makes the profile `name` the slot's live settings; false when there is none.
+pub fn wallpaper_profile_load(cfg: &mut Config, slot: WallpaperSlot, name: &str) -> bool {
+    let Some(p) = wallpaper_profiles(cfg, slot).get(name).cloned() else { return false };
+    let (dir, columns, column_counts, fill_modes) = live_parts(cfg, slot);
+    (*dir, *columns, *column_counts, *fill_modes) = (p.dir, p.columns, p.column_counts, p.fill_modes);
+    true
+}
+
+pub fn wallpaper_profile_delete(cfg: &mut Config, slot: WallpaperSlot, name: &str) {
+    profiles_mut(cfg, slot).remove(name);
+}
+
 pub fn wallpaper_image_for(cfg: &Config, monitor: &str) -> String {
     wallpaper_column_path(cfg, monitor, 0, WallpaperSlot::Still)
 }
@@ -247,6 +294,39 @@ mod tests {
         cfg.wallpaper_dir = "/pictures".into();
         cfg.lock_wallpaper_dir = "/locks".into();
         assert!(wallpaper_slot_dir(&cfg, Still) == "/pictures" && wallpaper_slot_dir(&cfg, Lock) == "/locks");
+    }
+
+    #[test]
+    fn wallpaper_profile_rules() {
+        use WallpaperSlot::{Lock, Still};
+        let mut cfg = base();
+        cfg.wallpaper_dir = "/night".into();
+        wallpaper_set_column(&mut cfg, "DP-1", 0, "/night/a.png", Still);
+        wallpaper_set_column_count(&mut cfg, "DP-1", 2, Still);
+        wallpaper_set_fill_mode(&mut cfg, "DP-1", 0, "fit", Still);
+        wallpaper_profile_save(&mut cfg, Still, "  Night ");
+        wallpaper_profile_save(&mut cfg, Still, "   ");
+        assert!(wallpaper_profiles(&cfg, Still).keys().eq(["Night"]), "the name is trimmed and a blank one ignored");
+        assert!(wallpaper_profiles(&cfg, Lock).is_empty(), "the lock slot keeps its own list");
+
+        let saved = cfg.clone();
+        cfg.wallpaper_dir = "/day".into();
+        wallpaper_set_column(&mut cfg, "DP-1", 0, "/day/b.png", Still);
+        wallpaper_set_column_count(&mut cfg, "DP-1", 1, Still);
+        wallpaper_set_fill_mode(&mut cfg, "DP-1", 0, "crop", Still);
+        wallpaper_set_column(&mut cfg, "DP-1", 0, "/lock.png", Lock);
+        assert!(wallpaper_profile_load(&mut cfg, Still, "Night"));
+        assert!(
+            cfg.wallpaper_dir == saved.wallpaper_dir
+                && cfg.wallpaper_columns == saved.wallpaper_columns
+                && cfg.wallpaper_column_counts == saved.wallpaper_column_counts
+                && cfg.wallpaper_fill_modes == saved.wallpaper_fill_modes,
+            "loading restores the desktop slot"
+        );
+        assert_eq!(wallpaper_column_override(&cfg, "DP-1", 0, Lock), "/lock.png", "loading a desktop profile leaves the lock slot alone");
+        assert!(!wallpaper_profile_load(&mut cfg, Lock, "Night"), "a desktop profile is not a lock profile");
+        wallpaper_profile_delete(&mut cfg, Still, "Night");
+        assert!(wallpaper_profiles(&cfg, Still).is_empty());
     }
 
     #[test]

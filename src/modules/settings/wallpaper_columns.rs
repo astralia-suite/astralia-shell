@@ -8,7 +8,7 @@ use super::pane::{DropEntry, Pane, SMALL_STYLE, TEXT_STYLE, TRANSPARENT};
 use crate::config::file::collapse_home;
 use crate::config::settings_config as cfg;
 use crate::render::canvas::{GroupOptions, NO_IMAGE};
-use crate::render::field_view::{FieldDraw, draw_field_input};
+use crate::render::field_view::FieldDraw;
 use crate::render::geometry::Rect;
 use crate::render::theme::palette;
 use crate::render::tokens::{WHITE, metrics};
@@ -94,8 +94,9 @@ pub fn wallpaper_columns_panel(pane: &mut Pane, slot: WallpaperSlot, x: f32, mut
             color: pane.fade(p.text),
             ..FieldDraw::new(TEXT_STYLE)
         };
-        let model = &*pane.model;
-        pane.caret = draw_field_input(pane.canvas, &model.field().text, model.field(), model.field_anim(), &draw, None);
+        let chars = (input_w / pane.canvas.advance(&TEXT_STYLE)).max(1.0) as usize;
+        let frame = pane.model.input_mut().draw(pane.canvas, draw, chars);
+        pane.input = Some((Rect { x: input_x, y, w: input_w, h: cfg::DIR_BAR_HEIGHT }, frame));
     } else {
         let clipped = crate::render::canvas::TextStyle { max_width: input_w as i32, ..TEXT_STYLE };
         let shown = collapse_home(wallpaper_slot_dir(config, slot), &crate::base::paths::home());

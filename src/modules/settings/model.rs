@@ -6,7 +6,7 @@ use std::rc::{Rc, Weak};
 use std::time::Instant;
 
 use crate::base::animation::{AnimationManager, Easing, Value, value, writer};
-use crate::base::input::{KeyEvent, KeyKind};
+use crate::base::input::{Clipboard, KeyEvent, KeyKind};
 use crate::base::paths::home;
 use crate::config::file::{collapse_home, expand_home};
 use crate::config::settings::{
@@ -17,15 +17,12 @@ use crate::config::visualizer_config as vis;
 use crate::render::geometry::Rect;
 use crate::render::icons;
 use crate::render::scroll_sequence::{ScrollSequence, ScrollTimings};
-use crate::render::text_field::{
-    TextFieldResult, TextFieldState, TextFieldTypeAnim, text_field_backspace, text_field_handle_key, text_field_idle_toggle,
-    text_field_type_anim_clear, text_field_type_anim_settle, text_field_type_anim_sync,
-};
+use crate::render::text_input::{InputKey, TextInput};
 use crate::service::runtime;
 use crate::service::settings::ConfigStore;
 use crate::service::wallpaper::{
-    WallpaperSlot, wallpaper_column_count, wallpaper_list_files, wallpaper_set_column, wallpaper_set_column_count,
-    wallpaper_set_fill_mode, wallpaper_slot_dir,
+    WallpaperSlot, wallpaper_column_count, wallpaper_list_files, wallpaper_profile_delete, wallpaper_profile_load, wallpaper_profile_save,
+    wallpaper_profiles, wallpaper_set_column, wallpaper_set_column_count, wallpaper_set_fill_mode, wallpaper_slot_dir,
 };
 
 const OWNER_SEQUENCE: u64 = 30;
@@ -69,10 +66,12 @@ pub enum Field {
     VisualizerComplexity,
     VisualizerGlowDirections,
     VisualizerGlowQuality,
+    ProfileName,
+    LockProfileName,
 }
 
 impl Field {
-    const ALL: [Field; 9] = [
+    const ALL: [Field; 11] = [
         Field::None,
         Field::WallpaperDir,
         Field::LockWallpaperDir,
@@ -82,6 +81,8 @@ impl Field {
         Field::VisualizerComplexity,
         Field::VisualizerGlowDirections,
         Field::VisualizerGlowQuality,
+        Field::ProfileName,
+        Field::LockProfileName,
     ];
 
     pub fn from_index(i: i32) -> Field {
@@ -118,6 +119,9 @@ pub enum Act {
     WallpaperRemove,
     WallpaperFill,
     WallpaperRescan,
+    ProfileLoad,
+    ProfileSave,
+    ProfileDelete,
     DropdownToggle,
     DropdownDismiss,
     CapturePick,
@@ -183,6 +187,15 @@ fn slot_from(value: i32) -> WallpaperSlot {
 }
 
 /// `value` with three decimals, trailing zeros and point dropped.
+/// The slot whose profile name `field` edits.
+fn profile_slot(field: Field) -> Option<WallpaperSlot> {
+    match field {
+        Field::ProfileName => Some(WallpaperSlot::Still),
+        Field::LockProfileName => Some(WallpaperSlot::Lock),
+        _ => None,
+    }
+}
+
 fn trim_float(value: f32) -> String {
     let mut text = format!("{value:.3}");
     while text.contains('.') && (text.ends_with('0') || text.ends_with('.')) {
@@ -239,7 +252,7 @@ pub fn field_text(config: &Config, field: Field) -> String {
         Field::VisualizerComplexity => v.fractal_complexity.to_string(),
         Field::VisualizerGlowDirections => trim_float(v.glow_directions),
         Field::VisualizerGlowQuality => trim_float(v.glow_quality),
-        Field::None => String::new(),
+        Field::None | Field::ProfileName | Field::LockProfileName => String::new(),
     }
 }
 
@@ -272,7 +285,8 @@ pub fn apply_field(config: &mut Config, field: Field, text: &str) {
             Some(v) => config.visualizer.glow_quality = v,
             None => failed(),
         },
-        Field::None => {}
+        // The model keeps the profile name; it is not a config value.
+        Field::None | Field::ProfileName | Field::LockProfileName => {}
     }
 }
 
@@ -310,13 +324,14 @@ pub struct Model {
     /// Set when the fade-out of a tab switch ends; the switch then takes effect.
     tab_swap: Rc<Cell<bool>>,
     focused: Field,
-    field: TextFieldState,
-    field_anim: TextFieldTypeAnim,
+    input: TextInput,
     monitors: Vec<String>,
     displays_monitor: String,
     bar_monitor: String,
     static_picker: WallpaperPicker,
     lock_picker: WallpaperPicker,
+    /// The profile name shown per slot: the last one typed, saved or loaded.
+    profile_name: [String; 2],
     /// Set when the close sequence ends.
     sequence_done: Rc<Cell<bool>>,
     close_request: bool,
@@ -343,13 +358,13 @@ impl Model {
             tab_alpha: value(1.0),
             tab_swap: Rc::default(),
             focused: Field::None,
-            field: TextFieldState::default(),
-            field_anim: TextFieldTypeAnim::default(),
+            input: TextInput::new(OWNER_FIELD_ANIM),
             monitors: Vec::new(),
             displays_monitor: String::new(),
             bar_monitor: String::new(),
             static_picker: WallpaperPicker::default(),
             lock_picker: WallpaperPicker::default(),
+            profile_name: Default::default(),
             sequence_done: Rc::default(),
             close_request: false,
             closed: false,
@@ -358,7 +373,12 @@ impl Model {
 
     /// Called when a scan lands, so the host polls.
     pub fn set_wake(&mut self, wake: Rc<dyn Fn()>) {
-        *self.inbox.wake.borrow_mut() = Some(wake);
+        *self.inbox.wake.borrow_mut() = Some(wake.clone());
+        self.input.set_wake(wake);
+    }
+
+    pub fn set_clipboard(&mut self, clipboard: Option<Rc<dyn Clipboard>>) {
+        self.input.set_clipboard(clipboard);
     }
 
     pub fn open(&mut self) {
@@ -519,10 +539,11 @@ impl Model {
         });
     }
 
-    /// Applies the scans finished since the last call; true when any arrived.
+    /// Applies the scans and pastes finished since the last call; true when any arrived.
     pub fn poll(&mut self) -> bool {
+        let pasted = self.focused != Field::None && self.input.poll(&mut self.animations);
         let scanned = std::mem::take(&mut *self.inbox.scanned.borrow_mut());
-        let any = !scanned.is_empty();
+        let any = pasted || !scanned.is_empty();
         for (slot, generation, found) in scanned {
             let picker = self.picker_mut(slot);
             if generation == picker.generation {
@@ -565,25 +586,28 @@ impl Model {
         }
         self.commit_field();
         self.focused = field;
-        let text = field_text(&self.config(), field);
-        self.field.text = text;
-        self.field.preedit.clear();
-        self.field.cursor_idle_visible = true;
-        text_field_type_anim_settle(&mut self.field_anim, &mut self.animations, OWNER_FIELD_ANIM, &self.field.text);
+        let text = match profile_slot(field) {
+            Some(slot) => self.profile_name[slot as usize].clone(),
+            None => field_text(&self.config(), field),
+        };
+        self.input.set_text(&mut self.animations, text);
     }
 
     fn unfocus(&mut self) {
         self.focused = Field::None;
-        self.field.preedit.clear();
-        text_field_type_anim_clear(&mut self.field_anim, &mut self.animations, OWNER_FIELD_ANIM);
+        self.input.clear(&mut self.animations);
     }
 
     fn commit_field(&mut self) {
         if self.focused == Field::None {
             return;
         }
-        let (field, text) = (self.focused, self.field.text.clone());
+        let (field, text) = (self.focused, self.input.text().to_string());
         self.unfocus();
+        if let Some(slot) = profile_slot(field) {
+            self.profile_name[slot as usize] = text.trim().to_string();
+            return;
+        }
         self.edit(|config| apply_field(config, field, &text));
     }
 
@@ -610,38 +634,58 @@ impl Model {
             }
             return true;
         }
-        match text_field_handle_key(&mut self.field, event) {
-            TextFieldResult::Changed => {
-                text_field_type_anim_sync(&mut self.field_anim, &mut self.animations, OWNER_FIELD_ANIM, &self.field.text);
+        match self.input.key(&mut self.animations, event) {
+            InputKey::Edited | InputKey::Moved => {}
+            InputKey::Enter => {
+                let save = profile_slot(self.focused);
+                self.commit_field();
+                if let Some(slot) = save {
+                    self.save_profile(slot);
+                }
             }
-            TextFieldResult::Committed => self.commit_field(),
-            TextFieldResult::Cancelled => self.unfocus(),
-            TextFieldResult::None => return false,
+            InputKey::Escape => self.unfocus(),
+            InputKey::Up | InputKey::Down | InputKey::Tab | InputKey::Ignored => return false,
         }
+        // A clipboard that answers at once has queued its paste.
+        self.poll();
         true
     }
 
     pub fn commit_text(&mut self, text: &str) {
-        self.field.text.push_str(text);
-        self.field.preedit.clear();
-        text_field_type_anim_sync(&mut self.field_anim, &mut self.animations, OWNER_FIELD_ANIM, &self.field.text);
+        self.input.commit_text(&mut self.animations, text);
     }
 
     pub fn delete_before(&mut self, count: u32) {
-        for _ in 0..count {
-            text_field_backspace(&mut self.field.text);
-        }
-        text_field_type_anim_sync(&mut self.field_anim, &mut self.animations, OWNER_FIELD_ANIM, &self.field.text);
+        self.input.delete_before(&mut self.animations, count);
     }
 
     pub fn set_preedit(&mut self, text: &str) {
-        self.field.preedit = text.to_string();
-        self.field.cursor_idle_visible = true;
+        self.input.set_preedit(text);
     }
 
     /// Blinks the caret of a focused field; true when it changed.
     pub fn toggle_caret(&mut self) -> bool {
-        self.focused != Field::None && text_field_idle_toggle(&mut self.field)
+        self.focused != Field::None && self.input.toggle_caret()
+    }
+
+    /// A press on the focused field at a character `column`.
+    pub fn pointer_down(&mut self, column: f32, now: Instant) {
+        if self.focused != Field::None {
+            self.input.pointer_down(column, now);
+        }
+    }
+
+    /// True when a drag moved the selection.
+    pub fn pointer_drag(&mut self, column: f32) -> bool {
+        self.focused != Field::None && self.input.pointer_drag(column)
+    }
+
+    pub fn pointer_up(&mut self) {
+        self.input.pointer_up();
+    }
+
+    pub fn dragging(&self) -> bool {
+        self.input.dragging()
     }
 
     pub fn clickable(&self, x: f64, y: f64) -> bool {
@@ -821,6 +865,20 @@ impl Model {
                 wallpaper_set_column_count(config, &picker_region, count, slot);
             }),
             Act::WallpaperRescan => self.rescan(slot),
+            Act::ProfileSave => self.save_profile(slot),
+            Act::ProfileLoad => {
+                let name = usize::try_from(region.a).ok().and_then(|i| wallpaper_profiles(&self.config(), slot).keys().nth(i).cloned());
+                if let Some(name) = name {
+                    self.edit(|config| {
+                        wallpaper_profile_load(config, slot, &name);
+                    });
+                    self.profile_name[slot as usize] = name;
+                }
+            }
+            Act::ProfileDelete => {
+                let name = std::mem::take(&mut self.profile_name[slot as usize]);
+                self.edit(|config| wallpaper_profile_delete(config, slot, &name));
+            }
             Act::DropdownToggle => self.dropdown_open = if self.dropdown_open == Some(region.a) { None } else { Some(region.a) },
             Act::DropdownDismiss => self.dropdown_open = None,
             Act::CapturePick => {
@@ -869,12 +927,13 @@ impl Model {
         self.focused
     }
 
-    pub fn field(&self) -> &TextFieldState {
-        &self.field
+    #[cfg(test)]
+    pub fn field(&self) -> &crate::render::text_field::TextFieldState {
+        self.input.field()
     }
 
-    pub fn field_anim(&self) -> &TextFieldTypeAnim {
-        &self.field_anim
+    pub fn input_mut(&mut self) -> &mut TextInput {
+        &mut self.input
     }
 
     pub fn config(&self) -> Ref<'_, Config> {
@@ -891,6 +950,17 @@ impl Model {
 
     pub fn bar_monitor(&self) -> &str {
         &self.bar_monitor
+    }
+
+    pub fn profile_name(&self, slot: WallpaperSlot) -> &str {
+        &self.profile_name[slot as usize]
+    }
+
+    fn save_profile(&mut self, slot: WallpaperSlot) {
+        let name = self.profile_name[slot as usize].clone();
+        if !name.is_empty() {
+            self.edit(|config| wallpaper_profile_save(config, slot, &name));
+        }
     }
 
     pub fn picker(&self, slot: WallpaperSlot) -> &WallpaperPicker {
