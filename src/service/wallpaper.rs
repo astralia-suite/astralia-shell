@@ -77,24 +77,17 @@ pub fn wallpaper_picker_less(a: &str, b: &str) -> bool {
     picker_key(a) < picker_key(b)
 }
 
-/// Images in `dir` and its direct subfolders, in picker order, at most `limit`.
+/// Images directly in `dir` (subfolders are not searched), in picker order, at most `limit`.
 pub fn wallpaper_list_files(dir: &str, limit: usize) -> Vec<String> {
     let home = crate::base::paths::home();
     let root = if home.is_empty() { dir.to_string() } else { expand_home(dir, &home) };
-    let mut found = Vec::new();
-    let mut folders = vec![(std::path::PathBuf::from(root), 0)];
-    while let Some((folder, depth)) = folders.pop() {
-        let Ok(entries) = std::fs::read_dir(&folder) else { continue };
-        for entry in entries.flatten() {
-            let Ok(kind) = entry.file_type() else { continue };
-            let path = entry.path().to_string_lossy().into_owned();
-            if kind.is_dir() && depth == 0 {
-                folders.push((entry.path(), 1));
-            } else if (kind.is_file() || (kind.is_symlink() && entry.path().is_file())) && wallpaper_is_image(&path) {
-                found.push(path);
-            }
-        }
-    }
+    let Ok(entries) = std::fs::read_dir(root) else { return Vec::new() };
+    let mut found: Vec<String> = entries
+        .flatten()
+        .filter(|entry| entry.path().is_file())
+        .map(|entry| entry.path().to_string_lossy().into_owned())
+        .filter(|path| wallpaper_is_image(path))
+        .collect();
     found.sort_by_key(|p| picker_key(p));
     found.truncate(limit);
     found
@@ -354,7 +347,7 @@ mod tests {
         }
         let root = root.to_str().unwrap();
         let images = wallpaper_list_files(root, 100);
-        assert!(images.len() == 3 && images[0].ends_with("a.jpg") && images[1].ends_with("b.png") && images[2].ends_with("c.png"), "{images:?}");
+        assert!(images.len() == 2 && images[0].ends_with("a.jpg") && images[1].ends_with("b.png"), "subfolders are not searched: {images:?}");
         assert_eq!(wallpaper_list_files(root, 2).len(), 2, "the listing is capped");
         assert!(wallpaper_list_files(&format!("{root}/missing"), 100).is_empty());
     }

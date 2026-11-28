@@ -369,8 +369,8 @@ fn settings_wallpaper() {
     );
     assert!(pump.scanned(&mut env.model, WallpaperSlot::Still), "the scan finishes");
     let files = env.model.picker(WallpaperSlot::Still).files.clone();
-    assert_eq!(files.len(), 3, "images are found one folder deep, other files are skipped");
-    assert!(files[0].ends_with("a.jpg") && files[1].ends_with("b.png") && files[2].ends_with("c.png"), "files sort by extension then name");
+    assert_eq!(files.len(), 2, "only images directly in the folder are found");
+    assert!(files[0].ends_with("a.jpg") && files[1].ends_with("b.png"), "files sort by extension then name");
 
     env.click(Act::WallpaperPick, 1, 0);
     assert_eq!(wallpaper_column_override(&env.cfg(), "HDMI-1", 0, WallpaperSlot::Still), files[1], "picking sets the column image");
